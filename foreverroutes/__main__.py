@@ -9,8 +9,11 @@ from .audit import audit
 
 def main():
     p=argparse.ArgumentParser(prog='foreverroutes', description='Offline 1-30 Quest + Grind planner; models need real data for real estimates')
-    p.add_argument('command',choices=['audit','search','exact','replay','fixture'])
+    p.add_argument('command',choices=['audit','search','exact','replay','fixture','baseline'])
     p.add_argument('--world',default='examples/synthetic_tiny.json')
+    p.add_argument('--source',choices=['journey','wisp','polestar','rxp'])
+    p.add_argument('--source-path')
+    p.add_argument('--guide')
     p.add_argument('--route')
     p.add_argument('--output')
     p.add_argument('--start',default='Spawn')
@@ -23,7 +26,11 @@ def main():
     p.add_argument('--max-decisions',type=int,default=1800)
     p.add_argument('--max-states',type=int,default=50000)
     a=p.parse_args()
-    if a.command=='fixture':
+    if a.command=='baseline':
+        from .baselines import parse_rows,coverage
+        if not a.source or not a.source_path:p.error('--source and --source-path required with baseline')
+        result=coverage(parse_rows(a.source_path,a.source,a.guide))
+    elif a.command=='fixture':
         from importlib.util import spec_from_file_location, module_from_spec
         f=Path(__file__).resolve().parents[1]/'examples/generate_synthetic_30.py'
         spec=spec_from_file_location('fixture',f);mod=module_from_spec(spec);spec.loader.exec_module(mod)

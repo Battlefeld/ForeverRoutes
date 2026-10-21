@@ -63,3 +63,13 @@ Values in this schema are **illustrative**, NOT real quest 1 / mobs. `level` on 
 ## Licence / provenance
 
 Original simulator code is MIT. Polestar is GPL-3.0; RestedXP is CC BY-NC-SA; Journey restricts redistribution/reverse engineering of content. No source implementation or protected guide text from those projects has been copied into this repository. Public facts (quest IDs, numeric source facts) should still be sourced and versioned. Use only data you are entitled to process and redistribute.
+
+## Reference guide auditing (local, no guide files committed)
+
+```sh
+python -m foreverroutes baseline --source journey --source-path /local/Journey_Quest_Routen_Analyse.csv
+python -m foreverroutes baseline --source wisp --source-path /local/ForeverWisp_Quest_Routen_Analyse.csv
+python -m foreverroutes baseline --source polestar --source-path /local/Polestar_Quest_Routen_Analyse.csv
+```
+
+The CSV adapter normalizes quest references and counts unresolved conditions; **it deliberately does not assign a time to reference guides**. Those guides can only be replayed faithfully once their class/quest flags, movements, grouped objectives and actual world facts are normalized. AoE guide names are excluded.
