@@ -1,0 +1,16 @@
+name: Python offline simulation tests
+on:
+  push:
+  pull_request:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Unit and synthetic level-30 integration tests
+        run: python -m unittest discover -s tests -v
+      - name: Compile source
+        run: python -m compileall -q foreverroutes examples tests
