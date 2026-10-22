@@ -50,8 +50,8 @@ jobs:
       - name: Fetch bounded Quest API snapshot
         shell: bash
         env:
-          MAX_DETAILS: ${{ inputs.max_details }}
-          CACHE_DAYS: ${{ inputs.cache_days }}
+          MAX_DETAILS: ${{ inputs.max_details || '100' }}
+          CACHE_DAYS: ${{ inputs.cache_days || '7' }}
         run: |
           python -m foreverroutes.foreverdb_api \
             --guide-ids data/validation/guide_quest_id_candidates.json \
