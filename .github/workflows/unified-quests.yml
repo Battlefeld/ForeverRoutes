@@ -27,6 +27,7 @@ on:
       - 'tests/test_foreverdb_api.py'
       - 'foreverroutes/warcraftdb_gaps.py'
       - 'tests/test_warcraftdb_gaps.py'
+      - 'foreverroutes/gap_reports.py'
 
 permissions:
   contents: write
@@ -140,6 +141,14 @@ jobs:
             --database .generated/unified-quests-1-30.json \
             --guide-ids data/validation/guide_quest_id_candidates.json \
             --output .generated/guide-coverage-1-30.json
+      - name: Regenerate exact missing XP ID reports
+        run: |
+          python -m foreverroutes.gap_reports \
+            --database .generated/unified-quests-1-30.json \
+            --audit .generated/quest-quality-audit-1-30.json \
+            --web .generated/warcraftdb-quest-gaps.json \
+            --csv .generated/missing-xp.csv \
+            --text .generated/missing-xp.txt
       - name: Publish source snapshots, merged quest database and audit
         shell: bash
         run: |
@@ -149,4 +158,6 @@ jobs:
             .generated/unified-quests-1-30.json::unified/quests-1-30.json \
             .generated/quest-quality-audit-1-30.json::unified/quality-audit-1-30.json \
             .generated/everythingquests-forever-crosscheck.json::sources/everythingquests-forever.json \
-            .generated/guide-coverage-1-30.json::unified/guide-coverage-1-30.json
+            .generated/guide-coverage-1-30.json::unified/guide-coverage-1-30.json \
+            .generated/missing-xp.csv::unified/missing-xp-quest-ids-1-30.csv \
+            .generated/missing-xp.txt::unified/missing-xp-quest-ids-1-30.txt
