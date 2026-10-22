@@ -9,10 +9,11 @@ from .audit import audit
 
 def main():
     p=argparse.ArgumentParser(prog='foreverroutes', description='Offline 1-30 Quest + Grind planner; models need real data for real estimates')
-    p.add_argument('command',choices=['audit','search','exact','replay','fixture','baseline'])
+    p.add_argument('command',choices=['audit','search','exact','replay','fixture','baseline','source-check'])
     p.add_argument('--world',default='examples/synthetic_tiny.json')
     p.add_argument('--source',choices=['journey','wisp','polestar','rxp'])
     p.add_argument('--source-path')
+    p.add_argument('--facts')
     p.add_argument('--guide')
     p.add_argument('--route')
     p.add_argument('--output')
@@ -26,7 +27,13 @@ def main():
     p.add_argument('--max-decisions',type=int,default=1800)
     p.add_argument('--max-states',type=int,default=50000)
     a=p.parse_args()
-    if a.command=='baseline':
+    if a.command=='source-check':
+        from .verified_benchmark import FactBook, inspect_candidate
+        if not a.source or not a.source_path or not a.facts:
+            p.error('--source, --source-path and --facts required with source-check')
+        result=inspect_candidate(source=a.source,csv_path=a.source_path,
+            facts=FactBook.load(a.facts),guide=a.guide,target_level=a.target_level)
+    elif a.command=='baseline':
         from .baselines import parse_rows,coverage
         if not a.source or not a.source_path:p.error('--source and --source-path required with baseline')
         result=coverage(parse_rows(a.source_path,a.source,a.guide))
