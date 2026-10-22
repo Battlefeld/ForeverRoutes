@@ -1,3 +1,5 @@
+> **WORKING-DATA POLICY:** QuestieDB Forever quest structure + Classic XP/HP raw reference values are now accepted for **provisional route simulation** when actual Forever values are missing. ForeverDB and Wowhead Forever override per field. Such modeled times are not independently verified /played. See [data pipeline](docs/QUEST_DATA_PIPELINE.md). The legacy strictly-verified checker remains available for a separate evidence-only audit.
+
 # ForeverRoutes — Quest + Grind Simulator, Level 1–30
 
 Standalone **offline** route-simulation platform for WoW Forever. No dependency on ForeverSim, no in-game addon yet. Python 3.10+, standard library only. MIT (original code); no third-party guide text is checked in.
@@ -43,6 +45,18 @@ Values in this schema are **illustrative**, NOT real quest 1 / mobs. `level` on 
 - Solo model only. No escorts, timed quests, phasing, flights/boats/hearth, deathskips, PvP, food XP buff or detailed class rotations **yet**. This engine never pretends otherwise.
 - Search local greedy macro-plans are not guaranteed globally optimal; front-loaded quest pickups sharing objectives and zero-XP prereq quests are represented. The planner can still miss beneficial multi-zone detours or delayed hand-ins.
 
+
+## Reference NPC health for leveling 1–30
+
+Classic HP is now an **accepted provisional input** where no measured Forever HP exists. This does NOT claim a verified server value. Prefer per-level ForeverDB observations, then Wowhead Forever, then QuestieDB's Classic-inherited NPC raw health. Explicit provenance is attached to each imported mob.
+
+```sh
+python -m foreverroutes.mobdata --fetch --out .cache/mob_hp_1_33.json --max-level 33
+python -m foreverroutes.mobdata --fetch --out .cache/mob_hp_1_33.json --world world_input.json --world-out world_with_hp.json
+```
+
+For individual overrides, pass `--overrides examples/mob_hp_overrides_template.json` with level-specific observations. See [`docs/NPC_HP_REFERENCE_1_30.md`](docs/NPC_HP_REFERENCE_1_30.md). The QuestieDB public *API* NPC-HP getters return **0/1 placeholders**; this importer reads the pinned raw NPC table, not those getters. **Mob XP, combat DPS, roads, and quests remain independent inputs.** This change does not claim a fully validated 1–30 route.
+
 ## Workflow for *real* Level 1–30
 
 1. Import QuestieDB Forever and ForeverDB **locally** to a normalized world with pinned source revisions; resolve quest prerequisites, exact quest XP, class masks and objective NPCs (no guide-text copies). Add measured kill XP, HP, drop chance, mob ranks, spawn clustering and geographic paths.
@@ -64,12 +78,10 @@ Values in this schema are **illustrative**, NOT real quest 1 / mobs. `level` on 
 
 Original simulator code is MIT. Polestar is GPL-3.0; RestedXP is CC BY-NC-SA; Journey restricts redistribution/reverse engineering of content. No source implementation or protected guide text from those projects has been copied into this repository. Public facts (quest IDs, numeric source facts) should still be sourced and versioned. Use only data you are entitled to process and redistribute.
 
-## Reference guide auditing (local, no guide files committed)
+## Questie/Classic fallback import (new)
 
 ```sh
-python -m foreverroutes baseline --source journey --source-path /local/Journey_Quest_Routen_Analyse.csv
-python -m foreverroutes baseline --source wisp --source-path /local/ForeverWisp_Quest_Routen_Analyse.csv
-python -m foreverroutes baseline --source polestar --source-path /local/Polestar_Quest_Routen_Analyse.csv
+python -m foreverroutes.questdata --overlay data/overlays/foreverdb_public_spotchecks_2026-10-22.json --overlay data/overlays/wowhead_forever_manual_2026-10-22.json --output .generated/forever_quests_and_mobs_1_30.json
 ```
 
-The CSV adapter normalizes quest references and counts unresolved conditions; **it deliberately does not assign a time to reference guides**. Those guides can only be replayed faithfully once their class/quest flags, movements, grouped objectives and actual world facts are normalized. AoE guide names are excluded.
+Downloads the pinned QuestieDB Forever quest file, Era quest-XP file, and raw Classic NPC HP/level file locally. See [docs/QUEST_DATA_PIPELINE.md](docs/QUEST_DATA_PIPELINE.md) for provenance, field priority and caveats.
