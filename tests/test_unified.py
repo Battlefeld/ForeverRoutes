@@ -84,5 +84,44 @@ class UnifiedTests(unittest.TestCase):
         self.assertEqual(r["quests"]["42"]["fields"]["xp_observed_by_player_level"]["value"]["5"],380)
 
 
+
+    def test_wowhead_0_xp_counts_as_resolved_and_40_xp_forever(self):
+        reference={"schema":"foreverroutes.quest_xp_overrides.v1","observations":[
+            {"quest_id":77,"fields":{"xp":{"value":0,"source":"wowhead_classic",
+                "quality":"classic_reference",
+                "url":"https://www.wowhead.com/classic/quest=77"}}},
+            {"quest_id":99,"fields":{"xp":{"value":40,"source":"wowhead_forever",
+                "quality":"forever_reference",
+                "url":"https://www.wowhead.com/forever/quest=99"}}}
+        ]}
+        result=merge(qbase(),fbase(),xp_reference=reference)
+        self.assertEqual(result["quests"]["77"]["fields"]["xp"]["value"],0)
+        self.assertEqual(result["quests"]["99"]["fields"]["xp"]["value"],40)
+        self.assertEqual(result["stats"]["zero_xp_quests"],1)
+        self.assertEqual(result["stats"]["wowhead_xp_reference_quests"],2)
+        missing=audit(result)["missing"]["quests_without_xp"]
+        self.assertNotIn(77,missing)
+        self.assertNotIn(99,missing)
+        self.assertEqual(result["quests"]["77"]["fields"]["xp"]["quality"],"classic_reference")
+        self.assertEqual(result["quests"]["99"]["fields"]["xp"]["quality"],"forever_reference")
+
+    def test_wowhead_references_cannot_inject_unsourced_xp(self):
+        entry={"quest_id":77,"fields":{"xp":{"value":1,"source":"wowhead_classic",
+                "quality":"classic_reference","url":"https://wrong.example/quest=77"}}}
+        with self.assertRaises(ValueError):
+            merge(qbase(),fbase(),xp_reference={"schema":"foreverroutes.quest_xp_overrides.v1",
+                                           "observations":[entry]})
+
+    def test_wowhead_reference_overrides_classic_xp_and_reports_conflict(self):
+        reference={"schema":"foreverroutes.quest_xp_overrides.v1","observations":[
+            {"quest_id":42,"fields":{"xp":{"value":0,"source":"wowhead_classic",
+                "quality":"classic_reference",
+                "url":"https://www.wowhead.com/classic/quest=42"}}}
+        ]}
+        result=merge(qbase(),fbase(),xp_reference=reference)
+        self.assertEqual(result["quests"]["42"]["fields"]["xp"]["value"],0)
+        self.assertTrue(any(x["field"]=="xp" and x["quest_id"]==42 for x in result["field_conflicts"]))
+
+
 if __name__=="__main__":
     unittest.main()
