@@ -28,7 +28,7 @@ jobs:
       - name: Tests
         run: python -m unittest discover -s tests -v
       - name: Build pinned source catalog with public ForeverDB observations
-        run: python -m foreverroutes.catalog --overlay data/foreverdb_observations.example.json --output .generated/level_1_30_catalog.json
+        run: python -m foreverroutes.catalog --overlay data/foreverdb_observations.example.json --guide-ids data/validation/guide_quest_id_candidates.json --output .generated/level_1_30_catalog.json
       - name: Validate catalog
         run: |
           python - <<'PY'

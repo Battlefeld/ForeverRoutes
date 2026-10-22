@@ -1,5 +1,5 @@
 import unittest
-from foreverroutes.catalog import parse_lua,ParseError,build_catalog,drop_chances
+from foreverroutes.catalog import parse_lua,ParseError,build_catalog,drop_chances,add_guide_id_candidates
 
 BASE={
 'quests':'''[788] = {"Cutting Teeth",{{3143}},{{3143}},1,2,8589934770,nil,{"Kill 10."},nil,{{{3098}}},nil,nil,nil,nil,nil,363},
@@ -46,6 +46,16 @@ class CatalogTests(unittest.TestCase):
         example['quests'] = '[788] = {"Cutting Teeth",{{3143}},{{3143}},1,2,8589934770,nil,nil,nil,{{{3098,"Boar",88294}}},nil,nil,nil,nil},'
         cat = build_catalog(example)
         self.assertEqual(cat['quests']['788']['objectives'][0]['ids'],[3098])
+
+    def test_guide_ids_do_not_become_fake_quests(self):
+        c=build_catalog(BASE)
+        doc={'sources':{'wisp':{'orc-troll':[788,97279,97326]},'journey':{'horde':[97279]}}}
+        add_guide_id_candidates(c,doc)
+        self.assertEqual(c['stats']['guide_only_unresolved_quest_ids'],2)
+        self.assertTrue(c['quests']['97279']['not_actionable'])
+        self.assertIsNone(c['quests']['97279']['required_level'])
+        self.assertIsNone(c['quests']['97279']['xp'])
+        self.assertEqual(c['stats']['quest_count'],2)
 
     def test_observations(self):
         q=[{'quest_id':97279,'fields':{'quest_level':{'value':2,'url':'https://foreverdb.net/quest/97279','source':'foreverdb_client'},'xp_by_player_level':{'value':{'2':170},'url':'https://foreverdb.net/quest/97279','source':'foreverdb_observed'}}}]

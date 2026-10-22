@@ -306,17 +306,51 @@ def fetch_sources(cache:Path, *,revision=QUESTIE_SHA):
     return raw
 
 
+def add_guide_id_candidates(catalog: dict, candidate_doc: dict) -> dict:
+    """Preserve unknown guide quest IDs for later validation, NEVER as usable quests."""
+    ids = {}
+    for source, guides in candidate_doc.get('sources', {}).items():
+        if not isinstance(guides, dict): raise ValueError('Guide candidate source must be a mapping')
+        for guide, raw_ids in guides.items():
+            for raw in raw_ids:
+                qid = int(raw)
+                if qid <= 0: continue
+                ids.setdefault(qid, set()).add(source)
+    unresolved = 0
+    for qid, sources in ids.items():
+        key = str(qid)
+        if key not in catalog['quests']:
+            catalog['quests'][key] = {
+                'id': qid,
+                'source':'guide_id_candidate_only',
+                'candidate_only': True,
+                'source_guides': sorted(sources),
+                'required_level': None,
+                'xp': None,
+                'objectives': [],
+                'not_actionable': True,
+            }
+            unresolved += 1
+    catalog['stats']['guide_only_unresolved_quest_ids'] = unresolved
+    catalog['stats']['total_quest_ids_including_unresolved_candidates'] = len(catalog['quests'])
+    return catalog
+
+
 def run(argv=None):
     parser=argparse.ArgumentParser(description='Build a Questie Classic-reference input catalog for level 1–30')
     parser.add_argument('--cache',type=Path,default=Path('.cache/questie'))
     parser.add_argument('--output',type=Path,default=Path('.generated/level_1_30_catalog.json'))
     parser.add_argument('--overlay',type=Path,action='append',default=[])
     parser.add_argument('--npc-overlay',type=Path,action='append',default=[])
+    parser.add_argument('--guide-ids',type=Path,help='Optional guide numeric ID candidates; never interpreted as fully defined quests')
     args=parser.parse_args(argv)
     q=[];n=[]
     for p in args.overlay:q+=json.loads(p.read_text(encoding='utf-8')).get('observations',[])
     for p in args.npc_overlay:n+=json.loads(p.read_text(encoding='utf-8')).get('observations',[])
     catalog=build_catalog(fetch_sources(args.cache),quest_overlays=q,npc_overlays=n)
+    if args.guide_ids:
+        candidates=json.loads(args.guide_ids.read_text(encoding='utf-8'))
+        add_guide_id_candidates(catalog,candidates)
     args.output.parent.mkdir(parents=True,exist_ok=True)
     args.output.write_text(json.dumps(catalog,ensure_ascii=False,separators=(',',':')),encoding='utf-8')
     print(json.dumps({'output':str(args.output),'stats':catalog['stats']},ensure_ascii=False))
