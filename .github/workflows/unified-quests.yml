@@ -1,0 +1,106 @@
+name: Refresh unified Forever quest database
+on:
+  schedule:
+    - cron: '07 02,14 * * *'
+  workflow_dispatch:
+    inputs:
+      refresh_sources:
+        description: 'Download new QuestieDB and ForeverDB information (false = merge existing snapshots)'
+        type: boolean
+        default: true
+      max_new_details:
+        description: 'Maximum new ForeverDB detail requests (0..1700)'
+        type: number
+        default: 320
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/unified-quests.yml'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: foreverroutes-unified-refresh
+  cancel-in-progress: false
+
+jobs:
+  merge-refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 65
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Validate the quest import and merge code
+        run: python -m unittest discover -s tests -v
+      - name: Load last validated source snapshots from artifacts branch
+        shell: bash
+        run: |
+          mkdir -p .generated
+          git fetch --no-tags origin '+refs/heads/artifacts:refs/remotes/origin/artifacts'
+          git show origin/artifacts:catalog/level-1-30.json > .generated/level_1_30_catalog.json
+          git show origin/artifacts:foreverdb/quests-1-30.json > .generated/foreverdb_quests_1_30.json
+          cp .generated/foreverdb_quests_1_30.json .generated/previous_foreverdb.json
+      - name: Refresh QuestieDB master from exact upstream SHA
+        if: github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.refresh_sources)
+        shell: bash
+        run: |
+          git ls-remote --heads https://github.com/Questie/QuestieDB.git master > .generated/questie_head.txt
+          sha="$(awk '{print $1}' .generated/questie_head.txt)"
+          if ! [[ "$sha" =~ ^[0-9a-f]{40}$ ]]; then
+            echo "QuestieDB master head cannot be resolved; existing catalog remains safely preserved" >&2
+            exit 1
+          fi
+          echo "QuestieDB revision $sha"
+          python -m foreverroutes.catalog \
+            --revision "$sha" --overlay data/foreverdb_observations.example.json \
+            --guide-ids data/validation/guide_quest_id_candidates.json \
+            --output .generated/level_1_30_catalog.json
+      - name: Refresh ForeverDB incrementally within rate limits
+        if: github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.refresh_sources)
+        shell: bash
+        env:
+          FOREVERDB_API_KEY: ${{ secrets.FOREVERDB_API_KEY }}
+          MAX_NEW_DETAILS: ${{ inputs.max_new_details || '320' }}
+        run: |
+          if [ -z "$FOREVERDB_API_KEY" ]; then
+            echo 'Missing FOREVERDB_API_KEY secret: refusing to substitute fabricated snapshots' >&2
+            exit 1
+          fi
+          python -m foreverroutes.foreverdb_api \
+            --previous .generated/previous_foreverdb.json \
+            --guide-ids data/validation/guide_quest_id_candidates.json \
+            --max-details "$MAX_NEW_DETAILS" \
+            --max-requests 380 --cache-days 0 --min-interval 2.1 \
+            --output .generated/foreverdb_quests_1_30.json
+      - name: Merge field-level facts and run quality gate
+        run: |
+          python -m foreverroutes.unified \
+            --catalog .generated/level_1_30_catalog.json \
+            --foreverdb .generated/foreverdb_quests_1_30.json \
+            --overlay data/foreverdb_observations.example.json \
+            --output .generated/unified-quests-1-30.json \
+            --audit .generated/quest-quality-audit-1-30.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          d=json.loads(Path('.generated/unified-quests-1-30.json').read_text())
+          s=d['stats']
+          assert d['schema']=='foreverroutes.unified_quests.v1'
+          assert s['identified_quests']>=2000, s
+          assert s['npc_hp_classic_references']>=4500, s
+          assert s['foreverdb_quests']>=1000, s
+          print('Quality gate OK:', json.dumps(s, indent=2))
+          PY
+      - name: Publish source snapshots, merged quest database and audit
+        shell: bash
+        run: |
+          bash .github/scripts/publish-artifacts.sh \
+            .generated/level_1_30_catalog.json::catalog/level-1-30.json \
+            .generated/foreverdb_quests_1_30.json::foreverdb/quests-1-30.json \
+            .generated/unified-quests-1-30.json::unified/quests-1-30.json \
+            .generated/quest-quality-audit-1-30.json::unified/quality-audit-1-30.json
