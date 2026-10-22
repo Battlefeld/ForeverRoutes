@@ -36,8 +36,8 @@ class ForeverDBClient:
                  opener=None, clock=None, sleep=None):
         if not key or not key.strip():
             raise ValueError("FOREVERDB_API_KEY is required; do not put secrets in code")
-        if not 1 <= max_requests <= 1000:
-            raise ValueError("max_requests must be 1..1000 (below API's 10,000/day)")
+        if not 1 <= max_requests <= 2000:
+            raise ValueError("max_requests must be 1..2000 (below API's 10,000/day)")
         if min_interval < 1.05:
             raise ValueError("At least 1.05 seconds between requests (60/min limit)")
         if ttl_seconds < 0:
@@ -148,6 +148,13 @@ def _quest_id(row) -> int | None:
     return n if n > 0 else None
 
 
+def valid_existing_detail_id(value, current_ids):
+    try:
+        return int(value) in current_ids
+    except (ValueError, TypeError):
+        return False
+
+
 def candidate_ids(path: Path) -> set[int]:
     doc = json.loads(path.read_text(encoding="utf-8"))
     result = set()
@@ -158,17 +165,25 @@ def candidate_ids(path: Path) -> set[int]:
 
 
 def export(client: ForeverDBClient, *, candidates: set[int] | None,
-           max_details: int = 100, with_changes: bool = True):
-    if max_details < 0 or max_details > 300:
-        raise ValueError("max_details must be 0..300")
+           max_details: int = 100, with_changes: bool = True, previous: dict | None = None):
+    if max_details < 0 or max_details > 1700:
+        raise ValueError("max_details must be 0..1700")
     overview = client.get("meta")
     # According to ForeverDB docs min/maxLevel filters quest *level*, not minimum take level.
     listing = client.pages("quests", label="quests", params={"minLevel": 1, "maxLevel": 30})
     seen_ids = {_quest_id(x) for x in listing}
     requested = sorted((candidates or set()) & seen_ids)
-    # Candidate quests are preferentially detailed; cap protects the daily API budget.
-    selected = requested[:max_details]
-    details = {}
+    previous = previous or {}
+    old_details = previous.get("quest_details", {}) if previous.get("schema") == "foreverroutes.foreverdb_snapshot.v1" else {}
+    # Preserve the old per-ID records; refresh only new/unknown IDs. Repeated
+    # nightly runs eventually cover every API-listed quest rather than fetching
+    # the same first 100 quest details forever.
+    details = {str(qid): value for qid, value in old_details.items()
+               if valid_existing_detail_id(qid, seen_ids) and isinstance(value, dict)
+               and isinstance(value.get("data"), dict)}
+    missing = set(seen_ids) - set(map(int, details))
+    chosen = sorted(missing & set(requested)) + sorted(missing - set(requested))
+    selected = chosen[:max_details]
     for qid in selected:
         details[str(qid)] = client.get(f"quests/{qid}")
     changes = client.pages("changes-seen", label="changes", params={"kind": "quest"}) if with_changes else []
@@ -185,7 +200,10 @@ def export(client: ForeverDBClient, *, candidates: set[int] | None,
             "quest_list_rows": len(listing),
             "quest_details_fetched": len(details),
             "relevant_candidates_found": len(requested),
-            "relevant_candidates_not_detailed": len(requested) - len(details),
+            "relevant_candidates_not_detailed": len(set(requested) - set(map(int, details))),
+            "quest_details_new_this_run": len(selected),
+            "quest_details_pending": len(seen_ids - set(map(int, details))),
+            "detail_completion": len(details) == len(seen_ids),
             "change_events": len(changes),
             "calls_this_run": client.requests,
             "cache_hits": client.cache_hits,
@@ -201,6 +219,7 @@ def main(argv=None):
     ap.add_argument("--output", type=Path, default=Path(".generated/foreverdb_quests_1_30.json"))
     ap.add_argument("--guide-ids", type=Path, default=Path("data/validation/guide_quest_id_candidates.json"))
     ap.add_argument("--max-details", type=int, default=100)
+    ap.add_argument("--previous", type=Path, help="Previous source snapshot; preserve earlier quest details and fetch only missing IDs")
     ap.add_argument("--max-requests", type=int, default=240)
     ap.add_argument("--min-interval", type=float, default=2.1)
     ap.add_argument("--cache-days", type=int, default=7)
@@ -212,7 +231,8 @@ def main(argv=None):
     c = ForeverDBClient(key=secret, cache=args.cache, max_requests=args.max_requests,
                        ttl_seconds=args.cache_days * 86400, min_interval=args.min_interval)
     ids = candidate_ids(args.guide_ids) if args.guide_ids.is_file() else set()
-    result = export(c, candidates=ids, max_details=args.max_details, with_changes=not args.skip_changes)
+    previous = json.loads(args.previous.read_text(encoding="utf-8")) if args.previous and args.previous.exists() else None
+    result = export(c, candidates=ids, max_details=args.max_details, with_changes=not args.skip_changes, previous=previous)
     args.output.parent.mkdir(parents=True, exist_ok=True)
     tmp = args.output.with_suffix(args.output.suffix + ".tmp")
     tmp.write_text(json.dumps(result, ensure_ascii=False, indent=1), encoding="utf-8")
