@@ -44,6 +44,29 @@ class GapTests(unittest.TestCase):
         self.assertEqual(gap.pending_ids([16,254,308,91775],rows,48,now),
                          [308,91775])
 
+    def test_warcraftdb_xp_short_circuits_unneeded_wowhead(self):
+        from unittest.mock import patch
+        calls=[]
+        def fake_get_page(page,url,robots,delay):
+            calls.append(url)
+            return "ok",("Verified Quest - Forever - Warcraft DB",
+                         "Name | Verified Quest\\nLevel | 12\\n350 Experience Points"),{}
+        with patch.object(gap,"get_page",side_effect=fake_get_page):
+            out=gap.attempts_for_quest(None,90001,{},0)
+        self.assertEqual(out["fields"]["xp"],350)
+        self.assertEqual(len(calls),1)
+        self.assertTrue(calls[0].startswith("https://forever.warcraftdb.com"))
+
+    def test_missing_robots_txt_allows_crawling_404_but_not_errors(self):
+        from unittest.mock import patch
+        from urllib.error import HTTPError
+        url="https://forever.warcraftdb.com/data/quest/90001"
+        with patch.object(gap,"urlopen",side_effect=HTTPError(url,404,"not found",{},None)):
+            self.assertTrue(gap.robots_allowed(url,{}))
+        with patch.object(gap,"urlopen",side_effect=HTTPError(url,403,"forbidden",{},None)):
+            with self.assertRaises(PermissionError):
+                gap.robots_allowed(url,{})
+
     def test_831_ids_from_actual_audit_not_file_list(self):
         ids=list(range(1,832))
         a={"schema":"foreverroutes.unified_audit.v1","missing":{"quests_without_xp":ids}}
