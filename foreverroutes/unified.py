@@ -107,7 +107,7 @@ def choose(field, base, incoming, discrepancies, qid):
     return incoming
 
 
-def merge(catalog, snapshot, overlays=None):
+def merge(catalog, snapshot, overlays=None, addon=None):
     if catalog.get("schema") != "foreverroutes.catalog.1":
         raise ValueError("Unknown Questie catalog schema")
     if snapshot.get("schema") != "foreverroutes.foreverdb_snapshot.v1":
@@ -209,6 +209,82 @@ def merge(catalog, snapshot, overlays=None):
                 entry["fields"]["xp_observed_by_player_level"] = value
             elif key in ("quest_level", "required_level"):
                 entry["fields"][key] = choose(key, entry["fields"].get(key), value, conflicts, qid)
+    addon_audit = {"matched_quest_ids": 0, "unmatched_addon_quest_ids": 0,
+                   "filled_objectives": 0, "filled_start_locations": 0,
+                   "filled_turnin_locations": 0, "filled_prerequisites": 0}
+    if addon:
+        if addon.get("schema") != "foreverroutes.addon_crosscheck.v1":
+            raise ValueError("Unknown/addon cross-check schema")
+        addon_url = addon["source"]["repository"]
+        revision = addon["source"]["revision"]
+        for quest_id, incoming in addon.get("quests", {}).items():
+            quest = quests.get(quest_id)
+            if quest is None or quest.get("status") == "unresolved_guide_candidate":
+                addon_audit["unmatched_addon_quest_ids"] += 1
+                # Do not add quests without a verified level 1-30 requirement.
+                continue
+            addon_audit["matched_quest_ids"] += 1
+            addon_info = {"source": "everythingquests_forever", "url": addon_url,
+                          "revision": revision, "quality": "addon_reference"}
+            def addon_fact(value):
+                return fact(value, "everythingquests_forever", "addon_reference", addon_url, revision=revision)
+            quest["addon_crosscheck"] = {
+                "starts": incoming.get("starts", []),
+                "turnins": incoming.get("turnins", []),
+                "target_refs": incoming.get("target_refs", []),
+                "prereq_any": incoming.get("prereq_any", []),
+                "prereq_all": incoming.get("prereq_all", []),
+                "source": addon_info
+            }
+            if incoming.get("name") and "name" not in quest["fields"]:
+                quest["fields"]["name"] = addon_fact(incoming["name"])
+            for label, list_name in (("starts", "starts"), ("ends", "turnins")):
+                if label not in quest["locations"] and incoming.get(list_name):
+                    v = incoming[list_name][0]
+                    quest["locations"][label] = addon_fact({
+                        "uiMapId": v["uiMapId"], "x": v["x"], "y": v["y"]})
+                    addon_audit["filled_start_locations" if label == "starts" else "filled_turnin_locations"] += 1
+            for key, list_name in (("started_by", "starts"), ("finished_by", "turnins")):
+                current = quest["fields"].get(key)
+                if current and any(current["value"].values()):
+                    continue
+                ids = {"npc": [], "object": []}
+                if key == "started_by":
+                    ids["item"] = []
+                for src in incoming.get(list_name, []):
+                    if src.get("entity_kind") in ids and src.get("entity_id"):
+                        id_ = src["entity_id"]
+                        if id_ not in ids[src["entity_kind"]]:
+                            ids[src["entity_kind"]].append(id_)
+                if any(ids.values()):
+                    quest["fields"][key] = addon_fact(ids)
+            for key, extkey in (("prequest_all", "prereq_all"), ("prequest_any", "prereq_any")):
+                if not quest["fields"].get(key) and incoming.get(extkey):
+                    quest["fields"][key] = addon_fact(incoming[extkey])
+                    addon_audit["filled_prerequisites"] += 1
+            if not quest["objectives"]:
+                by_group = {}
+                for target in incoming.get("target_refs", []):
+                    if target.get("kind") not in ("npc", "object"):
+                        continue
+                    group = (target["kind"], target["objective_index"])
+                    by_group.setdefault(group, [])
+                    if target["id"] not in by_group[group]:
+                        by_group[group].append(target["id"])
+                for (kind, index), ids in sorted(by_group.items()):
+                    quest["objectives"].append({
+                        "kind": kind, "ids": ids,
+                        "objective_index": index, "required_count": None,
+                        "count_source": "unresolved", "quantity_quality": "unresolved",
+                        "target_source": "everythingquests_forever",
+                    })
+                    addon_audit["filled_objectives"] += 1
+            # A partial quest name/pin is not sufficient to mark the quest as
+            # simulation-ready. Real giver/finisher IDs are required.
+            st = quest["fields"].get("started_by")
+            fn = quest["fields"].get("finished_by")
+            quest["not_actionable"] = not (
+                st and fn and any(st["value"].values()) and any(fn["value"].values()))
     npcs = catalog.get("npcs", {})
     items = catalog.get("items", {})
     objects = catalog.get("objects", {})
@@ -241,6 +317,7 @@ def merge(catalog, snapshot, overlays=None):
     count["object_reference_records"] = len(objects)
     count["conflicts"] = len(conflicts)
     count["foreverdb_details_fetched"] = len(snapshot.get("quest_details", {}))
+    count.update({"addon_" + key: value for key, value in addon_audit.items()})
     return {
         "schema": SCHEMA,
         "build": build,
@@ -258,6 +335,7 @@ def merge(catalog, snapshot, overlays=None):
         "level_xp_classic": catalog.get("level_xp_classic", {}),
         "changes_seen_unverified": snapshot.get("quest_changes_seen", []),
         "field_conflicts": conflicts,
+        "addon_source": addon.get("source") if addon else None,
         "external_source_registry": [
             {"name": "All The Things Forever", "url": "https://github.com/ATTWoWAddon/AllTheThings", "state": "comparison_pending", "notes": "Quest chains, rewards and requirements; review redistribution terms before bulk import"},
             {"name": "Everything Quests", "url": "https://github.com/wheelbarrel00/EverythingQuests", "state": "comparison_pending", "notes": "Derived Forever quest starts and quest conditions"},
@@ -300,6 +378,7 @@ def main(argv=None):
     p.add_argument("--catalog", type=Path, required=True)
     p.add_argument("--foreverdb", type=Path, required=True)
     p.add_argument("--overlay", type=Path, action="append", default=[])
+    p.add_argument("--addon", type=Path, help="Optional pinned EverythingQuests Forever comparison JSON")
     p.add_argument("--output", type=Path, required=True)
     p.add_argument("--audit", type=Path, required=True)
     args = p.parse_args(argv)
@@ -308,7 +387,8 @@ def main(argv=None):
         overlays["observations"].extend(json.loads(path.read_text(encoding="utf-8")).get("observations", []))
     catalog = json.loads(args.catalog.read_text(encoding="utf-8"))
     snapshot = json.loads(args.foreverdb.read_text(encoding="utf-8"))
-    result = merge(catalog, snapshot, overlays)
+    addon = json.loads(args.addon.read_text(encoding="utf-8")) if args.addon and args.addon.is_file() else None
+    result = merge(catalog, snapshot, overlays, addon=addon)
     report = audit(result)
     if result["stats"]["identified_quests"] < 500:
         raise ValueError("Quest merger detected implausibly small input; refusing destructive update")
