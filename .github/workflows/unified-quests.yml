@@ -60,6 +60,9 @@ jobs:
           if git cat-file -e origin/artifacts:sources/warcraftdb-quest-gaps.json 2>/dev/null; then
             git show origin/artifacts:sources/warcraftdb-quest-gaps.json > .generated/warcraftdb-quest-gaps.json
           fi
+          if git cat-file -e origin/artifacts:sources/warcraftdb-verified-xp-20261023.json 2>/dev/null; then
+            git show origin/artifacts:sources/warcraftdb-verified-xp-20261023.json > .generated/warcraftdb-verified-xp.json
+          fi
       - name: Cross-check published EverythingQuests Forever data
         shell: bash
         run: |
@@ -134,6 +137,18 @@ jobs:
               --audit-output .generated/quest-quality-audit-web.json
             mv .generated/unified-quests-web.json .generated/unified-quests-1-30.json
             mv .generated/quest-quality-audit-web.json .generated/quest-quality-audit-1-30.json
+          fi
+      - name: Apply individually verified WarcraftDB Forever quest XP references
+        shell: bash
+        run: |
+          if [ -s .generated/warcraftdb-verified-xp.json ]; then
+            python -m foreverroutes.warcraftdb_gaps apply \
+              --base .generated/unified-quests-1-30.json \
+              --overlay .generated/warcraftdb-verified-xp.json \
+              --output .generated/with-verified-xp.json \
+              --audit-output .generated/with-verified-xp-audit.json
+            mv .generated/with-verified-xp.json .generated/unified-quests-1-30.json
+            mv .generated/with-verified-xp-audit.json .generated/quest-quality-audit-1-30.json
           fi
       - name: Compare quest coverage across saved guide baselines
         run: |
