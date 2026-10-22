@@ -213,7 +213,8 @@ def collect(args):
     # Skip permanent 404s only for the selected number of days, not forever.
     def retry_due(qid):
         rec=rows.get(str(qid),{})
-        if not rec or "xp" in rec.get("fields",{}):return False
+        if not rec:return True  # Never-scanned quest IDs must be tried.
+        if "xp" in rec.get("fields",{}):return False
         checked=rec.get("checked")
         if not checked:return True
         try:
