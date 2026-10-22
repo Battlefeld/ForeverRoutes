@@ -1,0 +1,42 @@
+{
+  "description": "Provisional quest XP references reported by the user from Wowhead Classic and Wowhead Forever on 2026-10-22. 0 is an explicitly verified/reported XP reward, not missing. Sources remain distinct from in-game Forever observations.",
+  "schema": "foreverroutes.quest_xp_overrides.v1",
+  "observations": [
+    {
+      "quest_id": 16,
+      "fields": {
+        "xp": {
+          "value": 0,
+          "source": "wowhead_classic",
+          "url": "https://www.wowhead.com/classic/quest=16/give-gerard-a-drink",
+          "quality": "classic_reference",
+          "evidence": "user_reported; corroborated by classicdb.com and other classic quest databases"
+        }
+      }
+    },
+    {
+      "quest_id": 254,
+      "fields": {
+        "xp": {
+          "value": 0,
+          "source": "wowhead_classic",
+          "url": "https://www.wowhead.com/classic/quest=254/digging-through-the-dirt",
+          "quality": "classic_reference",
+          "evidence": "user_reported; independent Wowhead Classic comments say no XP"
+        }
+      }
+    },
+    {
+      "quest_id": 91758,
+      "fields": {
+        "xp": {
+          "value": 40,
+          "source": "wowhead_forever",
+          "url": "https://www.wowhead.com/forever/quest=91758",
+          "quality": "forever_reference",
+          "evidence": "user_reported_from_wowhead_forever; numerical 40 XP not independently confirmed in readable public page"
+        }
+      }
+    }
+  ]
+}
