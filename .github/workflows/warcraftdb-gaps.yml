@@ -9,13 +9,6 @@ on:
         description: 'New quest IDs per run (default 75)'
         type: number
         default: 75
-  push:
-    branches: [feat/warcraftdb-831-xp-gapfill-20261023, main]
-    paths:
-      - 'foreverroutes/warcraftdb_gaps.py'
-      - 'tests/test_warcraftdb_gaps.py'
-      - 'foreverroutes/gap_reports.py'
-      - '.github/workflows/warcraftdb-gaps.yml'
 
 permissions:
   contents: write
