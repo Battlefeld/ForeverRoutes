@@ -1,0 +1,58 @@
+name: Import ForeverDB API (manual)
+on:
+  workflow_dispatch:
+    inputs:
+      max_details:
+        description: 'Max quest details to fetch (0..300)'
+        default: '100'
+        required: true
+        type: string
+      cache_days:
+        description: 'How long cached API results remain valid (days)'
+        default: '7'
+        required: true
+        type: string
+permissions:
+  contents: read
+jobs:
+  import-foreverdb:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      FOREVERDB_API_KEY: ${{ secrets.FOREVERDB_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Assert secret is configured
+        shell: bash
+        run: |
+          if [ -z "$FOREVERDB_API_KEY" ]; then
+            echo 'Configure repository Actions secret FOREVERDB_API_KEY first' >&2
+            exit 1
+          fi
+      - name: Test importer
+        run: python -m unittest discover -s tests -p 'test_foreverdb_api.py' -v
+      - uses: actions/cache@v4
+        with:
+          path: .cache/foreverdb-api
+          key: foreverdb-api-${{ runner.os }}-${{ github.run_id }}
+          restore-keys: |
+            foreverdb-api-${{ runner.os }}-
+      - name: Fetch bounded Quest API snapshot
+        shell: bash
+        env:
+          MAX_DETAILS: ${{ inputs.max_details }}
+          CACHE_DAYS: ${{ inputs.cache_days }}
+        run: |
+          python -m foreverroutes.foreverdb_api \
+            --guide-ids data/validation/guide_quest_id_candidates.json \
+            --max-details "$MAX_DETAILS" --cache-days "$CACHE_DAYS" \
+            --max-requests 240 --min-interval 2.1 \
+            --output .generated/foreverdb_quests_1_30.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: foreverdb-quests-1-30
+          path: .generated/foreverdb_quests_1_30.json
+          retention-days: 7
