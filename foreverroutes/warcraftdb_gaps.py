@@ -15,6 +15,8 @@ import time
 from pathlib import Path
 from urllib.parse import urlparse
 from urllib.request import Request, urlopen
+from urllib.error import HTTPError
+from collections import Counter
 from urllib.robotparser import RobotFileParser
 
 SCHEMA = "foreverroutes.warcraftdb_gaps.v1"
@@ -137,6 +139,13 @@ def robots_allowed(url,cache):
                 data=resp.read(500000).decode("utf-8","replace")
             parser.parse(data.splitlines())
             cache[host]=parser
+        except HTTPError as exc:
+            if exc.code in (404, 410):
+                # RFC 9309: an absent robots file has no crawl restrictions.
+                parser.parse([])
+                cache[host]=parser
+            else:
+                cache[host]=str(exc)
         except Exception as exc:
             cache[host]=str(exc)
     value=cache[host]
@@ -147,7 +156,7 @@ def robots_allowed(url,cache):
 def get_page(page,url,robots,delay):
     if not robots_allowed(url,robots):
         return "disallowed",None,{}
-    response=page.goto(url,wait_until="domcontentloaded",timeout=35000)
+    response=page.goto(url,wait_until="domcontentloaded",timeout=20000)
     status=response.status if response else 0
     if status==404:return "not_found",None,{"http_status":status}
     if status in (403,429):return "blocked",None,{"http_status":status}
@@ -156,7 +165,7 @@ def get_page(page,url,robots,delay):
         page.wait_for_function("""() => {
           const t = document.body.innerText;
           return t.includes('Rewards') && (t.includes('Experience Points') || t.includes('Level'));
-        }""",timeout=12000)
+        }""",timeout=7500)
     except Exception:pass
     title=page.title()
     # The body is inspected because the page's semantic <main> sometimes
@@ -175,7 +184,7 @@ def attempts_for_quest(page,qid,robots,delay):
     for ix,(source,template,quality) in enumerate(SOURCES):
         # Only ask Wowhead if WarcraftDB did not supply every previously
         # missing scalar value. Never needlessly scrape Wowhead.
-        if ix>=2 and "xp" in combined and "name" in combined and "level" in combined and "min_level" in combined:
+        if ix>=2 and "xp" in combined:
             break
         url=template.format(id=qid)
         obs={"source":source,"url":url,"quality":quality,
@@ -195,7 +204,7 @@ def attempts_for_quest(page,qid,robots,delay):
             obs["status"]="error"
             obs["error"]=str(exc)[:180]
         observations.append(obs)
-        if ix==0 and "xp" in combined and "level" in combined and "min_level" in combined:
+        if "xp" in combined:
             break
     return {"id":qid,"fields":combined,"field_sources":provenance,"attempts":observations,
             "checked":dt.datetime.now(dt.timezone.utc).isoformat()}
@@ -248,8 +257,14 @@ def collect(args):
             "quests":{str(i):rows[str(i)] for i in sorted(map(int,rows))}}
     write(args.output,values)
     covered=sum("xp" in e.get("fields",{}) for e in values["quests"].values())
-    print(json.dumps({"target":len(target_ids),"scanned_this_run":len(batch),
-                      "xp_recovered":covered,"remaining":len(target_ids)-covered}))
+    checked=[rows[str(qid)] for qid in batch]
+    statuses=Counter(a.get("status","unknown") for rec in checked for a in rec.get("attempts",[]))
+    newly_found=sum("xp" in rec.get("fields",{}) for rec in checked)
+    outcome={"target":len(target_ids),"scanned_this_run":len(batch),
+             "xp_recovered":covered,"xp_found_this_run":newly_found,
+             "remaining":len(target_ids)-covered,"source_statuses":dict(statuses)}
+    if args.status_output:write(args.status_output,outcome)
+    print(json.dumps(outcome),flush=True)
 
 def apply(base,document):
     if document.get("schema")!=SCHEMA:raise ValueError("Wrong gap overlay schema")
@@ -318,6 +333,7 @@ def main():
     c.add_argument("--limit",type=int,default=50)
     c.add_argument("--delay",type=float,default=1.5)
     c.add_argument("--retry-hours",type=int,default=24)
+    c.add_argument("--status-output",help="Save structured progress diagnostics for workflow checkpoints")
     a=sub.add_parser("apply")
     a.add_argument("--base",required=True)
     a.add_argument("--overlay",required=True)
