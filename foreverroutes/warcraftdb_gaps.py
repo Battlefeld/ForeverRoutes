@@ -231,9 +231,12 @@ def collect(args):
                 rows[str(qid)]=attempts_for_quest(page,qid,robots,args.delay)
                 if j%10==0:print("WarcraftDB checked",j,"/",len(batch),flush=True)
             browser.close()
+    # Current quality audits shrink as XP gaps are recovered. Keep all earlier
+    # source evidence; dropping recovered rows would undo fixes on the next rebuild.
+    original_size=max(int(previous.get("target_count",0)),len(target_ids),len(rows))
     values={"schema":SCHEMA,"generated":dt.datetime.now(dt.timezone.utc).isoformat(),
-            "source_audit":str(args.audit),"target_count":len(target_ids),
-            "quests":{str(i):rows[str(i)] for i in sorted(map(int,rows)) if i in target_ids}}
+            "source_audit":str(args.audit),"target_count":original_size,
+            "quests":{str(i):rows[str(i)] for i in sorted(map(int,rows))}}
     write(args.output,values)
     covered=sum("xp" in e.get("fields",{}) for e in values["quests"].values())
     print(json.dumps({"target":len(target_ids),"scanned_this_run":len(batch),
