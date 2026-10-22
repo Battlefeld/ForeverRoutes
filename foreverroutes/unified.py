@@ -107,7 +107,51 @@ def choose(field, base, incoming, discrepancies, qid):
     return incoming
 
 
-def merge(catalog, snapshot, overlays=None, addon=None):
+def apply_quest_xp_references(quests, document, conflicts):
+    """Import specifically evidenced Wowhead XP, including zero-XP quests.
+
+    Classic XP is a working reference, never falsely promoted to an observed
+    Forever-server reward. Nothing from the XP override file is ever executed.
+    """
+    if not document:
+        return
+    if document.get("schema") != "foreverroutes.quest_xp_overrides.v1":
+        raise ValueError("Unrecognized Wowhead XP reference schema")
+    origins = {
+        "wowhead_classic": ("https://www.wowhead.com/classic/quest=", "classic_reference"),
+        "wowhead_forever": ("https://www.wowhead.com/forever/quest=", "forever_reference"),
+    }
+    seen = set()
+    for observation in document.get("observations", []):
+        qid = valid_id(observation.get("quest_id"))
+        if qid is None or qid in seen:
+            raise ValueError("Invalid or duplicate quest ID in XP reference overlay")
+        seen.add(qid)
+        entry = quests.get(str(qid))
+        if entry is None or entry.get("status") == "unresolved_guide_candidate":
+            raise ValueError(f"Cannot set XP on a quest not resolved by any source: {qid}")
+        raw = observation.get("fields", {}).get("xp")
+        if not isinstance(raw, dict):
+            raise ValueError(f"Quest {qid} has no XP field")
+        xp, source, url = raw.get("value"), raw.get("source"), raw.get("url")
+        if type(xp) is not int or not 0 <= xp <= 1_000_000 or source not in origins:
+            raise ValueError(f"Invalid XP/source for quest {qid}")
+        required_url, quality = origins[source]
+        if not isinstance(url, str) or not url.startswith(required_url) or not url[len(required_url):].startswith(str(qid)):
+            raise ValueError(f"Invalid Wowhead reference URL for quest {qid}")
+        if raw.get("quality") != quality:
+            raise ValueError(f"Quest {qid} has inconsistent source quality")
+        incoming = fact(xp, source, quality, url, evidence=raw.get("evidence", "user_reported"))
+        previous = entry["fields"].get("xp")
+        if previous is not None and previous["value"] != xp:
+            conflicts.append({"quest_id": qid, "field": "xp", "previous": previous,
+                              "candidate": incoming, "selected": "wowhead_reference"})
+        # A retained Forever in-game observation at a particular player level
+        # lives in xp_observed_by_player_level and is never deleted.
+        entry["fields"]["xp"] = incoming
+
+
+def merge(catalog, snapshot, overlays=None, addon=None, xp_reference=None):
     if catalog.get("schema") != "foreverroutes.catalog.1":
         raise ValueError("Unknown Questie catalog schema")
     if snapshot.get("schema") != "foreverroutes.foreverdb_snapshot.v1":
@@ -302,6 +346,7 @@ def merge(catalog, snapshot, overlays=None, addon=None):
             fn = quest["fields"].get("finished_by")
             quest["not_actionable"] = not (
                 st and fn and any(st["value"].values()) and any(fn["value"].values()))
+    apply_quest_xp_references(quests, xp_reference, conflicts)
     npcs = catalog.get("npcs", {})
     items = catalog.get("items", {})
     objects = catalog.get("objects", {})
@@ -334,6 +379,12 @@ def merge(catalog, snapshot, overlays=None, addon=None):
     count["npc_hp_classic_references"] = sum(n.get("hp_min") is not None for n in npcs.values())
     count["item_reference_records"] = len(items)
     count["object_reference_records"] = len(objects)
+    count["wowhead_xp_reference_quests"] = sum(
+        q.get("fields", {}).get("xp", {}).get("source") in ("wowhead_classic", "wowhead_forever")
+        for q in quests.values() if q.get("fields", {}).get("xp") is not None)
+    count["zero_xp_quests"] = sum(
+        q.get("fields", {}).get("xp", {}).get("value") == 0
+        for q in quests.values() if q.get("fields", {}).get("xp") is not None)
     count["conflicts"] = len(conflicts)
     count["foreverdb_details_fetched"] = len(snapshot.get("quest_details", {}))
     count.update({"addon_" + key: value for key, value in addon_audit.items()})
@@ -398,6 +449,7 @@ def main(argv=None):
     p.add_argument("--foreverdb", type=Path, required=True)
     p.add_argument("--overlay", type=Path, action="append", default=[])
     p.add_argument("--addon", type=Path, help="Optional pinned EverythingQuests Forever comparison JSON")
+    p.add_argument("--xp-reference", type=Path, help="Source-tagged Wowhead Classic/Forever quest XP (zero is valid)")
     p.add_argument("--output", type=Path, required=True)
     p.add_argument("--audit", type=Path, required=True)
     args = p.parse_args(argv)
@@ -407,7 +459,8 @@ def main(argv=None):
     catalog = json.loads(args.catalog.read_text(encoding="utf-8"))
     snapshot = json.loads(args.foreverdb.read_text(encoding="utf-8"))
     addon = json.loads(args.addon.read_text(encoding="utf-8")) if args.addon and args.addon.is_file() else None
-    result = merge(catalog, snapshot, overlays, addon=addon)
+    xp_reference = json.loads(args.xp_reference.read_text(encoding="utf-8")) if args.xp_reference else None
+    result = merge(catalog, snapshot, overlays, addon=addon, xp_reference=xp_reference)
     report = audit(result)
     if result["stats"]["identified_quests"] < 500:
         raise ValueError("Quest merger detected implausibly small input; refusing destructive update")
