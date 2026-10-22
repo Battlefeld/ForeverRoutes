@@ -18,6 +18,7 @@ on:
       - '.github/workflows/unified-quests.yml'
       - 'foreverroutes/unified.py'
       - 'tests/test_unified.py'
+      - 'data/quest_xp_wowhead_reference.json'
       - 'foreverroutes/addon_sources.py'
       - 'tests/test_addon_sources.py'
       - 'foreverroutes/route_coverage.py'
@@ -101,6 +102,7 @@ jobs:
             --catalog .generated/level_1_30_catalog.json \
             --foreverdb .generated/foreverdb_quests_1_30.json \
             --overlay data/foreverdb_observations.example.json \
+            --xp-reference data/quest_xp_wowhead_reference.json \
             --addon .generated/everythingquests-forever-crosscheck.json \
             --output .generated/unified-quests-1-30.json \
             --audit .generated/quest-quality-audit-1-30.json
