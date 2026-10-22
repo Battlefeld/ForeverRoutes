@@ -31,6 +31,19 @@ Requires Level | 20
 """
 
 class GapTests(unittest.TestCase):
+    def test_pending_unseen_quest_ids_and_zero_xp(self):
+        import datetime as dt
+        now=dt.datetime(2026,10,23, tzinfo=dt.timezone.utc)
+        scanned=now.isoformat()
+        rows={
+            "16":{"fields":{"xp":0},"checked":scanned},
+            "254":{"fields":{},"checked":scanned},
+            "91775":{"fields":{},"checked":(now-dt.timedelta(hours=49)).isoformat()}
+        }
+        # 308 is new: never-scanned IDs MUST be processed immediately.
+        self.assertEqual(gap.pending_ids([16,254,308,91775],rows,48,now),
+                         [308,91775])
+
     def test_831_ids_from_actual_audit_not_file_list(self):
         ids=list(range(1,832))
         a={"schema":"foreverroutes.unified_audit.v1","missing":{"quests_without_xp":ids}}
