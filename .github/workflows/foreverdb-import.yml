@@ -13,7 +13,10 @@ on:
         required: true
         type: string
 permissions:
-  contents: read
+  contents: write
+concurrency:
+  group: foreverdb-import
+  cancel-in-progress: false
 jobs:
   import-foreverdb:
     runs-on: ubuntu-latest
@@ -51,8 +54,8 @@ jobs:
             --max-details "$MAX_DETAILS" --cache-days "$CACHE_DAYS" \
             --max-requests 240 --min-interval 2.1 \
             --output .generated/foreverdb_quests_1_30.json
-      - uses: actions/upload-artifact@v4
-        with:
-          name: foreverdb-quests-1-30
-          path: .generated/foreverdb_quests_1_30.json
-          retention-days: 7
+      - name: Save ForeverDB quest snapshot to artifacts branch
+        shell: bash
+        run: |
+          bash .github/scripts/publish-artifacts.sh \
+            .generated/foreverdb_quests_1_30.json::foreverdb/quests-1-30.json
