@@ -62,10 +62,25 @@ class ForeverDBTests(unittest.TestCase):
     def test_full_export(self):
         result = export(self.client, candidates={42, 99}, max_details=2)
         self.assertEqual(result["audit"]["quest_list_rows"], 3)
-        self.assertEqual(result["audit"]["quest_details_fetched"], 1)
+        self.assertEqual(result["audit"]["quest_details_fetched"], 2)
+        self.assertEqual(result["audit"]["quest_details_new_this_run"], 2)
         self.assertEqual(result["audit"]["relevant_candidates_found"], 1)
         self.assertEqual(result["audit"]["change_events"], 1)
         self.assertEqual(result["source"]["url"], "https://foreverdb.net")
+
+    def test_incremental_resume_without_refetching_known_details(self):
+        first=export(self.client, candidates={42,44}, max_details=1, with_changes=False)
+        self.assertEqual(set(first["quest_details"]), {"42"})
+        before=self.client.requests
+        second=export(self.client, candidates={42,44}, max_details=1,
+                      with_changes=False, previous=first)
+        self.assertEqual(set(second["quest_details"]), {"42","44"})
+        self.assertEqual(second["audit"]["quest_details_new_this_run"], 1)
+        self.assertEqual(self.client.requests, before+1)
+        third=export(self.client, candidates={42,44}, max_details=1,
+                     with_changes=False, previous=second)
+        self.assertEqual(set(third["quest_details"]), {"42","43","44"})
+        self.assertTrue(third["audit"]["detail_completion"])
 
     def test_budget_guard(self):
         self.client.max_requests = 1
