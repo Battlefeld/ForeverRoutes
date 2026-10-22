@@ -8,7 +8,7 @@ on:
       batch_size:
         description: 'New quest IDs per run (default 75)'
         type: number
-        default: 75
+        default: 25
 
 permissions:
   contents: write
@@ -41,6 +41,9 @@ jobs:
           if git cat-file -e origin/artifacts:sources/warcraftdb-quest-gaps.json 2>/dev/null; then
             git show origin/artifacts:sources/warcraftdb-quest-gaps.json > .generated/previous-web.json
           fi
+          if git cat-file -e origin/artifacts:sources/warcraftdb-verified-xp-20261023.json 2>/dev/null; then
+            git show origin/artifacts:sources/warcraftdb-verified-xp-20261023.json > .generated/verified-web.json
+          fi
           python - <<'PY'
           import json
           base=json.load(open('.generated/base.json'))
@@ -53,51 +56,53 @@ jobs:
         run: |
           python -m pip install 'playwright>=1.49,<2'
           python -m playwright install --with-deps chromium
-      - name: Check WarcraftDB Forever and Classic, then Wowhead only for gaps
+      - name: Import XP gaps in resumable five-quest checkpoints, Git branches only
         shell: bash
         env:
-          BATCH_SIZE: ${{ inputs.batch_size || '75' }}
+          BATCH_SIZE: ${{ inputs.batch_size || '25' }}
         run: |
-          python -m foreverroutes.warcraftdb_gaps collect \
-            --audit .generated/audit.json \
-            --previous .generated/previous-web.json \
-            --output .generated/warcraftdb-quest-gaps.json \
-            --limit "$BATCH_SIZE" --delay 1.5 --retry-hours 48
-      - name: Apply sourced facts without replacing previous Forever observations
-        shell: bash
-        run: |
-          python -m foreverroutes.warcraftdb_gaps apply \
-            --base .generated/base.json \
-            --overlay .generated/warcraftdb-quest-gaps.json \
-            --output .generated/merged-quests.json \
-            --audit-output .generated/merged-audit.json
-          python - <<'PY'
-          import json
-          before=json.load(open('.generated/base.json'))
-          after=json.load(open('.generated/merged-quests.json'))
-          assert set(before['quests'])==set(after['quests'])
-          assert after['stats']['quests_missing_xp']<=before['stats']['quests_missing_xp']
-          for ident,q in before['quests'].items():
-              old=q.get('fields',{}).get('xp')
-              if old is not None:
-                  assert after['quests'][ident]['fields']['xp']==old,ident
-          print('Validated merge:',before['stats']['quests_missing_xp'],'->',
-                after['stats']['quests_missing_xp'],'missing XP')
-          PY
-      - name: Refresh the exact missing XP ID CSV and text files
-        run: |
-          python -m foreverroutes.gap_reports \
-            --database .generated/merged-quests.json \
-            --audit .generated/merged-audit.json \
-            --web .generated/warcraftdb-quest-gaps.json \
-            --csv .generated/missing-xp.csv \
-            --text .generated/missing-xp.txt
-      - name: Commit source evidence, refreshed unified database, and audit to artifacts branch
-        shell: bash
-        run: |
-          bash .github/scripts/publish-artifacts.sh \
-            .generated/warcraftdb-quest-gaps.json::sources/warcraftdb-quest-gaps.json \
-            .generated/merged-quests.json::unified/quests-1-30.json \
-            .generated/merged-audit.json::unified/quality-audit-1-30.json \
-            .generated/missing-xp.csv::unified/missing-xp-quest-ids-1-30.csv \
-            .generated/missing-xp.txt::unified/missing-xp-quest-ids-1-30.txt
+          set -euo pipefail
+          cp .generated/base.json .generated/current-base.json
+          remaining="$BATCH_SIZE"
+          while [ "$remaining" -gt 0 ]; do
+            chunk="$remaining"
+            if [ "$chunk" -gt 5 ]; then chunk=5; fi
+            python -m foreverroutes.warcraftdb_gaps collect \
+              --audit .generated/audit.json \
+              --previous .generated/previous-web.json \
+              --output .generated/next-web.json \
+              --status-output .generated/import-status.json \
+              --limit "$chunk" --delay 1.5 --retry-hours 48
+            cp .generated/next-web.json .generated/previous-web.json
+            scanned="$(python -c 'import json;print(json.load(open(".generated/import-status.json"))["scanned_this_run"])')"
+            if [ "$scanned" -eq 0 ]; then echo 'No more unprocessed quest IDs'; break; fi
+            python -m foreverroutes.warcraftdb_gaps apply \
+              --base .generated/current-base.json \
+              --overlay .generated/previous-web.json \
+              --output .generated/next-base.json \
+              --audit-output .generated/next-audit.json
+            if [ -s .generated/verified-web.json ]; then
+              python -m foreverroutes.warcraftdb_gaps apply \
+                --base .generated/next-base.json \
+                --overlay .generated/verified-web.json \
+                --output .generated/verified-base.json \
+                --audit-output .generated/verified-audit.json
+              mv .generated/verified-base.json .generated/next-base.json
+              mv .generated/verified-audit.json .generated/next-audit.json
+            fi
+            mv .generated/next-base.json .generated/current-base.json
+            python -m foreverroutes.gap_reports \
+              --database .generated/current-base.json \
+              --audit .generated/next-audit.json \
+              --web .generated/previous-web.json \
+              --csv .generated/missing-xp.csv \
+              --text .generated/missing-xp.txt
+            bash .github/scripts/publish-artifacts.sh \
+              .generated/previous-web.json::sources/warcraftdb-quest-gaps.json \
+              .generated/current-base.json::unified/quests-1-30.json \
+              .generated/next-audit.json::unified/quality-audit-1-30.json \
+              .generated/missing-xp.csv::unified/missing-xp-quest-ids-1-30.csv \
+              .generated/missing-xp.txt::unified/missing-xp-quest-ids-1-30.txt \
+              .generated/import-status.json::sources/warcraftdb-import-status.json
+            remaining=$((remaining-scanned))
+          done
