@@ -1,0 +1,99 @@
+name: Fill 831 WarcraftDB quest XP gaps
+
+on:
+  schedule:
+    - cron: '19 3,9,15,21 * * *'
+  workflow_dispatch:
+    inputs:
+      batch_size:
+        description: 'New quest IDs per run (default 75)'
+        type: number
+        default: 75
+  push:
+    branches: [feat/warcraftdb-831-xp-gapfill-20261023, main]
+    paths:
+      - 'foreverroutes/warcraftdb_gaps.py'
+      - 'tests/test_warcraftdb_gaps.py'
+      - '.github/workflows/warcraftdb-gaps.yml'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: foreverroutes-warcraftdb-gapfill
+  cancel-in-progress: false
+
+jobs:
+  fill-gaps:
+    runs-on: ubuntu-latest
+    timeout-minutes: 100
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+          persist-credentials: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Validate all quest data models offline
+        run: python -m unittest discover -s tests -v
+      - name: Prepare verified current database from artifacts branch
+        shell: bash
+        run: |
+          mkdir -p .generated
+          git fetch -q --no-tags origin '+refs/heads/artifacts:refs/remotes/origin/artifacts'
+          git show origin/artifacts:unified/quests-1-30.json > .generated/base.json
+          git show origin/artifacts:unified/quality-audit-1-30.json > .generated/audit.json
+          if git cat-file -e origin/artifacts:sources/warcraftdb-quest-gaps.json 2>/dev/null; then
+            git show origin/artifacts:sources/warcraftdb-quest-gaps.json > .generated/previous-web.json
+          fi
+          python - <<'PY'
+          import json
+          base=json.load(open('.generated/base.json'))
+          audit=json.load(open('.generated/audit.json'))
+          ids=audit['missing']['quests_without_xp']
+          assert len(ids) <= base['stats']['identified_quests']
+          print('Verified source quality audit with',len(ids),'outstanding XP quest IDs')
+          PY
+      - name: Install headless browser for the JavaScript-powered sources
+        run: |
+          python -m pip install 'playwright>=1.49,<2'
+          python -m playwright install --with-deps chromium
+      - name: Check WarcraftDB Forever and Classic, then Wowhead only for gaps
+        shell: bash
+        env:
+          BATCH_SIZE: ${{ inputs.batch_size || '75' }}
+        run: |
+          python -m foreverroutes.warcraftdb_gaps collect \
+            --audit .generated/audit.json \
+            --previous .generated/previous-web.json \
+            --output .generated/warcraftdb-quest-gaps.json \
+            --limit "$BATCH_SIZE" --delay 1.5 --retry-hours 48
+      - name: Apply sourced facts without replacing previous Forever observations
+        shell: bash
+        run: |
+          python -m foreverroutes.warcraftdb_gaps apply \
+            --base .generated/base.json \
+            --overlay .generated/warcraftdb-quest-gaps.json \
+            --output .generated/merged-quests.json \
+            --audit-output .generated/merged-audit.json
+          python - <<'PY'
+          import json
+          before=json.load(open('.generated/base.json'))
+          after=json.load(open('.generated/merged-quests.json'))
+          assert set(before['quests'])==set(after['quests'])
+          assert after['stats']['quests_missing_xp']<=before['stats']['quests_missing_xp']
+          for ident,q in before['quests'].items():
+              old=q.get('fields',{}).get('xp')
+              if old is not None:
+                  assert after['quests'][ident]['fields']['xp']==old,ident
+          print('Validated merge:',before['stats']['quests_missing_xp'],'->',
+                after['stats']['quests_missing_xp'],'missing XP')
+          PY
+      - name: Commit source evidence, refreshed unified database, and audit to artifacts branch
+        shell: bash
+        run: |
+          bash .github/scripts/publish-artifacts.sh \
+            .generated/warcraftdb-quest-gaps.json::sources/warcraftdb-quest-gaps.json \
+            .generated/merged-quests.json::unified/quests-1-30.json \
+            .generated/merged-audit.json::unified/quality-audit-1-30.json
