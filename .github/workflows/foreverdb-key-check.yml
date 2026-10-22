@@ -1,0 +1,47 @@
+name: Verify ForeverDB API access
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  foreverdb-key-check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Check ForeverDB API key without exposing it
+        env:
+          FOREVERDB_API_KEY: ${{ secrets.FOREVERDB_API_KEY }}
+        run: |
+          python - <<'PY'
+          import json
+          import os
+          from urllib.request import Request, urlopen
+          from urllib.error import HTTPError, URLError
+
+          key = os.environ.get("FOREVERDB_API_KEY", "")
+          if not key:
+              raise SystemExit("Repository secret FOREVERDB_API_KEY is missing.")
+          request = Request(
+              "https://foreverdb.net/api/v1/meta",
+              headers={
+                  "X-API-Key": key,
+                  "Accept": "application/json",
+                  "User-Agent": "ForeverRoutes/ForeverDB-connection-test",
+              },
+          )
+          try:
+              with urlopen(request, timeout=25) as reply:
+                  result = json.load(reply)
+          except HTTPError as error:
+              raise SystemExit(
+                  f"ForeverDB returned HTTP {error.code}; check API key approval."
+              ) from None
+          except (URLError, TimeoutError):
+              raise SystemExit("ForeverDB connection failed; retry later.") from None
+          if not isinstance(result, dict) or "data" not in result:
+              raise SystemExit("Unexpected ForeverDB API response format.")
+          print("ForeverDB API connection verified. Secret was not printed.")
+          PY
