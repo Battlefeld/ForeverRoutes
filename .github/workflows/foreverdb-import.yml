@@ -41,12 +41,6 @@ jobs:
           fi
       - name: Test importer
         run: python -m unittest discover -s tests -p 'test_foreverdb_api.py' -v
-      - uses: actions/cache@v4
-        with:
-          path: .cache/foreverdb-api
-          key: foreverdb-api-${{ runner.os }}-${{ github.run_id }}
-          restore-keys: |
-            foreverdb-api-${{ runner.os }}-
       - name: Fetch bounded Quest API snapshot
         shell: bash
         env:
