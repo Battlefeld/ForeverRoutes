@@ -1,8 +1,8 @@
 name: Fill 831 WarcraftDB quest XP gaps
 
 on:
-  schedule:
-    - cron: '19 3,9,15,21 * * *'
+  # Temporarily manual/push-only until live browser extraction is verified.
+  # Avoid repeated runs and failure emails from remote page changes.
   workflow_dispatch:
     inputs:
       batch_size:
