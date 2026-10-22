@@ -209,7 +209,7 @@ def merge(catalog, snapshot, overlays=None, addon=None):
                 entry["fields"]["xp_observed_by_player_level"] = value
             elif key in ("quest_level", "required_level"):
                 entry["fields"][key] = choose(key, entry["fields"].get(key), value, conflicts, qid)
-    addon_audit = {"matched_quest_ids": 0, "unmatched_addon_quest_ids": 0,
+    addon_audit = {"matched_quest_ids": 0, "added_quest_ids": 0, "unmatched_addon_quest_ids": 0,
                    "filled_objectives": 0, "filled_start_locations": 0,
                    "filled_turnin_locations": 0, "filled_prerequisites": 0}
     if addon:
@@ -219,15 +219,32 @@ def merge(catalog, snapshot, overlays=None, addon=None):
         revision = addon["source"]["revision"]
         for quest_id, incoming in addon.get("quests", {}).items():
             quest = quests.get(quest_id)
-            if quest is None or quest.get("status") == "unresolved_guide_candidate":
-                addon_audit["unmatched_addon_quest_ids"] += 1
-                # Do not add quests without a verified level 1-30 requirement.
-                continue
-            addon_audit["matched_quest_ids"] += 1
-            addon_info = {"source": "everythingquests_forever", "url": addon_url,
-                          "revision": revision, "quality": "addon_reference"}
             def addon_fact(value):
                 return fact(value, "everythingquests_forever", "addon_reference", addon_url, revision=revision)
+            if quest is None or quest.get("status") == "unresolved_guide_candidate":
+                minimum = incoming.get("required_level")
+                level = incoming.get("quest_level")
+                if (type(minimum) is not int or not 1 <= minimum <= 30
+                        or not isinstance(incoming.get("name"), str)
+                        or not incoming["name"].strip()):
+                    addon_audit["unmatched_addon_quest_ids"] += 1
+                    continue
+                old_guides = quest.get("guide_sources", []) if quest else []
+                quest = {
+                    "id": int(quest_id), "status": "addon_reference_only",
+                    "not_actionable": True, "source_presence": ["everythingquests"],
+                    "source_guides": old_guides,
+                    "fields": {"name": addon_fact(incoming["name"]),
+                               "required_level": addon_fact(minimum),
+                               "quest_level": addon_fact(level)},
+                    "objectives": [], "locations": {},
+                }
+                quests[quest_id] = quest
+                addon_audit["added_quest_ids"] += 1
+            else:
+                addon_audit["matched_quest_ids"] += 1
+            addon_info = {"source": "everythingquests_forever", "url": addon_url,
+                          "revision": revision, "quality": "addon_reference"}
             quest["addon_crosscheck"] = {
                 "starts": incoming.get("starts", []),
                 "turnins": incoming.get("turnins", []),
@@ -295,6 +312,8 @@ def merge(catalog, snapshot, overlays=None, addon=None):
             count["unresolved_guide_candidates"] += 1
             continue
         count["identified_quests"] += 1
+        if q["status"] == "addon_reference_only":
+            count["addon_only_quests"] += 1
         if q["status"] == "forever_listed":
             count["foreverdb_quests"] += 1
         if "questiedb" in q.get("source_presence", []):
