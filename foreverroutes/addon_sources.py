@@ -108,6 +108,7 @@ def decode_targets(value):
 def build(available, targets, turnins, revision):
     starts = section(available, "start")
     names = section(available, "names")
+    gates = section(available, "gates")
     # Requirements are source comparisons, not considered confirmed unless the
     # source explicitly documents semantics. Keep individual IDs, never inject
     # a guessed unlock condition into route search.
@@ -115,13 +116,15 @@ def build(available, targets, turnins, revision):
     preall = section(available, "preAll")
     objective_map = section(targets, "targets")
     turnin_map = section(turnins, "turnins")
-    ids = set(starts) | set(names) | set(pre) | set(preall) | set(objective_map) | set(turnin_map)
+    ids = set(starts) | set(names) | set(pre) | set(preall) | set(objective_map) | set(turnin_map) | set(gates)
     quests = {}
     counters = Counter()
     for id_ in sorted(ids):
         record = {
             "id": id_,
             "name": names.get(id_) if isinstance(names.get(id_), str) else None,
+            "required_level": gates[id_] // 100_000_000_000 if isinstance(gates.get(id_), int) else None,
+            "quest_level": (gates[id_] // 1_000_000_000) % 100 if isinstance(gates.get(id_), int) else None,
             "starts": decode_points(starts.get(id_)),
             "turnins": decode_points(turnin_map.get(id_)),
             "target_refs": decode_targets(objective_map.get(id_)),
