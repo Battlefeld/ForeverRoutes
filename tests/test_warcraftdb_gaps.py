@@ -50,7 +50,7 @@ class GapTests(unittest.TestCase):
         def fake_get_page(page,url,robots,delay):
             calls.append(url)
             return "ok",("Verified Quest - Forever - Warcraft DB",
-                         "Name | Verified Quest\\nLevel | 12\\n350 Experience Points"),{}
+                         "Name | Verified Quest\nLevel | 12\n350 Experience Points"),{}
         with patch.object(gap,"get_page",side_effect=fake_get_page):
             out=gap.attempts_for_quest(None,90001,{},0)
         self.assertEqual(out["fields"]["xp"],350)
