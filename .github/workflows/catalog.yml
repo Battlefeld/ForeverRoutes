@@ -1,0 +1,43 @@
+name: Build Level 1-30 Reference Catalog
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'foreverroutes/catalog.py'
+      - 'foreverroutes/xp_reference.py'
+      - 'tests/test_catalog.py'
+      - 'tests/test_xp_reference.py'
+      - '.github/workflows/catalog.yml'
+permissions:
+  contents: read
+jobs:
+  reference-catalog:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Local regression tests
+        run: python -m unittest discover -s tests -v
+      - name: Download pinned QuestieDB facts and build catalog
+        run: python -m foreverroutes.catalog --output .generated/level_1_30_catalog.json
+      - name: Validate input snapshot coverage
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path('.generated/level_1_30_catalog.json')
+          data=json.loads(p.read_text(encoding='utf8'))
+          assert data['schema']=='foreverroutes.catalog.1'
+          assert data['stats']['quest_count']>1400, data['stats']
+          assert data['stats']['npc_hp_reference']>4000, data['stats']
+          assert data['stats']['item_quest_objective_count']>300, data['stats']
+          print(json.dumps(data['stats'],indent=2))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: QuestieDB-Classic-Reference-Level-1-30
+          path: .generated/level_1_30_catalog.json
+          retention-days: 7
