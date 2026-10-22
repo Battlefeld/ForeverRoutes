@@ -62,7 +62,7 @@ jobs:
       - name: Check WarcraftDB Forever and Classic, then Wowhead only for gaps
         shell: bash
         env:
-          BATCH_SIZE: \${{ inputs.batch_size || '75' }}
+          BATCH_SIZE: ${{ inputs.batch_size || '75' }}
         run: |
           python -m foreverroutes.warcraftdb_gaps collect \
             --audit .generated/audit.json \
