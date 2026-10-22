@@ -1,3 +1,5 @@
+> **WICHTIG: Echte Forever-Routen sind noch nicht zeitlich bewertet.** Die bisherige synthetische Level-30-Demo ist nur ein Test der Software, kein Vergleich von RestedXP, Journey, ForeverWisp und Polestar. Die neue, strikte Quellenprüfung lässt Era-Werte und erfundene Zeiten nicht als Forever-Messwerte gelten. Siehe [Real-Data-Benchmark](docs/REAL_FOREVER_BENCHMARK.md).
+
 # ForeverRoutes — Quest + Grind Simulator, Level 1–30
 
 Standalone **offline** route-simulation platform for WoW Forever. No dependency on ForeverSim, no in-game addon yet. Python 3.10+, standard library only. MIT (original code); no third-party guide text is checked in.
