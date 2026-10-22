@@ -193,7 +193,12 @@ def build_catalog(raw: dict[str,str], *, max_player_level=30, max_mob_level=35,
         for i,targets in enumerate(objs):
             typ=['npc','object','item','reputation','kill_credit','spell'][i] if i<6 else f'other_{i}'
             for entry in arr(targets):
-                ids=table_refs(entry)
+                # The entry shape is {targetID, optionalText, optionalIconID}.
+                # Only the first element identifies the creature/object/item.
+                if typ in ('npc', 'object', 'item') and isinstance(entry,list):
+                    ids = table_refs(entry[0]) if entry else []
+                else:
+                    ids = table_refs(entry)
                 if not ids:continue
                 # Quantity is NOT encoded in QuestieDB target IDs. Do not assume one.
                 objectives.append({'kind':typ,'ids':ids,'required_count':None,'count_source':'unresolved'})
@@ -201,7 +206,7 @@ def build_catalog(raw: dict[str,str], *, max_player_level=30, max_mob_level=35,
                 elif typ=='object':relevant_objects.update(ids)
                 elif typ=='item':relevant_items.update(ids)
         quest={
-            'id':id_, 'required_level':at(row,3), 'quest_level':at(row,4),
+            'id':id_, 'name':at(row,0), 'required_level':at(row,3), 'quest_level':at(row,4),
             'required_races_mask':at(row,5), 'required_classes_mask':at(row,6),
             'started_by':{'npc':s_npcs,'object':s_objects,'item':s_items},
             'finished_by':{'npc':e_npcs,'object':e_objects},
@@ -220,7 +225,7 @@ def build_catalog(raw: dict[str,str], *, max_player_level=30, max_mob_level=35,
         okhp=(isinstance(hp_lo,int) and isinstance(hp_hi,int) and hp_lo>1 and hp_hi>=hp_lo)
         position=spawns(at(row,6));
         mobs[str(id_)]={
-            'id':id_,'min_level':lo,'max_level':hi,'rank':at(row,5),
+            'id':id_,'name':at(row,0),'min_level':lo,'max_level':hi,'rank':at(row,5),
             'hp_min':hp_lo if okhp else None,'hp_max':hp_hi if okhp else None,
             'hp_source':'questiedb_classic_raw' if okhp else 'unknown',
             'spawns':position,'spawn_source':'questiedb_forever_raw',
@@ -235,7 +240,7 @@ def build_catalog(raw: dict[str,str], *, max_player_level=30, max_mob_level=35,
     for id_ in sorted(relevant_objects):
         row=object_src.get(id_)
         if row is None:continue
-        objects[str(id_)]={'id':id_,'spawns':spawns(at(row,3)),'spawn_source':'questiedb_forever_raw'}
+        objects[str(id_)]={'id':id_,'name':at(row,0),'spawns':spawns(at(row,3)),'spawn_source':'questiedb_forever_raw'}
     items={}
     for id_ in sorted(relevant_items):
         row=item_src.get(id_)
@@ -243,7 +248,7 @@ def build_catalog(raw: dict[str,str], *, max_player_level=30, max_mob_level=35,
         drops={str(npc):{'chance':rate,'source':'classic_wowhead_sample'} for npc,rate in sorted(rates.get(id_,{}).items())}
         npc_drops=table_refs(at(row,1));obj_drops=table_refs(at(row,2))
         relevant_npcs.update(npc_drops);relevant_objects.update(obj_drops)
-        items[str(id_)]={'id':id_,'npc_sources':npc_drops,'object_sources':obj_drops,
+        items[str(id_)]={'id':id_,'name':at(row,0),'npc_sources':npc_drops,'object_sources':obj_drops,
                          'drop_chance_by_npc':drops,'drop_source':'questiedb_classic_wowhead'}
     # All required prerequisite quest IDs outside level window remain visible.
     for obs in quest_overlays or []:
