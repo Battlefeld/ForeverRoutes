@@ -14,6 +14,7 @@ on:
     paths:
       - 'foreverroutes/warcraftdb_gaps.py'
       - 'tests/test_warcraftdb_gaps.py'
+      - 'foreverroutes/gap_reports.py'
       - '.github/workflows/warcraftdb-gaps.yml'
 
 permissions:
@@ -90,10 +91,20 @@ jobs:
           print('Validated merge:',before['stats']['quests_missing_xp'],'->',
                 after['stats']['quests_missing_xp'],'missing XP')
           PY
+      - name: Refresh the exact missing XP ID CSV and text files
+        run: |
+          python -m foreverroutes.gap_reports \
+            --database .generated/merged-quests.json \
+            --audit .generated/merged-audit.json \
+            --web .generated/warcraftdb-quest-gaps.json \
+            --csv .generated/missing-xp.csv \
+            --text .generated/missing-xp.txt
       - name: Commit source evidence, refreshed unified database, and audit to artifacts branch
         shell: bash
         run: |
           bash .github/scripts/publish-artifacts.sh \
             .generated/warcraftdb-quest-gaps.json::sources/warcraftdb-quest-gaps.json \
             .generated/merged-quests.json::unified/quests-1-30.json \
-            .generated/merged-audit.json::unified/quality-audit-1-30.json
+            .generated/merged-audit.json::unified/quality-audit-1-30.json \
+            .generated/missing-xp.csv::unified/missing-xp-quest-ids-1-30.csv \
+            .generated/missing-xp.txt::unified/missing-xp-quest-ids-1-30.txt
