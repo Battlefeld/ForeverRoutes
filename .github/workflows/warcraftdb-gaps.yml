@@ -3,6 +3,10 @@ name: Fill 831 WarcraftDB quest XP gaps
 on:
   # Temporarily manual/push-only until live browser extraction is verified.
   # Avoid repeated runs and failure emails from remote page changes.
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/warcraftdb-gaps.yml'
   workflow_dispatch:
     inputs:
       batch_size:
@@ -14,7 +18,7 @@ permissions:
   contents: write
 
 concurrency:
-  group: foreverroutes-warcraftdb-gapfill
+  group: foreverroutes-warcraftdb-gapfill-checkpoint-v2
   cancel-in-progress: false
 
 jobs:
@@ -59,7 +63,7 @@ jobs:
       - name: Import XP gaps in resumable five-quest checkpoints, Git branches only
         shell: bash
         env:
-          BATCH_SIZE: ${{ inputs.batch_size || '25' }}
+          BATCH_SIZE: ${{ github.event_name == 'push' && '5' || inputs.batch_size || '25' }}
         run: |
           set -euo pipefail
           cp .generated/base.json .generated/current-base.json
