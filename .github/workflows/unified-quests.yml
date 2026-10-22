@@ -16,6 +16,10 @@ on:
     branches: [main]
     paths:
       - '.github/workflows/unified-quests.yml'
+      - 'foreverroutes/unified.py'
+      - 'tests/test_unified.py'
+      - 'foreverroutes/foreverdb_api.py'
+      - 'tests/test_foreverdb_api.py'
 
 permissions:
   contents: write
