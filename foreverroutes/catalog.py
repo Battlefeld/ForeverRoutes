@@ -339,6 +339,7 @@ def add_guide_id_candidates(catalog: dict, candidate_doc: dict) -> dict:
 def run(argv=None):
     parser=argparse.ArgumentParser(description='Build a Questie Classic-reference input catalog for level 1–30')
     parser.add_argument('--cache',type=Path,default=Path('.cache/questie'))
+    parser.add_argument('--revision',default=QUESTIE_SHA,help='Pinned 40-character QuestieDB Git commit SHA to fetch')
     parser.add_argument('--output',type=Path,default=Path('.generated/level_1_30_catalog.json'))
     parser.add_argument('--overlay',type=Path,action='append',default=[])
     parser.add_argument('--npc-overlay',type=Path,action='append',default=[])
@@ -347,7 +348,9 @@ def run(argv=None):
     q=[];n=[]
     for p in args.overlay:q+=json.loads(p.read_text(encoding='utf-8')).get('observations',[])
     for p in args.npc_overlay:n+=json.loads(p.read_text(encoding='utf-8')).get('observations',[])
-    catalog=build_catalog(fetch_sources(args.cache),quest_overlays=q,npc_overlays=n)
+    catalog=build_catalog(fetch_sources(args.cache, revision=args.revision),quest_overlays=q,npc_overlays=n)
+    for ref in catalog['sources'].values():
+        ref['revision'] = args.revision
     if args.guide_ids:
         candidates=json.loads(args.guide_ids.read_text(encoding='utf-8'))
         add_guide_id_candidates(catalog,candidates)
