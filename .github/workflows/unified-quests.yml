@@ -20,6 +20,8 @@ on:
       - 'tests/test_unified.py'
       - 'foreverroutes/addon_sources.py'
       - 'tests/test_addon_sources.py'
+      - 'foreverroutes/route_coverage.py'
+      - 'tests/test_route_coverage.py'
       - 'foreverroutes/foreverdb_api.py'
       - 'tests/test_foreverdb_api.py'
 
@@ -113,6 +115,12 @@ jobs:
           assert s['foreverdb_quests']>=1000, s
           print('Quality gate OK:', json.dumps(s, indent=2))
           PY
+      - name: Compare quest coverage across saved guide baselines
+        run: |
+          python -m foreverroutes.route_coverage \
+            --database .generated/unified-quests-1-30.json \
+            --guide-ids data/validation/guide_quest_id_candidates.json \
+            --output .generated/guide-coverage-1-30.json
       - name: Publish source snapshots, merged quest database and audit
         shell: bash
         run: |
@@ -121,4 +129,5 @@ jobs:
             .generated/foreverdb_quests_1_30.json::foreverdb/quests-1-30.json \
             .generated/unified-quests-1-30.json::unified/quests-1-30.json \
             .generated/quest-quality-audit-1-30.json::unified/quality-audit-1-30.json \
-            .generated/everythingquests-forever-crosscheck.json::sources/everythingquests-forever.json
+            .generated/everythingquests-forever-crosscheck.json::sources/everythingquests-forever.json \
+            .generated/guide-coverage-1-30.json::unified/guide-coverage-1-30.json
