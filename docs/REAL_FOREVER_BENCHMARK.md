@@ -20,6 +20,18 @@
 - RestedXP's Forever standard guides cover 1–22 in the checked public tree. AoE alternatives must stay excluded; the complete per-action extraction is not yet in our local workspace.
 - Polestar publishes guide sources through 60 but builds its time estimates using modeled combat and travel. The local partial CSV parser test is not a complete 1–30 baseline.
 
+
+## Fair level windows
+
+The guides do not all cover the same range: the checked ForeverWisp routes end
+at level 20, the checked standard RestedXP Forever files at level 22, while
+Journey and Polestar offer longer chains. **Never claim a four-way level-30
+winner from these uneven sources.** Score level 1–6, 1–12, 1–20 and 1–22
+checkpoints where a guide actually supplies a continuous playable chain.
+For level 30, compare complete Journey and Polestar chains first; any route
+with an externally generated 20–30 continuation must be labelled a **hybrid**
+and use the same continuation when benchmarking the 1–20 source prefix.
+
 ## Evidence records
 
 `examples/era_seeded_facts.json` deliberately contains **unverified reference numbers**; it is a test for source classification, not valid Forever XP.
