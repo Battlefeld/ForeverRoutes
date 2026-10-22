@@ -62,7 +62,7 @@ jobs:
           python -m foreverroutes.addon_sources --revision "$sha" \
             --output .generated/everythingquests-forever-crosscheck.json
       - name: Refresh QuestieDB master from exact upstream SHA
-        if: github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.refresh_sources)
+        if: github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.refresh_sources) || (github.event_name == 'push' && contains(github.event.head_commit.message, '[refresh-now]'))
         shell: bash
         run: |
           git ls-remote --heads https://github.com/Questie/QuestieDB.git master > .generated/questie_head.txt
@@ -77,7 +77,7 @@ jobs:
             --guide-ids data/validation/guide_quest_id_candidates.json \
             --output .generated/level_1_30_catalog.json
       - name: Refresh ForeverDB incrementally within rate limits
-        if: github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.refresh_sources)
+        if: github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.refresh_sources) || (github.event_name == 'push' && contains(github.event.head_commit.message, '[refresh-now]'))
         shell: bash
         env:
           FOREVERDB_API_KEY: ${{ secrets.FOREVERDB_API_KEY }}
