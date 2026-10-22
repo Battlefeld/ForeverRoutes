@@ -18,6 +18,8 @@ on:
       - '.github/workflows/unified-quests.yml'
       - 'foreverroutes/unified.py'
       - 'tests/test_unified.py'
+      - 'foreverroutes/addon_sources.py'
+      - 'tests/test_addon_sources.py'
       - 'foreverroutes/foreverdb_api.py'
       - 'tests/test_foreverdb_api.py'
 
@@ -49,6 +51,16 @@ jobs:
           git show origin/artifacts:catalog/level-1-30.json > .generated/level_1_30_catalog.json
           git show origin/artifacts:foreverdb/quests-1-30.json > .generated/foreverdb_quests_1_30.json
           cp .generated/foreverdb_quests_1_30.json .generated/previous_foreverdb.json
+      - name: Cross-check published EverythingQuests Forever data
+        shell: bash
+        run: |
+          sha="$(git ls-remote --heads https://github.com/wheelbarrel00/EverythingQuests.git main | awk '{print $1}')"
+          if ! [[ "$sha" =~ ^[0-9a-f]{40}$ ]]; then
+            echo "Unable to resolve addon revision; refusing to mislabel external source" >&2
+            exit 1
+          fi
+          python -m foreverroutes.addon_sources --revision "$sha" \
+            --output .generated/everythingquests-forever-crosscheck.json
       - name: Refresh QuestieDB master from exact upstream SHA
         if: github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.refresh_sources)
         shell: bash
@@ -87,6 +99,7 @@ jobs:
             --catalog .generated/level_1_30_catalog.json \
             --foreverdb .generated/foreverdb_quests_1_30.json \
             --overlay data/foreverdb_observations.example.json \
+            --addon .generated/everythingquests-forever-crosscheck.json \
             --output .generated/unified-quests-1-30.json \
             --audit .generated/quest-quality-audit-1-30.json
           python - <<'PY'
@@ -107,4 +120,5 @@ jobs:
             .generated/level_1_30_catalog.json::catalog/level-1-30.json \
             .generated/foreverdb_quests_1_30.json::foreverdb/quests-1-30.json \
             .generated/unified-quests-1-30.json::unified/quests-1-30.json \
-            .generated/quest-quality-audit-1-30.json::unified/quality-audit-1-30.json
+            .generated/quest-quality-audit-1-30.json::unified/quality-audit-1-30.json \
+            .generated/everythingquests-forever-crosscheck.json::sources/everythingquests-forever.json
