@@ -47,3 +47,14 @@ Für Quest XP, Mob HP/XP, Respawn, Lootchance, Warlock-spezifische Kampfdauer un
 - `unresolved_starter_reference`: 0.
 - `unresolved_finisher_reference`: 0.
 - `unresolved_prequest_reference`: 0.
+
+## Vollständiger ForeverDB-Abgleich: API verfügbar, aber Zugang erforderlich
+
+**Wichtige Rechercheergänzung:** ForeverDB stellt eine dokumentierte read-only JSON-API mit API-Key bereit: https://foreverdb.net/developers.
+
+- `GET /api/v1/quests?minLevel=1&maxLevel=30&limit=100&offset=0`: paginierte Questliste, inklusive Quellenstatus/Guide-Link; nach der letzten Seite fortsetzen. Nicht alle in einer Liste angezeigten Details sind Quest-XP.
+- `GET /api/v1/quests/{id}`: Level, Seite, Zone, Quellenstatus und Guide-Link laut Dokumentation. Nicht ungeprüft annehmen, dass ein XP-Verlauf in jeder API-Questantwort steckt.
+- `GET /api/v1/changes-seen?kind=quest&limit=100&offset=0`: veröffentlichte Änderungen, darunter beobachtete Quest-XP; Datum, Spielerlevel, Stichprobengröße und Quellenstatus separat speichern, **soweit die API sie tatsächlich ausgibt**.
+- Schlüssel nur lokal im Secret Store/Umgebungsvariablen verwalten, niemals ins GitHub-Repo oder Chat kopieren. 60 Anfragen/Minute, 10.000 pro Tag. Attribution und Nutzungsregeln befolgen.
+
+**Nicht erledigt:** ein vollständiger ForeverDB-API-Abruf aller Quests 1–30; für diesen Audit lag kein API-Schlüssel vor. Wowhead Forever stellt keine hier nutzbare öffentliche Gesamtabfrage bereit; einzelne indexierte Questseiten sind nur Stichproben. Deshalb enthält dieser PR keine unbewiesene Coveragequote für serverbestätigte XP über alle Forever-Quests.
