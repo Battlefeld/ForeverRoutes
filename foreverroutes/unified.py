@@ -189,7 +189,9 @@ def merge(catalog, snapshot, overlays=None):
             "fields": {k: v for k, v in fields.items() if v is not None},
             "objectives": clean_objectives,
             "locations": locations,
-            "not_actionable": not (fields.get("started_by") and fields.get("finished_by")),
+            "not_actionable": not (fields.get("started_by") and fields.get("finished_by") and
+                                    any(fields["started_by"]["value"].values()) and
+                                    any(fields["finished_by"]["value"].values())),
             "foreverdb_url": api.get("url") if api else None,
         }
     # Explicit, sourced observations can override baseline fields only.
