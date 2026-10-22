@@ -23,7 +23,7 @@ jobs:
       - name: Local regression tests
         run: python -m unittest discover -s tests -v
       - name: Download pinned QuestieDB facts and build catalog
-        run: python -m foreverroutes.catalog --output .generated/level_1_30_catalog.json
+        run: python -m foreverroutes.catalog --overlay data/foreverdb_observations.example.json --output .generated/level_1_30_catalog.json
       - name: Validate input snapshot coverage
         run: |
           python - <<'PY'
