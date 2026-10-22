@@ -31,6 +31,8 @@ class CatalogTests(unittest.TestCase):
         c=build_catalog(BASE)
         self.assertEqual(c['quests']['788']['required_level'],1)
         self.assertEqual(c['quests']['788']['xp']['value'],170)
+        self.assertEqual(c['quests']['788']['name'],'Cutting Teeth')
+        self.assertEqual(c['npcs']['3098']['name'],'Mottled Boar')
         self.assertEqual(c['quests']['789']['prequest_any'],[788])
         self.assertEqual(c['quests']['788']['objectives'][0]['ids'],[3098])
         self.assertIsNone(c['quests']['788']['objectives'][0]['required_count'])
@@ -39,6 +41,12 @@ class CatalogTests(unittest.TestCase):
         self.assertEqual(c['items']['4862']['npc_sources'],[3124])
         self.assertEqual(c['items']['4862']['drop_chance_by_npc']['3124']['chance'],0.597968)
         self.assertFalse(c['metadata']['quest_counts_unknown'] is False)
+    def test_icons_are_not_extra_target_ids(self):
+        example = dict(BASE)
+        example['quests'] = '[788] = {"Cutting Teeth",{{3143}},{{3143}},1,2,8589934770,nil,nil,nil,{{{3098,"Boar",88294}}},nil,nil,nil,nil},'
+        cat = build_catalog(example)
+        self.assertEqual(cat['quests']['788']['objectives'][0]['ids'],[3098])
+
     def test_observations(self):
         q=[{'quest_id':97279,'fields':{'quest_level':{'value':2,'url':'https://foreverdb.net/quest/97279','source':'foreverdb_client'},'xp_by_player_level':{'value':{'2':170},'url':'https://foreverdb.net/quest/97279','source':'foreverdb_observed'}}}]
         n=[{'npc_id':3098,'fields':{'hp_at_level_2':{'value':58,'url':'https://foreverdb.net/npc/3098','source':'foreverdb_observed'}}}]
