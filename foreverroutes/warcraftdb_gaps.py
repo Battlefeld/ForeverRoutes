@@ -200,6 +200,28 @@ def attempts_for_quest(page,qid,robots,delay):
     return {"id":qid,"fields":combined,"field_sources":provenance,"attempts":observations,
             "checked":dt.datetime.now(dt.timezone.utc).isoformat()}
 
+def pending_ids(target_ids, rows, retry_hours, now=None):
+    """Unseen IDs are immediately due, verified XP (including 0) is never retried."""
+    now = now or dt.datetime.now(dt.timezone.utc)
+    pending = []
+    for qid in target_ids:
+        record = rows.get(str(qid))
+        if not isinstance(record, dict):
+            pending.append(qid)
+            continue
+        if "xp" in record.get("fields", {}):
+            continue
+        checked = record.get("checked")
+        if checked:
+            try:
+                when = dt.datetime.fromisoformat(checked.replace("Z", "+00:00"))
+                if now - when < dt.timedelta(hours=retry_hours):
+                    continue
+            except (ValueError, TypeError):
+                pass
+        pending.append(qid)
+    return pending
+
 def collect(args):
     from playwright.sync_api import sync_playwright
     audit=load(args.audit)
@@ -207,21 +229,7 @@ def collect(args):
     previous=load(args.previous,{"schema":SCHEMA,"quests":{}})
     if previous.get("schema")!=SCHEMA:raise ValueError("Wrong prior gaps schema")
     rows=dict(previous.get("quests",{}))
-    remaining=[qid for qid in target_ids
-               if not isinstance(rows.get(str(qid)),dict)
-               or "xp" not in rows[str(qid)].get("fields",{})]
-    # Skip permanent 404s only for the selected number of days, not forever.
-    def retry_due(qid):
-        rec=rows.get(str(qid),{})
-        if not rec:return True  # Never-scanned quest IDs must be tried.
-        if "xp" in rec.get("fields",{}):return False
-        checked=rec.get("checked")
-        if not checked:return True
-        try:
-            return (dt.datetime.now(dt.timezone.utc)-
-                    dt.datetime.fromisoformat(checked.replace("Z","+00:00"))).total_seconds()>=args.retry_hours*3600
-        except (ValueError,TypeError):return True
-    pending=[qid for qid in remaining if retry_due(qid)]
+    pending=pending_ids(target_ids, rows, args.retry_hours)
     batch=pending[:args.limit] if args.limit else pending
     robots={}
     if batch:
