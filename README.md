@@ -1,5 +1,7 @@
 # ForeverRoutes — Quest + Grind Simulator, Level 1–30
 
+> **Datengrundlage & Quellenhinweis:** ForeverRoutes nutzt die [ForeverDB API](https://foreverdb.net/developers) von **[ForeverDB.net](https://foreverdb.net)** für Informationen zu WoW Forever. **Data from [ForeverDB.net](https://foreverdb.net).** ForeverDB-Daten bleiben als solche gekennzeichnet und werden nicht als eigene Erhebungen ausgegeben. Ergänzende Classic-/QuestieDB-Referenzen werden getrennt ausgewiesen. ForeverDB ist nicht mit Blizzard Entertainment verbunden.
+
 Standalone **offline** route-simulation platform for WoW Forever. No dependency on ForeverSim, no in-game addon yet. Python 3.10+, standard library only. MIT (original code); no third-party guide text is checked in.
 
 **Current state: working model + search, not validated WoW 1–30 optimization.** A fully synthetic 1–30 world demonstrates end-to-end evaluation. Do **not** interpret its seconds as /played or claim the route beats RestedXP, Journey, Polestar or ForeverWisp. Real Forever quest, spawn, geometry, kill, XP and drop data are **not** bundled. Licensing of those sources must be checked before distribution.
@@ -73,3 +75,11 @@ python -m foreverroutes baseline --source polestar --source-path /local/Polestar
 ```
 
 The CSV adapter normalizes quest references and counts unresolved conditions; **it deliberately does not assign a time to reference guides**. Those guides can only be replayed faithfully once their class/quest flags, movements, grouped objectives and actual world facts are normalized. AoE guide names are excluded.
+
+## ForeverDB API-Zugang und Limits
+
+- **[ForeverDB API-Dokumentation](https://foreverdb.net/developers)** · **[ForeverDB](https://foreverdb.net)** · **[QuestieDB](https://github.com/Questie/QuestieDB)**
+- Die ForeverDB-API verlangt `X-API-Key` und begrenzt Anfragen auf **60 pro Minute** und **10.000 pro Tag und Schlüssel**. `429` und `Retry-After` werden respektiert.
+- API-Schlüssel **nie** in das Repository, Issues, PRs, Logs oder Beispieldateien eintragen. Für GitHub Actions den Secret-Namen `FOREVERDB_API_KEY` verwenden.
+- Importierte Werte behalten Quelle, Build-/Beobachtungsstatus und URL. Es gelten die [Nutzungsregeln](https://foreverdb.net/developers#rules) von ForeverDB. **Nicht weiterverkaufen und nicht als eigene Daten ausgeben.**
+- Bei jeder späteren UI-Anzeige von ForeverDB-Daten muss eine **sichtbare Verlinkung auf [ForeverDB.net](https://foreverdb.net)** vorhanden sein; der Hinweis nur in dieser README erfüllt nicht die Anforderung an andere Oberflächen.
