@@ -157,7 +157,7 @@ function main(){
   for(const g of journey.groups){
    const match=/^H(\d{2})/.exec(g.guide||'');
    const chapterLevel=match?Number(match[1]):0;
-   if(chapterLevel<20||chapterLevel>30)continue;
+   if(chapterLevel<18||chapterLevel>30)continue;
    for(const e of g.events||[]){
     if(!e.q||!['accept','complete','turnin'].includes(e.t)||!compatible(e.q))continue;
     const q=raw[e.q];if(!q)continue;
@@ -168,7 +168,7 @@ function main(){
   for(const id of ['rxp','wisp']){
    const target=sources.find(x=>x.id===id),from=id==='rxp'?23:21;
    const existing=new Set(target.groups.flatMap(g=>(g.events||[]).map(e=>e.q).filter(Boolean)));
-   const candidates=[...pool.values()].filter(q=>q.level>=from-2&&!existing.has(q.id));
+   const candidates=[...pool.values()].filter(q=>q.level>=from-5&&!existing.has(q.id));
    // RXP: favor XP density and short chains. Wisp: favor contiguous
    // quest-hub progression, avoiding repeated area changes.
    candidates.sort((a,b)=>id==='rxp'
