@@ -20,8 +20,8 @@ function awardXpPolicy(world,records,{estimateMissing=false,provenance={}}={}){
   const known=Number.isFinite(r?.xp)&&r.xp>=0;
   const result=resolveField('xp',[
    ...(known?[{source:'foreverroutes',value:r.xp}]:[]),
-   ...(q.xp>0?[{source:'questiedb',value:q.xp}]:[])
-  ],{estimate:estimateMissing?()=>q.noXp?0:baseQuestXp(q.level||q.minLevel):undefined});
+   ...(!known&&q.xp>0?[{source:'questiedb',value:q.xp}]:[])
+  ],{estimate:estimateMissing?()=>q.noXp===true?0:baseQuestXp(q.level||q.minLevel):undefined});
   if(result.value!==null){
    q.xp=result.value;q.noXp=result.value===0;
    if(result.source==='estimated'){report.counts.estimated++;report.estimated.push({quest:q.id,xp:q.xp,source:'polestar_classic_xp_anchors'});}
@@ -63,7 +63,7 @@ function estimateAction({event,ev,quest,states,params,trace,variant=1}){
   }
   if(type==='turnin'&&(states.get(id)||0)<3){
    adds(65+talk,'unknown_quest_ender_location');
-   const reward=Number.isFinite(quest?.xp)&&quest.xp>=0?quest.xp:baseQuestXp(level);
+   const reward=Number.isFinite(quest?.xp)&&quest.xp>=0?quest.xp:quest?.noXp===true?0:baseQuestXp(level);
    // A guestimated reward is not a verified game value.
    const actualXp=Math.round(reward*variant);
    if(actualXp>0){ev.xpQuest+=actualXp;ev.gain(actualXp);}
