@@ -188,7 +188,9 @@ function main(){
   for(const id of ['rxp','wisp']){
    const target=sources.find(x=>x.id===id),from=id==='rxp'?23:21;
    const existing=new Set(target.groups.flatMap(g=>(g.events||[]).map(e=>e.q).filter(Boolean)));
-   const candidates=[...pool.values()].filter(q=>q.level>=from-5&&!existing.has(q.id));
+   const worldIds=new Set(world.quests.map(q=>Number(q.id)));
+   const candidates=[...pool.values()].filter(q=>q.level>=from-5&&!existing.has(q.id)&&worldIds.has(q.id));
+   console.log('EXTENSION_SOURCE_COVERAGE '+JSON.stringify({id,excludedMissingWorld:[...pool.values()].filter(q=>q.level>=from-5&&!existing.has(q.id)&&!worldIds.has(q.id)).map(q=>q.id)}));
    // RXP: favor XP density and short chains. Wisp: favor contiguous
    // quest-hub progression, avoiding repeated area changes.
    // Keep source dependency order within each chapter. XP scoring may only
