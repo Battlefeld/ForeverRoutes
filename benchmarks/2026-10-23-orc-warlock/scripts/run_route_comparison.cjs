@@ -6,6 +6,7 @@ const req=p=>require(path.join(external,'tools/lib',p));
 const {getWorld}=req('sim/world'),{makeRun,paramsFor}=req('sim/index');
 const {compileSequence}=req('sim/sequence'),{K_GRIND}=req('sim/run');
 const {loadPolestarRoutes,requiredEvents}=req('sim/baselines/polestar');
+const {reconcile,loadInputs}=require('./objective_count_overlay.cjs');
 const dataDir=path.join(root,'.comparison/data'),simDir=path.join(root,'.comparison/cache'),outDir=path.join(root,'.comparison/results');
 const read=p=>JSON.parse(fs.readFileSync(p,'utf8'));
 const save=(n,d)=>fs.writeFileSync(path.join(outDir,n),JSON.stringify(d,null,2)+'\n');
@@ -32,7 +33,8 @@ function effectiveQuestXp(records, assumed, verified) {
 const xpOverlay=effectiveQuestXp(rawQuestFacts,
  fs.existsSync(assumedXpFile)?read(assumedXpFile):null,
  fs.existsSync(verifiedXpFile)?read(verifiedXpFile):null);
-const raw=xpOverlay.records,missingCounts=new Set(read(path.join(dataDir,'missing-counts.json')));
+const raw=xpOverlay.records;
+let missingCounts=new Set(read(path.join(dataDir,'missing-counts.json'))),objectiveReport=null;
 const flags=new Set(['WARLOCK','ORC','HORDE','FOREVER','ERA','SOFTCORE','H12B']);
 const knownFlags=new Set(['WARRIOR','PALADIN','HUNTER','ROGUE','PRIEST','SHAMAN','MAGE','WARLOCK','DRUID','ORC','TROLL','TAUREN','SCOURGE','UNDEAD','HUMAN','DWARF','GNOME','NIGHTELF','SKYBORNE','BLOODELF','DRAENEI','HORDE','ALLIANCE','FOREVER','ERA','SOM1','SOM2','SOD','SOD2','TBC','WOTLK','JOYOUS','GROUPS','AH','HARDCORE','SOFTCORE','SKIP','H12B']);
 const and=(a,b)=>a===false||b===false?false:a===null||b===null?null:!!a&&!!b;
@@ -117,7 +119,11 @@ function main(){
  // No undocumented XP estimates: only explicit imported values earn quest XP.
  // An unvalued quest is recorded in blockers if referenced by a route.
  const saved=process.argv.includes('--saved-inputs');
- const world=saved?read(path.join(simDir,'world-horde.json')):getWorld({dataDir,simDir,faction:'Horde',rebuild:true,questXp:Array.from({length:61},()=>Array(10).fill(0)),log:console.log});
+ let world=saved?read(path.join(simDir,'world-horde.json')):getWorld({dataDir,simDir,faction:'Horde',rebuild:true,questXp:Array.from({length:61},()=>Array(10).fill(0)),log:console.log});
+ // Work on an in-memory copy. No guide, cached world or source database is edited.
+ const oi=loadInputs(),overlay=reconcile(world,oi.quests,oi.guide,oi.references,missingCounts);
+ world=overlay.world;missingCounts=overlay.missing;objectiveReport=overlay.report;
+ console.log('OBJECTIVE_OVERLAY '+JSON.stringify({legacyMissing:objectiveReport.legacyMissingCount,remaining:objectiveReport.remainingCountFlags,sourceResolved:objectiveReport.legacyFlagsResolved,scaled:objectiveReport.scaled,corrected:objectiveReport.semanticCorrections,unresolved:objectiveReport.unresolvedMappings}));
  applyXpPolicy(world,raw);
  fs.writeFileSync(path.join(simDir,'world-horde.json'),JSON.stringify(world)+'\n');
  const {mean:params}=paramsFor(simDir,'Warlock');
@@ -132,7 +138,7 @@ function main(){
  }
  const rows=[];
  for(const source of sources){const row=replay(source,world,params);rows.push(row);save(source.id+'.json',row);}
- const report={schema:'foreverroutes.shared_comparison.v1',finishedAt:new Date().toISOString(),status:rows.every(r=>r.status==='provisional_model_complete')?'complete_provisional':'completed_diagnostic_replays',profile:{faction:'Horde',race:'Orc',class:'Warlock',targets:[6,12,20,30],solo:true,aoe:false,rested:false},engine:'fitzforge/polestar@eb7b47840f032bf711a3c8d7b1df9f3f6551b990',modelParams:params,provenance:read(path.join(dataDir,'meta.json')),xpOverlay:{...xpOverlay.applied,assumptionsNotVerified:true,originalQuestFactsUnchanged:true},rows,rankingPublished:false,reason:'Unresolved route semantics / missing objective and location inputs prevent a defensible fastest-route ranking'};
+ const report={schema:'foreverroutes.shared_comparison.v1',finishedAt:new Date().toISOString(),status:rows.every(r=>r.status==='provisional_model_complete')?'complete_provisional':'completed_diagnostic_replays',profile:{faction:'Horde',race:'Orc',class:'Warlock',targets:[6,12,20,30],solo:true,aoe:false,rested:false},engine:'fitzforge/polestar@eb7b47840f032bf711a3c8d7b1df9f3f6551b990',modelParams:params,provenance:read(path.join(dataDir,'meta.json')),xpOverlay:{...xpOverlay.applied,assumptionsNotVerified:true,originalQuestFactsUnchanged:true},objectiveCountOverlay:objectiveReport,rows,rankingPublished:false,reason:'Unresolved route semantics / missing objective and location inputs prevent a defensible fastest-route ranking'};
  save('comparison.json',report);save('status.json',{status:report.status,finishedAt:report.finishedAt,outputs:rows.map(r=>r.id+'.json'),rankingPublished:false});
 }
 if(require.main===module)try{main();}catch(e){fs.mkdirSync(outDir,{recursive:true});save('status.json',{status:'failed',error:e.message,at:new Date().toISOString()});console.error(e);process.exitCode=1;}
