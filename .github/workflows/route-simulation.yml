@@ -47,7 +47,8 @@ jobs:
         env:
           POLESTAR_ROOT: ${{ github.workspace }}/polestar
         run: |
-          git show artifacts:benchmarks/2026-10-23-orc-warlock/scripts/run_route_comparison.cjs > scripts/run_route_comparison.original.cjs
+          git fetch --quiet --depth=1 origin artifacts
+          git show FETCH_HEAD:benchmarks/2026-10-23-orc-warlock/scripts/run_route_comparison.cjs > scripts/run_route_comparison.original.cjs
           cp scripts/run_route_comparison.cjs scripts/run_route_comparison.warrior.cjs
           cp scripts/run_route_comparison.original.cjs scripts/run_route_comparison.cjs
           node scripts/run_route_comparison.cjs --saved-inputs
