@@ -25,7 +25,7 @@ function awardXpPolicy(world,records,{estimateMissing=false,provenance={}}={}){
   if(result.value!==null){
    q.xp=result.value;q.noXp=result.value===0;
    if(result.source==='estimated'){report.counts.estimated++;report.estimated.push({quest:q.id,xp:q.xp,source:'polestar_classic_xp_anchors'});}
-   else if(result.value===0){report.counts.zero++;if(r?.xp_status==='assumed_zero_missing_source')report.nonrewarding.push({quest:q.id,provisional:true});}
+   else if(result.value===0){report.counts.zero++;report.nonrewarding.push({quest:q.id,confirmedZero:true});}
    else report.counts[result.source==='foreverroutes'?'foreverroutes':'otherSource']++;
   }else if(q.noXp){q.xp=0;report.counts.zero++;}
   else{q.xp=null;q.noXp=true;report.counts.strictUnknown++;}
