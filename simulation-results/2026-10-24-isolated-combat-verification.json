@@ -1,0 +1,143 @@
+{
+  "schema": "foreverroutes.isolated_combat_verification.v1",
+  "date": "2026-10-24",
+  "scope": "ForeverRoutes only",
+  "foreverSim": {
+    "repository": "Battlefeld/ForeverSim",
+    "readOnly": true,
+    "headsBefore": [
+      {
+        "branch": "artifacts",
+        "commit": "50fd7e638dab7c0afdd64212f8e611c8e31a89a7"
+      },
+      {
+        "branch": "claude/focused-lovelace-hqyfx4",
+        "commit": "2083b58935fc17dfae86fb4b188a4659bd0c845c"
+      },
+      {
+        "branch": "main",
+        "commit": "bbf21658e859a3aaea1ecaea8d1c68dd64fe32e6"
+      }
+    ],
+    "headsAfter": [
+      {
+        "branch": "artifacts",
+        "commit": "50fd7e638dab7c0afdd64212f8e611c8e31a89a7"
+      },
+      {
+        "branch": "claude/focused-lovelace-hqyfx4",
+        "commit": "2083b58935fc17dfae86fb4b188a4659bd0c845c"
+      },
+      {
+        "branch": "main",
+        "commit": "bbf21658e859a3aaea1ecaea8d1c68dd64fe32e6"
+      }
+    ],
+    "snapshot": {
+      "schema": "foreverroutes.foreversim_snapshot.v1",
+      "repository": "Battlefeld/ForeverSim",
+      "branch": "claude/focused-lovelace-hqyfx4",
+      "commit": "2083b58935fc17dfae86fb4b188a4659bd0c845c",
+      "policy": "Read-only source snapshot; route-specific behavior lives outside this directory. Never writes back to ForeverSim.",
+      "files": [
+        {
+          "file": "CombatEngine.lua",
+          "sha256": "195f2c78ae5a89f5f4b5219e797b2b455dea9fe0b9bde98b5fefed29e04b7ea5",
+          "gitBlob": "724b0a9d04b4308f077864b3f8f5dc0e0129b020",
+          "bytes": 82905
+        },
+        {
+          "file": "Classes/warlock.lua",
+          "sha256": "02e6fb4062f15a82abf655dd5c3e79d871d3423f76ae29d28ce99e726fc2b684",
+          "gitBlob": "9b904724c4b4d8c0f7031625d413793c54e302e9",
+          "bytes": 90315
+        },
+        {
+          "file": "UniversalRules.lua",
+          "sha256": "bc0207d3aedb35103b8285fd5c92aec48db534fbc495474736527e332f5bfa2f",
+          "gitBlob": "5a86e1a702729ac791c7f4353f1782e16b5dc744",
+          "bytes": 37618
+        },
+        {
+          "file": "Optimizers.lua",
+          "sha256": "a3430d1177b2e0ae367748d44ca340036ca5ce69be0d8a9df7ebf10c5f4dcbc9",
+          "gitBlob": "4b8f3b5659d31ca83285c4dbc726913b31a5034d",
+          "bytes": 20870
+        },
+        {
+          "file": "THIRD_PARTY_LICENSES.txt",
+          "sha256": "62e2b6ce35ae8816c05de46ab23d581f75d6bbd3f15f577131bc102f8c11636c",
+          "gitBlob": "9d236ab2b413dc4be62822ec8a4e3c7743ec2c52",
+          "bytes": 1242
+        }
+      ]
+    }
+  },
+  "tests": {
+    "passed": 65,
+    "failed": 0,
+    "skipped": 0,
+    "command": "LUA=/path/to/lua5.1 POLESTAR_ROOT=/path/to/pinned/polestar node --test tests/*.cjs",
+    "inputs": "synthetic software fixtures; not captured gameplay",
+    "freshStateComparison": {
+      "reference": "original pinned Lua P.run",
+      "levels": [
+        10,
+        15,
+        20,
+        25,
+        30
+      ],
+      "seeds": [
+        1,
+        7,
+        991
+      ],
+      "exactFullResultEquality": true
+    },
+    "features": [
+      "Persistent player mana and health without changing resource maxima",
+      "Persistent pet mana, cooldowns and global cooldown",
+      "State continuity across separate subprocess batches",
+      "Paid explicit recovery, failed targets and player deaths",
+      "Route work uses combat results even with unusable prior kill-time tables",
+      "Missing level-one support stops the route with partial accounting",
+      "Requirements collection preserves original diagnostic results",
+      "Existing 36-cell class matrix still reaches level 30 in legacy diagnostic mode"
+    ]
+  },
+  "dataRequests": {
+    "uniqueNpcs": 246,
+    "source": "all four legacy diagnostic Warlock routes, with labeled generated continuations",
+    "realObservedPlay": false,
+    "file": "2026-10-24-warlock-combat-requests.json.gz"
+  },
+  "release": {
+    "validatedRouteTime": false,
+    "routeWinner": null,
+    "productiveMythicSimExeParity": false,
+    "blockedLevels": [
+      1,
+      2,
+      3,
+      4
+    ],
+    "approximateLevels": [
+      5,
+      6,
+      7,
+      8,
+      9
+    ],
+    "remaining": [
+      "Recorded character/enemy/recovery inputs",
+      "Productive engine parity",
+      "Pet health and threat",
+      "Player weapon swing timers between targets",
+      "Buff-specific out-of-combat regeneration",
+      "Trainer, equipment and consumable stock progression",
+      "Observed level-run validation",
+      "Remaining source route actions"
+    ]
+  }
+}

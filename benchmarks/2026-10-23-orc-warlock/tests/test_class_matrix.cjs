@@ -62,6 +62,8 @@ test('finite times, an asserted fit or an incomplete comparison cannot manufactu
  const report={rows,profile:p,timeModel:{fit:'self-asserted',calibrated:true}};
  const gate=rankingEligibility(report);assert.equal(gate.winner,null);assert.equal(gate.eligible,false);
  assert.ok(gate.reasons.includes('class_combat_and_recovery_measurements_not_integrated'));
+ const stateful=rankingEligibility({...report,timeModel:{kind:'isolated_foreversim_stateful_diagnostic'}});
+ assert.equal(stateful.winner,null);assert.ok(stateful.reasons.includes('stateful_combat_not_calibrated_for_1_30'));
  const generated=structuredClone(report);generated.rows[0].generatedContinuation=[{q:1}];
  assert.ok(rankingEligibility(generated).reasons.includes('rxp:generated_or_incomplete_source'));
  const mismatch=structuredClone(report);mismatch.rows[0].sourceProfile.class='Warlock';

@@ -5,6 +5,7 @@ on:
     paths:
       - '.github/workflows/route-simulation.yml'
       - 'benchmarks/**'
+      - 'vendor/**'
       - 'sources/quest-xp-provisional-zero-fallback.json'
       - 'sources/warcraftdb-verified-xp-20261023.json'
   workflow_dispatch:
@@ -14,6 +15,8 @@ jobs:
   simulation:
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    env:
+      LUA: lua5.1
     steps:
       - name: Checkout saved guide/source snapshots
         uses: actions/checkout@v4
@@ -29,6 +32,10 @@ jobs:
         run: |
           git clone --quiet https://github.com/fitzforge/polestar.git "$GITHUB_WORKSPACE/polestar"
           git -C "$GITHUB_WORKSPACE/polestar" checkout --quiet eb7b47840f032bf711a3c8d7b1df9f3f6551b990
+      - name: Install Lua for isolated read-only combat adapter tests
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y lua5.1
       - name: Test unchanged guide contract and importers
         working-directory: benchmarks/2026-10-23-independent-route-checks
         run: |

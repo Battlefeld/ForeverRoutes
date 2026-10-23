@@ -21,6 +21,9 @@ const {actionFailure,acceptance}=require('./replay_validation.cjs');
 const {continuation}=require('./style_extension.cjs');
 const catalogAdapter=require('./catalog_replay.cjs');
 const timeLedger=require('./time_ledger.cjs');
+const routeCombat=require('./combat/route_work.cjs');
+const combatRequests=require('./combat/requirements.cjs');
+let routeCombatConfig=null;
 const {LEVEL_XP}=req('game/xp');
 const {recoverAccepts}=require('./quest_recovery.cjs');
 const {reconcileWorldGaps}=require('./world_gap_overlay.cjs');
@@ -111,12 +114,16 @@ function replay(source,world,params,{estimateMissing=false,questFacts={},variant
  const pendingAccepts=[],recoveredAccepts=[];
  const generatedGroups=[];
  const costLedger=timeLedger.ledger();
+ const combatInputGaps=[];
  function* groups(){
   yield* source.groups;
   if(extend&&source.coverage[1]<targetLevel)for(const g of continuation(source,run,ev,{target:targetLevel,missingCounts})){generatedGroups.push(g);yield g;}
  }
  ev.reset();
- for(const g of groups()){
+ const combatBook=routeCombatConfig?routeCombat.attach(ev,run,routeCombatConfig,{engine:{run:req('sim/run'),xp:req('game/xp')},profile:selectedProfile,target:targetLevel,seed:Number(arg('--seed')||1)}):null;
+ const combatRequirements=process.argv.includes('--collect-combat-requirements')?combatRequests.collect(ev,run,req('sim/run').W_KILL):null;
+ routeLoop:for(const g of groups()){
+  if(combatRequirements)combatRequirements.origin=g.generated?'generated':'source';
   if(ev.level>=targetLevel)break;
   if((g.flags || []).includes('hardcore'))continue;
   const allowed=g.catalog?catalogAdapter.groupAllowed(g,run,ev,qstate,LEVEL_XP,selectedProfile):condition(g,ev,run);
@@ -165,20 +172,23 @@ function replay(source,world,params,{estimateMissing=false,questFacts={},variant
    }
    if(ev.questsDone>before)trace.push({quest:e.q,time:ev.time,level:ev.level,xp:ev.xp});
    processed++;
-   }finally{timeLedger.record(costLedger,eventClock,timeLedger.clock(ev),e.t,!!g.generated);}
+   }catch(error){if(error.code!=='COMBAT_INPUT_GAP')throw error;combatInputGaps.push(error.detail);break routeLoop;}
+   finally{timeLedger.record(costLedger,eventClock,timeLedger.clock(ev),e.t,!!g.generated);}
   }
  }
  costLedger.validation=timeLedger.validate(costLedger,timeLedger.clock(ev));
  const metrics=ev.result();
- const blockers={invalidTimeAccounting:costLedger.validation.issues,sourceSelectionIssues:source.selectionIssues||[],sourceActionsNotReplayed:Object.entries(omittedSourceActions).map(([action,count])=>({action,count})),unvalidatedMechanics:(worldGapReport?.unvalidated||[]).filter(x=>trace.some(t=>t.quest===x.quest)),eventFailures,unknownQuestIds:[...unknown],unknownXpIds:[...xpUnknown],unknownObjectiveCounts:[...countsUnknown],unresolvedConditions:[...conditions],skippedAccepts,unreachable:ev.unreachable};
+ const blockers={combatInputGaps,invalidTimeAccounting:costLedger.validation.issues,sourceSelectionIssues:source.selectionIssues||[],sourceActionsNotReplayed:Object.entries(omittedSourceActions).map(([action,count])=>({action,count})),unvalidatedMechanics:[...(worldGapReport?.unvalidated||[]).filter(x=>trace.some(t=>t.quest===x.quest)),...(combatBook?combatBook.limitations.map(reason=>({mechanic:'stateful_combat',reason})):[])],eventFailures,unknownQuestIds:[...unknown],unknownXpIds:[...xpUnknown],unknownObjectiveCounts:[...countsUnknown],unresolvedConditions:[...conditions],skippedAccepts,unreachable:ev.unreachable};
  const coverage=generatedGroups.length?[source.coverage[0],Math.max(source.coverage[1],ev.level)]:source.coverage;
  const valid=ev.level>=targetLevel&&coverage[1]>=targetLevel&&Object.values(blockers).every(x=>Array.isArray(x)?x.length===0:x===0);
  const timeTo=Object.fromEntries([...new Set([6,12,20,targetLevel])].filter(l=>l<=targetLevel).map(l=>[l,l<=coverage[1]&&ev.level>=l?(metrics.levelTimes[l] || null):null]));
  console.log(source.label,JSON.stringify({endLevel:ev.level,seconds:ev.time,timeTo,unknown:unknown.size,counts:countsUnknown.size,xp:xpUnknown.size,conditions:conditions.size,skippedAccepts:skippedAccepts.length}));
- return {id:source.id,label:source.label,mode:estimateMissing?'estimated_exploratory':'strict_diagnostic',status:estimateMissing?(ev.level>=targetLevel?'estimated_model_complete_with_uncertainties':'estimated_model_incomplete'):valid?'provisional_model_complete':'diagnostic_replay_needs_fixes',estimatedModel:estimateMissing?{missingQuestIds:[...estimatedQuests],assumptions,nonquestEstimates,assumedTargetQuestIds:[...countsUnknown],unknownConditionBranches:conditions.size,skippedAccepts:skippedAccepts.length}:null,declaredCoverage:coverage,originalCoverage:source.coverage,generatedContinuation:generatedGroups,sourceProfile:{race:selectedProfile.race,class:selectedProfile.class,faction:selectedProfile.faction},timeTo,diagnosticLevelTimes:metrics.levelTimes,endLevel:ev.level,endXp:ev.xp,endSeconds:ev.time,costLedger,completedQuests:ev.questsDone,travelSeconds:ev.travelSec,grindSeconds:ev.grindSec,processedEvents:processed,excludedIncompatibleClassRace:excludedClass,conditionalSkipped,blockers,optionalExcluded,omittedSourceActions,recoveredAccepts,inputProvenance:source.inputProvenance||{kind:'saved_event_export'},limits:[...(source.limits || []),...(generatedGroups.length?['Generated continuation is a model heuristic, not an official source guide; original event order is preserved.']:[])],trace};
+ return {id:source.id,label:source.label,mode:estimateMissing?'estimated_exploratory':'strict_diagnostic',status:estimateMissing?(ev.level>=targetLevel?'estimated_model_complete_with_uncertainties':'estimated_model_incomplete'):valid?'provisional_model_complete':'diagnostic_replay_needs_fixes',estimatedModel:estimateMissing?{missingQuestIds:[...estimatedQuests],assumptions,nonquestEstimates,assumedTargetQuestIds:[...countsUnknown],unknownConditionBranches:conditions.size,skippedAccepts:skippedAccepts.length}:null,declaredCoverage:coverage,originalCoverage:source.coverage,generatedContinuation:generatedGroups,sourceProfile:{race:selectedProfile.race,class:selectedProfile.class,faction:selectedProfile.faction},timeTo,diagnosticLevelTimes:metrics.levelTimes,endLevel:ev.level,endXp:ev.xp,endSeconds:ev.time,costLedger,combatBook,combatRequirements,completedQuests:ev.questsDone,travelSeconds:ev.travelSec,grindSeconds:ev.grindSec,processedEvents:processed,excludedIncompatibleClassRace:excludedClass,conditionalSkipped,blockers,optionalExcluded,omittedSourceActions,recoveredAccepts,inputProvenance:source.inputProvenance||{kind:'saved_event_export'},limits:[...(source.limits || []),...(generatedGroups.length?['Generated continuation is a model heuristic, not an official source guide; original event order is preserved.']:[])],trace};
 }
 function main(){
  const estimateMissing=process.argv.includes('--estimate-missing');
+ const combatInputFile=arg('--combat-input');
+ if(combatInputFile){if(estimateMissing)throw Error('Stateful combat cannot be mixed with guessed quest work');routeCombatConfig=read(path.resolve(combatInputFile));}
  fs.mkdirSync(outDir,{recursive:true});save(estimateMissing?'status-estimated.json':'status.json',{status:'running',startedAt:new Date().toISOString(),profile:{faction:selectedProfile.faction,race:selectedProfile.race,class:selectedProfile.class,levels:[6,12,20,30]}});
  // No undocumented XP estimates: only explicit imported values earn quest XP.
  // An unvalued quest is recorded in blockers if referenced by a route.
@@ -218,7 +228,7 @@ function main(){
  console.log('ACCEPTANCE_GATE '+JSON.stringify(acceptanceRows));
  const milestones=[...new Set([6,12,20,targetLevel])].filter(l=>l<=targetLevel).map(level=>({level,entries:rows.filter(r=>r.declaredCoverage[1]>=level&&Number.isFinite(r.timeTo[level])).map(r=>({id:r.id,seconds:r.timeTo[level]})).sort((a,b)=>a.seconds-b.seconds)}));
  const comparison=milestones.map(m=>({...m,fullFourRouteCoverage:m.entries.length===4,rankingKind:'disabled',warning:'Not valid for ranking until all four reach the milestone and quest state/locations are validated'}));
- const report={schema:'foreverroutes.shared_comparison.v3',finishedAt:new Date().toISOString(),mode:estimateMissing?'estimated_exploratory':'strict_diagnostic',status:estimateMissing?(rows.every(r=>r.endLevel>=targetLevel)?'estimated_model_complete_with_uncertainties':'estimated_model_incomplete'):rows.every(r=>r.status==='provisional_model_complete')?'complete_provisional':'completed_diagnostic_replays',modelComparison:comparison,modelXpPolicy:xpReport,sourcePriority:xpReport?.priority||null,profile:{faction:selectedProfile.faction,race:selectedProfile.race,class:selectedProfile.class,targets:[...new Set([6,12,20,targetLevel])].filter(l=>l<=targetLevel),solo:true,aoe:false,rested:false},engine:'fitzforge/polestar@eb7b47840f032bf711a3c8d7b1df9f3f6551b990',modelParams:params,timeModel:{kind:parameterSet.doc.fit?'parameter_fit_requires_class_validation':'uncalibrated_class_priors',fit:parameterSet.doc.fit||null,classFactor:params.classFactor,combatIncludesRecovery:true,levelOverheadIsGeneric:true},worldInput:{file:worldFile,sha256:fs.existsSync(worldFile)?crypto.createHash('sha256').update(fs.readFileSync(worldFile)).digest('hex'):null},provenance:read(path.join(dataDir,'meta.json')),xpOverlay:{...xpOverlay.applied,replayReferenceSources:replayXpReferences,assumptionsNotVerified:true,originalQuestFactsUnchanged:true},objectiveCountOverlay:objectiveReport,worldGapOverlay:worldGapReport,rows,rankingPublished:false,acceptancePassed:acceptanceRows.every(x=>x.passed),reason:'Unresolved route semantics / missing objective and location inputs prevent a defensible fastest-route ranking'};
+ const report={schema:'foreverroutes.shared_comparison.v3',finishedAt:new Date().toISOString(),mode:estimateMissing?'estimated_exploratory':'strict_diagnostic',status:estimateMissing?(rows.every(r=>r.endLevel>=targetLevel)?'estimated_model_complete_with_uncertainties':'estimated_model_incomplete'):rows.every(r=>r.status==='provisional_model_complete')?'complete_provisional':'completed_diagnostic_replays',modelComparison:comparison,modelXpPolicy:xpReport,sourcePriority:xpReport?.priority||null,profile:{faction:selectedProfile.faction,race:selectedProfile.race,class:selectedProfile.class,targets:[...new Set([6,12,20,targetLevel])].filter(l=>l<=targetLevel),solo:true,aoe:false,rested:false},engine:'fitzforge/polestar@eb7b47840f032bf711a3c8d7b1df9f3f6551b990',modelParams:params,combatInput:combatInputFile?{file:path.resolve(combatInputFile),sha256:crypto.createHash('sha256').update(fs.readFileSync(combatInputFile)).digest('hex'),diagnosticOnly:true}:null,timeModel:{kind:routeCombatConfig?'isolated_foreversim_stateful_diagnostic':parameterSet.doc.fit?'parameter_fit_requires_class_validation':'uncalibrated_class_priors',fit:parameterSet.doc.fit||null,classFactor:params.classFactor,combatIncludesRecovery:true,levelOverheadIsGeneric:true},worldInput:{file:worldFile,sha256:fs.existsSync(worldFile)?crypto.createHash('sha256').update(fs.readFileSync(worldFile)).digest('hex'):null},provenance:read(path.join(dataDir,'meta.json')),xpOverlay:{...xpOverlay.applied,replayReferenceSources:replayXpReferences,assumptionsNotVerified:true,originalQuestFactsUnchanged:true},objectiveCountOverlay:objectiveReport,worldGapOverlay:worldGapReport,rows,rankingPublished:false,acceptancePassed:acceptanceRows.every(x=>x.passed),reason:'Unresolved route semantics / missing objective and location inputs prevent a defensible fastest-route ranking'};
  if(process.argv.includes('--require-complete')&&!report.acceptancePassed)process.exitCode=2;
  save(estimateMissing?'comparison-estimated.json':'comparison.json',report);save(estimateMissing?'status-estimated.json':'status.json',{status:report.status,finishedAt:report.finishedAt,outputs:rows.map(r=>r.id+(estimateMissing?'-estimated':'')+'.json'),rankingPublished:false});
  if(estimateMissing)console.log('ESTIMATED_MODEL_COMPARISON '+JSON.stringify({mode:report.mode,modelXpPolicy:xpReport.counts,modelComparison:comparison.map(({level,entries,fullFourRouteCoverage})=>({level,entries,fullFourRouteCoverage})),remainingUncertainties:rows.map(r=>({id:r.id,unknown:r.blockers.unknownQuestIds.length,unknownCounts:r.blockers.unknownObjectiveCounts.length,skippedAccepts:r.blockers.skippedAccepts.length}))}));

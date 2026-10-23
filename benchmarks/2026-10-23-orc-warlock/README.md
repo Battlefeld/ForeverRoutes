@@ -1,3 +1,5 @@
+Neue isolierte Kampfanbindung: [combat-adapter.md](combat-adapter.md). ForeverSim bleibt unverändert.
+
 Aktueller Stand für alle Klassen: [class-matrix.md](class-matrix.md). Der folgende Bericht dokumentiert den früheren Orc-Hexenmeister-Lauf.
 
 # Levelrouten: erster gemeinsamer Simulationslauf, 23.10.2026
