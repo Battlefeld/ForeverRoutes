@@ -1,8 +1,8 @@
-name: Fill 831 WarcraftDB quest XP gaps
+name: Complete WarcraftDB XP quest source audit
 
 on:
-  # Temporarily manual/push-only until live browser extraction is verified.
-  # Avoid repeated runs and failure emails from remote page changes.
+  # The initial push starts a bounded run. Each successful run chains another
+  # only while never-scanned IDs remain; no periodic runs after completion.
   push:
     branches: [main]
     paths:
@@ -10,12 +10,13 @@ on:
   workflow_dispatch:
     inputs:
       batch_size:
-        description: 'New quest IDs per run (default 75)'
+        description: 'Quest IDs per bounded workflow run, with commits after every five'
         type: number
         default: 25
 
 permissions:
   contents: write
+  actions: write
 
 concurrency:
   group: foreverroutes-warcraftdb-gapfill-checkpoint-v2
@@ -63,7 +64,7 @@ jobs:
       - name: Import XP gaps in resumable five-quest checkpoints, Git branches only
         shell: bash
         env:
-          BATCH_SIZE: ${{ github.event_name == 'push' && '5' || inputs.batch_size || '25' }}
+          BATCH_SIZE: ${{ github.event_name == 'push' && '25' || inputs.batch_size || '25' }}
         run: |
           set -euo pipefail
           cp .generated/base.json .generated/current-base.json
@@ -110,3 +111,23 @@ jobs:
               .generated/import-status.json::sources/warcraftdb-import-status.json
             remaining=$((remaining-scanned))
           done
+
+      - name: Continue automatically until all outstanding quest IDs have been checked
+        if: success()
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          if [ ! -s .generated/import-status.json ]; then
+            echo 'No import status: refusing to chain an unverified batch'
+            exit 1
+          fi
+          unseen="$(python -c 'import json; print(json.load(open(".generated/import-status.json"))["unscanned_remaining"])')"
+          if [ "$unseen" -gt 0 ]; then
+            echo "$unseen quest IDs have not been checked. Queuing 25 more in groups of five."
+            gh workflow run warcraftdb-gaps.yml --ref main -f batch_size=25
+          else
+            echo 'Every ID in the outstanding XP audit has now been checked at least once.'
+            echo 'Quests with unknown XP remain marked unknown, not fabricated as zero.'
+          fi
