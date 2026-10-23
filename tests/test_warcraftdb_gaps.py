@@ -31,6 +31,11 @@ Requires Level | 20
 """
 
 class GapTests(unittest.TestCase):
+    def test_unscanned_tracking_for_automatic_batched_import(self):
+        rows={"172":{"fields":{},"attempts":[{"status":"not_found"}]},
+              "428":{"fields":{"xp":225}}}
+        self.assertEqual(gap.unscanned_ids([172,308,403,428],rows),[308,403])
+
     def test_pending_unseen_quest_ids_and_zero_xp(self):
         import datetime as dt
         now=dt.datetime(2026,10,23, tzinfo=dt.timezone.utc)
