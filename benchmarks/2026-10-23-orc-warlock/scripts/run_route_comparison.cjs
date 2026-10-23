@@ -98,7 +98,7 @@ function validateGenerated(groups,existing){
 function replay(source,world,params,{estimateMissing=false,questFacts={},variant=1}={}){
  const {run,ev}=makeRun(world,{race:'Orc',cls:'Warrior',params,family:'solo'});
  const unknown=new Set(),xpUnknown=new Set(),countsUnknown=new Set(),conditions=new Set(),skippedAccepts=[],trace=[];
- const assumptions=[],estimatedQuests=new Set(),nonquestEstimates=[];
+ const assumptions=[],estimatedQuests=new Set(),nonquestEstimates=[],eventFailures=[];
  run.syntheticQuestStates=new Map();
  let processed=0,excludedClass=0,conditionalSkipped=0;
  ev.reset();
@@ -119,7 +119,7 @@ function replay(source,world,params,{estimateMissing=false,questFacts={},variant
    if(e.q && !compatible(e.q)){excludedClass++;continue;}
    if((g.flags || []).includes('parallel') && e.t==='complete')continue;
    if(e.q){if(!raw[e.q] || !Number.isFinite(raw[e.q].xp))xpUnknown.add(e.q);if(missingCounts.has(e.q))countsUnknown.add(e.q);}
-   const seq=compileSequence(run,[e]);for(const id of seq.unknown)unknown.add(id);
+   const seq=compileSequence(run,[e]);for(const id of seq.unknown){unknown.add(id);eventFailures.push({type:'unknown_quest',quest:id,action:e.t,guide:g.guide,generated:!!g.generated});}
    if(estimateMissing&&seq.unknown.length&&['accept','complete','turnin'].includes(e.t)){
     estimateAction({event:e,ev,quest:questFacts[e.q]||raw[e.q],states:run.syntheticQuestStates,params,trace:assumptions,variant});
     estimatedQuests.add(Number(e.q));
@@ -133,13 +133,13 @@ function replay(source,world,params,{estimateMissing=false,questFacts={},variant
     if(seq.kind[i]===K_GRIND)ev.grindTo(seq.q[i],seq.task[i]);
     else ev.step(seq.kind[i],seq.q[i],seq.task[i],seq.pt[i]);
    }
-   if(e.t==='accept'){const qi=run.qIndex.get(e.q);if(qi!=null&&!ev.active[qi]&&!ev.done[qi])skippedAccepts.push({quest:e.q,guide:g.guide,step:g.step,level:ev.level});}
+   if(e.t==='accept'){const qi=run.qIndex.get(e.q);if(qi!=null&&!ev.active[qi]&&!ev.done[qi]){const failure={quest:e.q,guide:g.guide,step:g.step,level:ev.level,generated:!!g.generated};skippedAccepts.push(failure);eventFailures.push({type:'skipped_accept',...failure});}}
    if(ev.questsDone>before)trace.push({quest:e.q,time:ev.time,level:ev.level,xp:ev.xp});
    processed++;
   }
  }
  const metrics=ev.result();
- const blockers={unknownQuestIds:[...unknown],unknownXpIds:[...xpUnknown],unknownObjectiveCounts:[...countsUnknown],unresolvedConditions:[...conditions],skippedAccepts,unreachable:ev.unreachable};
+ const blockers={eventFailures,unknownQuestIds:[...unknown],unknownXpIds:[...xpUnknown],unknownObjectiveCounts:[...countsUnknown],unresolvedConditions:[...conditions],skippedAccepts,unreachable:ev.unreachable};
  const valid=Object.values(blockers).every(x=>Array.isArray(x)?x.length===0:x===0);
  const timeTo=Object.fromEntries([6,12,20,30].map(l=>[l,l<=source.coverage[1]&&ev.level>=l?(metrics.levelTimes[l] || null):null]));
  console.log(source.label,JSON.stringify({endLevel:ev.level,seconds:ev.time,timeTo,unknown:unknown.size,counts:countsUnknown.size,xp:xpUnknown.size,conditions:conditions.size,skippedAccepts:skippedAccepts.length}));
@@ -210,7 +210,7 @@ function main(){
  }
  const rows=[];
  for(const source of sources){const row=replay(source,world,params,{estimateMissing,questFacts:oi.quests});rows.push(row);save(source.id+(estimateMissing?'-estimated':'')+'.json',row);}
- const extensionCheck=rows.filter(r=>['rxp','wisp'].includes(r.id)).map(r=>({id:r.id,endLevel:r.endLevel,skippedAccepts:r.blockers.skippedAccepts.length,unknownQuestIds:r.blockers.unknownQuestIds.length,ready:r.endLevel>=30&&r.blockers.skippedAccepts.length===0&&r.blockers.unknownQuestIds.length===0}));
+ const extensionCheck=rows.filter(r=>['rxp','wisp'].includes(r.id)).map(r=>({id:r.id,endLevel:r.endLevel,skippedAccepts:r.blockers.skippedAccepts.length,unknownQuestIds:r.blockers.unknownQuestIds.length,generatedFailures:r.blockers.eventFailures.filter(f=>f.generated).slice(0,30),originalFailures:r.blockers.eventFailures.filter(f=>!f.generated).slice(0,30),ready:r.endLevel>=30&&r.blockers.skippedAccepts.length===0&&r.blockers.unknownQuestIds.length===0}));
  console.log('EXTENSION_READINESS '+JSON.stringify(extensionCheck));
  const milestones=[6,12,20,30].map(level=>({level,entries:rows.filter(r=>r.declaredCoverage[1]>=level&&Number.isFinite(r.timeTo[level])).map(r=>({id:r.id,seconds:r.timeTo[level]})).sort((a,b)=>a.seconds-b.seconds)}));
  const comparison=milestones.map(m=>({...m,fullFourRouteCoverage:m.entries.length===4,rankingKind:'disabled',warning:'Not valid for ranking until all four reach the milestone and quest state/locations are validated'}));
