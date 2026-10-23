@@ -191,9 +191,9 @@ function main(){
    const candidates=[...pool.values()].filter(q=>q.level>=from-5&&!existing.has(q.id));
    // RXP: favor XP density and short chains. Wisp: favor contiguous
    // quest-hub progression, avoiding repeated area changes.
-   candidates.sort((a,b)=>id==='rxp'
-    ? (b.xp/Math.max(1,b.level)-a.xp/Math.max(1,a.level))||(a.level-b.level)||(a.id-b.id)
-    : (a.level-b.level)||a.zone.localeCompare(b.zone)||(a.id-b.id));
+   // Keep source dependency order within each chapter. XP scoring may only
+   // prioritize between chapters, never reorder prerequisite chains.
+   candidates.sort((a,b)=>(a.level-b.level)||(a.order-b.order));
    const groups=candidates.map(q=>({
     guide:'GENERATED_'+id+'_L'+from+'_30',
     generated:true,style:id==='rxp'?'xp-density-speed':'level-hub-continuity',
