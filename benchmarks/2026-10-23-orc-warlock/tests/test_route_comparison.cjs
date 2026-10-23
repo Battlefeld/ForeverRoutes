@@ -1,7 +1,7 @@
 'use strict';
 const test=require('node:test'),assert=require('node:assert/strict');
 const fs=require('node:fs'),path=require('node:path');
-const {rxpCondition,journeyCondition,applyXpPolicy}=require('../scripts/run_route_comparison.cjs');
+const {rxpCondition,journeyCondition,applyXpPolicy,effectiveQuestXp}=require('../scripts/run_route_comparison.cjs');
 test('RXP class/race gates keep the Orc Warlock branch and reject the other classes',()=>{
  assert.equal(rxpCondition('Warrior/Shaman/Warlock/Mage/Priest'),true);
  assert.equal(rxpCondition('!Warrior !Rogue !Shaman'),true);
@@ -42,4 +42,22 @@ test('Diagnostic comparisons never invent a 1-30 time for guides that end earlie
  assert.equal(d.rankingPublished,false);assert.equal(d.rows.length,4);
  for(const id of ['rxp','wisp'])assert.equal(d.rows.find(r=>r.id===id).timeTo['30'],null);
  for(const r of d.rows){assert.match(r.status,/diagnostic/);assert.ok(r.trace.length>20);for(const t of r.trace)assert.ok(t.time<=r.endSeconds);}
+});
+
+test('Source-verified and user-approved zero XP fill only missing rewards for every route',()=>{
+ const base={172:{id:172,xp:null},308:{id:308,xp:null},788:{id:788,xp:170},901:{id:901,xp:0},456:{id:456,xp:null}};
+ const fallback={entries:[{quest_id:172,xp:0},{quest_id:308,xp:0},{quest_id:788,xp:0},{quest_id:901,xp:0},{quest_id:999,xp:0}]};
+ const verified={quests:{308:{fields:{xp:15}},456:{fields:{xp:0}},788:{fields:{xp:99}}}};
+ const {records,applied}=effectiveQuestXp(base,fallback,verified);
+ assert.equal(records[172].xp,0);
+ assert.equal(records[172].xp_status,'assumed_zero_missing_source');
+ assert.equal(records[308].xp,15);
+ assert.equal(records[308].xp_status,'verified_reference');
+ assert.equal(records[456].xp,0);
+ assert.equal(records[788].xp,170,'known Forever XP outranks references');
+ assert.equal(records[901].xp,0);
+ assert.equal(records[999],undefined,'do not manufacture missing quests');
+ assert.equal(base[172].xp,null,'never modify source records');
+ assert.deepEqual(applied.verified.sort((a,b)=>a-b),[308,456]);
+ assert.deepEqual(applied.assumedZero,[172]);
 });
