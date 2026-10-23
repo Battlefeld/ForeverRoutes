@@ -1,0 +1,84 @@
+{
+  "schema": "foreverroutes.independent_route_validation.v1",
+  "pythonTestsPassed": 9,
+  "nodeTestsPassed": 13,
+  "guideCounts": {
+    "journey": 41,
+    "wisp": 8,
+    "rxp": 28,
+    "polestar": 57
+  },
+  "uniqueGuideIds": 134,
+  "sourceFilesEdited": false,
+  "routeOptimizationPerformed": false,
+  "rankingPublished": false,
+  "reports": {
+    "check-alliance-human-mage": {
+      "profile": {
+        "race": "Human",
+        "class": "Mage",
+        "faction": "Alliance",
+        "level": 1,
+        "targetLevel": 30,
+        "partySize": 1,
+        "withOptional": false,
+        "hardcore": false,
+        "variables": {},
+        "inventory": {},
+        "guideFlags": [],
+        "classBit": 128,
+        "raceBit": 1
+      },
+      "statusCounts": {
+        "not_applicable": 93,
+        "blocked": 41
+      },
+      "routeOrderPreserved": true,
+      "worldAuditAvailable": false
+    },
+    "check-horde-orc-warlock": {
+      "profile": {
+        "race": "Orc",
+        "class": "Warlock",
+        "faction": "Horde",
+        "level": 1,
+        "targetLevel": 30,
+        "partySize": 1,
+        "withOptional": false,
+        "hardcore": false,
+        "variables": {},
+        "inventory": {},
+        "guideFlags": [],
+        "classBit": 256,
+        "raceBit": 2
+      },
+      "statusCounts": {
+        "blocked": 38,
+        "not_applicable": 96
+      },
+      "routeOrderPreserved": true,
+      "worldAuditAvailable": true
+    }
+  },
+  "sharedObjectiveCountsFilled": 56,
+  "sharedFactConflicts": [
+    {
+      "quest": 99130,
+      "objective": 1,
+      "retained": 6,
+      "guide": 18
+    },
+    {
+      "quest": 99130,
+      "objective": 2,
+      "retained": 18,
+      "guide": 6
+    }
+  ],
+  "limitations": [
+    "Preflight checker, not a completed universal simulation runtime",
+    "Compiled events preserve source order; runtime adapters must still honor all retained source semantics",
+    "Alliance world location/work audit is unavailable in this snapshot",
+    "Wisp package contains starter guides and references unbundled continuation guides"
+  ]
+}
