@@ -47,6 +47,9 @@ jobs:
         env:
           POLESTAR_ROOT: ${{ github.workspace }}/polestar
         run: |
+          git show artifacts:benchmarks/2026-10-23-orc-warlock/scripts/run_route_comparison.cjs > scripts/run_route_comparison.original.cjs
+          cp scripts/run_route_comparison.cjs scripts/run_route_comparison.warrior.cjs
+          cp scripts/run_route_comparison.original.cjs scripts/run_route_comparison.cjs
           node scripts/run_route_comparison.cjs --saved-inputs
           node --test tests/test_route_comparison.cjs tests/test_objective_count_overlay.cjs tests/test_source_priority.cjs tests/test_estimate_model.cjs
       - name: Run all four guides with data-first, explicit last-resort estimates
@@ -61,6 +64,7 @@ jobs:
         env:
           POLESTAR_ROOT: ${{ github.workspace }}/polestar
         run: |
+          cp scripts/run_route_comparison.warrior.cjs scripts/run_route_comparison.cjs
           node scripts/run_route_comparison.cjs --saved-inputs --estimate-missing --warrior
       - name: Inspect missing objective-to-world mappings
         working-directory: benchmarks/2026-10-23-orc-warlock
