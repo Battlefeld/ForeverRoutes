@@ -34,7 +34,7 @@ class GapTests(unittest.TestCase):
     def test_unscanned_tracking_for_automatic_batched_import(self):
         rows={"172":{"fields":{},"attempts":[{"status":"not_found"}]},
               "428":{"fields":{"xp":225}}}
-        self.assertEqual(gap.unscanned_ids([172,308,403,428],rows),[308,403])
+        self.assertEqual(gap.unscanned_ids([172,308,403,428],rows),[172,308,403])
 
     def test_pending_unseen_quest_ids_and_zero_xp(self):
         import datetime as dt
@@ -47,7 +47,44 @@ class GapTests(unittest.TestCase):
         }
         # 308 is new: never-scanned IDs MUST be processed immediately.
         self.assertEqual(gap.pending_ids([16,254,308,91775],rows,48,now),
-                         [308,91775])
+                         [254,308,91775])
+
+    def test_octowow_explicit_zero_xp_and_repeatable(self):
+        page = ("Spirit of the Wind - Quests - OctoWow Database",
+                "Quick Facts\nLevel: 20\nRequires level: 10\n"
+                "Repeatable\nRewXP: 0\nGains\n0 Experience")
+        info = gap.parse_octowow(*page)
+        self.assertEqual(info["xp"], 0)
+        self.assertTrue(info["repeatable"])
+        self.assertEqual(info["level"], 20)
+
+    def test_octowow_repeatable_can_give_positive_xp(self):
+        page = ("Example Quest - Quests - OctoWow Database",
+                "Quick Facts\nLevel: 60\nRepeatable\nRewXP: 650")
+        info = gap.parse_octowow(*page)
+        self.assertEqual(info["xp"], 650)
+        self.assertTrue(info["repeatable"])
+
+    def test_octowow_no_reward_is_unknown_not_zero(self):
+        page = ("Example Quest - Quests - OctoWow Database",
+                "Quick Facts\nLevel: 10\nRepeatable")
+        info = gap.parse_octowow(*page)
+        self.assertNotIn("xp", info)
+
+    def test_previous_missing_xp_gets_only_octowow_fallback(self):
+        from unittest.mock import patch
+        calls=[]
+        def fake_get_page(page,url,robots,delay):
+            calls.append(url)
+            return ("ok",("Quest - Quests - OctoWow Database",
+                          "Quick Facts\nLevel: 12\nRewXP: 0"),{})
+        previous={"fields":{"name":"Quest"},
+                  "attempts":[{"source":"warcraftdb_forever","status":"ok"}]}
+        with patch.object(gap,"get_page",side_effect=fake_get_page):
+            record=gap.attempts_for_quest(None,308,{},0,previous=previous)
+        self.assertEqual(record["fields"]["xp"],0)
+        self.assertEqual(len(calls),1)
+        self.assertTrue(calls[0].startswith("https://octowow.st/"))
 
     def test_warcraftdb_xp_short_circuits_unneeded_wowhead(self):
         from unittest.mock import patch
