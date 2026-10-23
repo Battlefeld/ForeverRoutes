@@ -3,7 +3,7 @@
 const CLASS_BITS={Warrior:1,Paladin:2,Hunter:4,Rogue:8,Priest:16,Shaman:64,Mage:128,Warlock:256,Druid:1024};
 const RACES={Human:['Alliance',1],Orc:['Horde',2],Dwarf:['Alliance',4],NightElf:['Alliance',8],Undead:['Horde',16],Tauren:['Horde',32],Gnome:['Alliance',64],Troll:['Horde',128],Skyborne:[null,null]};
 const KIND=new Set(['guide','accept','complete','turnin','level','move','bind','hearth','learn_flight','transport','deathskip','resurrect','transition','inventory_goal','inventory_guard','destroy','set_variable','bank_deposit','bank_withdraw','track_objective','choice','service','callback','manual','arrival','vendor','train','level_guard','use_item','unsupported','quest_guard','money_guard','profession','cast','gossip','grind']);
-const REPLAY_SUPPORTED=new Set(['guide','accept','complete','turnin','level','transition']);
+const REPLAY_SUPPORTED=new Set(['guide','accept','complete','turnin','level']);
 const STATIC=new Set([...Object.keys(CLASS_BITS).map(x=>x.toUpperCase()),...Object.keys(RACES).map(x=>x.toUpperCase()),'SCOURGE','NIGHTELF','BLOODELF','DRAENEI','ALLIANCE','HORDE','FOREVER','ERA','SOM1','SOM2','SOD','SOD2','TBC','WOTLK','CATA','JOYOUS','GROUPS','AH','HARDCORE','SOFTCORE','SKIP']);
 const key=s=>String(s).toLowerCase().replace(/[ _-]/g,'');
 function named(s,names){return Object.keys(names).find(n=>key(n)===key(s));}
@@ -17,7 +17,7 @@ function profile(o={}){
 }
 function hasBit(mask,bit){return Math.floor(Number(mask)/bit)%2>=1;}
 function compatible(q,p){return !q || ((!q.classes || hasBit(q.classes,p.classBit))&&(!q.races || hasBit(q.races,p.raceBit)));}
-function truth(x){return x===undefined?undefined:x!==false&&x!==null;}
+function truth(x){return x===undefined?undefined:!!x;}
 function and(a,b){a=truth(a);b=truth(b);return a===false||b===false?false:a===undefined||b===undefined?undefined:true;}
 function or(a,b){a=truth(a);b=truth(b);return a===true||b===true?true:a===undefined||b===undefined?undefined:false;}
 function context(p,state={}){

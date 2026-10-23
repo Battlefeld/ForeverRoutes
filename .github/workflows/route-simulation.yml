@@ -1,0 +1,66 @@
+name: Independent Forever route simulation
+on:
+  push:
+    branches: [artifacts, fix/simulation-start-20261023]
+    paths:
+      - '.github/workflows/route-simulation.yml'
+      - 'benchmarks/**'
+      - 'sources/quest-xp-provisional-zero-fallback.json'
+      - 'sources/warcraftdb-verified-xp-20261023.json'
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  simulation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout saved guide/source snapshots
+        uses: actions/checkout@v4
+      - name: Install Node.js 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Install Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Obtain pinned Polestar simulation engine
+        run: |
+          git clone --quiet https://github.com/fitzforge/polestar.git "$GITHUB_WORKSPACE/polestar"
+          git -C "$GITHUB_WORKSPACE/polestar" checkout --quiet eb7b47840f032bf711a3c8d7b1df9f3f6551b990
+      - name: Test unchanged guide contract and importers
+        working-directory: benchmarks/2026-10-23-independent-route-checks
+        run: |
+          python -m unittest discover -s tests -v
+          node --test tests/test_route_contract.cjs
+      - name: Check all 134 guide chapters for Orc Warlock
+        working-directory: benchmarks/2026-10-23-independent-route-checks
+        run: |
+          node scripts/check_routes.cjs --catalog events/catalog.json.gz --quests data/quests.json.gz --world data/world-horde.json.gz --facts data/objective-facts.json --race Orc --class Warlock --faction Horde --output reports/replayed-horde.json
+      - name: Check all 134 guide chapters for Human Mage
+        working-directory: benchmarks/2026-10-23-independent-route-checks
+        run: |
+          node scripts/check_routes.cjs --catalog events/catalog.json.gz --quests data/quests.json.gz --world data/world-horde.json.gz --facts data/objective-facts.json --race Human --class Mage --faction Alliance --output reports/replayed-alliance.json
+      - name: Replay four source chains with shared model and provenance XP policy
+        working-directory: benchmarks/2026-10-23-orc-warlock
+        env:
+          POLESTAR_ROOT: ${{ github.workspace }}/polestar
+        run: |
+          node scripts/run_route_comparison.cjs --saved-inputs
+          node --test tests/test_route_comparison.cjs
+      - name: Gate unsupported ranking and summarize actual blockers
+        working-directory: benchmarks/2026-10-23-independent-route-checks
+        run: node scripts/summarize_gate.cjs
+      - name: Save compact reports to the repository (artifact quota independent)
+        run: |
+          mkdir -p simulation-results
+          cp benchmarks/2026-10-23-independent-route-checks/reports/simulation-start-gate.json simulation-results/simulation-start-gate.json
+          cp benchmarks/2026-10-23-orc-warlock/.comparison/results/comparison.json simulation-results/comparison.json
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add simulation-results/simulation-start-gate.json simulation-results/comparison.json
+          if ! git diff --cached --quiet; then
+            git commit -m "chore: store verified route diagnostics [skip ci]"
+            git push origin "HEAD:${{ github.ref_name }}"
+          fi

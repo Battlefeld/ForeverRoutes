@@ -70,3 +70,16 @@ test('Invalid event and objective references are reported instead of silently dr
  const errors=C.validate(make([{t:'magic_teleport'},{t:'complete',q:788,obj:0}]));
  assert.ok(errors.some(e=>e.code==='event_type'));assert.ok(errors.some(e=>e.code==='objective_index'));
 });
+
+test('Zero inventory and flags are false, not truthy, in guard expressions',()=>{
+ const p=C.profile({inventory:{12:0,13:2}});
+ assert.equal(C.expression('ITEM[12]',C.context(p)),false);
+ assert.equal(C.expression('ITEM[12] > 0',C.context(p)),false);
+ assert.equal(C.expression('ITEM[13] > 0',C.context(p)),true);
+ assert.equal(C.expression('ITEM[14]',C.context(p)),undefined);
+});
+test('Guide transitions remain timing blockers until the transition can execute',()=>{
+ const r=C.check(make([{t:'transition',value:'another-chapter'}]),C.profile(),{});
+ assert.equal(r.status,'blocked');
+ assert.ok(r.issues.some(i=>i.code==='event_execution_missing'));
+});

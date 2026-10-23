@@ -9,7 +9,30 @@ const {loadPolestarRoutes,requiredEvents}=req('sim/baselines/polestar');
 const dataDir=path.join(root,'.comparison/data'),simDir=path.join(root,'.comparison/cache'),outDir=path.join(root,'.comparison/results');
 const read=p=>JSON.parse(fs.readFileSync(p,'utf8'));
 const save=(n,d)=>fs.writeFileSync(path.join(outDir,n),JSON.stringify(d,null,2)+'\n');
-const raw=read(path.join(dataDir,'quests.json')),missingCounts=new Set(read(path.join(dataDir,'missing-counts.json')));
+// Keep every original route immutable. Apply the common, explicitly sourced XP
+// overlays only in memory, in the same order for all four route replays.
+const rawQuestFacts=read(path.join(dataDir,'quests.json'));
+const assumedXpFile=path.resolve(root,'../../sources/quest-xp-provisional-zero-fallback.json');
+const verifiedXpFile=path.resolve(root,'../../sources/warcraftdb-verified-xp-20261023.json');
+function effectiveQuestXp(records, assumed, verified) {
+ const out={...records},applied={verified:[],assumedZero:[]};
+ const override=(id,xp,label)=>{
+  const existing=out[id];
+  // Never replace a known Forever reward with a weaker Classic reference.
+  if(!existing || Number.isFinite(existing.xp) || !Number.isFinite(xp))return;
+  out[id]={...existing,xp,xp_status:label};
+  applied[label==='assumed_zero_missing_source'?'assumedZero':'verified'].push(Number(id));
+ };
+ for(const [id,record] of Object.entries((verified && verified.quests)||{}))
+  override(id,record.fields && record.fields.xp,'verified_reference');
+ for(const entry of (assumed && assumed.entries)||[])
+  if(entry.xp===0)override(entry.quest_id,0,'assumed_zero_missing_source');
+ return {records:out,applied};
+}
+const xpOverlay=effectiveQuestXp(rawQuestFacts,
+ fs.existsSync(assumedXpFile)?read(assumedXpFile):null,
+ fs.existsSync(verifiedXpFile)?read(verifiedXpFile):null);
+const raw=xpOverlay.records,missingCounts=new Set(read(path.join(dataDir,'missing-counts.json')));
 const flags=new Set(['WARLOCK','ORC','HORDE','FOREVER','ERA','SOFTCORE','H12B']);
 const knownFlags=new Set(['WARRIOR','PALADIN','HUNTER','ROGUE','PRIEST','SHAMAN','MAGE','WARLOCK','DRUID','ORC','TROLL','TAUREN','SCOURGE','UNDEAD','HUMAN','DWARF','GNOME','NIGHTELF','SKYBORNE','BLOODELF','DRAENEI','HORDE','ALLIANCE','FOREVER','ERA','SOM1','SOM2','SOD','SOD2','TBC','WOTLK','JOYOUS','GROUPS','AH','HARDCORE','SOFTCORE','SKIP','H12B']);
 const and=(a,b)=>a===false||b===false?false:a===null||b===null?null:!!a&&!!b;
@@ -109,8 +132,8 @@ function main(){
  }
  const rows=[];
  for(const source of sources){const row=replay(source,world,params);rows.push(row);save(source.id+'.json',row);}
- const report={schema:'foreverroutes.shared_comparison.v1',finishedAt:new Date().toISOString(),status:rows.every(r=>r.status==='provisional_model_complete')?'complete_provisional':'completed_diagnostic_replays',profile:{faction:'Horde',race:'Orc',class:'Warlock',targets:[6,12,20,30],solo:true,aoe:false,rested:false},engine:'fitzforge/polestar@eb7b47840f032bf711a3c8d7b1df9f3f6551b990',modelParams:params,provenance:read(path.join(dataDir,'meta.json')),rows,rankingPublished:false,reason:'Unresolved route semantics / missing objective and location inputs prevent a defensible fastest-route ranking'};
+ const report={schema:'foreverroutes.shared_comparison.v1',finishedAt:new Date().toISOString(),status:rows.every(r=>r.status==='provisional_model_complete')?'complete_provisional':'completed_diagnostic_replays',profile:{faction:'Horde',race:'Orc',class:'Warlock',targets:[6,12,20,30],solo:true,aoe:false,rested:false},engine:'fitzforge/polestar@eb7b47840f032bf711a3c8d7b1df9f3f6551b990',modelParams:params,provenance:read(path.join(dataDir,'meta.json')),xpOverlay:{...xpOverlay.applied,assumptionsNotVerified:true,originalQuestFactsUnchanged:true},rows,rankingPublished:false,reason:'Unresolved route semantics / missing objective and location inputs prevent a defensible fastest-route ranking'};
  save('comparison.json',report);save('status.json',{status:report.status,finishedAt:report.finishedAt,outputs:rows.map(r=>r.id+'.json'),rankingPublished:false});
 }
 if(require.main===module)try{main();}catch(e){fs.mkdirSync(outDir,{recursive:true});save('status.json',{status:'failed',error:e.message,at:new Date().toISOString()});console.error(e);process.exitCode=1;}
-module.exports={rxpCondition,journeyCondition,qstate,applyXpPolicy};
+module.exports={rxpCondition,journeyCondition,qstate,applyXpPolicy,effectiveQuestXp};
