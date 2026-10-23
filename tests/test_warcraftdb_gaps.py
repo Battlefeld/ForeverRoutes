@@ -112,6 +112,37 @@ class GapTests(unittest.TestCase):
         self.assertEqual(q["objectives"],[{"kind":"object","id":123}])
         self.assertEqual(data["stats"]["quests_missing_xp"],0)
         self.assertEqual(changes["xp_inserted"],1)
+    def test_explicit_classicdb_zero_is_valid_reference(self):
+        raw={"schema":"foreverroutes.unified_quests.v1","stats":{},"sources":{},
+             "quests":{"308":{"id":308,"status":"questie_reference_only",
+                               "fields":{},"objectives":[],"locations":{}}}}
+        overlay={"schema":gap.SCHEMA,"quests":{"308":{
+            "fields":{"xp":0},
+            "field_sources":{"xp":{"source":"octowow_classic",
+                "url":"https://octowow.st/db/?quest=308",
+                "quality":"classic_reference"}}}}}
+        result,changes=gap.apply(raw,overlay)
+        xp=result["quests"]["308"]["fields"]["xp"]
+        self.assertEqual(xp["value"],0)
+        self.assertEqual(xp["quality"],"classic_reference")
+        self.assertEqual(changes["xp_inserted"],1)
+        raw["quests"]["308"]["fields"]["xp"]={"value":55,"source":"wowhead_forever"}
+        result,changes=gap.apply(raw,overlay)
+        self.assertEqual(result["quests"]["308"]["fields"]["xp"]["value"],55)
+        self.assertEqual(changes["overrides_skipped"],1)
+
+    def test_quest_evidence_url_must_match_exact_id(self):
+        raw={"schema":"foreverroutes.unified_quests.v1","stats":{},"sources":{},
+             "quests":{"308":{"id":308,"fields":{},"objectives":[],"locations":{}}}}
+        overlay={"schema":gap.SCHEMA,"quests":{"308":{
+            "fields":{"xp":0},"field_sources":{"xp":{
+                "source":"octowow_classic",
+                "url":"https://octowow.st/db/?quest=410",
+                "quality":"classic_reference"}}}}}
+        result,changes=gap.apply(raw,overlay)
+        self.assertNotIn("xp",result["quests"]["308"]["fields"])
+        self.assertEqual(changes["xp_inserted"],0)
+
     def test_classic_value_labelled_not_forever(self):
         raw={"schema":"foreverroutes.unified_quests.v1","stats":{},"sources":{},
              "quests":{"16":{"id":16,"status":"questie_reference_only","fields":{},"objectives":[],"locations":{},"not_actionable":True}}}
