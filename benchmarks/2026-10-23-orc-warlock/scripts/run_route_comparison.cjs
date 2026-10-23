@@ -1,0 +1,116 @@
+'use strict';
+// Shared deterministic route replay. Numeric output is diagnostic when blockers remain.
+const fs=require('node:fs'),path=require('node:path');
+const root=path.resolve(__dirname,'..'),external=path.resolve(process.env.POLESTAR_ROOT || path.join(root,'..','polestar'));
+const req=p=>require(path.join(external,'tools/lib',p));
+const {getWorld}=req('sim/world'),{makeRun,paramsFor}=req('sim/index');
+const {compileSequence}=req('sim/sequence'),{K_GRIND}=req('sim/run');
+const {loadPolestarRoutes,requiredEvents}=req('sim/baselines/polestar');
+const dataDir=path.join(root,'.comparison/data'),simDir=path.join(root,'.comparison/cache'),outDir=path.join(root,'.comparison/results');
+const read=p=>JSON.parse(fs.readFileSync(p,'utf8'));
+const save=(n,d)=>fs.writeFileSync(path.join(outDir,n),JSON.stringify(d,null,2)+'\n');
+const raw=read(path.join(dataDir,'quests.json')),missingCounts=new Set(read(path.join(dataDir,'missing-counts.json')));
+const flags=new Set(['WARLOCK','ORC','HORDE','FOREVER','ERA','SOFTCORE','H12B']);
+const knownFlags=new Set(['WARRIOR','PALADIN','HUNTER','ROGUE','PRIEST','SHAMAN','MAGE','WARLOCK','DRUID','ORC','TROLL','TAUREN','SCOURGE','UNDEAD','HUMAN','DWARF','GNOME','NIGHTELF','SKYBORNE','BLOODELF','DRAENEI','HORDE','ALLIANCE','FOREVER','ERA','SOM1','SOM2','SOD','SOD2','TBC','WOTLK','JOYOUS','GROUPS','AH','HARDCORE','SOFTCORE','SKIP','H12B']);
+const and=(a,b)=>a===false||b===false?false:a===null||b===null?null:!!a&&!!b;
+const or=(a,b)=>a===true||b===true?true:a===null||b===null?null:!!a||!!b;
+function qstate(ev,run,id){const i=run.qIndex.get(+id);if(i==null)return 0;if(ev.done[i])return 3;if(!ev.active[i])return 0;for(let t=run.qTask0[i];t<run.qTask1[i];t++)if(!ev.taskDone[t])return 1;return 2;}
+function rxpCondition(s){
+ if(!s)return true;
+ let answer=false;
+ for(const clause of s.trim().split('/')){let value=true;for(const t0 of clause.trim().split(/\s+/)){const neg=t0.startsWith('!'),t=t0.replace(/^!/, '').toUpperCase();const v=knownFlags.has(t)?flags.has(t):null;value=and(value,v===null?null:neg?!v:v);}answer=or(answer,value);}
+ return answer;
+}
+function journeyCondition(s,ev,run){
+ if(!s)return true;
+ const tokens=s.match(/>=|<=|==|~=|>|<|\(|\)|\d+(?:\.\d+)?|[A-Za-z_][A-Za-z_0-9.]*(?:\[\d+\]){0,2}/g) || [];
+ if(tokens.join('').toLowerCase()!==s.replace(/\s/g,'').toLowerCase())return null;
+ let i=0;
+ function val(){const t=tokens[i++];if(t==='('){const v=expr();if(tokens[i++]!==')')throw Error('unbalanced');return v;}if(t==null)throw Error('missing term');if(/^\d/.test(t))return +t;const u=t.toUpperCase();if(u==='LEVEL')return ev.level;if(u==='ACCEPTED')return 1;if(u==='COMPLETED')return 2;if(u==='TURNEDIN')return 3;if(u==='VAR.HORDETB20')return false;const q=/^QUEST\[(\d+)\]$/.exec(u);if(q)return qstate(ev,run,q[1]);if(knownFlags.has(u))return flags.has(u);return null;}
+ function comparison(){let a=val();const op=tokens[i];if(!['>=','<=','==','~=','>','<'].includes(op))return a;i++;const b=val();if(a===null||b===null)return null;return op==='>='?a>=b:op==='<='?a<=b:op==='=='?a===b:op==='~='?a!==b:op==='>'?a>b:a<b;}
+ function not(){if((tokens[i] || '').toLowerCase()==='not'){i++;const v=not();return v===null?null:!v;}return comparison();}
+ function all(){let a=not();while((tokens[i] || '').toLowerCase()==='and'){i++;a=and(a,not());}return a;}
+ function expr(){let a=all();while((tokens[i] || '').toLowerCase()==='or'){i++;a=or(a,all());}return a;}
+ try{const r=expr();return i===tokens.length?(r===null?null:!!r):null;}catch{return null;}
+}
+function condition(g,ev,run){
+ if(g.condition_format==='rxp')return rxpCondition(g.condition);
+ if(g.condition_format==='journey')return journeyCondition(g.condition,ev,run);
+ if(g.condition_format==='wisp'){
+  const c=g.condition || {};
+  // Level labels are suggestions in this export; actual quest-level gates are enforced by the shared engine.
+  if(c.quests && !c.quests.every(q=>qstate(ev,run,q)>=3))return false;
+  if(c.anyQuests && !c.anyQuests.some(q=>qstate(ev,run,q.questId)>=(q.state==='turned-in'?3:1)))return false;
+ }
+ return true;
+}
+function compatible(id){const q=raw[id];if(!q)return true;return !(q.classes && !(q.classes&256)) && !(q.races && !(q.races&2));}
+function applyXpPolicy(world,records){
+ for(const q of world.quests){const r=records[q.id];if(r && Number.isFinite(r.xp)){q.xp=r.xp;q.noXp=r.xp===0;}else{q.xp=null;q.noXp=true;}}
+ return world;
+}
+function replay(source,world,params){
+ const {run,ev}=makeRun(world,{race:'Orc',cls:'Warlock',params,family:'solo'});
+ const unknown=new Set(),xpUnknown=new Set(),countsUnknown=new Set(),conditions=new Set(),skippedAccepts=[],trace=[];
+ let processed=0,excludedClass=0,conditionalSkipped=0;
+ ev.reset();
+ for(const g of source.groups){
+  if(ev.level>=30)break;
+  if((g.flags || []).includes('hardcore'))continue;
+  const allowed=condition(g,ev,run);
+  if(allowed===null){conditions.add(JSON.stringify(g.condition));continue;}
+  if(!allowed){conditionalSkipped++;continue;}
+  let guard=true;
+  for(const [kind,id] of g.guards || []){const st=qstate(ev,run,id);const v=kind==='isOnQuest'?st===1||st===2:kind==='isNotOnQuest'?st===0||st===3:kind==='isQuestComplete'?st>=2:kind==='isNotQuestComplete'?st<2:kind==='isQuestTurnedIn'?st===3:st!==3;if(!v)guard=false;}
+  if(!guard)continue;
+  for(const event of g.events){
+   if(ev.level>=30)break;
+   const e=event;
+   if(e.t==='guide')continue;
+   const ec=condition(e,ev,run);if(ec===null){conditions.add(e.condition);continue;}if(!ec)continue;
+   if(e.q && !compatible(e.q)){excludedClass++;continue;}
+   if((g.flags || []).includes('parallel') && e.t==='complete')continue;
+   if(e.q){if(!raw[e.q] || !Number.isFinite(raw[e.q].xp))xpUnknown.add(e.q);if(missingCounts.has(e.q))countsUnknown.add(e.q);}
+   const seq=compileSequence(run,[e]);for(const id of seq.unknown)unknown.add(id);
+   const before=ev.questsDone;
+   for(let i=0;i<seq.kind.length && ev.level<30;i++){
+    if(seq.kind[i]===K_GRIND)ev.grindTo(seq.q[i],seq.task[i]);
+    else ev.step(seq.kind[i],seq.q[i],seq.task[i],seq.pt[i]);
+   }
+   if(e.t==='accept'){const qi=run.qIndex.get(e.q);if(qi!=null&&!ev.active[qi]&&!ev.done[qi])skippedAccepts.push({quest:e.q,guide:g.guide,step:g.step,level:ev.level});}
+   if(ev.questsDone>before)trace.push({quest:e.q,time:ev.time,level:ev.level,xp:ev.xp});
+   processed++;
+  }
+ }
+ const metrics=ev.result();
+ const blockers={unknownQuestIds:[...unknown],unknownXpIds:[...xpUnknown],unknownObjectiveCounts:[...countsUnknown],unresolvedConditions:[...conditions],skippedAccepts,unreachable:ev.unreachable};
+ const valid=Object.values(blockers).every(x=>Array.isArray(x)?x.length===0:x===0);
+ const timeTo=Object.fromEntries([6,12,20,30].map(l=>[l,l<=source.coverage[1]&&ev.level>=l?(metrics.levelTimes[l] || null):null]));
+ console.log(source.label,JSON.stringify({endLevel:ev.level,seconds:ev.time,timeTo,unknown:unknown.size,counts:countsUnknown.size,xp:xpUnknown.size,conditions:conditions.size,skippedAccepts:skippedAccepts.length}));
+ return {id:source.id,label:source.label,status:valid?'provisional_model_complete':'diagnostic_replay_needs_fixes',declaredCoverage:source.coverage,timeTo,diagnosticLevelTimes:metrics.levelTimes,endLevel:ev.level,endXp:ev.xp,endSeconds:ev.time,completedQuests:ev.questsDone,travelSeconds:ev.travelSec,grindSeconds:ev.grindSec,processedEvents:processed,excludedIncompatibleClassRace:excludedClass,conditionalSkipped,blockers,limits:source.limits || [],trace};
+}
+function main(){
+ fs.mkdirSync(outDir,{recursive:true});save('status.json',{status:'running',startedAt:new Date().toISOString(),profile:{faction:'Horde',race:'Orc',class:'Warlock',levels:[6,12,20,30]}});
+ // No undocumented XP estimates: only explicit imported values earn quest XP.
+ // An unvalued quest is recorded in blockers if referenced by a route.
+ const saved=process.argv.includes('--saved-inputs');
+ const world=saved?read(path.join(simDir,'world-horde.json')):getWorld({dataDir,simDir,faction:'Horde',rebuild:true,questXp:Array.from({length:61},()=>Array(10).fill(0)),log:console.log});
+ applyXpPolicy(world,raw);
+ fs.writeFileSync(path.join(simDir,'world-horde.json'),JSON.stringify(world)+'\n');
+ const {mean:params}=paramsFor(simDir,'Warlock');
+ const sources=['rxp','journey','wisp'].map(id=>read(path.join(root,'.comparison/events',id+'.json')));
+ if(saved)sources.push(read(path.join(root,'.comparison/events/polestar.json')));
+ else {
+  const L=loadPolestarRoutes({guidesDir:path.join(external,'guides'),dataDir,faction:'Horde',race:'Orc',cls:'Warlock'});
+  if(!L)throw Error('Polestar Orc route missing');
+  const source={id:'polestar',label:'Polestar default',coverage:[1,60],groups:requiredEvents(L.default.events).map(e=>({events:[e]})),limits:['Default chain; optional objectives excluded','Same workload normalization and class priors as every other route']};
+  fs.writeFileSync(path.join(root,'.comparison/events/polestar.json'),JSON.stringify(source)+'\n');
+  sources.push(source);
+ }
+ const rows=[];
+ for(const source of sources){const row=replay(source,world,params);rows.push(row);save(source.id+'.json',row);}
+ const report={schema:'foreverroutes.shared_comparison.v1',finishedAt:new Date().toISOString(),status:rows.every(r=>r.status==='provisional_model_complete')?'complete_provisional':'completed_diagnostic_replays',profile:{faction:'Horde',race:'Orc',class:'Warlock',targets:[6,12,20,30],solo:true,aoe:false,rested:false},engine:'fitzforge/polestar@eb7b47840f032bf711a3c8d7b1df9f3f6551b990',modelParams:params,provenance:read(path.join(dataDir,'meta.json')),rows,rankingPublished:false,reason:'Unresolved route semantics / missing objective and location inputs prevent a defensible fastest-route ranking'};
+ save('comparison.json',report);save('status.json',{status:report.status,finishedAt:report.finishedAt,outputs:rows.map(r=>r.id+'.json'),rankingPublished:false});
+}
+if(require.main===module)try{main();}catch(e){fs.mkdirSync(outDir,{recursive:true});save('status.json',{status:'failed',error:e.message,at:new Date().toISOString()});console.error(e);process.exitCode=1;}
+module.exports={rxpCondition,journeyCondition,qstate,applyXpPolicy};
