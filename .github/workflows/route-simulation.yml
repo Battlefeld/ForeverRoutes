@@ -1,7 +1,7 @@
 name: Independent Forever route simulation
 on:
   push:
-    branches: [artifacts, fix/simulation-start-20261023, fix/objective-counts-20261023]
+    branches: [artifacts, fix/simulation-start-20261023, fix/objective-counts-20261023, feat/data-first-estimated-simulation-20261023]
     paths:
       - '.github/workflows/route-simulation.yml'
       - 'benchmarks/**'
@@ -48,7 +48,14 @@ jobs:
           POLESTAR_ROOT: ${{ github.workspace }}/polestar
         run: |
           node scripts/run_route_comparison.cjs --saved-inputs
-          node --test tests/test_route_comparison.cjs tests/test_objective_count_overlay.cjs tests/test_source_priority.cjs
+          node --test tests/test_route_comparison.cjs tests/test_objective_count_overlay.cjs tests/test_source_priority.cjs tests/test_estimate_model.cjs
+      - name: Run all four guides with data-first, explicit last-resort estimates
+        working-directory: benchmarks/2026-10-23-orc-warlock
+        env:
+          POLESTAR_ROOT: ${{ github.workspace }}/polestar
+        run: |
+          node scripts/run_route_comparison.cjs --saved-inputs --estimate-missing
+          node scripts/write_model_summary.cjs >> "$GITHUB_STEP_SUMMARY"
       - name: Inspect missing objective-to-world mappings
         working-directory: benchmarks/2026-10-23-orc-warlock
         run: node scripts/inspect_objective_mappings.cjs
