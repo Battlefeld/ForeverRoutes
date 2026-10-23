@@ -1,3 +1,5 @@
+Aktueller Stand für alle Klassen: [class-matrix.md](class-matrix.md). Der folgende Bericht dokumentiert den früheren Orc-Hexenmeister-Lauf.
+
 # Levelrouten: erster gemeinsamer Simulationslauf, 23.10.2026
 
 **Status: vier diagnostische Routen-Replays abgeschlossen. Eine belastbare Rangliste ist noch blockiert.**
@@ -49,3 +51,4 @@ POLESTAR_ROOT=/absoluter/pfad/zu/polestar node --test tests/test_route_compariso
 ```
 
 Der gespeicherte Weltzustand und die normalisierten Routenereignisse reichen dafür aus; die ursprünglichen Guides und großen Rohdaten werden nicht erneut geladen. `prepare_sim_inputs.cjs` und `prepare_guide_events.py` dokumentieren die ursprüngliche lokale Aufbereitung und benötigen für einen Neubau die genannten Quelldateien.
+

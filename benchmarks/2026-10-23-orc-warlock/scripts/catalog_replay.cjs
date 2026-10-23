@@ -2,10 +2,10 @@
 const fs=require('node:fs'),path=require('node:path'),zlib=require('node:zlib'),crypto=require('node:crypto');
 const contract=require('../../2026-10-23-independent-route-checks/scripts/lib/route_contract.cjs');
 const profile=contract.profile({race:'Orc',class:'Warlock',faction:'Horde',guideFlags:['H12B'],variables:{HORDETB20:false}});
-function loadCatalogSources(sources,file){
+function loadCatalogSources(sources,file,selectedProfile=profile){
  const bytes=fs.readFileSync(file),catalog=JSON.parse(zlib.gunzipSync(bytes));
  return sources.map(source=>{
-  if(source.id==='polestar')return source;
+  if(source.id==='polestar'&&!source.useCatalog)return source;
   const chain=[...new Set(source.groups.map(g=>g.guide).filter(Boolean))];
   const groups=[],chapters=[];
   for(const id of chain){
@@ -14,18 +14,18 @@ function loadCatalogSources(sources,file){
    const doc=matches[0];chapters.push({id:doc.id,sourceSha256:doc.sourceSha256});
    for(const g of doc.groups){const copy=structuredClone(g);if((copy.flags||[]).some(f=>/^completewith(?: |$)/.test(f)))copy.flags.push('parallel');groups.push({...copy,catalog:true});}
   }
-  const accepts=new Map(),staticContext=contract.context(profile);
-  for(const e of groups.flatMap(g=>g.events||[])){if(e.t!=='accept'||contract.scope(e,profile,staticContext)===false)continue;if(!accepts.has(e.q))accepts.set(e.q,[]);accepts.get(e.q).push(e);}
+  const accepts=new Map(),staticContext=contract.context(selectedProfile);
+  for(const e of groups.flatMap(g=>g.events||[])){if(e.t!=='accept'||contract.scope(e,selectedProfile,staticContext)===false)continue;if(!accepts.has(e.q))accepts.set(e.q,[]);accepts.get(e.q).push(e);}
   const optionalQuests=[...accepts].filter(([,events])=>events.every(e=>e.optional)).map(([id])=>id);
   return {...source,groups,catalog:true,optionalQuests,inputProvenance:{kind:'full_guide_catalog',file:path.basename(file),sha256:crypto.createHash('sha256').update(bytes).digest('hex'),chapters}};
  });
 }
-function context(run,ev,qstate){
- const ctx=contract.context(profile,{level:ev.level,questState:id=>qstate(ev,run,id),inventory:ev.inventory||{},variables:ev.variables||{HORDETB20:false}});
- const lookup=ctx.lookup;ctx.lookup=t=>{if(t.toUpperCase()==='HC')return profile.hardcore;if(t.toUpperCase()==='INGROUP')return profile.partySize>1;return lookup(t);};return ctx;
+function context(run,ev,qstate,selectedProfile=profile){
+ const ctx=contract.context(selectedProfile,{level:ev.level,questState:id=>qstate(ev,run,id),inventory:ev.inventory||{},variables:ev.variables||{HORDETB20:false},knownGuideFlags:new Set(['H12B','H12SF'])});
+ const lookup=ctx.lookup;ctx.lookup=t=>{if(t.toUpperCase()==='HC')return selectedProfile.hardcore;if(t.toUpperCase()==='INGROUP')return selectedProfile.partySize>1;return lookup(t);};return ctx;
 }
-function allowed(value,run,ev,qstate){
- const result=contract.scope(value,profile,context(run,ev,qstate));
+function allowed(value,run,ev,qstate,selectedProfile=profile){
+ const result=contract.scope(value,selectedProfile,context(run,ev,qstate,selectedProfile));
  return result===undefined?null:result;
 }
 function questGuard(event,run,ev,qstate){
@@ -58,12 +58,12 @@ function levelGuard(event,ev,levelXp){
  const reverse=m[1]==='<'||Number(m[4])<0;
  return reached!==!reverse; // true means the step remains enabled
 }
-function groupAllowed(g,run,ev,qstate,levelXp){
- let answer=allowed(g,run,ev,qstate);
+function groupAllowed(g,run,ev,qstate,levelXp,selectedProfile=profile){
+ let answer=allowed(g,run,ev,qstate,selectedProfile);
  if(answer===false)return false;
  for(const e of g.events||[]){
   if(!['quest_guard','level_guard','inventory_guard'].includes(e.t))continue;
-  const ec=allowed(e,run,ev,qstate);if(ec===false)continue;
+  const ec=allowed(e,run,ev,qstate,selectedProfile);if(ec===false)continue;
   const value=ec===null?null:e.t==='quest_guard'?questGuard(e,run,ev,qstate):e.t==='inventory_guard'?inventoryGuard(e,ev):levelGuard(e,ev,levelXp);
   if(value===false)return false;if(value===null)answer=null;
  }

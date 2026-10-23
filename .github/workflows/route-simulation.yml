@@ -56,6 +56,16 @@ jobs:
         run: |
           node scripts/run_route_comparison.cjs --saved-inputs --extend-to-30 --output-dir .comparison/results/level30
           node scripts/run_route_comparison.cjs --saved-inputs --extend-to-30 --estimate-missing --output-dir .comparison/results/estimated-level30
+      - name: Replay every class against all four original source chains
+        working-directory: benchmarks/2026-10-23-orc-warlock
+        env:
+          POLESTAR_ROOT: ${{ github.workspace }}/polestar
+        run: node scripts/run_class_matrix.cjs --output-dir .comparison/class-matrix/originals
+      - name: Exercise all 36 combinations to 30 with explicit diagnostic continuations
+        working-directory: benchmarks/2026-10-23-orc-warlock
+        env:
+          POLESTAR_ROOT: ${{ github.workspace }}/polestar
+        run: node scripts/run_class_matrix.cjs --diagnostic-continuations --require-target --output-dir .comparison/class-matrix/diagnostic
       - name: Require a complete replay without unresolved quest actions
         working-directory: benchmarks/2026-10-23-orc-warlock
         env:
@@ -70,4 +80,5 @@ jobs:
       - name: Keep reports within the workflow run only
         run: |
           echo 'Reports remain in the runner; no automatic commits or artifact uploads.'
+
 

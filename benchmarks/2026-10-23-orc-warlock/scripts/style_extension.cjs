@@ -11,6 +11,9 @@ function* continuation(source,run,ev,{target,missingCounts}){
    const q=run.quests[i];
    if(q.modelUnvalidated||original.has(q.id)||attempted.has(q.id)||ev.done[i]||ev.active[i]||missingCounts.has(q.id)||!(q.xp>0)||q.minLevel>=target)continue;
    if(!ev.prereqOk(i)||ev.level<q.minLevel||ev.level+ev.p.dangerGap<q.level)continue;
+   // Parent quests cannot be handed in before their child rewards exist.
+   // This greedy extension does not schedule nested parent/child packages.
+   if((q.after||[]).some(id=>{const child=run.qIndex.get(id);return child==null||!ev.done[child];}))continue;
    if(ev.open>=run.logCap)continue;
    let work=0;
    for(const task of q.tasks||[])for(const w of task.work||[])work+=w[0]==='kill'?w[2]*20:w[0]==='use'?w[1]*8:60;
