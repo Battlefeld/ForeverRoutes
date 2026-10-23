@@ -1,85 +1,83 @@
-# ForeverRoutes — Quest + Grind Simulator, Level 1–30
+# ForeverRoutes
 
-> **Datengrundlage & Quellenhinweis:** ForeverRoutes nutzt die [ForeverDB API](https://foreverdb.net/developers) von **[ForeverDB.net](https://foreverdb.net)** für Informationen zu WoW Forever. **Data from [ForeverDB.net](https://foreverdb.net).** ForeverDB-Daten bleiben als solche gekennzeichnet und werden nicht als eigene Erhebungen ausgegeben. Ergänzende Classic-/QuestieDB-Referenzen werden getrennt ausgewiesen. ForeverDB ist nicht mit Blizzard Entertainment verbunden.
+> **Datengrundlage:** ForeverRoutes nutzt Daten von **[ForeverDB.net](https://foreverdb.net)** (Data from ForeverDB.net),
+> QuestieDB Forever, EverythingQuests Forever, [WarcraftDB Forever](https://forever.warcraftdb.com) und der
+> Weltdatenbank von [cmangos classic-db](https://github.com/cmangos/classic-db). Herkunft und Revision jeder Quelle stehen
+> im Datensatz selbst (`sources`). ForeverDB ist nicht mit Blizzard Entertainment verbunden.
 
-Standalone **offline** route-simulation platform for WoW Forever. No dependency on ForeverSim, no in-game addon yet. Python 3.10+, standard library only. MIT (original code); no third-party guide text is checked in.
+Routenplaner für WoW Forever, Level 1–30: welche Quests annehmen, wo was töten, wann abgeben und wann Grinden schneller
+ist. Go-Modul ohne Fremdabhängigkeiten. Der Planer läuft offline als Kommandozeilenwerkzeug und ist als Bibliothek für
+ForeverCore.exe gebaut (Paket `route`); dort liefert später MythicSim (ForeverSim) die echten Kampfzeiten.
 
-**Current state: working model + search, not validated WoW 1–30 optimization.** A fully synthetic 1–30 world demonstrates end-to-end evaluation. Do **not** interpret its seconds as /played or claim the route beats RestedXP, Journey, Polestar or ForeverWisp. Real Forever quest, spawn, geometry, kill, XP and drop data are **not** bundled. Licensing of those sources must be checked before distribution.
+## Stand
 
-## Quick start
+- Datensatz mit 1758 Quests, 2366 NPCs, 348 Objekten, 59 Flugmeistern, 45 Gasthäusern, Zeppelinen und Schiffen.
+- Orc Hexer und Mensch Magier sind die Ausgangstests: Beide erreichen Level 30 mit vollständigen, nachgeprüften Routen.
+- **Die Stundenangaben sind nicht kalibriert.** Das eingebaute Kampfmodell (`DefaultProfile`) ist eine Schätzung. Es
+  bewertet Grinden im Vergleich zu Quests etwa doppelt so gut wie die Wirklichkeit: Ein Guide-Ablauf (RestedXP) und
+  reines Grinden landen bis Level 21 im Modell fast gleichauf. Darum grinden die Routen heute zu viel. Echte Zahlen kommen
+  über ForeverCore aus MythicSim (`KillProfile`); mit `guide` lassen sich Guides unter denselben Regeln nachgehen und so
+  das Modell prüfen.
+- Bekannte Datenlücken (siehe `foreverroutes audit`): 91 Quests brauchen Forever-eigene Gegenstände, deren Beutequelle
+  keine Quelle kennt; 82 brauchen hergestellte oder gekaufte Gegenstände; 44 werden über einen Gegenstand gestartet;
+  Ruf-, Gebiets- und Zauberziele sind noch nicht modelliert. Diese Quests bleiben markiert und werden nicht geraten.
 
-```sh
-python -m unittest discover -s tests -v
-python -m foreverroutes fixture --output /tmp/fictional_30.json
-python -m foreverroutes audit --world /tmp/fictional_30.json --start Spawn --target-level 30
-python -m foreverroutes search --world /tmp/fictional_30.json --start Spawn --target-level 30 --restarts 12 --seed 42 --output /tmp/route_result.json
-python -m foreverroutes replay --world /tmp/fictional_30.json --route /tmp/route_result.json --start Spawn --target-level 30
-python -m foreverroutes exact --world examples/synthetic_tiny.json --target-level 2 --start Spawn
-```
-
-`search` uses seeded multi-start quest/grind search; the winner is **best found, not mathematically proven globally optimal**. `exact` uses Dijkstra over full game state for **very small** worlds and honors a state-count limit; it never calls a truncated run optimal. `replay` validates each action independently. `audit` reports uncovered data and always labels model predictions as uncalibrated.
-
-## Model format (JSON)
-
-```
-{
-  "source": "QuestieDB Forever + measured data", "revision": "YOUR_PINNED_VERSION",
-  "nodes": ["spawn", "hub", "wolves"],
-  "edges": [["spawn", "hub", 20], ["hub", "wolves", 40]],
-  "level_xp": {"1": 400, "2": 900},
-  "dps": 9.2, "max_open": 40,
-  "mobs": {"wolf": {"hp": 70, "xp": 40, "level": 2, "downtime": 3}},
-  "quests": [{"id": 1, "giver": "hub", "turnin": "hub", "level": 1, "xp": 250,
-    "prereqs": [], "objectives": [{"kind": "kill", "target": "wolf", "location": "wolves", "count": 5}]}],
-  "farms": [{"at": "wolves", "mob": "wolf"}]
-}
-```
-
-Values in this schema are **illustrative**, NOT real quest 1 / mobs. `level` on a quest is currently the minimum allowed level, **not** its display level. `edges` are measured travel seconds on walkable links, never invented direct distances. `mob.kill_seconds` overrides `hp/dps`. Collect objectives consume **expected** kills `1/drop_chance` per item; overlapping *kill* quests are credited at the same spot, but probabilistic multi-drop correlations and dynamic collection progress remain approximations.
-
-## Safety / model assumptions
-
-- A missing road is impassable; unknown NPC HP, XP, mob levels, drop rates, class DPS and journey times should prevent claiming a calibrated result.
-- Out-of-level mobs cannot be used as an easy grind exploit; grey mob XP is suppressed in a simplified way.
-- Quest requirements, class, race, faction, questlog cap, ordered turn-ins and shared kills are checked during replay.
-- Solo model only. No escorts, timed quests, phasing, flights/boats/hearth, deathskips, PvP, food XP buff or detailed class rotations **yet**. This engine never pretends otherwise.
-- Search local greedy macro-plans are not guaranteed globally optimal; front-loaded quest pickups sharing objectives and zero-XP prereq quests are represented. The planner can still miss beneficial multi-zone detours or delayed hand-ins.
-
-## Workflow for *real* Level 1–30
-
-1. Import QuestieDB Forever and ForeverDB **locally** to a normalized world with pinned source revisions; resolve quest prerequisites, exact quest XP, class masks and objective NPCs (no guide-text copies). Add measured kill XP, HP, drop chance, mob ranks, spawn clustering and geographic paths.
-2. Run `audit` for both Horde and Alliance. Zero missing level XP, no invented unreachable links, coverage report for each start and class.
-3. Replay reference guide actions (Journey, RestedXP **without AoE**, ForeverWisp and Polestar) under *identical* character, source version, XP and time settings. Do not regard different level windows or class variants as comparable.
-4. Improve the search with quest packages, beam search, terrain pathing and actual encounter sampling; estimate intervals and replay every result. Use recordings to calibrate uncertainty.
-5. Only after the offline benchmark is reliable, expose a typed JSON API to ForeverCore. **Do not change `Battlefeld/ForeverSim`** for Phase 1.
-
-## Layout
-
-- `foreverroutes/core.py`: world graph, quest-state evaluator, exact tiny-world solver.
-- `foreverroutes/planner.py`: seeded multi-start quest + grind optimizer for the 1–30 experiment.
-- `foreverroutes/audit.py`: missing-data and realism report.
-- `foreverroutes/__main__.py`: CLI (`audit`, `search`, `exact`, `replay`, `fixture`).
-- `examples/generate_synthetic_30.py`: generated fictional 58-quest, 29-zone test world.
-- `tests/`: replay, invalid-route, class restrictions, grind gating and 1–30 integration tests.
-
-## Licence / provenance
-
-Original simulator code is MIT. Polestar is GPL-3.0; RestedXP is CC BY-NC-SA; Journey restricts redistribution/reverse engineering of content. No source implementation or protected guide text from those projects has been copied into this repository. Public facts (quest IDs, numeric source facts) should still be sourced and versioned. Use only data you are entitled to process and redistribute.
-
-## Reference guide auditing (local, no guide files committed)
+## Befehle
 
 ```sh
-python -m foreverroutes baseline --source journey --source-path /local/Journey_Quest_Routen_Analyse.csv
-python -m foreverroutes baseline --source wisp --source-path /local/ForeverWisp_Quest_Routen_Analyse.csv
-python -m foreverroutes baseline --source polestar --source-path /local/Polestar_Quest_Routen_Analyse.csv
+go test ./...                      # alle Tests, inkl. Ausgangstest Orc Hexer / Mensch Magier (~3 min)
+go test -short ./...               # ohne die langen Planungsläufe
+
+go run ./cmd/foreverroutes plan -race Orc -class Warlock -out orc.json
+go run ./cmd/foreverroutes plan -race Human -class Mage -target 30 -restarts 4 -out human.json
+go run ./cmd/foreverroutes replay -race Orc -class Warlock -route orc.json
+go run ./cmd/foreverroutes guide -race Orc -class Warlock -events guide.json   # Guide unter denselben Regeln
+go run ./cmd/foreverroutes audit                                              # was der Datensatz kennt und was fehlt
 ```
 
-The CSV adapter normalizes quest references and counts unresolved conditions; **it deliberately does not assign a time to reference guides**. Those guides can only be replayed faithfully once their class/quest flags, movements, grouped objectives and actual world facts are normalized. AoE guide names are excluded.
+`guide` liest eine Liste von Schritten `[{"op":"accept","quest":4641},{"op":"complete","quest":4641},
+{"op":"turnin","quest":4641},{"op":"level","level":6}]`. Guide-Dateien werden nicht eingecheckt (Lizenzen der Guides).
 
-## ForeverDB API-Zugang und Limits
+### Datensatz neu bauen
 
-- **[ForeverDB API-Dokumentation](https://foreverdb.net/developers)** · **[ForeverDB](https://foreverdb.net)** · **[QuestieDB](https://github.com/Questie/QuestieDB)**
-- Die ForeverDB-API verlangt `X-API-Key` und begrenzt Anfragen auf **60 pro Minute** und **10.000 pro Tag und Schlüssel**. `429` und `Retry-After` werden respektiert.
-- API-Schlüssel **nie** in das Repository, Issues, PRs, Logs oder Beispieldateien eintragen. Für GitHub Actions den Secret-Namen `FOREVERDB_API_KEY` verwenden.
-- Importierte Werte behalten Quelle, Build-/Beobachtungsstatus und URL. Es gelten die [Nutzungsregeln](https://foreverdb.net/developers#rules) von ForeverDB. **Nicht weiterverkaufen und nicht als eigene Daten ausgeben.**
-- Bei jeder späteren UI-Anzeige von ForeverDB-Daten muss eine **sichtbare Verlinkung auf [ForeverDB.net](https://foreverdb.net)** vorhanden sein; der Hinweis nur in dieser README erfüllt nicht die Anforderung an andere Oberflächen.
+```sh
+git clone https://github.com/cmangos/classic-db /tmp/classic-db
+git -C /tmp/classic-db checkout f460448df8986331e1f068323259e3780e09571f
+go run ./cmd/foreverroutes build-data -cmangos /tmp/classic-db/Full_DB/ClassicDB_1_12_1_z2815.sql.gz \
+  -cmangos-revision f460448df8986331e1f068323259e3780e09571f
+```
+
+Der Bau ist byte-genau wiederholbar; die CI prüft, dass `data/routes-data.json.gz` aus den festgeschriebenen Quellen
+entsteht. Fehlende Questangaben holt `fetch-warcraftdb` von WarcraftDB Forever (höflich: 1,5 s Abstand, Zwischenspeicher
+in `.cache/`) nach `data/sources/warcraftdb-forever.json`.
+
+## Aufbau
+
+| Pfad | Inhalt |
+|---|---|
+| `route/` | Planer: Welt je Charakter, Zustand und Regeln (`Apply`/`Replay`), Reisen (Laufen, Flugmeister, Zeppelin, Schiff, Ruhestein), Suche, Guide-Nachgang, Kampfmodell |
+| `dataset/` | Format des Datensatzes (`foreverroutes.dataset.v1`), Laden und Schreiben |
+| `xp/` | Classic-XP-Regeln: Quest-XP nach Levelabstand, Kill-XP (cmangos), Levelkurve |
+| `internal/build/` | Bau des Datensatzes aus Quest-Datenbank, cmangos und WarcraftDB; Umrechnung Kartenprozent → Weltyards |
+| `internal/sqldump/` | Leser für den cmangos-SQL-Dump |
+| `internal/warcraftdb/` | Abruf und Format der WarcraftDB-Ergänzung |
+| `cmd/foreverroutes/` | Kommandozeile |
+| `data/routes-data.json.gz` | der fertige Datensatz |
+| `data/sources/` | eingefrorene Eingaben: zusammengeführte Quest-Datenbank (aus dem früheren Python-Werkzeug, Commit `7d66f93`) und WarcraftDB-Ergänzung |
+
+## Modell in Kürze
+
+- Positionen in Weltyards je Kontinent. Forever-Positionen (Kartenprozent) werden je Karte über NPCs umgerechnet, die in
+  beiden Systemen bekannt sind (mittlerer Fehler ~1 Yard). Fehlt Forever eine Position, gilt cmangos.
+- Ziele werden an den dichtesten Spawn-Gruppen erledigt (bis zu 4 je Kreatur); die Route nimmt die schnellste.
+  Kills zählen für alle Quests im Log, Respawns werden abgewartet, geleerte Gruppen erholen sich über die Respawnzeit.
+- Reisen: Laufen (7 Yards/s, Wegfaktor 1,2), Flugmeister ab Entdeckung (im Vorbeigehen innerhalb 60 Yards), Zeppeline und
+  Schiffe mit Zeiten aus der cmangos-Transporttabelle, Ruhestein (10 s, 1 h Abklingzeit, gebunden am letzten Gasthaus).
+- Suche: Bausteine (eine Quest, ein Questgebiet in drei Größen, Grinden) bewertet nach dem Gewinn gegenüber Grinden;
+  die besten werden einige Entscheidungen weit vorausgespielt; mehrere Läufe, das beste Ergebnis wird nachgeprüft.
+  Ergebnis ist die beste gefundene Route, kein bewiesenes Optimum.
+
+## Lizenz
+
+Code: MIT (siehe `LICENSE`). Daten: siehe [`data/README.md`](data/README.md); der Datensatz enthält aus cmangos
+classic-db abgeleitete Werte (GPL-3.0).

@@ -1,1 +1,0 @@
-"""Synthetic demonstration world generation only."""
