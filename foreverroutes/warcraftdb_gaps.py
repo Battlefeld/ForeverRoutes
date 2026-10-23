@@ -1,4 +1,4 @@
-"""WarcraftDB Forever/Classic first, Wowhead fallback for the *831* audited XP gaps.
+"""WarcraftDB Forever/Classic first, OctoWow evidence fallback, then Wowhead.
 
 The input ID list is derived from the published unified quality audit, NOT by
 guessing a numeric quest-ID range. Facts are stored with evidence and source.
@@ -24,10 +24,11 @@ AGENT = "ForeverRoutes-QuestAudit/1.0 (source-referenced; respectful rate limit)
 SOURCES = (
     ("warcraftdb_forever", "https://forever.warcraftdb.com/data/quest/{id}", "forever_reference"),
     ("warcraftdb_classic", "https://classic.warcraftdb.com/data/quest/{id}", "classic_reference"),
+    ("octowow_classic", "https://octowow.st/db/?quest={id}", "classic_reference"),
     ("wowhead_forever", "https://www.wowhead.com/forever/quest={id}", "forever_reference"),
     ("wowhead_classic", "https://www.wowhead.com/classic/quest={id}", "classic_reference"),
 )
-SCALAR = {"name":"name","level":"quest_level","min_level":"required_level","xp":"xp"}
+SCALAR = {"name":"name","level":"quest_level","min_level":"required_level","xp":"xp","repeatable":"repeatable"}
 
 def load(path, fallback=None):
     if not path or not Path(path).is_file():
@@ -107,6 +108,9 @@ def parse_warcraftdb(title, text):
     for src in ("zone","side","type"):
         raw=field_line(lines,src)
         if raw and len(raw)<160:info[src]=raw
+    # An explicit metadata flag is evidence; ordinary prose is not.
+    if re.search(r"(?im)^(?:Type|Flags?)\s*(?:\||:)\s*[^\n]*\brepeatable\b",joined):
+        info["repeatable"]=True
     xp = re.search(r"(?im)(?<![\w])([\d,]+)\s+Experience Points\b",joined)
     if xp is None:
         xp = re.search(r"(?im)^([\d,]+)\s+XP(?:\s|$)",joined)
@@ -128,6 +132,38 @@ def parse_wowhead(title,text):
     # interpret it as unscaled base XP without an explicit amount.
     d=parse_warcraftdb(title,text)
     return d
+
+def parse_octowow(title,text):
+    """Parse an explicit Classic quest template, never infer 0 from absent XP.
+
+    The separate RewXP field is a base-quest reward. OctoWow also displays
+    player-scaled 'Gains' experience, which must not replace base XP.
+    """
+    lines=text_lines(text)
+    joined="\n".join(lines)
+    if not re.search(r"(?im)^Quick Facts$",joined):
+        raise ValueError("OctoWow did not expose a quest Quick Facts record")
+    if not title or not re.search(r"(?i)Quests?\s*-\s*OctoWow",title):
+        raise ValueError("Unexpected quest page or page title")
+    head=joined.split("Quick Facts",1)[1].split("RewXP",1)[0]
+    info={}
+    name=title.split(" - Quests",1)[0].strip()
+    if name and len(name)<160:info["name"]=name
+    for key,pattern in (("level",r"(?im)^Level:\s*(\d{1,3})\s*$"),
+                        ("min_level",r"(?im)^Requires level:\s*(\d{1,3})\s*$")):
+        m=re.search(pattern,head)
+        if m:info[key]=int(m.group(1))
+    if re.search(r"(?im)^Repeatable$",head):
+        info["repeatable"]=True
+    m=re.search(r"(?im)^RewXP\s*:\s*([\d,]+)\s*$",joined)
+    if m:
+        info["xp"]=int(m.group(1).replace(",",""))
+    # The page can be readable but not expose an explicit base XP.
+    # Never translate a missing field into zero.
+    if not info.get("name") or not any(k in info for k in ("xp","level","repeatable")):
+        raise ValueError("No verified OctoWow quest fact")
+    return info
+
 
 def robots_allowed(url,cache):
     host=urlparse(url).netloc
@@ -162,10 +198,13 @@ def get_page(page,url,robots,delay):
     if status in (403,429):return "blocked",None,{"http_status":status}
     if status>=400 or status==0:return "fetch_error",None,{"http_status":status}
     try:
-        page.wait_for_function("""() => {
-          const t = document.body.innerText;
-          return t.includes('Rewards') && (t.includes('Experience Points') || t.includes('Level'));
-        }""",timeout=7500)
+        if urlparse(url).netloc=="octowow.st":
+            page.wait_for_function("() => document.body.innerText.includes('RewXP:')",timeout=4500)
+        else:
+            page.wait_for_function("""() => {
+              const t = document.body.innerText;
+              return t.includes('Rewards') && (t.includes('Experience Points') || t.includes('Level'));
+            }""",timeout=7500)
     except Exception:pass
     title=page.title()
     # The body is inspected because the page's semantic <main> sometimes
@@ -177,15 +216,25 @@ def get_page(page,url,robots,delay):
     return "ok",(title,text),{"http_status":status,
              "body_sha256":hashlib.sha256(text.encode()).hexdigest()}
 
-def attempts_for_quest(page,qid,robots,delay):
-    observations=[]
-    combined={}
-    provenance={}
-    for ix,(source,template,quality) in enumerate(SOURCES):
-        # Only ask Wowhead if WarcraftDB did not supply every previously
-        # missing scalar value. Never needlessly scrape Wowhead.
-        if ix>=2 and "xp" in combined:
-            break
+def attempts_for_quest(page,qid,robots,delay,previous=None):
+    """Try Forever first, then explicit OctoWow base XP, preserving earlier evidence.
+
+    For previously inspected quests that lack XP, newly added OctoWow lookup is
+    performed without pointlessly repeating the other four remote requests.
+    """
+    old=previous if isinstance(previous,dict) else {}
+    previous_attempts=list(old.get("attempts",[]))
+    old_sources={a.get("source") for a in previous_attempts}
+    old_fields=dict(old.get("fields",{}))
+    old_evidence=dict(old.get("field_sources",{}))
+    catchup=bool(previous_attempts and "xp" not in old_fields
+                 and "octowow_classic" not in old_sources)
+    observations=list(previous_attempts) if catchup else []
+    combined=dict(old_fields) if catchup else {}
+    provenance=dict(old_evidence) if catchup else {}
+    sources_to_try=[s for s in SOURCES if s[0]=="octowow_classic"] if catchup else SOURCES
+    for source,template,quality in sources_to_try:
+        if "xp" in combined:break
         url=template.format(id=qid)
         obs={"source":source,"url":url,"quality":quality,
              "checked":dt.datetime.now(dt.timezone.utc).isoformat()}
@@ -194,7 +243,9 @@ def attempts_for_quest(page,qid,robots,delay):
             obs["status"]=status
             obs.update(meta)
             if status=="ok":
-                info=(parse_wowhead if source.startswith("wowhead") else parse_warcraftdb)(*doc)
+                parser=(parse_octowow if source=="octowow_classic" else
+                        parse_wowhead if source.startswith("wowhead") else parse_warcraftdb)
+                info=parser(*doc)
                 obs["fields"]=info
                 for key,value in info.items():
                     if key not in combined:
@@ -204,14 +255,16 @@ def attempts_for_quest(page,qid,robots,delay):
             obs["status"]="error"
             obs["error"]=str(exc)[:180]
         observations.append(obs)
-        if "xp" in combined:
-            break
     return {"id":qid,"fields":combined,"field_sources":provenance,"attempts":observations,
             "checked":dt.datetime.now(dt.timezone.utc).isoformat()}
 
 def unscanned_ids(target_ids, rows):
-    """Quest IDs never attempted, regardless of whether an XP reward was found."""
-    return [qid for qid in target_ids if not isinstance(rows.get(str(qid)), dict)]
+    """IDs still missing either their initial lookup or the explicit XP fallback."""
+    return [qid for qid in target_ids
+            if not isinstance(rows.get(str(qid)),dict)
+            or ("xp" not in rows[str(qid)].get("fields",{})
+                and not any(a.get("source")=="octowow_classic"
+                            for a in rows[str(qid)].get("attempts",[])))]
 
 
 def pending_ids(target_ids, rows, retry_hours, now=None):
@@ -224,6 +277,12 @@ def pending_ids(target_ids, rows, retry_hours, now=None):
             pending.append(qid)
             continue
         if "xp" in record.get("fields", {}):
+            continue
+        # Revisit earlier scanned quests once for the newly added explicit
+        # RewXP and Repeatable metadata, even within normal retry cooldown.
+        if not any(a.get("source")=="octowow_classic"
+                   for a in record.get("attempts",[])):
+            pending.append(qid)
             continue
         checked = record.get("checked")
         if checked:
@@ -251,7 +310,8 @@ def collect(args):
             browser=browser_api.chromium.launch(headless=True)
             page=browser.new_page(locale="en-US",user_agent=AGENT)
             for j,qid in enumerate(batch,1):
-                rows[str(qid)]=attempts_for_quest(page,qid,robots,args.delay)
+                rows[str(qid)]=attempts_for_quest(page,qid,robots,args.delay,
+                                                  previous=rows.get(str(qid)))
                 if j%10==0:print("WarcraftDB checked",j,"/",len(batch),flush=True)
             browser.close()
     # Current quality audits shrink as XP gaps are recovered. Keep all earlier
@@ -288,6 +348,8 @@ def apply(base,document):
             value=values[key]
             if key in ("xp","level","min_level"):
                 if type(value) is not int or value<0 or value>1000000:continue
+            elif key=="repeatable":
+                if value is not True:continue
             else:
                 if not isinstance(value,str) or not value.strip():continue
             incoming=evidence[key]
@@ -327,7 +389,7 @@ def apply(base,document):
         for q in data["quests"].values())
     data["sources"]["warcraftdb_gaps"]={"schema":SCHEMA,
         "updated":document.get("generated"),"target":document.get("target_count"),
-        "source_priority":["warcraftdb_forever","warcraftdb_classic","wowhead_forever","wowhead_classic"]}
+        "source_priority":["warcraftdb_forever","warcraftdb_classic","octowow_classic","wowhead_forever","wowhead_classic"]}
     return data,changes
 
 def apply_cli(args):
