@@ -17,6 +17,10 @@ test('four deterministic model continuations reach 30 without changing any sourc
   const d=a.read('comparison.json');assert.equal(d.profile.class,'Warlock');assert.equal(d.rows.length,4);
   for(const row of d.rows){assert.ok(row.endLevel>=30);assert.ok(row.timeTo[30]>0);assert.equal(row.blockers.eventFailures.filter(f=>f.generated).length,0);}
   assert.equal(d.acceptancePassed,false);assert.equal(d.rankingPublished,false);
+  const wisp=d.rows.find(r=>r.id==='wisp'),polestar=d.rows.find(r=>r.id==='polestar');
+  assert.equal(wisp.blockers.eventFailures.length,0);assert.equal(wisp.blockers.sourceActionsNotReplayed.length,0);assert.equal(wisp.blockers.unreachable,0);
+  assert.equal(polestar.blockers.eventFailures.length,0);assert.equal(polestar.blockers.unknownQuestIds.length,0);assert.equal(polestar.blockers.unknownXpIds.length,0);
+  assert.ok(polestar.blockers.unvalidatedMechanics.length>0,'scripted events must not silently pass');
   assert.deepEqual(files.map(digest),before);
   const b=invoke(['--extend-to-30']);
   try{assert.equal(b.result.status,0);assert.deepEqual(b.read('comparison.json').rows.map(r=>r.timeTo),d.rows.map(r=>r.timeTo));}finally{b.close();}

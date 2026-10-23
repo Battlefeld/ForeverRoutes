@@ -1,0 +1,204 @@
+{
+  "schema": "foreverroutes.verified_world_gap_sources.v1",
+  "provenance": {
+    "questie": "Questie/QuestieDB@1f538335cfbb240c14a97c340f48c555fdc8a52b",
+    "geometry": "fitzforge/polestar@eb7b47840f032bf711a3c8d7b1df9f3f6551b990:addon/Polestar_Guides/MapFrames.lua",
+    "quests": "existing normalized quest snapshot; no XP assumption"
+  },
+  "quests": {
+    "1149": {
+      "id": 1149,
+      "title": "Test of Faith",
+      "level": 26,
+      "minLevel": 25,
+      "races": 8589934770,
+      "classes": null,
+      "start": {
+        "npc": [
+          2986
+        ],
+        "object": [],
+        "item": []
+      },
+      "end": {
+        "npc": [
+          2986
+        ],
+        "object": []
+      },
+      "pre": [],
+      "excl": [],
+      "next": 1150,
+      "objectives": [
+        {
+          "type": "event",
+          "id": 246,
+          "count": null,
+          "text": "If you have faith, leap from the planks overlooking Thousand Needles.",
+          "map": 1441,
+          "f": "e",
+          "x": 26.43,
+          "y": 32.93
+        }
+      ],
+      "objectiveText": "If you have faith, leap from the planks overlooking Thousand Needles.",
+      "zone": 1441,
+      "xp": 1050,
+      "skill": null,
+      "event": null,
+      "source": [
+        "pfquest",
+        "questie-forever"
+      ],
+      "area": 400
+    },
+    "1150": {
+      "id": 1150,
+      "title": "Test of Endurance",
+      "level": 30,
+      "minLevel": 25,
+      "races": 8589934770,
+      "classes": null,
+      "start": {
+        "npc": [
+          2986
+        ],
+        "object": [],
+        "item": []
+      },
+      "end": {
+        "npc": [
+          2986
+        ],
+        "object": []
+      },
+      "pre": [
+        1149
+      ],
+      "excl": [],
+      "next": 1151,
+      "objectives": [
+        {
+          "type": "item",
+          "id": 5843,
+          "count": 1,
+          "text": "Grenka's Claw"
+        }
+      ],
+      "objectiveText": "Bring Grenka's Claw to Dorn Plainstalker in Thousand Needles.",
+      "zone": 1441,
+      "xp": 2450,
+      "skill": null,
+      "event": null,
+      "source": [
+        "pfquest",
+        "questie-forever"
+      ],
+      "preAny": [
+        1149
+      ],
+      "area": 400
+    }
+  },
+  "npcs": {
+    "2986": {
+      "id": 2986,
+      "name": "Dorn Plainstalker",
+      "minLevelHealth": 0,
+      "maxLevelHealth": 1,
+      "minLevel": 29,
+      "maxLevel": 29,
+      "rank": 0,
+      "spawns": {
+        "400": [
+          [
+            53.95,
+            41.49
+          ]
+        ]
+      },
+      "zoneID": 400,
+      "questStarts": [
+        1149,
+        1150,
+        1151,
+        1152
+      ],
+      "questEnds": [
+        1149,
+        1150,
+        1151,
+        1394
+      ],
+      "factionID": 104,
+      "friendlyToFaction": "H",
+      "npcFlags": 2
+    },
+    "4490": {
+      "id": 4490,
+      "name": "Grenka Bloodscreech",
+      "minLevelHealth": 0,
+      "maxLevelHealth": 1,
+      "minLevel": 31,
+      "maxLevel": 31,
+      "rank": 0,
+      "spawns": {
+        "400": [
+          [
+            26,
+            55.4
+          ],
+          [
+            26,
+            55.6
+          ],
+          [
+            26.6,
+            55.8
+          ],
+          [
+            26.8,
+            55.4
+          ]
+        ]
+      },
+      "zoneID": 0,
+      "factionID": 80,
+      "friendlyToFaction": "A",
+      "npcFlags": 0
+    }
+  },
+  "items": {
+    "5843": {
+      "id": 5843,
+      "name": "Grenka's Claw",
+      "npcDrops": [
+        4490
+      ],
+      "startQuest": 0,
+      "flags": 2048,
+      "foodType": 0,
+      "itemLevel": 1,
+      "requiredLevel": 0,
+      "ammoType": 0,
+      "class": 12,
+      "subClass": 0,
+      "teachesSpell": 0
+    }
+  },
+  "frames": {
+    "1441": {
+      "top": -3966.667,
+      "c": 1,
+      "bottom": -6900,
+      "right": -4833.333,
+      "left": -433.333
+    }
+  },
+  "dropRates": {
+    "5843:4490": {
+      "chance": 100,
+      "source": "cmangos"
+    }
+  }
+}

@@ -1,0 +1,1261 @@
+{
+  "schema": "foreverroutes.catalog_replay_verification.v1",
+  "profile": {
+    "faction": "Horde",
+    "race": "Orc",
+    "class": "Warlock",
+    "targets": [
+      6,
+      12,
+      20,
+      30
+    ],
+    "solo": true,
+    "aoe": false,
+    "rested": false
+  },
+  "engine": "fitzforge/polestar@eb7b47840f032bf711a3c8d7b1df9f3f6551b990",
+  "tests": {
+    "passed": 42,
+    "failed": 0
+  },
+  "strictExitCode": 2,
+  "acceptance": {
+    "passed": false,
+    "routes": [
+      {
+        "id": "rxp",
+        "target": 30,
+        "passed": false,
+        "reasons": [
+          "sourceActionsNotReplayed",
+          "eventFailures",
+          "unknownQuestIds",
+          "unknownObjectiveCounts",
+          "unresolvedConditions"
+        ]
+      },
+      {
+        "id": "journey",
+        "target": 30,
+        "passed": false,
+        "reasons": [
+          "sourceActionsNotReplayed",
+          "unvalidatedMechanics",
+          "eventFailures",
+          "unknownQuestIds",
+          "unresolvedConditions"
+        ]
+      },
+      {
+        "id": "wisp",
+        "target": 30,
+        "passed": true,
+        "reasons": []
+      },
+      {
+        "id": "polestar",
+        "target": 30,
+        "passed": false,
+        "reasons": [
+          "unvalidatedMechanics",
+          "unknownObjectiveCounts"
+        ]
+      }
+    ]
+  },
+  "sourceHashes": {
+    "rxp": "a83a90797cb6adc3e5ef48a1813069c502c41de9bc0cb1254685e5a6ecc75fe3",
+    "journey": "57a0d58f366e6926725511203ae8afe8ebd1ec31c4ed5743d44645f6da23a816",
+    "wisp": "868c8aeabac969399095b1bc38b1838a14f29f83e7c6e184d4392d3ae280405c",
+    "polestar": "92ef5577fae091404c638be1e264d5a82326ae9422834590c3232521820fc90e"
+  },
+  "worldGapOverlay": {
+    "added": [
+      1149,
+      1150
+    ],
+    "unvalidated": [
+      {
+        "quest": 1149,
+        "reason": "scripted_event_duration_uses_interaction_prior",
+        "event": 246
+      }
+    ],
+    "provenance": {
+      "questie": "Questie/QuestieDB@1f538335cfbb240c14a97c340f48c555fdc8a52b",
+      "geometry": "fitzforge/polestar@eb7b47840f032bf711a3c8d7b1df9f3f6551b990:addon/Polestar_Guides/MapFrames.lua",
+      "quests": "existing normalized quest snapshot; no XP assumption"
+    }
+  },
+  "replayXpReferences": {
+    "schema": "foreverroutes.replay_xp_references.v1",
+    "quests": {
+      "79096": {
+        "fields": {
+          "xp": 160
+        },
+        "source": "wowhead-forever",
+        "url": "https://www.wowhead.com/forever/quest=79096/ataeric-on-arcane-curiosities",
+        "evidence": "Upon completion of this quest you will gain: 160 experience",
+        "verification": "primary-source indexed excerpt; direct page requires JavaScript verification",
+        "checkedAt": "2026-10-23"
+      },
+      "98070": {
+        "fields": {
+          "xp": 2450
+        },
+        "source": "wowhead-forever",
+        "url": "https://www.wowhead.com/forever/quest=98070/stop-the-screeching",
+        "evidence": "Upon completion of this quest you will gain: 2,450 experience",
+        "verification": "primary-source indexed excerpt; direct page requires JavaScript verification",
+        "checkedAt": "2026-10-23"
+      }
+    }
+  },
+  "routes": [
+    {
+      "id": "rxp",
+      "originalCoverage": [
+        1,
+        22
+      ],
+      "declaredCoverage": [
+        1,
+        30
+      ],
+      "endLevel": 30,
+      "timeTo": {
+        "6": 2997.9427864629606,
+        "12": 10622.916915752716,
+        "20": 37961.31077866243,
+        "30": 141443.49859149486
+      },
+      "status": "diagnostic_replay_needs_fixes",
+      "blockers": {
+        "sourceActionsNotReplayed": [
+          {
+            "action": "move",
+            "count": 1587
+          },
+          {
+            "action": "money_guard",
+            "count": 25
+          },
+          {
+            "action": "vendor",
+            "count": 32
+          },
+          {
+            "action": "train",
+            "count": 38
+          },
+          {
+            "action": "inventory_goal",
+            "count": 51
+          },
+          {
+            "action": "cast",
+            "count": 4
+          },
+          {
+            "action": "unsupported",
+            "count": 114
+          },
+          {
+            "action": "use_item",
+            "count": 22
+          },
+          {
+            "action": "deathskip",
+            "count": 4
+          },
+          {
+            "action": "hearth",
+            "count": 6
+          },
+          {
+            "action": "arrival",
+            "count": 48
+          },
+          {
+            "action": "profession",
+            "count": 12
+          },
+          {
+            "action": "bind",
+            "count": 3
+          },
+          {
+            "action": "learn_flight",
+            "count": 6
+          },
+          {
+            "action": "transport",
+            "count": 13
+          },
+          {
+            "action": "destroy",
+            "count": 3
+          },
+          {
+            "action": "gossip",
+            "count": 1
+          }
+        ],
+        "unvalidatedMechanics": [],
+        "eventFailures": [
+          {
+            "type": "unknown_quest",
+            "quest": 96873,
+            "action": "accept",
+            "actualState": null,
+            "requiredState": 1,
+            "reason": "profession",
+            "worldQuestPresent": false,
+            "guide": "6-10 Durotar",
+            "step": 8,
+            "generated": false
+          },
+          {
+            "type": "unknown_quest",
+            "quest": 96876,
+            "action": "accept",
+            "actualState": null,
+            "requiredState": 1,
+            "reason": "quest-starting item drops only from elites or mobs 5+ levels above",
+            "worldQuestPresent": false,
+            "guide": "6-10 Durotar",
+            "step": 68,
+            "generated": false
+          },
+          {
+            "type": "unknown_quest",
+            "quest": 96877,
+            "action": "accept",
+            "actualState": null,
+            "requiredState": 1,
+            "reason": "quest-starting item drops only from elites or mobs 5+ levels above",
+            "worldQuestPresent": false,
+            "guide": "10-12 Durotar",
+            "step": 23,
+            "generated": false
+          },
+          {
+            "type": "unmapped_objective",
+            "quest": 97891,
+            "objective": 1,
+            "guide": "12-14 Silverpine Forest",
+            "step": 95,
+            "origin": {
+              "path": "Horde-01-14_Undead.lua",
+              "step": 95,
+              "line": 3993
+            }
+          },
+          {
+            "type": "unknown_quest",
+            "quest": 5725,
+            "action": "accept",
+            "actualState": null,
+            "requiredState": 1,
+            "reason": "item objective 14395 drops only outside the open world",
+            "worldQuestPresent": false,
+            "guide": "12-14 Silverpine Forest",
+            "step": 97,
+            "generated": false
+          },
+          {
+            "type": "unknown_quest",
+            "quest": 926,
+            "action": "turnin",
+            "actualState": null,
+            "requiredState": 3,
+            "reason": "repeatable without a recorded reward (no XP)",
+            "worldQuestPresent": false,
+            "guide": "12-14 Silverpine Forest",
+            "step": 144,
+            "generated": false
+          },
+          {
+            "type": "unknown_quest",
+            "quest": 97003,
+            "action": "accept",
+            "actualState": null,
+            "requiredState": 1,
+            "reason": "item objective 276070 drops only from elites or mobs 5+ levels above the quest",
+            "worldQuestPresent": false,
+            "guide": "12-17 The Barrens",
+            "step": 259,
+            "generated": false
+          },
+          {
+            "type": "unknown_quest",
+            "quest": 4021,
+            "action": "accept",
+            "actualState": null,
+            "requiredState": 1,
+            "reason": "item objective 11227 drops only outside the open world",
+            "worldQuestPresent": false,
+            "guide": "12-17 The Barrens",
+            "step": 319,
+            "generated": false
+          },
+          {
+            "type": "unknown_quest",
+            "quest": 6284,
+            "action": "accept",
+            "actualState": null,
+            "requiredState": 1,
+            "reason": "item objective 16192 drops only from elites or mobs 5+ levels above the quest",
+            "worldQuestPresent": false,
+            "guide": "17-22 Stonetalon/Barrens/Ashenvale",
+            "step": 10,
+            "generated": false
+          },
+          {
+            "type": "unknown_quest",
+            "quest": 6284,
+            "action": "complete",
+            "actualState": null,
+            "requiredState": 2,
+            "reason": "item objective 16192 drops only from elites or mobs 5+ levels above the quest",
+            "worldQuestPresent": false,
+            "guide": "17-22 Stonetalon/Barrens/Ashenvale",
+            "step": 13,
+            "generated": false
+          },
+          {
+            "type": "unknown_quest",
+            "quest": 92706,
+            "action": "accept",
+            "actualState": null,
+            "requiredState": 1,
+            "reason": "item objective 253710 drops only from elites or mobs 5+ levels above the quest",
+            "worldQuestPresent": false,
+            "guide": "17-22 Stonetalon/Barrens/Ashenvale",
+            "step": 70,
+            "generated": false
+          },
+          {
+            "type": "unknown_quest",
+            "quest": 4021,
+            "action": "accept",
+            "actualState": null,
+            "requiredState": 1,
+            "reason": "item objective 11227 drops only outside the open world",
+            "worldQuestPresent": false,
+            "guide": "17-22 Stonetalon/Barrens/Ashenvale",
+            "step": 198,
+            "generated": false
+          },
+          {
+            "type": "unknown_quest",
+            "quest": 4021,
+            "action": "complete",
+            "actualState": null,
+            "requiredState": 2,
+            "reason": "item objective 11227 drops only outside the open world",
+            "worldQuestPresent": false,
+            "guide": "17-22 Stonetalon/Barrens/Ashenvale",
+            "step": 199,
+            "generated": false
+          },
+          {
+            "type": "unmapped_objective",
+            "quest": 98252,
+            "objective": 1,
+            "guide": "17-22 Stonetalon/Barrens/Ashenvale",
+            "step": 262,
+            "origin": {
+              "path": "Horde-12-22_Barrens.lua",
+              "step": 262,
+              "line": 4597
+            }
+          },
+          {
+            "type": "unknown_quest",
+            "quest": 2842,
+            "action": "accept",
+            "actualState": null,
+            "requiredState": 1,
+            "reason": "not_in_character_world",
+            "worldQuestPresent": true,
+            "guide": "17-22 Stonetalon/Barrens/Ashenvale",
+            "step": 338,
+            "generated": false
+          }
+        ],
+        "unknownQuestIds": [
+          96873,
+          96876,
+          96877,
+          5725,
+          926,
+          97003,
+          4021,
+          6284,
+          92706,
+          2842
+        ],
+        "unknownXpIds": [],
+        "unknownObjectiveCounts": [
+          1090
+        ],
+        "unresolvedConditions": [
+          "{\"guide\":\"1-6 Durotar\",\"step\":45,\"condition\":\"!Rogue !Shaman\",\"guards\":[{\"t\":\"inventory_guard\",\"directive\":\"itemcount\",\"args\":\"159,<15\",\"conditions\":[\"!Rogue !Warrior !Hunter !Shaman\"],\"condition_format\":\"rxp\",\"origin\":{\"path\":\"Horde-01-12_Durotar.lua\",\"step\":45,\"line\":382}}]}",
+          "{\"guide\":\"1-6 Durotar\",\"step\":60,\"condition\":\"\",\"guards\":[{\"t\":\"inventory_guard\",\"directive\":\"itemcount\",\"args\":\"159,<5\",\"conditions\":[\"!Rogue !Warrior !Hunter !Shaman\"],\"condition_format\":\"rxp\",\"origin\":{\"path\":\"Horde-01-12_Durotar.lua\",\"step\":60,\"line\":578}},{\"t\":\"inventory_guard\",\"directive\":\"itemcount\",\"args\":\"2512,<600\",\"conditions\":[\"Hunter\"],\"condition_format\":\"rxp\",\"origin\":{\"path\":\"Horde-01-12_Durotar.lua\",\"step\":60,\"line\":579}}]}",
+          "{\"guide\":\"6-10 Durotar\",\"step\":97,\"condition\":\"\",\"guards\":[{\"t\":\"inventory_guard\",\"directive\":\"itemcount\",\"args\":\"4870,<8\",\"conditions\":[],\"condition_format\":\"rxp\",\"origin\":{\"path\":\"Horde-01-12_Durotar.lua\",\"step\":97,\"line\":1826}}]}",
+          "{\"guide\":\"12-14 Silverpine Forest\",\"step\":100,\"condition\":\"!Rogue !Warrior\",\"guards\":[{\"t\":\"inventory_guard\",\"directive\":\"itemcount\",\"args\":\"2589,1\",\"conditions\":[],\"condition_format\":\"rxp\",\"origin\":{\"path\":\"Horde-01-14_Undead.lua\",\"step\":100,\"line\":4029}}]}",
+          "{\"guide\":\"12-14 Silverpine Forest\",\"step\":102,\"condition\":\"!Rogue !Warrior\",\"guards\":[{\"t\":\"inventory_guard\",\"directive\":\"itemcount\",\"args\":\"2589,2\",\"conditions\":[],\"condition_format\":\"rxp\",\"origin\":{\"path\":\"Horde-01-14_Undead.lua\",\"step\":102,\"line\":4041}}]}",
+          "{\"guide\":\"12-14 Silverpine Forest\",\"step\":110,\"condition\":\"Priest/Mage/Warlock\",\"guards\":[{\"t\":\"inventory_guard\",\"directive\":\"itemcount\",\"args\":\"210177,1\",\"conditions\":[],\"condition_format\":\"rxp\",\"origin\":{\"path\":\"Horde-01-14_Undead.lua\",\"step\":110,\"line\":4098}}]}",
+          "{\"guide\":\"12-14 Silverpine Forest\",\"step\":113,\"condition\":\"Priest/Mage/Warlock\",\"guards\":[{\"t\":\"inventory_guard\",\"directive\":\"itemcount\",\"args\":\"5208,1\",\"conditions\":[],\"condition_format\":\"rxp\",\"origin\":{\"path\":\"Horde-01-14_Undead.lua\",\"step\":113,\"line\":4124}},{\"t\":\"level_guard\",\"directive\":\"xp\",\"args\":\">15,1\",\"conditions\":[],\"condition_format\":\"rxp\",\"origin\":{\"path\":\"Horde-01-14_Undead.lua\",\"step\":113,\"line\":4127}}]}",
+          "{\"guide\":\"12-17 The Barrens\",\"step\":262,\"condition\":\"\",\"guards\":[{\"t\":\"inventory_guard\",\"directive\":\"itemcount\",\"args\":\"5100,<1\",\"conditions\":[],\"condition_format\":\"rxp\",\"origin\":{\"path\":\"Horde-12-22_Barrens.lua\",\"step\":262,\"line\":1979}}]}",
+          "{\"guide\":\"12-17 The Barrens\",\"step\":263,\"condition\":\"\",\"guards\":[{\"t\":\"inventory_guard\",\"directive\":\"itemcount\",\"args\":\"5100,<1\",\"conditions\":[],\"condition_format\":\"rxp\",\"origin\":{\"path\":\"Horde-12-22_Barrens.lua\",\"step\":263,\"line\":1985}}]}",
+          "{\"guide\":\"12-17 The Barrens\",\"step\":305,\"condition\":\"\",\"guards\":[{\"t\":\"inventory_guard\",\"directive\":\"itemcount\",\"args\":\"5165,1\",\"conditions\":[],\"condition_format\":\"rxp\",\"origin\":{\"path\":\"Horde-12-22_Barrens.lua\",\"step\":305,\"line\":2315}}]}",
+          "{\"guide\":\"12-17 The Barrens\",\"step\":313,\"condition\":\"\",\"guards\":[{\"t\":\"inventory_guard\",\"directive\":\"itemcount\",\"args\":\"5030,5\",\"conditions\":[],\"condition_format\":\"rxp\",\"origin\":{\"path\":\"Horde-12-22_Barrens.lua\",\"step\":313,\"line\":2441}},{\"t\":\"quest_guard\",\"directive\":\"isOnQuest\",\"args\":\"855\",\"conditions\":[],\"condition_format\":\"rxp\",\"origin\":{\"path\":\"Horde-12-22_Barrens.lua\",\"step\":313,\"line\":2442}}]}",
+          "{\"guide\":\"12-17 The Barrens\",\"step\":314,\"condition\":\"\",\"guards\":[{\"t\":\"inventory_guard\",\"directive\":\"itemcount\",\"args\":\"5030,<5\",\"conditions\":[],\"condition_format\":\"rxp\",\"origin\":{\"path\":\"Horde-12-22_Barrens.lua\",\"step\":314,\"line\":2447}}]}",
+          "{\"guide\":\"17-22 Stonetalon/Barrens/Ashenvale\",\"step\":85,\"condition\":\"\",\"guards\":[{\"t\":\"inventory_guard\",\"directive\":\"itemcount\",\"args\":\"5085,1\",\"conditions\":[],\"condition_format\":\"rxp\",\"origin\":{\"path\":\"Horde-12-22_Barrens.lua\",\"step\":85,\"line\":3341}}]}",
+          "{\"guide\":\"17-22 Stonetalon/Barrens/Ashenvale\",\"step\":128,\"condition\":\"!Tauren !Skyborne\",\"guards\":[{\"t\":\"inventory_guard\",\"directive\":\"itemcount\",\"args\":\"5075,10\",\"conditions\":[],\"condition_format\":\"rxp\",\"origin\":{\"path\":\"Horde-12-22_Barrens.lua\",\"step\":128,\"line\":3664}}]}"
+        ],
+        "skippedAccepts": [],
+        "unreachable": 0
+      },
+      "inputProvenance": {
+        "kind": "full_guide_catalog",
+        "file": "catalog.json.gz",
+        "sha256": "e7d07316f2b2d18964bf71d1237d9bff8fef8821c88b62fcf8f8a8775a745ccb",
+        "chapters": [
+          {
+            "id": "rxp:1-6 Durotar",
+            "sourceSha256": "783826f47e2748ac86cc4ef4a799387de9ec268c799d6768206d955b890ab705"
+          },
+          {
+            "id": "rxp:6-10 Durotar",
+            "sourceSha256": "fb3d2854688d9e047e05de70f52fda77f8d296ebd938f98193d03fa190f54bd7"
+          },
+          {
+            "id": "rxp:10-12 Durotar",
+            "sourceSha256": "0e1c3490d737690798bece4cdae9edf6438c3448f2824b2251c30ca2056114de"
+          },
+          {
+            "id": "rxp:10-12 Tirisfal (Orc/Troll)",
+            "sourceSha256": "907390941cae0a5742ae5f4a79cc0ad1004e564ff012c3a00070208b0971d084"
+          },
+          {
+            "id": "rxp:12-14 Silverpine Forest",
+            "sourceSha256": "367c30db737cb7ffd2561bd788149a9065a9def5605ba74b9ee9bbc429a89091"
+          },
+          {
+            "id": "rxp:12-17 The Barrens",
+            "sourceSha256": "c0dee815e01b22639914eed96011fa5b73264a571836a9a39d474660c07d221c"
+          },
+          {
+            "id": "rxp:17-22 Stonetalon/Barrens/Ashenvale",
+            "sourceSha256": "73f19cd8fba50a4ad099dd607a82b2eff01c8a6fb8ada78caae876d78cb22a73"
+          }
+        ]
+      },
+      "optionalExcluded": 0,
+      "recoveredAccepts": [],
+      "generatedQuestIds": [
+        1501,
+        1504,
+        7789,
+        8368,
+        8389,
+        498,
+        1195,
+        770,
+        897,
+        879,
+        906,
+        8162,
+        898,
+        891,
+        79192,
+        79980,
+        5881,
+        4542,
+        4881,
+        885,
+        893,
+        567,
+        527,
+        528,
+        98094,
+        529,
+        509,
+        513,
+        450,
+        493,
+        532,
+        539,
+        8370,
+        8390,
+        8431,
+        6543,
+        6571,
+        6503,
+        6482,
+        25,
+        6504,
+        515,
+        517,
+        524,
+        1131,
+        1196,
+        1197,
+        4821,
+        4865,
+        5062,
+        96294,
+        494,
+        96260,
+        95885,
+        95883,
+        96241,
+        962,
+        96259,
+        1153,
+        857,
+        4904,
+        5147,
+        4767,
+        4770,
+        98093,
+        843,
+        79975,
+        79976,
+        79974,
+        98070,
+        4841,
+        5064,
+        3741,
+        104,
+        103,
+        152,
+        575,
+        97538,
+        742,
+        6441,
+        6563,
+        361,
+        398,
+        99141,
+        354,
+        362,
+        96899,
+        96896,
+        98545,
+        460,
+        461,
+        491,
+        95314,
+        86784,
+        6421,
+        1480,
+        1481,
+        5763,
+        583,
+        185,
+        186,
+        190,
+        191,
+        1110,
+        5762,
+        1175,
+        1105,
+        1176,
+        1104,
+        533,
+        552,
+        553,
+        1145,
+        1146,
+        846,
+        849,
+        781,
+        3376,
+        752,
+        753,
+        755,
+        746,
+        99411,
+        749,
+        751,
+        765,
+        743,
+        761,
+        767,
+        771,
+        772,
+        773,
+        775,
+        776,
+        549,
+        1087,
+        1088
+      ]
+    },
+    {
+      "id": "journey",
+      "originalCoverage": [
+        1,
+        30
+      ],
+      "declaredCoverage": [
+        1,
+        30
+      ],
+      "endLevel": 30,
+      "timeTo": {
+        "6": 2832.6979549976113,
+        "12": 12528.88588701516,
+        "20": 36616.71981886328,
+        "30": 89302.72859710541
+      },
+      "status": "diagnostic_replay_needs_fixes",
+      "blockers": {
+        "sourceActionsNotReplayed": [
+          {
+            "action": "move",
+            "count": 5310
+          },
+          {
+            "action": "track_objective",
+            "count": 168
+          },
+          {
+            "action": "service",
+            "count": 262
+          },
+          {
+            "action": "inventory_goal",
+            "count": 26
+          },
+          {
+            "action": "callback",
+            "count": 80
+          },
+          {
+            "action": "transition",
+            "count": 26
+          },
+          {
+            "action": "choice",
+            "count": 41
+          },
+          {
+            "action": "bind",
+            "count": 12
+          },
+          {
+            "action": "transport",
+            "count": 73
+          },
+          {
+            "action": "learn_flight",
+            "count": 19
+          },
+          {
+            "action": "set_variable",
+            "count": 2
+          }
+        ],
+        "unvalidatedMechanics": [
+          {
+            "quest": 1149,
+            "reason": "scripted_event_duration_uses_interaction_prior",
+            "event": 246
+          }
+        ],
+        "eventFailures": [
+          {
+            "type": "unknown_quest",
+            "quest": 6284,
+            "action": "accept",
+            "actualState": null,
+            "requiredState": 1,
+            "reason": "item objective 16192 drops only from elites or mobs 5+ levels above the quest",
+            "worldQuestPresent": false,
+            "guide": "H20SM_FVR",
+            "step": "01-04",
+            "generated": false
+          },
+          {
+            "type": "unknown_quest",
+            "quest": 6284,
+            "action": "accept",
+            "actualState": null,
+            "requiredState": 1,
+            "reason": "item objective 16192 drops only from elites or mobs 5+ levels above the quest",
+            "worldQuestPresent": false,
+            "guide": "H23S_FVR",
+            "step": "08-06",
+            "generated": false
+          },
+          {
+            "type": "unknown_quest",
+            "quest": 6284,
+            "action": "complete",
+            "actualState": null,
+            "requiredState": 2,
+            "reason": "item objective 16192 drops only from elites or mobs 5+ levels above the quest",
+            "worldQuestPresent": false,
+            "guide": "H23S_FVR",
+            "step": "08-07",
+            "generated": false
+          },
+          {
+            "type": "unknown_quest",
+            "quest": 6284,
+            "action": "turnin",
+            "actualState": null,
+            "requiredState": 3,
+            "reason": "item objective 16192 drops only from elites or mobs 5+ levels above the quest",
+            "worldQuestPresent": false,
+            "guide": "H23S_FVR",
+            "step": "09-01",
+            "generated": false
+          },
+          {
+            "type": "failed_turnin",
+            "quest": 1130,
+            "action": "turnin",
+            "actualState": 0,
+            "requiredState": 3,
+            "reason": "prerequisites_not_turned_in",
+            "missingAny": [
+              882
+            ],
+            "missingAll": [],
+            "exclusive": [],
+            "parentMissing": null,
+            "minLevel": 20,
+            "questLevel": 30,
+            "guide": "H23S_FVR",
+            "step": "10-03",
+            "level": 24,
+            "generated": false
+          },
+          {
+            "type": "failed_turnin",
+            "quest": 247,
+            "action": "turnin",
+            "actualState": 0,
+            "requiredState": 3,
+            "reason": "engine_action_rejected",
+            "missingAny": [],
+            "missingAll": [],
+            "exclusive": [],
+            "parentMissing": null,
+            "minLevel": 20,
+            "questLevel": 30,
+            "guide": "H26A_FVR",
+            "step": "16-02",
+            "level": 26,
+            "generated": false
+          },
+          {
+            "type": "unknown_quest",
+            "quest": 6283,
+            "action": "accept",
+            "actualState": null,
+            "requiredState": 1,
+            "reason": "item objective 16190 drops only from elites or mobs 5+ levels above the quest",
+            "worldQuestPresent": false,
+            "guide": "H27SM_FVR",
+            "step": "18-02",
+            "generated": false
+          },
+          {
+            "type": "unknown_quest",
+            "quest": 6283,
+            "action": "complete",
+            "actualState": null,
+            "requiredState": 2,
+            "reason": "item objective 16190 drops only from elites or mobs 5+ levels above the quest",
+            "worldQuestPresent": false,
+            "guide": "H27SM_FVR",
+            "step": "18-04",
+            "generated": false
+          },
+          {
+            "type": "unknown_quest",
+            "quest": 6283,
+            "action": "turnin",
+            "actualState": null,
+            "requiredState": 3,
+            "reason": "item objective 16190 drops only from elites or mobs 5+ levels above the quest",
+            "worldQuestPresent": false,
+            "guide": "H27SM_FVR",
+            "step": "18-06",
+            "generated": false
+          },
+          {
+            "type": "unknown_quest",
+            "quest": 5151,
+            "action": "accept",
+            "actualState": null,
+            "requiredState": 1,
+            "reason": "item objective 12946 drops only from elites or mobs 5+ levels above the quest",
+            "worldQuestPresent": false,
+            "guide": "H28TN_FVR",
+            "step": "19-04",
+            "generated": false
+          },
+          {
+            "type": "unknown_quest",
+            "quest": 5088,
+            "action": "accept",
+            "actualState": null,
+            "requiredState": 1,
+            "reason": "item objective 12925 drops only from elites or mobs 5+ levels above the quest",
+            "worldQuestPresent": false,
+            "guide": "H28TN_FVR",
+            "step": "20-03",
+            "generated": false
+          },
+          {
+            "type": "unknown_quest",
+            "quest": 5151,
+            "action": "complete",
+            "actualState": null,
+            "requiredState": 2,
+            "reason": "item objective 12946 drops only from elites or mobs 5+ levels above the quest",
+            "worldQuestPresent": false,
+            "guide": "H28TN_FVR",
+            "step": "21-10",
+            "generated": false
+          }
+        ],
+        "unknownQuestIds": [
+          6284,
+          6283,
+          5151,
+          5088
+        ],
+        "unknownXpIds": [],
+        "unknownObjectiveCounts": [],
+        "unresolvedConditions": [
+          "{\"guide\":\"H06D_FVR\",\"step\":\"02-09b\",\"conditions\":[\"ITEM[4882] == 1 or ITEM[4881] == 1 or QUEST[830] >= ACCEPTED\"]}",
+          "{\"guide\":\"H06D_FVR\",\"step\":\"02-09c\",\"conditions\":[\"ITEM[4881] >= 1 or QUEST[830] >= ACCEPTED\"]}",
+          "{\"guide\":\"H06D_FVR\",\"step\":\"02-10\",\"conditions\":[\"ITEM[4881] >= 1 or QUEST[830] >= ACCEPTED\"]}",
+          "{\"guide\":\"H06D_FVR\",\"step\":\"12-04\",\"conditions\":[\"not ROGUE and QUEST[924] >= ACCEPTED\",\"ITEM[4986] >= 1 or QUEST[924] >= COMPLETED\"]}"
+        ],
+        "skippedAccepts": [],
+        "unreachable": 0
+      },
+      "inputProvenance": {
+        "kind": "full_guide_catalog",
+        "file": "catalog.json.gz",
+        "sha256": "e7d07316f2b2d18964bf71d1237d9bff8fef8821c88b62fcf8f8a8775a745ccb",
+        "chapters": [
+          {
+            "id": "journey:H01D_FVR",
+            "sourceSha256": "fc358ec361bf96afdffed76dd23ab37a856b37b3551e3979b37173d736e55825"
+          },
+          {
+            "id": "journey:H06D_FVR",
+            "sourceSha256": "6b09aee4e50aac0775632dff3d22e6df07d174f6a0e2c24f7cb272a1859f477d"
+          },
+          {
+            "id": "journey:H12B_FVR",
+            "sourceSha256": "927060835a46640b83ab9d2cada3b175675283efdecf0b7645b6d63ce636e191"
+          },
+          {
+            "id": "journey:H15S_FVR",
+            "sourceSha256": "3179e723d342d4b4a39d040c2d068da3c59ea495892548fd97852c794ab8e21f"
+          },
+          {
+            "id": "journey:H16B_FVR",
+            "sourceSha256": "024f7b4189429b94f4e2841284a10f14bd8a284be56126856ba9e7e5123a5c48"
+          },
+          {
+            "id": "journey:H20SM_FVR",
+            "sourceSha256": "dd1e2fa06c680c4858c23e521568250fe72446f24047d0c9bcaf0cd4b68aafbe"
+          },
+          {
+            "id": "journey:H21A_FVR",
+            "sourceSha256": "82d9fcdf758f49f722ad62640355a25e4ba7dd19ae083756d7c148b9af2ceea3"
+          },
+          {
+            "id": "journey:H22SB_FVR",
+            "sourceSha256": "165c874955da8e9a160e2b8a5375d0ad04d25b95008905dbb40122f941697742"
+          },
+          {
+            "id": "journey:H23S_FVR",
+            "sourceSha256": "b0618af44c1aa55e24475ef344ceef936cfc7bc6fb3bfb4f42a496be2f10d16a"
+          },
+          {
+            "id": "journey:H25SB_FVR",
+            "sourceSha256": "9d170ea07016b3188fd295aabd2f6c29016a28be927f4c1260d773a047ff0b1b"
+          },
+          {
+            "id": "journey:H25TN_FVR",
+            "sourceSha256": "58b691633de3e06b833e227249d919070719dc36ca3bcc85d127c38aebcb75eb"
+          },
+          {
+            "id": "journey:H26A_FVR",
+            "sourceSha256": "3c7749a62293bf715d7c4a01a14b403429dea58da7c1b7bc19a4052a4edb67ef"
+          },
+          {
+            "id": "journey:H27SM_FVR",
+            "sourceSha256": "3620821b469d8430e3bb4c13a6f04ae467424de0c31f0b4f65cd0af1ed7104d5"
+          },
+          {
+            "id": "journey:H28TN_FVR",
+            "sourceSha256": "860625887ecbe9078fd8eb124026f2387f0c468dbe3f258f82c48b3654f4b92e"
+          },
+          {
+            "id": "journey:H29HF_FVR",
+            "sourceSha256": "049aaf51424a86d15ca99927d495dd38bf3ed93337b919526ad21a5dd5213f12"
+          }
+        ]
+      },
+      "optionalExcluded": 129,
+      "recoveredAccepts": [
+        {
+          "event": {
+            "conditions": [
+              "LEVEL >= 20 and QUEST[1131] <= NONE"
+            ],
+            "condition_format": "journey",
+            "optional": false,
+            "origin": {
+              "path": "0027.html",
+              "step": "05-04"
+            },
+            "t": "accept",
+            "q": 1130
+          },
+          "failure": {
+            "type": "failed_accept",
+            "quest": 1130,
+            "action": "accept",
+            "actualState": 0,
+            "requiredState": 1,
+            "reason": "prerequisites_not_turned_in",
+            "missingAny": [
+              882
+            ],
+            "missingAll": [],
+            "exclusive": [],
+            "parentMissing": null,
+            "minLevel": 20,
+            "questLevel": 30,
+            "guide": "H22SB_FVR",
+            "step": "05-04",
+            "level": 20,
+            "generated": false
+          },
+          "guide": "H22SB_FVR",
+          "step": "05-04",
+          "time": 60001.7699259232,
+          "level": 25
+        }
+      ],
+      "generatedQuestIds": []
+    },
+    {
+      "id": "wisp",
+      "originalCoverage": [
+        1,
+        20
+      ],
+      "declaredCoverage": [
+        1,
+        30
+      ],
+      "endLevel": 30,
+      "timeTo": {
+        "6": 3288.8121895528698,
+        "12": 15896.702400477574,
+        "20": 54738.169263759824,
+        "30": 154592.17637518566
+      },
+      "status": "provisional_model_complete",
+      "blockers": {
+        "sourceActionsNotReplayed": [],
+        "unvalidatedMechanics": [],
+        "eventFailures": [],
+        "unknownQuestIds": [],
+        "unknownXpIds": [],
+        "unknownObjectiveCounts": [],
+        "unresolvedConditions": [],
+        "skippedAccepts": [],
+        "unreachable": 0
+      },
+      "inputProvenance": {
+        "kind": "full_guide_catalog",
+        "file": "catalog.json.gz",
+        "sha256": "e7d07316f2b2d18964bf71d1237d9bff8fef8821c88b62fcf8f8a8775a745ccb",
+        "chapters": [
+          {
+            "id": "wisp:forever-orc-troll-1-20",
+            "sourceSha256": "46acbf83fdbf2db6a38ba52a0da02558e4700f76d9275771aa11de1c72f9fbcd"
+          }
+        ]
+      },
+      "optionalExcluded": 342,
+      "recoveredAccepts": [
+        {
+          "event": {
+            "origin": {
+              "path": "BetaRoutes.lua",
+              "step": "q3090-accept"
+            },
+            "conditions": [
+              {
+                "level": 1
+              }
+            ],
+            "condition_format": "wisp",
+            "optional": false,
+            "classes": [
+              "WARLOCK"
+            ],
+            "races": [
+              "Orc"
+            ],
+            "excludedClasses": null,
+            "trip": null,
+            "background": false,
+            "recoveryOnly": false,
+            "advisory": false,
+            "t": "accept",
+            "q": 3090,
+            "objectives": null,
+            "providedObjectiveItems": null,
+            "activationQuest": null,
+            "activationQuestReward": null,
+            "campingLesson": null
+          },
+          "failure": {
+            "type": "failed_accept",
+            "quest": 3090,
+            "action": "accept",
+            "actualState": 0,
+            "requiredState": 1,
+            "reason": "prerequisites_not_turned_in",
+            "missingAny": [
+              788
+            ],
+            "missingAll": [],
+            "exclusive": [],
+            "parentMissing": null,
+            "minLevel": 1,
+            "questLevel": 1,
+            "guide": "forever-orc-troll-1-20",
+            "step": "q3090-accept",
+            "level": 1,
+            "generated": false
+          },
+          "guide": "forever-orc-troll-1-20",
+          "step": "q3090-accept",
+          "time": 546.0726614137262,
+          "level": 2
+        }
+      ],
+      "generatedQuestIds": [
+        235,
+        1061,
+        787,
+        6541,
+        8368,
+        8389,
+        95621,
+        1063,
+        883,
+        79007,
+        98093,
+        843,
+        79192,
+        1068,
+        893,
+        884,
+        897,
+        879,
+        906,
+        7789,
+        853,
+        885,
+        846,
+        849,
+        3301,
+        6365,
+        6384,
+        6543,
+        98252,
+        98251,
+        6563,
+        6641,
+        6462,
+        216,
+        6442,
+        6482,
+        6503,
+        6544,
+        25,
+        6441,
+        6571,
+        1918,
+        824,
+        6621,
+        6301,
+        6562,
+        79980,
+        6381,
+        1087,
+        6393,
+        86576,
+        6282,
+        5881,
+        1058,
+        1088,
+        1089,
+        6421,
+        6523,
+        1195,
+        97538,
+        1196,
+        1131,
+        1064,
+        1065,
+        962,
+        264,
+        744,
+        886,
+        8162,
+        1095,
+        4542,
+        4904,
+        874,
+        873,
+        1153,
+        857,
+        8370,
+        8390,
+        8431,
+        6401,
+        1096,
+        509,
+        513,
+        567,
+        527,
+        528,
+        529,
+        532,
+        98094,
+        539,
+        546,
+        1066,
+        1067,
+        501,
+        502,
+        498,
+        549,
+        496,
+        499,
+        494,
+        96294,
+        96260,
+        96241,
+        96259,
+        770,
+        833,
+        749,
+        751,
+        765,
+        764,
+        746,
+        743,
+        745,
+        766,
+        99411,
+        767,
+        771,
+        772,
+        773,
+        775,
+        761,
+        3376,
+        1656,
+        781,
+        753,
+        755,
+        757,
+        763,
+        752,
+        747,
+        750,
+        780,
+        4881,
+        4770,
+        4767,
+        5147,
+        1197,
+        4821,
+        4865,
+        5062,
+        98070,
+        4841,
+        5064,
+        1176,
+        1104,
+        1105,
+        5762,
+        1110,
+        1175,
+        79975,
+        79976
+      ]
+    },
+    {
+      "id": "polestar",
+      "originalCoverage": [
+        1,
+        60
+      ],
+      "declaredCoverage": [
+        1,
+        60
+      ],
+      "endLevel": 30,
+      "timeTo": {
+        "6": 2726.109685629694,
+        "12": 11251.037306931734,
+        "20": 36949.23149002496,
+        "30": 88479.41249981133
+      },
+      "status": "diagnostic_replay_needs_fixes",
+      "blockers": {
+        "sourceActionsNotReplayed": [],
+        "unvalidatedMechanics": [
+          {
+            "quest": 1149,
+            "reason": "scripted_event_duration_uses_interaction_prior",
+            "event": 246
+          }
+        ],
+        "eventFailures": [],
+        "unknownQuestIds": [],
+        "unknownXpIds": [],
+        "unknownObjectiveCounts": [
+          1090,
+          4966
+        ],
+        "unresolvedConditions": [],
+        "skippedAccepts": [],
+        "unreachable": 0
+      },
+      "inputProvenance": {
+        "kind": "saved_event_export"
+      },
+      "optionalExcluded": 0,
+      "recoveredAccepts": [],
+      "generatedQuestIds": []
+    }
+  ]
+}

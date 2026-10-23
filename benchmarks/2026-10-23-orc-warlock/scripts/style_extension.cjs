@@ -9,7 +9,7 @@ function* continuation(source,run,ev,{target,missingCounts}){
   const candidates=[];
   for(let i=0;i<run.Q;i++){
    const q=run.quests[i];
-   if(original.has(q.id)||attempted.has(q.id)||ev.done[i]||ev.active[i]||missingCounts.has(q.id)||!(q.xp>0)||q.minLevel>=target)continue;
+   if(q.modelUnvalidated||original.has(q.id)||attempted.has(q.id)||ev.done[i]||ev.active[i]||missingCounts.has(q.id)||!(q.xp>0)||q.minLevel>=target)continue;
    if(!ev.prereqOk(i)||ev.level<q.minLevel||ev.level+ev.p.dangerGap<q.level)continue;
    if(ev.open>=run.logCap)continue;
    let work=0;
