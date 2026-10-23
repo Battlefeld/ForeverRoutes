@@ -182,7 +182,7 @@ function main(){
    target.groups=target.groups.concat(groups);
    target.coverage=[1,30];
    target.limits.push('GENERATED '+from+'-30: '+(id==='rxp'?'XP density/speed':'level/hub continuity')+' heuristic; not official guide; common quest facts');
-   console.log('STYLE_EXTENSION '+JSON.stringify({id,from,quests:candidates.length,policy:id==='rxp'?'xp-density-speed':'level-hub-continuity'}));
+   console.log('STYLE_EXTENSION '+JSON.stringify({id,from,quests:candidates.length,policy:id==='rxp'?'level-gated-xp-speed':'level-hub-continuity'}));
   }
  }
  const rows=[];
