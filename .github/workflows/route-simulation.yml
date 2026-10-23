@@ -9,7 +9,7 @@ on:
       - 'sources/warcraftdb-verified-xp-20261023.json'
   workflow_dispatch:
 permissions:
-  contents: read
+  contents: write
 jobs:
   simulation:
     runs-on: ubuntu-latest
@@ -52,13 +52,15 @@ jobs:
       - name: Gate unsupported ranking and summarize actual blockers
         working-directory: benchmarks/2026-10-23-independent-route-checks
         run: node scripts/summarize_gate.cjs
-      - name: Store simulator logs and reports
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: forever-route-simulation-diagnostics
-          if-no-files-found: warn
-          path: |
-            benchmarks/2026-10-23-independent-route-checks/reports/replayed-*.json
-            benchmarks/2026-10-23-independent-route-checks/reports/simulation-start-gate.json
-            benchmarks/2026-10-23-orc-warlock/.comparison/results/*.json
+      - name: Save compact reports to the repository (artifact quota independent)
+        run: |
+          mkdir -p simulation-results
+          cp benchmarks/2026-10-23-independent-route-checks/reports/simulation-start-gate.json simulation-results/simulation-start-gate.json
+          cp benchmarks/2026-10-23-orc-warlock/.comparison/results/comparison.json simulation-results/comparison.json
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add simulation-results/simulation-start-gate.json simulation-results/comparison.json
+          if ! git diff --cached --quiet; then
+            git commit -m "chore: store verified route diagnostics [skip ci]"
+            git push origin "HEAD:${{ github.ref_name }}"
+          fi
