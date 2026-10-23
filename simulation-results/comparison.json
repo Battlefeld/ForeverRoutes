@@ -1,6 +1,6 @@
 {
   "schema": "foreverroutes.shared_comparison.v1",
-  "finishedAt": "2026-10-23T11:31:40.555Z",
+  "finishedAt": "2026-10-23T11:36:35.950Z",
   "status": "completed_diagnostic_replays",
   "profile": {
     "faction": "Horde",
@@ -369,10 +369,22 @@
         "objective": 1,
         "count": 1,
         "url": "https://www.wowhead.com/forever/quest=6981/the-glowing-shard"
+      },
+      {
+        "quest": 97905,
+        "objective": 1,
+        "count": 1,
+        "url": "https://www.wowhead.com/forever/quest=97905/camping-101-herbalism"
+      },
+      {
+        "quest": 97907,
+        "objective": 1,
+        "count": 1,
+        "url": "https://www.wowhead.com/forever/quest=97907/camping-101-mining"
       }
     ],
     "sourceGuideFacts": 56,
-    "legacyFlagsResolved": 40,
+    "legacyFlagsResolved": 42,
     "resolvedQuestIds": [
       1090,
       5088,
@@ -402,6 +414,8 @@
       97223,
       97242,
       97277,
+      97905,
+      97907,
       98025,
       98321,
       98342,
@@ -455,6 +469,18 @@
         "objective": 1,
         "action": "escort",
         "url": "https://www.wowhead.com/forever/quest=1090/gerenzos-orders"
+      },
+      {
+        "quest": 97905,
+        "objective": 1,
+        "action": "skill_gate",
+        "url": "https://www.wowhead.com/forever/quest=97905/camping-101-herbalism"
+      },
+      {
+        "quest": 97907,
+        "objective": 1,
+        "action": "skill_gate",
+        "url": "https://www.wowhead.com/forever/quest=97907/camping-101-mining"
       }
     ],
     "unresolvedMappings": [
@@ -492,7 +518,7 @@
       }
     ],
     "conflicts": [],
-    "remainingCountFlags": 544
+    "remainingCountFlags": 545
   },
   "rows": [
     {
@@ -597,7 +623,9 @@
         "unknownXpIds": [
           79096
         ],
-        "unknownObjectiveCounts": [],
+        "unknownObjectiveCounts": [
+          1090
+        ],
         "unresolvedConditions": [],
         "skippedAccepts": [
           {
@@ -4047,6 +4075,7 @@
           98070
         ],
         "unknownObjectiveCounts": [
+          1090,
           4966
         ],
         "unresolvedConditions": [],
