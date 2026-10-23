@@ -149,20 +149,35 @@ function main(){
   sources.push(source);
  }
  if(process.argv.includes('--extend-to-30')){
-  const journey=sources.find(s=>s.id==='journey');
-  const polestar=sources.find(s=>s.id==='polestar');
+  // Shared eligible quest pool, not a copied donor route. Build two distinct
+  // generated plans with independently scored quest ordering.
+  const journey=sources.find(x=>x.id==='journey');
+  const pool=new Map();
+  for(const g of journey.groups)for(const e of g.events||[]){
+   if(!e.q||!['accept','complete','turnin'].includes(e.t)||!compatible(e.q))continue;
+   const q=raw[e.q];if(!q)continue;
+   const lv=Number(q.level||q.minLevel||0);
+   if(lv<19||lv>33)continue;
+   if(!pool.has(e.q))pool.set(e.q,{id:e.q,level:lv,xp:Number(q.xp)||0,zone:g.guide||'',events:[]});
+   pool.get(e.q).events.push(e.t);
+  }
   for(const id of ['rxp','wisp']){
-   const target=sources.find(s=>s.id===id);
-   const from=id==='rxp'?23:21;
-   const donor=id==='rxp'?journey:polestar;
-   const extra=donor.groups.filter(g=>{
-    if(id==='rxp'){const m=/^H(\\d{2})/.exec(g.guide||'');return m&&Number(m[1])>=from;}
-    return g.events.some(e=>e.q && Number(raw[e.q]?.level||raw[e.q]?.minLevel||0)>=from);
-   }).map(g=>({...g,guide:'SYNTHETIC_'+id+'_'+(g.guide||'polestar'),synthetic:true,events:g.events.map(e=>({...e,synthetic:true}))}));
-   target.groups=target.groups.concat(extra);
+   const target=sources.find(x=>x.id===id),from=id==='rxp'?23:21;
+   const candidates=[...pool.values()].filter(q=>q.level>=from-3);
+   // RXP: favor XP density and short chains. Wisp: favor contiguous
+   // quest-hub progression, avoiding repeated area changes.
+   candidates.sort((a,b)=>id==='rxp'
+    ? (b.xp/Math.max(1,b.level)-a.xp/Math.max(1,a.level))||(a.level-b.level)||(a.id-b.id)
+    : (a.level-b.level)||a.zone.localeCompare(b.zone)||(a.id-b.id));
+   const groups=candidates.map(q=>({
+    guide:'GENERATED_'+id+'_L'+from+'_30',
+    generated:true,style:id==='rxp'?'xp-density-speed':'level-hub-continuity',
+    events:['accept','complete','turnin'].map(t=>({t,q:q.id,generated:true}))
+   }));
+   target.groups=target.groups.concat(groups);
    target.coverage=[1,30];
-   target.limits.push('SYNTHETIC level '+from+'-30 extension from '+donor.id+' quest scaffolding; NOT authentic '+id+' authored guide');
-   console.log('SYNTHETIC_EXTENSION '+JSON.stringify({id,from,donor:donor.id,groups:extra.length}));
+   target.limits.push('GENERATED '+from+'-30: '+(id==='rxp'?'XP density/speed':'level/hub continuity')+' heuristic; not official guide; common quest facts');
+   console.log('STYLE_EXTENSION '+JSON.stringify({id,from,quests:candidates.length,policy:id==='rxp'?'xp-density-speed':'level-hub-continuity'}));
   }
  }
  const rows=[];
