@@ -84,6 +84,9 @@ function reconcile(world,sourceQuests,guideFacts,referenceFacts,legacyMissing){
  const resolved=[...legacyMissing].filter(id=>!missing.has(id));
  // An unresolvable rescale is a blocker even when the numeric count is known.
  for(const x of unresolvedMappings)if((x.objective!=null||x.objectives?.length)&&x.reason!=='objective_absent')missing.add(x.quest);
+ // A verified quantity does not mean we can simulate a profession or escort:
+ // these are cost/skill gates, not one free objective or one NPC kill.
+ for(const action of unsupportedActions)if(legacyMissing.has(action.quest))missing.add(action.quest);
  return {world:copy,quests,missing,report:{schema:'foreverroutes.objective_overlay.v1',legacyMissingCount:legacyMissing.size,newEvidence,sourceGuideFacts:confirmedGuide.size,legacyFlagsResolved:resolved.length,resolvedQuestIds:resolved,scaled,semanticCorrections,unsupportedActions,unresolvedMappings,conflicts,remainingCountFlags:missing.size}};
 }
 module.exports={reconcile,loadInputs};
