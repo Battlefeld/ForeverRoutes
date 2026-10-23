@@ -75,6 +75,26 @@ function applyXpPolicy(world,records){
  for(const q of world.quests){const r=records[q.id];if(r && Number.isFinite(r.xp)){q.xp=r.xp;q.noXp=r.xp===0;}else{q.xp=null;q.noXp=true;}}
  return world;
 }
+function validateGenerated(groups,existing){
+ const issues=[],seen=new Set(existing),accepted=new Set(),completed=new Set(),done=new Set();
+ for(const g of groups)for(const e of g.events||[]){
+  if(!e.q)continue;
+  const id=Number(e.q),q=raw[id];
+  if(!q){issues.push({id,reason:'unknown_quest'});continue;}
+  if(!compatible(id)){issues.push({id,reason:'incompatible'});continue;}
+  if(e.t==='accept'){
+   if(seen.has(id)){issues.push({id,reason:'already_in_original'});continue;}
+   accepted.add(id);
+  }else if(e.t==='complete'){
+   if(!accepted.has(id))issues.push({id,reason:'complete_without_accept'});
+   else completed.add(id);
+  }else if(e.t==='turnin'){
+   if(!accepted.has(id)||!completed.has(id))issues.push({id,reason:'turnin_without_completion'});
+   else{done.add(id);seen.add(id);}
+  }
+ }
+ return {valid:issues.length===0,issues,accepted:accepted.size,completed:completed.size,turnedIn:done.size};
+}
 function replay(source,world,params,{estimateMissing=false,questFacts={},variant=1}={}){
  const {run,ev}=makeRun(world,{race:'Orc',cls:'Warrior',params,family:'solo'});
  const unknown=new Set(),xpUnknown=new Set(),countsUnknown=new Set(),conditions=new Set(),skippedAccepts=[],trace=[];
@@ -179,6 +199,9 @@ function main(){
     generated:true,style:id==='rxp'?'xp-density-speed':'level-hub-continuity',
     events:['accept','complete','turnin'].map(t=>({t,q:q.id,generated:true}))
    }));
+   const audit=validateGenerated(groups,existing);
+   if(!audit.valid)throw Error('Generated route validation failed: '+id+' '+JSON.stringify(audit.issues.slice(0,10)));
+   console.log('ROUTE_CHAIN_AUDIT '+JSON.stringify({id,...audit}));
    target.groups=target.groups.concat(groups);
    target.coverage=[1,30];
    target.limits.push('GENERATED '+from+'-30: '+(id==='rxp'?'XP density/speed':'level/hub continuity')+' heuristic; not official guide; common quest facts');
