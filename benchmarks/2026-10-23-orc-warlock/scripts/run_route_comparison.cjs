@@ -155,7 +155,7 @@ function main(){
   const pool=new Map();
   let order=0;
   for(const g of journey.groups){
-   const match=/^H(\\d{2})/.exec(g.guide||'');
+   const match=/^H(\d{2})/.exec(g.guide||'');
    const chapterLevel=match?Number(match[1]):0;
    if(chapterLevel<20||chapterLevel>30)continue;
    for(const e of g.events||[]){
