@@ -209,6 +209,11 @@ def attempts_for_quest(page,qid,robots,delay):
     return {"id":qid,"fields":combined,"field_sources":provenance,"attempts":observations,
             "checked":dt.datetime.now(dt.timezone.utc).isoformat()}
 
+def unscanned_ids(target_ids, rows):
+    """Quest IDs never attempted, regardless of whether an XP reward was found."""
+    return [qid for qid in target_ids if not isinstance(rows.get(str(qid)), dict)]
+
+
 def pending_ids(target_ids, rows, retry_hours, now=None):
     """Unseen IDs are immediately due, verified XP (including 0) is never retried."""
     now = now or dt.datetime.now(dt.timezone.utc)
@@ -262,7 +267,9 @@ def collect(args):
     newly_found=sum("xp" in rec.get("fields",{}) for rec in checked)
     outcome={"target":len(target_ids),"scanned_this_run":len(batch),
              "xp_recovered":covered,"xp_found_this_run":newly_found,
-             "remaining":len(target_ids)-covered,"source_statuses":dict(statuses)}
+             "remaining":len(target_ids)-covered,
+             "unscanned_remaining":len(unscanned_ids(target_ids,rows)),
+             "source_statuses":dict(statuses)}
     if args.status_output:write(args.status_output,outcome)
     print(json.dumps(outcome),flush=True)
 
