@@ -133,7 +133,7 @@ function replay(source,world,params,{estimateMissing=false,questFacts={},variant
     if(seq.kind[i]===K_GRIND)ev.grindTo(seq.q[i],seq.task[i]);
     else ev.step(seq.kind[i],seq.q[i],seq.task[i],seq.pt[i]);
    }
-   if(e.t==='accept'){const qi=run.qIndex.get(e.q);if(qi!=null&&!ev.active[qi]&&!ev.done[qi]){const failure={quest:e.q,guide:g.guide,step:g.step,level:ev.level,generated:!!g.generated};skippedAccepts.push(failure);eventFailures.push({type:'skipped_accept',...failure});}}
+   if(e.t==='accept'){const qi=run.qIndex.get(e.q);if(qi!=null&&!ev.active[qi]&&!ev.done[qi]){const quest=world.quests.find(q=>Number(q.id)===Number(e.q));const failure={quest:e.q,guide:g.guide,step:g.step,level:ev.level,generated:!!g.generated,questLevel:quest?.level??null,minLevel:quest?.minLevel??null,requires:quest?.requires??quest?.requiredQuests??quest?.prerequisites??null,questState:qstate(ev,run,e.q)};skippedAccepts.push(failure);eventFailures.push({type:'skipped_accept',...failure});}}
    if(ev.questsDone>before)trace.push({quest:e.q,time:ev.time,level:ev.level,xp:ev.xp});
    processed++;
   }
