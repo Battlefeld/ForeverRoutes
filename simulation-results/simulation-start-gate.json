@@ -1,0 +1,203 @@
+{
+  "schema": "foreverroutes.simulation_start_gate.v1",
+  "generatedAt": "2026-10-23T11:15:43.349Z",
+  "sourceRevision": "fitzforge/polestar@eb7b47840f032bf711a3c8d7b1df9f3f6551b990",
+  "importedGuides": 134,
+  "routesRemainIndependent": true,
+  "originalsEdited": false,
+  "zeroXpPolicy": "explicit rewards and 160 user-approved provisional assumptions; other unknown XP stays blocked",
+  "reports": [
+    {
+      "faction": "Horde",
+      "race": "Orc",
+      "class": "Warlock",
+      "statusCounts": {
+        "blocked": 38,
+        "not_applicable": 96
+      },
+      "issueCounts": {
+        "event_execution_missing": 8251,
+        "dynamic_condition_execution_missing": 3149,
+        "objective_execution_mapping_missing": 704,
+        "objective_count_missing": 119,
+        "content_outside_profile": 29,
+        "quest_location_or_work_missing": 27,
+        "route_control_execution_missing": 2430,
+        "unsupported_source_directive": 184,
+        "quest_xp_missing": 6,
+        "objective_reference_missing": 2
+      },
+      "worldAuditAvailable": true
+    },
+    {
+      "faction": "Alliance",
+      "race": "Human",
+      "class": "Mage",
+      "statusCounts": {
+        "not_applicable": 93,
+        "blocked": 41
+      },
+      "issueCounts": {
+        "event_execution_missing": 8825,
+        "dynamic_condition_execution_missing": 3219,
+        "objective_execution_mapping_missing": 602,
+        "objective_count_missing": 179,
+        "quest_definition_missing": 1,
+        "shared_fact_conflict": 7,
+        "route_control_execution_missing": 1996,
+        "unsupported_source_directive": 204,
+        "quest_xp_missing": 9
+      },
+      "worldAuditAvailable": false
+    }
+  ],
+  "diagnostic": [
+    {
+      "id": "rxp",
+      "label": "RestedXP Forever (ohne AoE)",
+      "coverage": [
+        1,
+        22
+      ],
+      "diagnosticLevel": 22,
+      "diagnosticSeconds": 47648.42692014941,
+      "timeTo": {
+        "6": 2997.9427864629606,
+        "12": 10751.172180552432,
+        "20": 38353.76694576363,
+        "30": null
+      },
+      "blockers": {
+        "unknownQuestIds": 10,
+        "unknownXpIds": 1,
+        "unknownObjectiveCounts": 11,
+        "unresolvedConditions": 0,
+        "skippedAccepts": 13,
+        "unreachable": 0
+      }
+    },
+    {
+      "id": "journey",
+      "label": "Journey 4.00.02",
+      "coverage": [
+        1,
+        30
+      ],
+      "diagnosticLevel": 30,
+      "diagnosticSeconds": 89797.6664804216,
+      "timeTo": {
+        "6": 2771.143332881514,
+        "12": 13105.335256470684,
+        "20": 37489.59784157518,
+        "30": 89731.6664804216
+      },
+      "blockers": {
+        "unknownQuestIds": 8,
+        "unknownXpIds": 3,
+        "unknownObjectiveCounts": 3,
+        "unresolvedConditions": 2,
+        "skippedAccepts": 3,
+        "unreachable": 0
+      }
+    },
+    {
+      "id": "wisp",
+      "label": "ForeverWisp 0.32.20-beta.1",
+      "coverage": [
+        1,
+        20
+      ],
+      "diagnosticLevel": 21,
+      "diagnosticSeconds": 48580.17288169876,
+      "timeTo": {
+        "6": 2806.6598638487008,
+        "12": 10865.064214281294,
+        "20": 39794.44522741265,
+        "30": null
+      },
+      "blockers": {
+        "unknownQuestIds": 11,
+        "unknownXpIds": 0,
+        "unknownObjectiveCounts": 9,
+        "unresolvedConditions": 0,
+        "skippedAccepts": 1,
+        "unreachable": 0
+      }
+    },
+    {
+      "id": "polestar",
+      "label": "Polestar default",
+      "coverage": [
+        1,
+        60
+      ],
+      "diagnosticLevel": 30,
+      "diagnosticSeconds": 88965.85666637123,
+      "timeTo": {
+        "6": 2726.109685629694,
+        "12": 11225.172330087826,
+        "20": 36991.89165419321,
+        "30": 88905.85666637123
+      },
+      "blockers": {
+        "unknownQuestIds": 2,
+        "unknownXpIds": 1,
+        "unknownObjectiveCounts": 10,
+        "unresolvedConditions": 0,
+        "skippedAccepts": 0,
+        "unreachable": 0
+      }
+    }
+  ],
+  "milestones": [
+    {
+      "level": 6,
+      "routesWithDiagnosticCheckpoint": [
+        "rxp",
+        "journey",
+        "wisp",
+        "polestar"
+      ],
+      "sharedFourRouteComparison": true,
+      "rankingEligible": false,
+      "rankingPublished": false
+    },
+    {
+      "level": 12,
+      "routesWithDiagnosticCheckpoint": [
+        "rxp",
+        "journey",
+        "wisp",
+        "polestar"
+      ],
+      "sharedFourRouteComparison": true,
+      "rankingEligible": false,
+      "rankingPublished": false
+    },
+    {
+      "level": 20,
+      "routesWithDiagnosticCheckpoint": [
+        "rxp",
+        "journey",
+        "wisp",
+        "polestar"
+      ],
+      "sharedFourRouteComparison": true,
+      "rankingEligible": false,
+      "rankingPublished": false
+    },
+    {
+      "level": 30,
+      "routesWithDiagnosticCheckpoint": [
+        "journey",
+        "polestar"
+      ],
+      "sharedFourRouteComparison": false,
+      "rankingEligible": false,
+      "rankingPublished": false
+    }
+  ],
+  "rankingPublished": false,
+  "readyForFullComparativeRanking": false,
+  "blockersNext": "unknown quest locations, objective counts, nonquest travel/inventory/condition semantics and missing guide coverage cannot be priced as zero"
+}
