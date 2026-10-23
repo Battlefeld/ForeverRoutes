@@ -1,7 +1,7 @@
 name: Independent Forever route simulation
 on:
   push:
-    branches: [artifacts, fix/simulation-start-20261023]
+    branches: [artifacts, fix/simulation-start-20261023, fix/objective-counts-20261023]
     paths:
       - '.github/workflows/route-simulation.yml'
       - 'benchmarks/**'
@@ -49,6 +49,9 @@ jobs:
         run: |
           node scripts/run_route_comparison.cjs --saved-inputs
           node --test tests/test_route_comparison.cjs
+      - name: Inspect missing objective-to-world mappings
+        working-directory: benchmarks/2026-10-23-orc-warlock
+        run: node scripts/inspect_objective_mappings.cjs
       - name: Gate unsupported ranking and summarize actual blockers
         working-directory: benchmarks/2026-10-23-independent-route-checks
         run: node scripts/summarize_gate.cjs
