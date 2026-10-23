@@ -294,7 +294,14 @@ def apply(base,document):
             source=incoming.get("source")
             url=incoming.get("url","")
             source_map=dict((name,(template,quality)) for name,template,quality in SOURCES)
-            if source not in source_map or not url.startswith(source_map[source][0].split("{id}")[0]):
+            # Directly verified zero-XP values from independent Classic DBs
+            # are explicit evidence, never inferred from missing rewards.
+            source_map.update({
+                "classicdb_classic": ("https://classicdb.com/?quest={id}", "classic_reference"),
+                "octowow_classic": ("https://octowow.st/db/?quest={id}", "classic_reference"),
+            })
+            expected_url=source_map.get(source, ("", ""))[0].format(id=sid)
+            if source not in source_map or url != expected_url:
                 continue
             if dest.get(unified) is not None:
                 changes["overrides_skipped"]+=1
