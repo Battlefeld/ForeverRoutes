@@ -66,7 +66,7 @@ jobs:
           POLESTAR_ROOT: ${{ github.workspace }}/polestar
         run: |
           cp scripts/run_route_comparison.warrior.cjs scripts/run_route_comparison.cjs
-          node scripts/run_route_comparison.cjs --saved-inputs --estimate-missing --warrior
+          node scripts/run_route_comparison.cjs --saved-inputs --estimate-missing --warrior --extend-to-30
       - name: Inspect missing objective-to-world mappings
         working-directory: benchmarks/2026-10-23-orc-warlock
         run: node scripts/inspect_objective_mappings.cjs
