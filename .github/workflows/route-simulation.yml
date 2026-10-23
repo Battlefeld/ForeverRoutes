@@ -1,7 +1,7 @@
 name: Independent Forever route simulation
 on:
   push:
-    branches: [fix/simulation-start-20261023]
+    branches: [artifacts, fix/simulation-start-20261023]
     paths:
       - '.github/workflows/route-simulation.yml'
       - 'benchmarks/**'
