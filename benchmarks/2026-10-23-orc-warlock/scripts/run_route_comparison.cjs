@@ -153,17 +153,22 @@ function main(){
   // generated plans with independently scored quest ordering.
   const journey=sources.find(x=>x.id==='journey');
   const pool=new Map();
-  for(const g of journey.groups)for(const e of g.events||[]){
-   if(!e.q||!['accept','complete','turnin'].includes(e.t)||!compatible(e.q))continue;
-   const q=raw[e.q];if(!q)continue;
-   const lv=Number(q.level||q.minLevel||0);
-   if(lv<19||lv>33)continue;
-   if(!pool.has(e.q))pool.set(e.q,{id:e.q,level:lv,xp:Number(q.xp)||0,zone:g.guide||'',events:[]});
-   pool.get(e.q).events.push(e.t);
+  let order=0;
+  for(const g of journey.groups){
+   const match=/^H(\\d{2})/.exec(g.guide||'');
+   const chapterLevel=match?Number(match[1]):0;
+   if(chapterLevel<20||chapterLevel>30)continue;
+   for(const e of g.events||[]){
+    if(!e.q||!['accept','complete','turnin'].includes(e.t)||!compatible(e.q))continue;
+    const q=raw[e.q];if(!q)continue;
+    if(!pool.has(e.q))pool.set(e.q,{id:e.q,level:chapterLevel,xp:Number.isFinite(q.xp)?q.xp:0,zone:g.guide||'',order:order++,events:[]});
+    pool.get(e.q).events.push(e.t);
+   }
   }
   for(const id of ['rxp','wisp']){
    const target=sources.find(x=>x.id===id),from=id==='rxp'?23:21;
-   const candidates=[...pool.values()].filter(q=>q.level>=from-3);
+   const existing=new Set(target.groups.flatMap(g=>(g.events||[]).map(e=>e.q).filter(Boolean)));
+   const candidates=[...pool.values()].filter(q=>q.level>=from-2&&!existing.has(q.id));
    // RXP: favor XP density and short chains. Wisp: favor contiguous
    // quest-hub progression, avoiding repeated area changes.
    candidates.sort((a,b)=>id==='rxp'
