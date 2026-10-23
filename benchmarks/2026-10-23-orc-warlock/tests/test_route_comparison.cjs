@@ -40,7 +40,7 @@ test('All imported zero-XP quests actually award zero in the shared combat/trave
 test('Diagnostic comparisons never invent a 1-30 time for guides that end earlier',()=>{
  const d=JSON.parse(fs.readFileSync(path.resolve(__dirname,'../.comparison/results/comparison.json')));
  assert.equal(d.rankingPublished,false);assert.equal(d.rows.length,4);
- for(const id of ['rxp','wisp'])assert.equal(d.rows.find(r=>r.id===id).timeTo['30'],null);
+ for(const id of ['rxp','wisp']){const r=d.rows.find(r=>r.id===id);if(r.timeTo['30']!=null){assert.ok(r.generatedContinuation.length>0);assert.ok(r.originalCoverage[1]<30);assert.ok(r.generatedContinuation.every(g=>g.generated));}else assert.equal(r.declaredCoverage[1]<30||r.endLevel<30,true);}
  for(const r of d.rows){assert.match(r.status,/diagnostic/);assert.ok(r.trace.length>20);for(const t of r.trace)assert.ok(t.time<=r.endSeconds);}
 });
 
@@ -61,3 +61,4 @@ test('Source-verified and user-approved zero XP fill only missing rewards for ev
  assert.deepEqual(applied.verified.sort((a,b)=>a-b),[308,456]);
  assert.deepEqual(applied.assumedZero,[172]);
 });
+

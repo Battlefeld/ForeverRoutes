@@ -1,7 +1,7 @@
 name: Independent Forever route simulation
 on:
   push:
-    branches: [artifacts, fix/simulation-start-20261023, fix/objective-counts-20261023, feat/data-first-estimated-simulation-20261023, test/orc-warrior-1-20-20261023]
+    branches: [artifacts, fix/simulation-start-20261023, fix/objective-counts-20261023, feat/data-first-estimated-simulation-20261023, test/orc-warrior-1-20-20261023, fix/complete-route-replay-20261023]
     paths:
       - '.github/workflows/route-simulation.yml'
       - 'benchmarks/**'
@@ -42,31 +42,25 @@ jobs:
         working-directory: benchmarks/2026-10-23-independent-route-checks
         run: |
           node scripts/check_routes.cjs --catalog events/catalog.json.gz --quests data/quests.json.gz --world data/world-horde.json.gz --facts data/objective-facts.json --race Human --class Mage --faction Alliance --output reports/replayed-alliance.json
-      - name: Replay four source chains with shared model and provenance XP policy
+      - name: Test replay semantics and compare original Orc Warlock source chains
         working-directory: benchmarks/2026-10-23-orc-warlock
         env:
           POLESTAR_ROOT: ${{ github.workspace }}/polestar
         run: |
-          git fetch --quiet --depth=1 origin artifacts
-          git show FETCH_HEAD:benchmarks/2026-10-23-orc-warlock/scripts/run_route_comparison.cjs > scripts/run_route_comparison.original.cjs
-          cp scripts/run_route_comparison.cjs scripts/run_route_comparison.warrior.cjs
-          cp scripts/run_route_comparison.original.cjs scripts/run_route_comparison.cjs
           node scripts/run_route_comparison.cjs --saved-inputs
-          node --test tests/test_route_comparison.cjs tests/test_objective_count_overlay.cjs tests/test_source_priority.cjs tests/test_estimate_model.cjs
-      - name: Run all four guides with data-first, explicit last-resort estimates
+          node --test tests/*.cjs
+      - name: Measure four Orc Warlock chains to level 30 with labeled generated continuations
         working-directory: benchmarks/2026-10-23-orc-warlock
         env:
           POLESTAR_ROOT: ${{ github.workspace }}/polestar
         run: |
-          node scripts/run_route_comparison.cjs --saved-inputs --estimate-missing
-          node scripts/write_model_summary.cjs >> "$GITHUB_STEP_SUMMARY"
-      - name: Compare four independent Orc Warrior guides to level 20
+          node scripts/run_route_comparison.cjs --saved-inputs --extend-to-30 --output-dir .comparison/results/level30
+          node scripts/run_route_comparison.cjs --saved-inputs --extend-to-30 --estimate-missing --output-dir .comparison/results/estimated-level30
+      - name: Require a complete replay without unresolved quest actions
         working-directory: benchmarks/2026-10-23-orc-warlock
         env:
           POLESTAR_ROOT: ${{ github.workspace }}/polestar
-        run: |
-          cp scripts/run_route_comparison.warrior.cjs scripts/run_route_comparison.cjs
-          node scripts/run_route_comparison.cjs --saved-inputs --estimate-missing --warrior --extend-to-30
+        run: node scripts/run_route_comparison.cjs --saved-inputs --extend-to-30 --require-complete --output-dir .comparison/results/acceptance
       - name: Inspect missing objective-to-world mappings
         working-directory: benchmarks/2026-10-23-orc-warlock
         run: node scripts/inspect_objective_mappings.cjs
@@ -76,3 +70,4 @@ jobs:
       - name: Keep reports within the workflow run only
         run: |
           echo 'Reports remain in the runner; no automatic commits or artifact uploads.'
+

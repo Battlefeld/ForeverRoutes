@@ -8,7 +8,12 @@ const {compileSequence}=req('sim/sequence'),{K_GRIND}=req('sim/run');
 const {loadPolestarRoutes,requiredEvents}=req('sim/baselines/polestar');
 const {reconcile,loadInputs}=require('./objective_count_overlay.cjs');
 const {awardXpPolicy,estimateAction,estimateNonQuest}=require('./estimate_model.cjs');
-const dataDir=path.join(root,'.comparison/data'),simDir=path.join(root,'.comparison/cache'),outDir=path.join(root,'.comparison/results');
+const {actionFailure,acceptance}=require('./replay_validation.cjs');
+const {continuation}=require('./style_extension.cjs');
+const targetArg=process.argv.indexOf('--target-level');
+const targetLevel=targetArg<0?30:Number(process.argv[targetArg+1]);
+if(!Number.isInteger(targetLevel)||targetLevel<2||targetLevel>30)throw Error('--target-level must be an integer from 2 to 30');
+const dataDir=path.join(root,'.comparison/data'),simDir=path.join(root,'.comparison/cache'),outDir=process.argv.includes('--output-dir')?path.resolve(process.argv[process.argv.indexOf('--output-dir')+1]):path.join(root,'.comparison/results');
 const read=p=>JSON.parse(fs.readFileSync(p,'utf8'));
 const save=(n,d)=>fs.writeFileSync(path.join(outDir,n),JSON.stringify(d,null,2)+'\n');
 // Keep every original route immutable. Apply the common, explicitly sourced XP
@@ -36,7 +41,7 @@ const xpOverlay=effectiveQuestXp(rawQuestFacts,
  fs.existsSync(verifiedXpFile)?read(verifiedXpFile):null);
 const raw=xpOverlay.records;
 let missingCounts=new Set(read(path.join(dataDir,'missing-counts.json'))),objectiveReport=null;
-const flags=new Set(['WARRIOR','ORC','HORDE','FOREVER','ERA','SOFTCORE','H12B']);
+const flags=new Set(['WARLOCK','ORC','HORDE','FOREVER','ERA','SOFTCORE','H12B']);
 const knownFlags=new Set(['WARRIOR','PALADIN','HUNTER','ROGUE','PRIEST','SHAMAN','MAGE','WARLOCK','DRUID','ORC','TROLL','TAUREN','SCOURGE','UNDEAD','HUMAN','DWARF','GNOME','NIGHTELF','SKYBORNE','BLOODELF','DRAENEI','HORDE','ALLIANCE','FOREVER','ERA','SOM1','SOM2','SOD','SOD2','TBC','WOTLK','JOYOUS','GROUPS','AH','HARDCORE','SOFTCORE','SKIP','H12B']);
 const and=(a,b)=>a===false||b===false?false:a===null||b===null?null:!!a&&!!b;
 const or=(a,b)=>a===true||b===true?true:a===null||b===null?null:!!a||!!b;
@@ -70,40 +75,25 @@ function condition(g,ev,run){
  }
  return true;
 }
-function compatible(id){const q=raw[id];if(!q)return true;return !(q.classes && !(q.classes&1)) && !(q.races && !(q.races&2));}
+function compatible(id){const q=raw[id];if(!q)return true;return !(q.classes && !(q.classes&256)) && !(q.races && !(q.races&2));}
 function applyXpPolicy(world,records){
  for(const q of world.quests){const r=records[q.id];if(r && Number.isFinite(r.xp)){q.xp=r.xp;q.noXp=r.xp===0;}else{q.xp=null;q.noXp=true;}}
  return world;
 }
-function validateGenerated(groups,existing){
- const issues=[],seen=new Set(existing),accepted=new Set(),completed=new Set(),done=new Set();
- for(const g of groups)for(const e of g.events||[]){
-  if(!e.q)continue;
-  const id=Number(e.q),q=raw[id];
-  if(!q){issues.push({id,reason:'unknown_quest'});continue;}
-  if(!compatible(id)){issues.push({id,reason:'incompatible'});continue;}
-  if(e.t==='accept'){
-   if(seen.has(id)){issues.push({id,reason:'already_in_original'});continue;}
-   accepted.add(id);
-  }else if(e.t==='complete'){
-   if(!accepted.has(id))issues.push({id,reason:'complete_without_accept'});
-   else completed.add(id);
-  }else if(e.t==='turnin'){
-   if(!accepted.has(id)||!completed.has(id))issues.push({id,reason:'turnin_without_completion'});
-   else{done.add(id);seen.add(id);}
-  }
- }
- return {valid:issues.length===0,issues,accepted:accepted.size,completed:completed.size,turnedIn:done.size};
-}
-function replay(source,world,params,{estimateMissing=false,questFacts={},variant=1}={}){
- const {run,ev}=makeRun(world,{race:'Orc',cls:'Warrior',params,family:'solo'});
+function replay(source,world,params,{estimateMissing=false,questFacts={},variant=1,extend=false}={}){
+ const {run,ev}=makeRun(world,{race:'Orc',cls:'Warlock',params,family:'solo'});
  const unknown=new Set(),xpUnknown=new Set(),countsUnknown=new Set(),conditions=new Set(),skippedAccepts=[],trace=[];
  const assumptions=[],estimatedQuests=new Set(),nonquestEstimates=[],eventFailures=[];
  run.syntheticQuestStates=new Map();
  let processed=0,excludedClass=0,conditionalSkipped=0;
+ const generatedGroups=[];
+ function* groups(){
+  yield* source.groups;
+  if(extend&&source.coverage[1]<targetLevel)for(const g of continuation(source,run,ev,{target:targetLevel,missingCounts})){generatedGroups.push(g);yield g;}
+ }
  ev.reset();
- for(const g of source.groups){
-  if(ev.level>=30)break;
+ for(const g of groups()){
+  if(ev.level>=targetLevel)break;
   if((g.flags || []).includes('hardcore'))continue;
   const allowed=condition(g,ev,run);
   if(allowed===null){conditions.add(JSON.stringify(g.condition));if(!estimateMissing)continue;assumptions.push({kind:'unknown_group_condition',guide:g.guide,assumed:true});}
@@ -112,14 +102,15 @@ function replay(source,world,params,{estimateMissing=false,questFacts={},variant
   for(const [kind,id] of g.guards || []){const st=qstate(ev,run,id);const v=kind==='isOnQuest'?st===1||st===2:kind==='isNotOnQuest'?st===0||st===3:kind==='isQuestComplete'?st>=2:kind==='isNotQuestComplete'?st<2:kind==='isQuestTurnedIn'?st===3:st!==3;if(!v)guard=false;}
   if(!guard)continue;
   for(const event of g.events){
-   if(ev.level>=30)break;
+   if(ev.level>=targetLevel)break;
    const e=event;
    if(e.t==='guide')continue;
    const ec=condition(e,ev,run);if(ec===null){conditions.add(e.condition);if(!estimateMissing)continue;assumptions.push({kind:'unknown_event_condition',quest:e.q,assumed:true});}if(ec===false)continue;
    if(e.q && !compatible(e.q)){excludedClass++;continue;}
    if((g.flags || []).includes('parallel') && e.t==='complete')continue;
    if(e.q){if(!raw[e.q] || !Number.isFinite(raw[e.q].xp))xpUnknown.add(e.q);if(missingCounts.has(e.q))countsUnknown.add(e.q);}
-   const seq=compileSequence(run,[e]);for(const id of seq.unknown){unknown.add(id);eventFailures.push({type:'unknown_quest',quest:id,action:e.t,guide:g.guide,generated:!!g.generated});}
+   if(!['accept','complete','turnin','level'].includes(e.t)){if(estimateMissing)estimateNonQuest(e,ev,params,nonquestEstimates,variant);eventFailures.push({type:'unsupported_action',action:e.t,guide:g.guide,step:g.step,generated:!!g.generated});processed++;continue;}
+   const seq=compileSequence(run,[e]);for(const id of seq.unknown){unknown.add(id);eventFailures.push({...actionFailure(run,ev,{...e,q:id}),guide:g.guide,step:g.step,generated:!!g.generated});}
    if(estimateMissing&&seq.unknown.length&&['accept','complete','turnin'].includes(e.t)){
     estimateAction({event:e,ev,quest:questFacts[e.q]||raw[e.q],states:run.syntheticQuestStates,params,trace:assumptions,variant});
     estimatedQuests.add(Number(e.q));
@@ -129,28 +120,30 @@ function replay(source,world,params,{estimateMissing=false,questFacts={},variant
     if(estimateNonQuest(e,ev,params,p,variant))assumptions.push({kind:'nonquest_action',action:e.t,estimated:true});
    }
    const before=ev.questsDone;
-   for(let i=0;i<seq.kind.length && ev.level<30;i++){
+   for(let i=0;i<seq.kind.length && ev.level<targetLevel;i++){
     if(seq.kind[i]===K_GRIND)ev.grindTo(seq.q[i],seq.task[i]);
     else ev.step(seq.kind[i],seq.q[i],seq.task[i],seq.pt[i]);
    }
-   if(e.t==='accept'){const qi=run.qIndex.get(e.q);if(qi!=null&&!ev.active[qi]&&!ev.done[qi]){const quest=world.quests.find(q=>Number(q.id)===Number(e.q));const failure={quest:e.q,guide:g.guide,step:g.step,level:ev.level,generated:!!g.generated,questLevel:quest?.level??null,minLevel:quest?.minLevel??null,requires:quest?.requires??quest?.requiredQuests??quest?.prerequisites??null,questState:qstate(ev,run,e.q)};skippedAccepts.push(failure);eventFailures.push({type:'skipped_accept',...failure});}}
+   if(ev.level<targetLevel){const failure=actionFailure(run,ev,e);if(failure&&failure.type!=='unknown_quest'){const detail={...failure,guide:g.guide,step:g.step,level:ev.level,generated:!!g.generated};eventFailures.push(detail);if(e.t==='accept')skippedAccepts.push(detail);}}
    if(ev.questsDone>before)trace.push({quest:e.q,time:ev.time,level:ev.level,xp:ev.xp});
    processed++;
   }
  }
  const metrics=ev.result();
  const blockers={eventFailures,unknownQuestIds:[...unknown],unknownXpIds:[...xpUnknown],unknownObjectiveCounts:[...countsUnknown],unresolvedConditions:[...conditions],skippedAccepts,unreachable:ev.unreachable};
- const valid=Object.values(blockers).every(x=>Array.isArray(x)?x.length===0:x===0);
- const timeTo=Object.fromEntries([6,12,20,30].map(l=>[l,l<=source.coverage[1]&&ev.level>=l?(metrics.levelTimes[l] || null):null]));
+ const coverage=generatedGroups.length?[source.coverage[0],Math.max(source.coverage[1],ev.level)]:source.coverage;
+ const valid=ev.level>=targetLevel&&coverage[1]>=targetLevel&&Object.values(blockers).every(x=>Array.isArray(x)?x.length===0:x===0);
+ const timeTo=Object.fromEntries([...new Set([6,12,20,targetLevel])].filter(l=>l<=targetLevel).map(l=>[l,l<=coverage[1]&&ev.level>=l?(metrics.levelTimes[l] || null):null]));
  console.log(source.label,JSON.stringify({endLevel:ev.level,seconds:ev.time,timeTo,unknown:unknown.size,counts:countsUnknown.size,xp:xpUnknown.size,conditions:conditions.size,skippedAccepts:skippedAccepts.length}));
- return {id:source.id,label:source.label,mode:estimateMissing?'estimated_exploratory':'strict_diagnostic',status:estimateMissing?'estimated_model_complete_with_uncertainties':valid?'provisional_model_complete':'diagnostic_replay_needs_fixes',estimatedModel:estimateMissing?{missingQuestIds:[...estimatedQuests],assumptions,nonquestEstimates,assumedTargetQuestIds:[...countsUnknown],unknownConditionBranches:conditions.size,skippedAccepts:skippedAccepts.length}:null,declaredCoverage:source.coverage,timeTo,diagnosticLevelTimes:metrics.levelTimes,endLevel:ev.level,endXp:ev.xp,endSeconds:ev.time,completedQuests:ev.questsDone,travelSeconds:ev.travelSec,grindSeconds:ev.grindSec,processedEvents:processed,excludedIncompatibleClassRace:excludedClass,conditionalSkipped,blockers,limits:source.limits || [],trace};
+ return {id:source.id,label:source.label,mode:estimateMissing?'estimated_exploratory':'strict_diagnostic',status:estimateMissing?(ev.level>=targetLevel?'estimated_model_complete_with_uncertainties':'estimated_model_incomplete'):valid?'provisional_model_complete':'diagnostic_replay_needs_fixes',estimatedModel:estimateMissing?{missingQuestIds:[...estimatedQuests],assumptions,nonquestEstimates,assumedTargetQuestIds:[...countsUnknown],unknownConditionBranches:conditions.size,skippedAccepts:skippedAccepts.length}:null,declaredCoverage:coverage,originalCoverage:source.coverage,generatedContinuation:generatedGroups,sourceProfile:{race:'Orc',class:'Warlock'},timeTo,diagnosticLevelTimes:metrics.levelTimes,endLevel:ev.level,endXp:ev.xp,endSeconds:ev.time,completedQuests:ev.questsDone,travelSeconds:ev.travelSec,grindSeconds:ev.grindSec,processedEvents:processed,excludedIncompatibleClassRace:excludedClass,conditionalSkipped,blockers,limits:[...(source.limits || []),...(generatedGroups.length?['Generated continuation is a model heuristic, not an official source guide; original event order is preserved.']:[])],trace};
 }
 function main(){
- fs.mkdirSync(outDir,{recursive:true});save('status.json',{status:'running',startedAt:new Date().toISOString(),profile:{faction:'Horde',race:'Orc',class:'Warrior',levels:[6,12,20,30]}});
+ const estimateMissing=process.argv.includes('--estimate-missing');
+ fs.mkdirSync(outDir,{recursive:true});save(estimateMissing?'status-estimated.json':'status.json',{status:'running',startedAt:new Date().toISOString(),profile:{faction:'Horde',race:'Orc',class:'Warlock',levels:[6,12,20,30]}});
  // No undocumented XP estimates: only explicit imported values earn quest XP.
  // An unvalued quest is recorded in blockers if referenced by a route.
+ if(process.argv.includes('--warrior'))throw Error('Saved source chain is Orc Warlock; import the Warrior #next chain before requesting a Warrior comparison');
  const saved=process.argv.includes('--saved-inputs');
- const estimateMissing=process.argv.includes('--estimate-missing');
  let world=saved?read(path.join(simDir,'world-horde.json')):getWorld({dataDir,simDir,faction:'Horde',rebuild:true,questXp:Array.from({length:61},()=>Array(10).fill(0)),log:console.log});
  // Work on an in-memory copy. No guide, cached world or source database is edited.
  const oi=loadInputs(),overlay=reconcile(world,oi.quests,oi.guide,oi.references,missingCounts);
@@ -158,70 +151,30 @@ function main(){
  console.log('OBJECTIVE_OVERLAY '+JSON.stringify({legacyMissing:objectiveReport.legacyMissingCount,remaining:objectiveReport.remainingCountFlags,sourceResolved:objectiveReport.legacyFlagsResolved,scaled:objectiveReport.scaled,corrected:objectiveReport.semanticCorrections,unresolved:objectiveReport.unresolvedMappings}));
  const xpReport=estimateMissing?awardXpPolicy(world,raw,{estimateMissing:true}):(applyXpPolicy(world,raw),null);
  // The saved world is a read-only baseline: never multiply counts again on a later replay.
- const {mean:params}=paramsFor(simDir,'Warrior');
+ const {mean:params}=paramsFor(simDir,'Warlock');
  const sources=['rxp','journey','wisp'].map(id=>read(path.join(root,'.comparison/events',id+'.json')));
- if(saved && !process.argv.includes('--warrior'))sources.push(read(path.join(root,'.comparison/events/polestar.json')));
+ if(saved)sources.push(read(path.join(root,'.comparison/events/polestar.json')));
  else {
-  const L=loadPolestarRoutes({guidesDir:path.join(external,'guides'),dataDir,faction:'Horde',race:'Orc',cls:'Warrior'});
-  if(!L)throw Error('Polestar Orc Warrior route missing');
+  const L=loadPolestarRoutes({guidesDir:path.join(external,'guides'),dataDir,faction:'Horde',race:'Orc',cls:'Warlock'});
+  if(!L)throw Error('Polestar Orc Warlock route missing');
   const source={id:'polestar',label:'Polestar default',coverage:[1,60],groups:requiredEvents(L.default.events).map(e=>({events:[e]})),limits:['Default chain; optional objectives excluded','Same workload normalization and class priors as every other route']};
   if(!saved)fs.writeFileSync(path.join(root,'.comparison/events/polestar.json'),JSON.stringify(source)+'\n');
   sources.push(source);
  }
- if(process.argv.includes('--extend-to-30')){
-  // Shared eligible quest pool, not a copied donor route. Build two distinct
-  // generated plans with independently scored quest ordering.
-  const journey=sources.find(x=>x.id==='journey');
-  const pool=new Map();
-  let order=0;
-  for(const g of journey.groups){
-   const match=/^H(\d{2})/.exec(g.guide||'');
-   const chapterLevel=match?Number(match[1]):0;
-   if(chapterLevel<18||chapterLevel>30)continue;
-   for(const e of g.events||[]){
-    if(!e.q||!['accept','complete','turnin'].includes(e.t)||!compatible(e.q))continue;
-    const q=raw[e.q];if(!q)continue;
-    if(!pool.has(e.q))pool.set(e.q,{id:e.q,level:chapterLevel,xp:Number.isFinite(q.xp)?q.xp:0,zone:g.guide||'',order:order++,events:[]});
-    pool.get(e.q).events.push(e.t);
-   }
-  }
-  for(const id of ['rxp','wisp']){
-   const target=sources.find(x=>x.id===id),from=id==='rxp'?23:21;
-   const existing=new Set(target.groups.flatMap(g=>(g.events||[]).map(e=>e.q).filter(Boolean)));
-   const worldIds=new Set(world.quests.map(q=>Number(q.id)));
-   const candidates=[...pool.values()].filter(q=>q.level>=from-5&&!existing.has(q.id)&&worldIds.has(q.id)&&Number(world.quests.find(w=>Number(w.id)===q.id)?.minLevel||1)<30);
-   console.log('EXTENSION_SOURCE_COVERAGE '+JSON.stringify({id,excludedMissingWorld:[...pool.values()].filter(q=>q.level>=from-5&&!existing.has(q.id)&&!worldIds.has(q.id)).map(q=>q.id)}));
-   // RXP: favor XP density and short chains. Wisp: favor contiguous
-   // quest-hub progression, avoiding repeated area changes.
-   // Keep source dependency order within each chapter. XP scoring may only
-   // prioritize between chapters, never reorder prerequisite chains.
-   candidates.sort((a,b)=>(a.level-b.level)||(a.order-b.order));
-   const groups=candidates.map(q=>({
-    guide:'GENERATED_'+id+'_L'+from+'_30',
-    generated:true,style:id==='rxp'?'xp-density-speed':'level-hub-continuity',
-    events:['accept','complete','turnin'].map(t=>({t,q:q.id,generated:true}))
-   }));
-   const audit=validateGenerated(groups,existing);
-   if(!audit.valid)throw Error('Generated route validation failed: '+id+' '+JSON.stringify(audit.issues.slice(0,10)));
-   console.log('ROUTE_CHAIN_AUDIT '+JSON.stringify({id,...audit}));
-   target.groups=target.groups.concat(groups);
-   target.coverage=[1,30];
-   target.limits.push('GENERATED '+from+'-30: '+(id==='rxp'?'XP density/speed':'level/hub continuity')+' heuristic; not official guide; common quest facts');
-   console.log('STYLE_EXTENSION '+JSON.stringify({id,from,quests:candidates.length,policy:id==='rxp'?'level-gated-xp-speed':'level-hub-continuity'}));
-  }
- }
+
  const rows=[];
- for(const source of sources){const row=replay(source,world,params,{estimateMissing,questFacts:oi.quests});rows.push(row);save(source.id+(estimateMissing?'-estimated':'')+'.json',row);}
- const extensionCheck=rows.filter(r=>['rxp','wisp'].includes(r.id)).map(r=>({id:r.id,endLevel:r.endLevel,skippedAccepts:r.blockers.skippedAccepts.length,unknownQuestIds:r.blockers.unknownQuestIds.length,generatedFailures:r.blockers.eventFailures.filter(f=>f.generated).slice(0,30),originalFailures:r.blockers.eventFailures.filter(f=>!f.generated).slice(0,30),ready:r.endLevel>=30&&r.blockers.skippedAccepts.length===0&&r.blockers.unknownQuestIds.length===0}));
- const acceptance=rows.map(r=>({id:r.id,level30:r.endLevel>=30,unknownQuestIds:r.blockers.unknownQuestIds,skippedAccepts:r.blockers.skippedAccepts,unknownObjectiveCounts:r.blockers.unknownObjectiveCounts,unresolvedConditions:r.blockers.unresolvedConditions,unreachable:r.blockers.unreachable,passed:r.endLevel>=30&&r.blockers.unknownQuestIds.length===0&&r.blockers.skippedAccepts.length===0&&r.blockers.unknownObjectiveCounts.length===0&&r.blockers.unresolvedConditions.length===0&&r.blockers.unreachable===0}));
- save('acceptance-gate.json',{passed:acceptance.every(x=>x.passed),routes:acceptance});
- console.log('ACCEPTANCE_GATE '+JSON.stringify(acceptance.map(({id,level30,passed,unknownQuestIds,skippedAccepts,unknownObjectiveCounts,unresolvedConditions,unreachable})=>({id,level30,passed,unknownQuestIds:unknownQuestIds.length,skippedAccepts:skippedAccepts.length,unknownObjectiveCounts:unknownObjectiveCounts.length,unresolvedConditions:unresolvedConditions.length,unreachable}))));
- console.log('EXTENSION_READINESS '+JSON.stringify(extensionCheck));
- const milestones=[6,12,20,30].map(level=>({level,entries:rows.filter(r=>r.declaredCoverage[1]>=level&&Number.isFinite(r.timeTo[level])).map(r=>({id:r.id,seconds:r.timeTo[level]})).sort((a,b)=>a.seconds-b.seconds)}));
+ for(const source of sources){const row=replay(source,world,params,{estimateMissing,questFacts:oi.quests,extend:process.argv.includes('--extend-to-30')});rows.push(row);save(source.id+(estimateMissing?'-estimated':'')+'.json',row);}
+
+ const acceptanceRows=rows.map(r=>acceptance(r,targetLevel));
+ save('acceptance-gate'+(estimateMissing?'-estimated':'')+'.json',{passed:acceptanceRows.every(x=>x.passed),routes:acceptanceRows});
+ console.log('ACCEPTANCE_GATE '+JSON.stringify(acceptanceRows));
+ const milestones=[...new Set([6,12,20,targetLevel])].filter(l=>l<=targetLevel).map(level=>({level,entries:rows.filter(r=>r.declaredCoverage[1]>=level&&Number.isFinite(r.timeTo[level])).map(r=>({id:r.id,seconds:r.timeTo[level]})).sort((a,b)=>a.seconds-b.seconds)}));
  const comparison=milestones.map(m=>({...m,fullFourRouteCoverage:m.entries.length===4,rankingKind:'disabled',warning:'Not valid for ranking until all four reach the milestone and quest state/locations are validated'}));
- const report={schema:'foreverroutes.shared_comparison.v2',finishedAt:new Date().toISOString(),mode:estimateMissing?'estimated_exploratory':'strict_diagnostic',status:estimateMissing?'estimated_model_complete':rows.every(r=>r.status==='provisional_model_complete')?'complete_provisional':'completed_diagnostic_replays',modelComparison:comparison,modelXpPolicy:xpReport,sourcePriority:xpReport?.priority||null,profile:{faction:'Horde',race:'Orc',class:'Warrior',targets:[6,12,20,30],solo:true,aoe:false,rested:false},engine:'fitzforge/polestar@eb7b47840f032bf711a3c8d7b1df9f3f6551b990',modelParams:params,provenance:read(path.join(dataDir,'meta.json')),xpOverlay:{...xpOverlay.applied,assumptionsNotVerified:true,originalQuestFactsUnchanged:true},objectiveCountOverlay:objectiveReport,rows,rankingPublished:false,acceptancePassed:acceptance.every(x=>x.passed),reason:'Unresolved route semantics / missing objective and location inputs prevent a defensible fastest-route ranking'};
+ const report={schema:'foreverroutes.shared_comparison.v3',finishedAt:new Date().toISOString(),mode:estimateMissing?'estimated_exploratory':'strict_diagnostic',status:estimateMissing?(rows.every(r=>r.endLevel>=targetLevel)?'estimated_model_complete_with_uncertainties':'estimated_model_incomplete'):rows.every(r=>r.status==='provisional_model_complete')?'complete_provisional':'completed_diagnostic_replays',modelComparison:comparison,modelXpPolicy:xpReport,sourcePriority:xpReport?.priority||null,profile:{faction:'Horde',race:'Orc',class:'Warlock',targets:[...new Set([6,12,20,targetLevel])].filter(l=>l<=targetLevel),solo:true,aoe:false,rested:false},engine:'fitzforge/polestar@eb7b47840f032bf711a3c8d7b1df9f3f6551b990',modelParams:params,provenance:read(path.join(dataDir,'meta.json')),xpOverlay:{...xpOverlay.applied,assumptionsNotVerified:true,originalQuestFactsUnchanged:true},objectiveCountOverlay:objectiveReport,rows,rankingPublished:false,acceptancePassed:acceptanceRows.every(x=>x.passed),reason:'Unresolved route semantics / missing objective and location inputs prevent a defensible fastest-route ranking'};
+ if(process.argv.includes('--require-complete')&&!report.acceptancePassed)process.exitCode=2;
  save(estimateMissing?'comparison-estimated.json':'comparison.json',report);save(estimateMissing?'status-estimated.json':'status.json',{status:report.status,finishedAt:report.finishedAt,outputs:rows.map(r=>r.id+(estimateMissing?'-estimated':'')+'.json'),rankingPublished:false});
  if(estimateMissing)console.log('ESTIMATED_MODEL_COMPARISON '+JSON.stringify({mode:report.mode,modelXpPolicy:xpReport.counts,modelComparison:comparison.map(({level,entries,fullFourRouteCoverage})=>({level,entries,fullFourRouteCoverage})),remainingUncertainties:rows.map(r=>({id:r.id,unknown:r.blockers.unknownQuestIds.length,unknownCounts:r.blockers.unknownObjectiveCounts.length,skippedAccepts:r.blockers.skippedAccepts.length}))}));
 }
-if(require.main===module)try{main();}catch(e){fs.mkdirSync(outDir,{recursive:true});save('status.json',{status:'failed',error:e.message,at:new Date().toISOString()});console.error(e);process.exitCode=1;}
+if(require.main===module)try{main();}catch(e){fs.mkdirSync(outDir,{recursive:true});save(process.argv.includes('--estimate-missing')?'status-estimated.json':'status.json',{status:'failed',error:e.message,at:new Date().toISOString()});console.error(e);process.exitCode=1;}
 module.exports={rxpCondition,journeyCondition,qstate,applyXpPolicy,effectiveQuestXp};
+
