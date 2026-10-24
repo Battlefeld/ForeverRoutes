@@ -17,6 +17,8 @@ import (
 	"strings"
 
 	"github.com/Battlefeld/ForeverRoutes/dataset"
+	"github.com/Battlefeld/ForeverRoutes/internal/sources/foreverchanges"
+	"github.com/Battlefeld/ForeverRoutes/internal/sources/wclbox"
 	"github.com/Battlefeld/ForeverRoutes/internal/sqldump"
 	"github.com/Battlefeld/ForeverRoutes/internal/warcraftdb"
 	"github.com/Battlefeld/ForeverRoutes/xp"
@@ -28,7 +30,9 @@ type Inputs struct {
 	MergedRevision  string
 	CMangos         string // cmangos classic-db full dump (.sql or .sql.gz)
 	CMangosRevision string
-	WarcraftDB      string // optional overlay of Forever client quest facts (fetch-warcraftdb)
+	WarcraftDB      string // optional overlay of Forever client quest facts
+	WCLBox          string // optional overlay of item sources from WCLBox (internal/sources/wclbox)
+	ForeverChanges  string // optional overlay of quest summaries from ForeverChanges (internal/sources/foreverchanges)
 	MaxQuestLevel   int    // quests above this level are left out (0 = 35)
 }
 
@@ -215,13 +219,29 @@ func Build(in Inputs) (*dataset.Dataset, error) {
 	if err != nil {
 		return nil, err
 	}
-	b := &builder{in: in, merged: merged, w: w, stats: map[string]int{}, npcWanted: map[int]bool{}, objWanted: map[int]bool{}}
+	b := &builder{in: in, merged: merged, w: w, stats: map[string]int{}, npcWanted: map[int]bool{}, objWanted: map[int]bool{}, itemWhy: map[int]string{}}
 	if in.WarcraftDB != "" {
 		if b.wdb, err = warcraftdb.Load(in.WarcraftDB); err != nil {
 			return nil, fmt.Errorf("warcraftdb overlay: %w", err)
 		}
 	}
+	if in.WCLBox != "" {
+		if b.wcl, err = loadWCLBox(in.WCLBox); err != nil {
+			return nil, fmt.Errorf("wclbox overlay: %w", err)
+		}
+	}
+	if in.ForeverChanges != "" {
+		raw, err := os.ReadFile(in.ForeverChanges)
+		if err != nil {
+			return nil, fmt.Errorf("foreverchanges overlay: %w", err)
+		}
+		b.fch = &foreverchanges.Overlay{}
+		if err := json.Unmarshal(raw, b.fch); err != nil {
+			return nil, fmt.Errorf("foreverchanges overlay: %w", err)
+		}
+	}
 	b.fitTransforms()
+	b.indexNames()
 	b.quests()
 	b.npcs()
 	b.objects()
@@ -231,6 +251,14 @@ func Build(in Inputs) (*dataset.Dataset, error) {
 		Sources: b.mergedSources()}
 	d.Sources = append(d.Sources, dataset.Source{Name: "cmangos classic-db", URL: "https://github.com/cmangos/classic-db", Revision: in.CMangosRevision, License: "GPL-3.0",
 		Note: "Classic world data: objective counts, drop chances, spawn positions, respawn times, quest groups. Classic, not Forever: Forever data wins where both exist."})
+	if b.wcl != nil {
+		d.Sources = append(d.Sources, dataset.Source{Name: "WCLBox", URL: "https://wowforever.wclbox.com", Revision: b.wcl.Fetched,
+			Note: "WoW Forever database (新手盒子·魔兽世界无限数据库): which creature an item drops from, with the zone; the page gives no drop chance"})
+	}
+	if b.fch != nil {
+		d.Sources = append(d.Sources, dataset.Source{Name: "ForeverChanges", URL: "https://foreverchanges.pro", Revision: b.fch.Fetched,
+			Note: "WoW Forever database (client data and Wowhead's Forever data): kind of quest (normal, elite, dungeon) and the creature named in the objective sentence"})
+	}
 	if b.wdb != nil {
 		d.Sources = append(d.Sources, dataset.Source{Name: "WarcraftDB Forever", URL: "https://forever.warcraftdb.com", Revision: b.wdb.Fetched,
 			Note: "Forever client quest data (objectives with amounts, XP, levels, positions) for quests the other sources lack"})
@@ -284,6 +312,11 @@ type builder struct {
 	npcWanted map[int]bool
 	objWanted map[int]bool
 	wdb       *warcraftdb.Overlay
+	wcl       *wclbox.Overlay
+	fch       *foreverchanges.Overlay
+	byName    map[string][]int // lower-case creature name -> cmangos entries
+	zoneID    map[string]int   // lower-case zone name -> uiMapId
+	itemWhy   map[int]string   // item -> why it has no usable source
 }
 
 func (b *builder) levelXP() []int {
@@ -511,6 +544,7 @@ func (b *builder) quests() {
 		}
 		b.objectives(&out, q, cm)
 		b.applyWarcraftDB(&out)
+		b.classify(&out)
 		for _, r := range out.Start {
 			if r.Kind == "npc" {
 				b.npcWanted[r.ID] = true
@@ -572,7 +606,7 @@ func (b *builder) objectives(out *dataset.Quest, q obj, cm []any) {
 				continue
 			}
 			if !ok && out.Unsupported == "" {
-				out.Unsupported = fmt.Sprintf("item %d: source unknown (crafted, bought or not in the data)", id)
+				out.Unsupported = b.noSourceReason(id, fmt.Sprintf("item %d: source unknown (crafted, bought or not in the data)", id))
 			}
 			out.Objectives = append(out.Objectives, o)
 		}
@@ -882,7 +916,7 @@ func (b *builder) applyWarcraftDB(out *dataset.Quest) {
 				continue
 			}
 			if !ok && why == "" {
-				why = fmt.Sprintf("item %d: source unknown (Forever item, no drop data)", o.ID)
+				why = b.noSourceReason(o.ID, fmt.Sprintf("item %d: source unknown (Forever item, no drop data)", o.ID))
 			}
 			objs = append(objs, d)
 		case 2:
@@ -953,64 +987,383 @@ func (b *builder) startItem(out *dataset.Quest) {
 	b.stats["quests_started_by_item_drops"]++
 }
 
-// moreItemSources completes an item objective cmangos has no drops for from QuestieDB's item table: Classic drop rates,
-// vendors that sell it, or quests that give it. An item that one earlier quest gives becomes that quest as a
-// prerequisite and the objective is dropped (keep false). ok tells whether the item can be obtained.
+// dungeonZones are the dungeon and raid names; an item that only drops there is not a solo item.
+var dungeonZones = []string{"Hall of Thanes", "Ragefire Chasm", "Ruins of Lordaeron", "Wailing Caverns", "The Deadmines", "Shadowfang Keep",
+	"Excavation Site", "Blackfathom Deeps", "The Stockade", "City of Dalaran", "Gnomeregan", "Razorfen Kraul", "Scarlet Monastery",
+	"The Drowned City", "Razorfen Downs", "Krol'dok Stronghold", "Uldaman", "Zul'Farrak", "Maraudon", "Alcaz Prison", "Sunken Temple",
+	"Blackrock Depths", "Dire Maul", "Blackmaw Hold", "Blackrock Spire", "Scholomance", "Shaper's Terrace", "Stratholme"}
+
+func isDungeon(zone string) bool {
+	for _, d := range dungeonZones {
+		if strings.HasPrefix(zone, d) || strings.Contains(zone, d) {
+			return true
+		}
+	}
+	return false
+}
+
+func loadWCLBox(path string) (*wclbox.Overlay, error) {
+	raw, err := os.ReadFile(path)
+	if err != nil {
+		return nil, err
+	}
+	var o wclbox.Overlay
+	if err := json.Unmarshal(raw, &o); err != nil {
+		return nil, err
+	}
+	return &o, nil
+}
+
+// indexNames prepares the creature names and zone names that WCLBox's "Source: <creature>, <zone>" is matched against.
+func (b *builder) indexNames() {
+	b.byName = map[string][]int{}
+	add := func(name string, id int) {
+		if n := normName(name); n != "" {
+			b.byName[n] = append(b.byName[n], id)
+		}
+	}
+	for e, row := range b.w.creature {
+		add(b.w.ct.String(row, "Name"), e)
+	}
+	for _, raw := range b.merged["npcs"].(map[string]any) { // creatures only Forever has
+		n := raw.(map[string]any)
+		id, _ := num(n["id"])
+		name, _ := n["name"].(string)
+		if _, inCMaNGOS := b.w.creature[int(id)]; !inCMaNGOS {
+			add(name, int(id))
+		}
+	}
+	for k, ids := range b.byName {
+		sort.Ints(ids)
+		b.byName[k] = dedupe(ids)
+	}
+	count := map[string]map[int]int{}
+	for _, raw := range b.merged["quests"].(map[string]any) {
+		z, _ := get(raw.(map[string]any), "fields", "zone", "value").(map[string]any)
+		name, _ := z["name"].(string)
+		ui, ok := num(z["uiMapId"])
+		if name == "" || !ok || ui <= 0 {
+			continue
+		}
+		k := normName(name)
+		if count[k] == nil {
+			count[k] = map[int]int{}
+		}
+		count[k][int(ui)]++
+	}
+	b.zoneID = map[string]int{}
+	for k, m := range count {
+		best, bn := 0, 0
+		for ui, n := range m {
+			if n > bn || n == bn && ui < best {
+				best, bn = ui, n
+			}
+		}
+		b.zoneID[k] = best
+	}
+}
+
+func normName(s string) string { return strings.ToLower(strings.Trim(strings.TrimSpace(s), " .")) }
+
+func dedupe(ids []int) []int {
+	out := ids[:0]
+	for i, id := range ids {
+		if i == 0 || id != ids[i-1] {
+			out = append(out, id)
+		}
+	}
+	return out
+}
+
+// worldPoints are where a creature stands: Forever's positions converted to yards, plus cmangos' spawns.
+func (b *builder) worldPoints(id int) []dataset.Point {
+	pts := append([]dataset.Point(nil), b.w.spawns[id]...)
+	if rec := b.npcRecord(id); rec != nil {
+		sp, _ := rec["spawns"].(map[string]any)
+		for zone, list := range sp {
+			t, ok := b.zoneT[zone]
+			if !ok {
+				continue
+			}
+			l, _ := list.([]any)
+			for _, raw := range l {
+				xy, _ := raw.([]any)
+				if len(xy) == 2 {
+					px, _ := num(xy[0])
+					py, _ := num(xy[1])
+					pts = append(pts, t.apply(px, py))
+				}
+			}
+		}
+	}
+	return pts
+}
+
+// creaturesNamed are the creatures with that name that stand in the zone (when the zone's map is known) and could be
+// fought by a solo character: placed in the open world, not elite.
+func (b *builder) creaturesNamed(name, zone string) []int {
+	var out []int
+	var t transform
+	zoned := false
+	if ui, ok := b.zoneID[normName(zone)]; ok {
+		t, zoned = b.uiT[strconv.Itoa(ui)]
+	}
+	for _, id := range b.byName[normName(name)] {
+		rank := -1
+		if rec := b.npcRecord(id); rec != nil {
+			if f, ok := num(rec["rank"]); ok {
+				rank = int(f)
+			}
+		}
+		if cm := b.w.creature[id]; cm != nil && rank < 0 {
+			rank = b.w.ct.Int(cm, "Rank")
+		}
+		pts := b.worldPoints(id)
+		if rank != 0 || len(pts) == 0 {
+			continue
+		}
+		if zoned {
+			in := false
+			for _, p := range pts {
+				if t.contains(p) {
+					in = true
+					break
+				}
+			}
+			if !in {
+				continue
+			}
+		}
+		out = append(out, id)
+	}
+	return out
+}
+
+// classify marks an unresolved quest that ForeverChanges calls elite or a dungeon quest: it is not a data gap, a solo
+// route does not do it.
+func (b *builder) classify(out *dataset.Quest) {
+	if b.fch == nil || out.Unsupported == "" {
+		return
+	}
+	q, ok := b.fch.Quests[out.ID]
+	if !ok || q.Kind == "" || q.Kind == "normal" {
+		return
+	}
+	out.Unsupported = q.Kind + " quest, not solo (" + out.Unsupported + ")"
+	out.NeedItems = nil
+	b.stats["quests_not_solo"]++
+}
+
+// fromQuestText takes the creature a quest's objective sentence names ("... from Gnoll Thrashers in Redridge ...") as
+// the source of the item, when the sentence names the item too and the creature is unambiguous in the zone.
+func (b *builder) fromQuestText(questID int, o *dataset.Objective) bool {
+	if b.fch == nil {
+		return false
+	}
+	q, ok := b.fch.Quests[questID]
+	if !ok || q.Text == "" {
+		return false
+	}
+	name := b.itemName(o.ID)
+	if name == "" || !strings.Contains(strings.ToLower(q.Text), strings.TrimSuffix(strings.ToLower(name), "s")) {
+		return false
+	}
+	var found []int
+	for _, src := range foreverchanges.Sources(q.Text) {
+		if isDungeon(src.Zone) || isDungeon(src.Name) {
+			b.itemWhy[o.ID] = "only in a dungeon or raid (" + src.Name + ", " + src.Zone + ")"
+			b.stats["items_only_in_dungeons"]++
+			return false
+		}
+		ids := b.creaturesNamed(src.Name, src.Zone)
+		for _, alt := range singulars(src.Name) {
+			if len(ids) == 0 {
+				ids = b.creaturesNamed(alt, src.Zone)
+			}
+		}
+		if _, known := b.zoneID[normName(src.Zone)]; !known && len(ids) > 3 {
+			continue // zone not known and too many creatures with that name
+		}
+		found = append(found, ids...)
+	}
+	found = dedupeSorted(found)
+	if len(found) == 0 {
+		return false
+	}
+	for _, id := range found {
+		if len(o.Drops) >= 12 {
+			break
+		}
+		o.Drops = append(o.Drops, dataset.Drop{NPC: id, Unknown: true})
+		b.npcWanted[id] = true
+	}
+	o.Source += "+foreverchanges_text"
+	b.stats["items_sources_from_quest_text"]++
+	return true
+}
+
+func dedupeSorted(ids []int) []int {
+	sort.Ints(ids)
+	return dedupe(ids)
+}
+
+// singulars are the likely singular forms of a plural creature name.
+func singulars(n string) []string {
+	var out []string
+	switch {
+	case strings.HasSuffix(n, "ies"):
+		out = append(out, strings.TrimSuffix(n, "ies")+"y")
+	case strings.HasSuffix(n, "ves"):
+		out = append(out, strings.TrimSuffix(n, "ves")+"f", strings.TrimSuffix(n, "s"))
+	case strings.HasSuffix(n, "es"):
+		out = append(out, strings.TrimSuffix(n, "es"), strings.TrimSuffix(n, "s"))
+	case strings.HasSuffix(n, "s"):
+		out = append(out, strings.TrimSuffix(n, "s"))
+	}
+	return out
+}
+
+// itemName is the name of an item as the merged database or WCLBox gives it.
+func (b *builder) itemName(id int) string {
+	if rec, _ := get(b.merged, "items", strconv.Itoa(id)).(map[string]any); rec != nil {
+		if n, _ := rec["name"].(string); n != "" {
+			return n
+		}
+	}
+	if b.wcl != nil {
+		return b.wcl.Items[id].Name
+	}
+	return ""
+}
+
+// noSourceReason is the note for a quest whose item has no usable source: the specific reason found, else def.
+func (b *builder) noSourceReason(item int, def string) string {
+	if why := b.itemWhy[item]; why != "" {
+		return fmt.Sprintf("item %d: %s", item, why)
+	}
+	return def
+}
+
+// moreItemSources completes an item objective cmangos has no drops for: QuestieDB's item table (Classic drop rates,
+// vendors, quests that give it), then WCLBox's source line (creature and zone, no chance). An item that one earlier
+// quest gives becomes that quest as a prerequisite and the objective is dropped (keep false). ok tells whether the
+// item can be obtained; an item no source explains yet is listed in the quest's needItems.
 func (b *builder) moreItemSources(out *dataset.Quest, o *dataset.Objective) (keep, ok bool) {
 	if len(o.Drops) > 0 {
 		return true, true
 	}
-	rec, _ := get(b.merged, "items", strconv.Itoa(o.ID)).(map[string]any)
-	if rec == nil {
-		return true, false
-	}
-	if chances, _ := rec["drop_chance_by_npc"].(map[string]any); len(chances) > 0 {
-		for k, v := range chances {
-			npc, _ := strconv.Atoi(k)
-			c, _ := num(get(obj{"v": v}, "v", "chance"))
-			if npc > 0 && c > 0 {
-				o.Drops = append(o.Drops, dataset.Drop{NPC: npc, Chance: round1(c * 100)})
-				b.npcWanted[npc] = true
+	if rec, _ := get(b.merged, "items", strconv.Itoa(o.ID)).(map[string]any); rec != nil {
+		if chances, _ := rec["drop_chance_by_npc"].(map[string]any); len(chances) > 0 {
+			for k, v := range chances {
+				npc, _ := strconv.Atoi(k)
+				c, _ := num(get(obj{"v": v}, "v", "chance"))
+				if npc > 0 && c > 0 {
+					o.Drops = append(o.Drops, dataset.Drop{NPC: npc, Chance: round1(c * 100)})
+					b.npcWanted[npc] = true
+				}
+			}
+			sort.Slice(o.Drops, func(a, c int) bool {
+				if o.Drops[a].Chance != o.Drops[c].Chance {
+					return o.Drops[a].Chance > o.Drops[c].Chance
+				}
+				return o.Drops[a].NPC < o.Drops[c].NPC
+			})
+			if len(o.Drops) > 12 {
+				o.Drops = o.Drops[:12]
+			}
+			if len(o.Drops) > 0 {
+				o.Source += "+questiedb_drops"
+				b.stats["items_drops_from_questiedb"]++
 			}
 		}
-		sort.Slice(o.Drops, func(a, c int) bool {
-			if o.Drops[a].Chance != o.Drops[c].Chance {
-				return o.Drops[a].Chance > o.Drops[c].Chance
+		for _, v := range ints(rec["vendors"]) {
+			o.Vendors = append(o.Vendors, v)
+			b.npcWanted[v] = true
+		}
+		if len(o.Vendors) > 0 {
+			b.stats["items_sold_by_vendors"]++
+		}
+		if len(o.Drops) > 0 || len(o.Vendors) > 0 {
+			return true, true
+		}
+		if rewards := ints(rec["quest_rewards"]); len(rewards) > 0 && o.Count <= 1 {
+			switch {
+			case len(rewards) == 1:
+				out.PreAll = append(out.PreAll, rewards[0])
+				b.stats["items_from_quest_rewards"]++
+				return false, true
+			case len(out.PreAny) == 0:
+				out.PreAny = rewards
+				b.stats["items_from_quest_rewards"]++
+				return false, true
 			}
-			return o.Drops[a].NPC < o.Drops[c].NPC
-		})
-		if len(o.Drops) > 12 {
-			o.Drops = o.Drops[:12]
-		}
-		if len(o.Drops) > 0 {
-			o.Source += "+questiedb_drops"
-			b.stats["items_drops_from_questiedb"]++
 		}
 	}
-	for _, v := range ints(rec["vendors"]) {
-		o.Vendors = append(o.Vendors, v)
-		b.npcWanted[v] = true
-	}
-	if len(o.Vendors) > 0 {
-		b.stats["items_sold_by_vendors"]++
-	}
-	if len(o.Drops) > 0 || len(o.Vendors) > 0 {
+	if b.fromWCLBox(o) || b.fromQuestText(out.ID, o) {
 		return true, true
 	}
-	rewards := ints(rec["quest_rewards"])
-	if len(rewards) == 0 || o.Count > 1 {
-		return true, false
+	if b.wcl == nil || b.wcl.Items[o.ID].ID == 0 {
+		out.NeedItems = appendUnique(out.NeedItems, o.ID)
+	}
+	return true, false
+}
+
+func appendUnique(l []int, v int) []int {
+	for _, x := range l {
+		if x == v {
+			return l
+		}
+	}
+	return append(l, v)
+}
+
+// fromWCLBox turns WCLBox's source line into drops with an unknown chance. It records why an item stays without one.
+func (b *builder) fromWCLBox(o *dataset.Objective) bool {
+	if b.wcl == nil {
+		return false
+	}
+	it := b.wcl.Items[o.ID]
+	if it.ID == 0 {
+		return false
+	}
+	if len(it.Sources) == 0 {
+		b.itemWhy[o.ID] = "no source named by WCLBox"
+		return false
+	}
+	var dungeon, other string
+	for _, s := range it.Sources {
+		switch {
+		case isDungeon(s.Zone) || isDungeon(s.Name):
+			dungeon = s.Name + ", " + s.Zone
+			continue
+		case s.Zone == "Crafting" || s.Zone == "Vendor":
+			other = s.Name + " (" + s.Zone + ")"
+			continue
+		}
+		for _, id := range b.creaturesNamed(s.Name, s.Zone) {
+			if len(o.Drops) >= 12 {
+				break
+			}
+			o.Drops = append(o.Drops, dataset.Drop{NPC: id, Unknown: true})
+			b.npcWanted[id] = true
+		}
+		if len(o.Drops) == 0 {
+			other = s.Name + ", " + s.Zone + " (no such creature in the data)"
+		}
+	}
+	if len(o.Drops) > 0 {
+		o.Source += "+wclbox"
+		b.stats["items_sources_from_wclbox"]++
+		return true
 	}
 	switch {
-	case len(rewards) == 1:
-		out.PreAll = append(out.PreAll, rewards[0])
-	case len(out.PreAny) == 0:
-		out.PreAny = rewards
-	default:
-		return true, false
+	case dungeon != "":
+		b.itemWhy[o.ID] = "only in a dungeon or raid (" + dungeon + ")"
+		b.stats["items_only_in_dungeons"]++
+	case other != "":
+		b.itemWhy[o.ID] = "source not usable: " + other
 	}
-	b.stats["items_from_quest_rewards"]++
-	return false, true
+	return false
 }
 
 // dock is where a zeppelin or boat is boarded, anchored to an NPC standing there (cmangos positions). At overrides

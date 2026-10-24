@@ -111,6 +111,7 @@ type Options struct {
 	InteractSecs float64     // talking to an NPC (accept / turn in)
 	Profile      KillProfile // nil = DefaultProfile
 	MaxMobAbove  int         // mobs more than this many levels above the character are not attacked (3)
+	AssumedDrop  float64     // chance per kill assumed where a source names the creature but no chance (0.3); reported in the result
 }
 
 func (o Options) withDefaults() Options {
@@ -131,6 +132,9 @@ func (o Options) withDefaults() Options {
 	}
 	if o.MaxMobAbove == 0 {
 		o.MaxMobAbove = 3
+	}
+	if o.AssumedDrop == 0 {
+		o.AssumedDrop = 0.3
 	}
 	return o
 }

@@ -32,9 +32,10 @@ type Ref struct {
 
 // Drop is where a quest item comes from and how likely (percent per kill or per use).
 type Drop struct {
-	NPC    int     `json:"npc,omitempty"`
-	Object int     `json:"obj,omitempty"`
-	Chance float64 `json:"p"`
+	NPC     int     `json:"npc,omitempty"`
+	Object  int     `json:"obj,omitempty"`
+	Chance  float64 `json:"p"`
+	Unknown bool    `json:"unknown,omitempty"` // a source names the creature but no chance: Chance is 0, not a value
 }
 
 // Objective is one requirement of a quest.
@@ -68,7 +69,8 @@ type Quest struct {
 	Repeatable  bool              `json:"repeat,omitempty"`
 	Objectives  []Objective       `json:"obj,omitempty"`
 	Unsupported string            `json:"unsupported,omitempty"`
-	Sources     map[string]string `json:"src"` // field -> source label
+	NeedItems   []int             `json:"needItems,omitempty"` // items the quest needs whose source no data has yet
+	Sources     map[string]string `json:"src"`                 // field -> source label
 }
 
 // NPC is a creature: quest giver, target or grind mob.

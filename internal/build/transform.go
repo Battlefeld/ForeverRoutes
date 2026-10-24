@@ -29,6 +29,15 @@ func (t transform) apply(px, py float64) dataset.Point {
 	return dataset.Point{Map: t.m, X: round1(t.ax + t.bx*py), Y: round1(t.ay + t.by*px)}
 }
 
+// contains tells whether a world position lies on this zone map (0..100 percent in both directions).
+func (t transform) contains(p dataset.Point) bool {
+	if p.Map != t.m || t.bx == 0 || t.by == 0 {
+		return false
+	}
+	py, px := (p.X-t.ax)/t.bx, (p.Y-t.ay)/t.by
+	return px >= 0 && px <= 100 && py >= 0 && py <= 100
+}
+
 func round1(v float64) float64 { return math.Round(v*10) / 10 }
 
 func linFit(xs, ys []float64) (a, b float64, ok bool) {

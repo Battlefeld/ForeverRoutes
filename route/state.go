@@ -28,6 +28,7 @@ type State struct {
 	Hearth               float64           // time from which the hearthstone can be used again
 	Travel, Combat, Talk float64
 	Wait                 float64      // part of Combat spent waiting for respawns
+	Assumed              int          // steps that rely on an assumed drop chance
 	Dead                 map[int]dead // site key -> mobs of that site still dead
 }
 
@@ -261,6 +262,9 @@ func (w *World) Apply(s *State, a Action) error {
 			if err := w.move(s, src.Site.Center); err != nil {
 				return err
 			}
+			if src.Assumed {
+				s.Assumed++
+			}
 			w.kill(s, src.NPC, src.Object, src.Site, 1/src.Chance)
 		} else if err := w.move(s, q.StartPos); err != nil {
 			return err
@@ -315,6 +319,9 @@ func (w *World) Apply(s *State, a Action) error {
 			return fail("%s is too high level", src.NPC.Name)
 		}
 		left := float64(o.Count) - s.Prog[q.Index][a.Obj]
+		if src.Assumed {
+			s.Assumed++
+		}
 		if src.Talk {
 			if err := w.move(s, src.Site.Center); err != nil {
 				return err
@@ -412,6 +419,7 @@ type Result struct {
 	XP        int       `json:"xp"`
 	Quests    int       `json:"questsDone"`
 	Profile   string    `json:"killProfile"`
+	Assumed   int       `json:"assumedDropSteps"` // steps that rely on a drop chance the data does not give
 	Steps     []Step    `json:"steps"`
 }
 
@@ -426,7 +434,7 @@ func (w *World) Replay(actions []Action) (*Result, error) {
 		res.Steps = append(res.Steps, Step{Action: a, Name: w.describe(a), Time: round1(s.Time), Level: w.Level(s), XP: s.XP})
 	}
 	res.Seconds, res.Travel, res.Combat, res.Talk = round1(s.Time), round1(s.Travel), round1(s.Combat), round1(s.Talk)
-	res.Level, res.XP = w.Level(s), s.XP
+	res.Level, res.XP, res.Assumed = w.Level(s), s.XP, s.Assumed
 	for _, st := range s.Status {
 		if st == done {
 			res.Quests++

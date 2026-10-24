@@ -38,6 +38,8 @@ func tiny() *dataset.Dataset {
 				End: []dataset.Ref{{Kind: "npc", ID: StartNPC["Orc"]}}},
 			{ID: 6, Name: "Found a tusk", Level: 2, MinLevel: 1, XP: 200, Start: []dataset.Ref{{Kind: "item", ID: 9}},
 				StartDrops: []dataset.Drop{{NPC: 100, Chance: 25}}, End: []dataset.Ref{{Kind: "npc", ID: StartNPC["Orc"]}}},
+			{ID: 7, Name: "Pelts", Level: 2, MinLevel: 1, XP: 300, Start: []dataset.Ref{{Kind: "npc", ID: StartNPC["Orc"]}},
+				End: []dataset.Ref{{Kind: "npc", ID: StartNPC["Orc"]}}, Objectives: []dataset.Objective{{Kind: "item", ID: 11, Count: 2, Drops: []dataset.Drop{{NPC: 100, Unknown: true}}}}},
 			{ID: 5, Name: "Elite", Level: 2, MinLevel: 1, XP: 900, Start: []dataset.Ref{{Kind: "npc", ID: StartNPC["Orc"]}},
 				End: []dataset.Ref{{Kind: "npc", ID: StartNPC["Orc"]}}, Objectives: []dataset.Objective{{Kind: "kill", ID: 200, Count: 1}}},
 		},
@@ -258,5 +260,24 @@ func TestQuestStartedByAnItem(t *testing.T) {
 	}
 	if s.Status[q.Index] != active || s.XP <= xp0 || s.Combat <= 0 {
 		t.Errorf("accepting should kill about 4 boars first: status %d, xp %d, combat %v", s.Status[q.Index], s.XP, s.Combat)
+	}
+}
+
+func TestUnknownDropChanceIsAssumedAndReported(t *testing.T) {
+	w := tinyWorld(t)
+	q := w.ByID[7]
+	if q == nil {
+		t.Fatalf("quest with an unknown drop chance should be usable: %s", w.Excluded[7])
+	}
+	src := q.Objectives[0].Sources[0]
+	if !src.Assumed || src.Chance != w.Opt.AssumedDrop {
+		t.Fatalf("assumed %v chance %v", src.Assumed, src.Chance)
+	}
+	res, err := w.Replay([]Action{{Op: "accept", Quest: 7, At: q.StartPos}, {Op: "work", Quest: 7, Obj: 0, NPC: 100, At: src.Site.Center}, {Op: "turnin", Quest: 7, At: q.EndPos}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if res.Assumed != 1 || res.Quests != 1 {
+		t.Errorf("assumed steps %d, quests %d", res.Assumed, res.Quests)
 	}
 }

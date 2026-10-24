@@ -18,10 +18,11 @@ ForeverCore.exe gebaut (Paket `route`); dort liefert später MythicSim (ForeverS
   reines Grinden landen bis Level 21 im Modell fast gleichauf. Darum grinden die Routen heute zu viel. Echte Zahlen kommen
   über ForeverCore aus MythicSim (`KillProfile`); mit `guide` lassen sich Guides unter denselben Regeln nachgehen und so
   das Modell prüfen.
-- Bekannte Datenlücken (siehe `foreverroutes audit`): rund 90 Quests brauchen Forever-eigene Gegenstände, deren
-  Beutequelle keine Quelle kennt; rund 60 brauchen hergestellte Gegenstände oder solche ohne bekannte Quelle; 13 werden
-  über einen Gegenstand ohne bekannte Beutequelle gestartet; Ruf-, Gebiets- und Zauberziele sind noch nicht modelliert.
-  Diese Quests bleiben markiert und werden nicht geraten.
+- Bekannte Datenlücken (siehe `foreverroutes audit`): rund 100 Quests brauchen Forever-eigene Gegenstände, deren
+  Beutequelle keine Datenbank kennt (nur das Spiel selbst weiß es); rund 20 brauchen hergestellte Gegenstände oder
+  Schlachtfeld-Marken; 13 werden über einen Gegenstand ohne bekannte Beutequelle gestartet; Ruf-, Gebiets- und Zauberziele
+  sind noch nicht modelliert; 17 sind Elite- oder Dungeonquests (nicht solo). Diese Quests bleiben markiert und werden
+  nicht geraten. Wo eine Quelle den Gegner nennt, aber keine Chance, nimmt der Planer einen gekennzeichneten Wert an.
 
 ## Befehle
 
@@ -66,7 +67,7 @@ entsteht.
 | `dataset/` | Format des Datensatzes (`foreverroutes.dataset.v1`), Laden und Schreiben |
 | `xp/` | Classic-XP-Regeln: Quest-XP nach Levelabstand, Kill-XP (cmangos), Levelkurve |
 | `internal/update/` | Quellen prüfen, neu bauen, Ergebnis prüfen (`update`, `build-data`) |
-| `internal/sources/` | Importer: QuestieDB (Lua-Datentabellen), ForeverDB (API), EverythingQuests |
+| `internal/sources/` | Importer: QuestieDB (Lua-Datentabellen), ForeverDB (API), EverythingQuests, WCLBox (Gegenstandsquellen), ForeverChanges (Questart, Zielsatz) |
 | `internal/merge/` | Zusammenführen der Questquellen feldweise mit Quelle und Vorrangregeln |
 | `internal/build/` | Bau des Datensatzes aus Quest-Datenbank, cmangos und WarcraftDB; Umrechnung Kartenprozent → Weltyards |
 | `internal/lua/` | Leser für Lua-Tabellenliterale (führt keinen Code aus) |

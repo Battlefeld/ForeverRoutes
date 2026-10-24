@@ -23,6 +23,8 @@ type Source struct {
 	Chance float64 // 0..1 progress per kill/use
 	Site   Site
 	Talk   bool // talk to the NPC: no fight
+	// Assumed: the data gives no chance for this source; the model's AssumedDrop is used and the result says so
+	Assumed bool
 }
 
 // Objective of a quest, resolved to the places that serve it.
@@ -277,15 +279,19 @@ func (w *World) resolve(q *dataset.Quest) (*Quest, string) {
 func (w *World) dropSources(drops []dataset.Drop) []Source {
 	var out []Source
 	for _, d := range drops {
+		chance := math.Min(1, d.Chance/100)
+		if d.Unknown {
+			chance = w.Opt.AssumedDrop
+		}
 		if d.NPC > 0 {
 			if n := w.NPC[d.NPC]; n != nil && len(n.Spawns) > 0 {
 				for _, st := range w.sites(n.Spawns) {
-					out = append(out, Source{NPC: n, Chance: math.Min(1, d.Chance/100), Site: st})
+					out = append(out, Source{NPC: n, Chance: chance, Site: st, Assumed: d.Unknown})
 				}
 			}
 		} else if ob := w.Objects[d.Object]; ob != nil && len(ob.Spawns) > 0 {
 			for _, st := range w.sites(ob.Spawns) {
-				out = append(out, Source{Object: d.Object, Chance: math.Min(1, d.Chance/100), Site: st})
+				out = append(out, Source{Object: d.Object, Chance: chance, Site: st, Assumed: d.Unknown})
 			}
 		}
 	}

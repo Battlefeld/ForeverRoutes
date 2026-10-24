@@ -25,8 +25,10 @@ import (
 	"github.com/Battlefeld/ForeverRoutes/internal/build"
 	"github.com/Battlefeld/ForeverRoutes/internal/merge"
 	"github.com/Battlefeld/ForeverRoutes/internal/sources/everythingquests"
+	"github.com/Battlefeld/ForeverRoutes/internal/sources/foreverchanges"
 	"github.com/Battlefeld/ForeverRoutes/internal/sources/foreverdb"
 	"github.com/Battlefeld/ForeverRoutes/internal/sources/questie"
+	"github.com/Battlefeld/ForeverRoutes/internal/sources/wclbox"
 	"github.com/Battlefeld/ForeverRoutes/internal/warcraftdb"
 )
 
@@ -36,6 +38,8 @@ const (
 	SnapshotFile = "data/sources/foreverdb-snapshot.json.gz"
 	FactsFile    = "data/sources/manual-facts.json"
 	OverlayFile  = "data/sources/warcraftdb-forever.json"
+	WCLBoxFile   = "data/sources/wclbox-items.json"
+	FChangesFile = "data/sources/foreverchanges-quests.json"
 	DatasetFile  = "data/routes-data.json.gz"
 )
 
@@ -66,6 +70,8 @@ type Options struct {
 	RequireForeverDB bool          // fail without a key (the scheduled run)
 	ForeverDBMinAge  time.Duration // do not ask the API more often than this (1 h)
 	WarcraftDBBudget int           // WarcraftDB requests per run (150)
+	WCLBoxBudget     int           // WCLBox page requests per run (400)
+	FChangesBudget   int           // ForeverChanges page requests per run (400)
 	Force            bool          // rebuild even when no source changed
 	Now              func() time.Time
 	HTTP             *http.Client
@@ -84,6 +90,12 @@ func (o *Options) defaults() {
 	}
 	if o.WarcraftDBBudget == 0 {
 		o.WarcraftDBBudget = 150
+	}
+	if o.WCLBoxBudget == 0 {
+		o.WCLBoxBudget = 400
+	}
+	if o.FChangesBudget == 0 {
+		o.FChangesBudget = 400
 	}
 	if o.Now == nil {
 		o.Now = time.Now
@@ -251,6 +263,8 @@ func encodeSnapshot(s *foreverdb.Snapshot) ([]byte, string, error) {
 type Inputs struct {
 	Snapshot *foreverdb.Snapshot
 	Overlay  string // WarcraftDB overlay file, empty for none
+	WCLBox   string // WCLBox item sources file, empty for none
+	FChanges string // ForeverChanges quest summaries file, empty for none
 }
 
 // Rebuild makes the merged quest database and the dataset from a lock. It fetches QuestieDB and EverythingQuests at
@@ -300,7 +314,7 @@ func Rebuild(ctx context.Context, o Options, l *Lock, in Inputs) (*dataset.Datas
 	if err := os.WriteFile(mergedPath, mb, 0o644); err != nil {
 		return nil, nil, err
 	}
-	d, err := build.Build(build.Inputs{Merged: mergedPath, CMangos: dump, CMangosRevision: l.CMangos, WarcraftDB: in.Overlay})
+	d, err := build.Build(build.Inputs{Merged: mergedPath, CMangos: dump, CMangosRevision: l.CMangos, WarcraftDB: in.Overlay, WCLBox: in.WCLBox, ForeverChanges: in.FChanges})
 	if err != nil {
 		return nil, nil, err
 	}
@@ -372,8 +386,9 @@ func Run(ctx context.Context, o Options) (*Report, error) {
 		}
 		return rep, nil
 	}
-	// first pass, then WarcraftDB for what is still missing, then the final pass
-	d, doc, err := Rebuild(ctx, o, &next, Inputs{Snapshot: snap, Overlay: o.path(OverlayFile)})
+	// first pass, then WarcraftDB and WCLBox for what is still missing, then the final pass
+	in := Inputs{Snapshot: snap, Overlay: o.path(OverlayFile), WCLBox: o.path(WCLBoxFile), FChanges: o.path(FChangesFile)}
+	d, doc, err := Rebuild(ctx, o, &next, in)
 	if err != nil {
 		return nil, err
 	}
@@ -381,16 +396,59 @@ func Run(ctx context.Context, o Options) (*Report, error) {
 	if err != nil {
 		return nil, err
 	}
-	overlayPath := o.path(OverlayFile)
 	if fetched > 0 {
-		overlayPath = filepath.Join(o.Cache, "warcraftdb-forever.json")
-		if err := writeJSON(overlayPath, ov); err != nil {
+		in.Overlay = filepath.Join(o.Cache, "warcraftdb-forever.json")
+		if err := writeJSON(in.Overlay, ov); err != nil {
 			return nil, err
 		}
 		rep.Sources = append(rep.Sources, fmt.Sprintf("WarcraftDB: %d quests fetched", fetched))
-		if d, doc, err = Rebuild(ctx, o, &next, Inputs{Snapshot: snap, Overlay: overlayPath}); err != nil {
+		if d, doc, err = Rebuild(ctx, o, &next, in); err != nil {
 			return nil, err
 		}
+	}
+	wcl, wfetched, err := fillFromWCLBox(o, d)
+	if err != nil {
+		return nil, err
+	}
+	fch, cfetched, err := fillFromForeverChanges(o, d)
+	if err != nil {
+		return nil, err
+	}
+	if wfetched+cfetched > 0 {
+		if wfetched > 0 {
+			in.WCLBox = filepath.Join(o.Cache, "wclbox-items.json")
+			if err := writeJSON(in.WCLBox, wcl); err != nil {
+				return nil, err
+			}
+			rep.Sources = append(rep.Sources, fmt.Sprintf("WCLBox: %d item pages read", wfetched))
+		}
+		if cfetched > 0 {
+			in.FChanges = filepath.Join(o.Cache, "foreverchanges-quests.json")
+			if err := writeJSON(in.FChanges, fch); err != nil {
+				return nil, err
+			}
+			rep.Sources = append(rep.Sources, fmt.Sprintf("ForeverChanges: %d quest pages read", cfetched))
+		}
+		if d, doc, err = Rebuild(ctx, o, &next, in); err != nil {
+			return nil, err
+		}
+	}
+	// what was read is kept even when the dataset stays the same, so it is not asked for again
+	persist := func() error {
+		if fetched > 0 {
+			if err := writeJSON(o.path(OverlayFile), ov); err != nil {
+				return err
+			}
+		}
+		if cfetched > 0 {
+			if err := writeJSON(o.path(FChangesFile), fch); err != nil {
+				return err
+			}
+		}
+		if wfetched > 0 {
+			return writeJSON(o.path(WCLBoxFile), wcl)
+		}
+		return nil
 	}
 	prev, err := dataset.Load(o.path(DatasetFile))
 	if err != nil {
@@ -403,6 +461,9 @@ func Run(ctx context.Context, o Options) (*Report, error) {
 	// only content counts: new commits upstream that change nothing here leave the repository as it is
 	if sameContent(prev, d) {
 		rep.Sources = append(rep.Sources, "(no change to the dataset)")
+		if err := persist(); err != nil {
+			return nil, err
+		}
 		if next.ForeverDBFetched != old.ForeverDBFetched {
 			kept := *old
 			kept.ForeverDBFetched = next.ForeverDBFetched
@@ -424,10 +485,8 @@ func Run(ctx context.Context, o Options) (*Report, error) {
 			return nil, err
 		}
 	}
-	if fetched > 0 {
-		if err := writeJSON(o.path(OverlayFile), ov); err != nil {
-			return nil, err
-		}
+	if err := persist(); err != nil {
+		return nil, err
 	}
 	return rep, writeJSON(o.path(LockFile), next)
 }
@@ -526,6 +585,108 @@ func NeedsFacts(d *dataset.Dataset) []int {
 	}
 	sort.Ints(out)
 	return out
+}
+
+// fillFromForeverChanges reads the summary of every quest the dataset still cannot use, unless it is read already.
+func fillFromForeverChanges(o Options, d *dataset.Dataset) (*foreverchanges.Overlay, int, error) {
+	ov := &foreverchanges.Overlay{Schema: "foreverroutes.foreverchanges.v1", Source: foreverchanges.Credit, Quests: map[int]foreverchanges.Quest{}}
+	if b, err := os.ReadFile(o.path(FChangesFile)); err == nil {
+		if err := json.Unmarshal(b, ov); err != nil {
+			return nil, 0, fmt.Errorf("%s: %w", FChangesFile, err)
+		}
+		if ov.Quests == nil {
+			ov.Quests = map[int]foreverchanges.Quest{}
+		}
+	}
+	var ids []int
+	for _, q := range d.Quests {
+		if q.Unsupported == "" {
+			continue
+		}
+		if _, have := ov.Quests[q.ID]; !have {
+			ids = append(ids, q.ID)
+		}
+	}
+	sort.Ints(ids)
+	c := &foreverchanges.Client{HTTP: &http.Client{Timeout: 30 * time.Second}, Cache: filepath.Join(o.Cache, "foreverchanges"), Delay: time.Second}
+	fetched := 0
+	for _, id := range ids {
+		if c.Calls >= o.FChangesBudget {
+			break
+		}
+		q, err := c.Quest(id)
+		if foreverchanges.IsNotFound(err) {
+			ov.Quests[id] = foreverchanges.Quest{ID: id, URL: foreverchanges.Base + "/quest/" + fmt.Sprint(id)}
+			fetched++
+			continue
+		}
+		if err != nil {
+			o.Log("ForeverChanges: skipping quest %d: %v", id, err)
+			if strings.Contains(err.Error(), "HTTP 429") || strings.Contains(err.Error(), "HTTP 403") {
+				break
+			}
+			continue
+		}
+		ov.Quests[id] = q
+		fetched++
+	}
+	if fetched > 0 {
+		ov.Fetched = o.Now().UTC().Format("2006-01-02")
+	}
+	return ov, fetched, nil
+}
+
+// fillFromWCLBox reads the item pages of the items the dataset's quests need and no source explains yet, within the
+// request budget. An item stays in the file even when the page names no source, so it is not asked for twice.
+func fillFromWCLBox(o Options, d *dataset.Dataset) (*wclbox.Overlay, int, error) {
+	ov := &wclbox.Overlay{Schema: "foreverroutes.wclbox.v1", Source: wclbox.Credit, Items: map[int]wclbox.Item{}}
+	if b, err := os.ReadFile(o.path(WCLBoxFile)); err == nil {
+		if err := json.Unmarshal(b, ov); err != nil {
+			return nil, 0, fmt.Errorf("%s: %w", WCLBoxFile, err)
+		}
+		if ov.Items == nil {
+			ov.Items = map[int]wclbox.Item{}
+		}
+	}
+	need := map[int]bool{}
+	for _, q := range d.Quests {
+		for _, id := range q.NeedItems {
+			need[id] = true
+		}
+	}
+	ids := make([]int, 0, len(need))
+	for id := range need {
+		if _, have := ov.Items[id]; !have {
+			ids = append(ids, id)
+		}
+	}
+	sort.Ints(ids)
+	c := &wclbox.Client{HTTP: &http.Client{Timeout: 30 * time.Second}, Cache: filepath.Join(o.Cache, "wclbox"), Delay: time.Second}
+	fetched := 0
+	for _, id := range ids {
+		if c.Calls >= o.WCLBoxBudget {
+			break
+		}
+		it, err := c.Item(id)
+		if wclbox.IsNotFound(err) {
+			ov.Items[id] = wclbox.Item{ID: id, URL: wclbox.Base + "/en/wupin/" + fmt.Sprint(id)}
+			fetched++
+			continue
+		}
+		if err != nil {
+			o.Log("WCLBox: stopping: %v", err)
+			break
+		}
+		ov.Items[id] = it
+		fetched++
+	}
+	if fetched > 0 {
+		ov.Fetched = o.Now().UTC().Format("2006-01-02")
+		if c.Build != "" {
+			ov.Build = c.Build
+		}
+	}
+	return ov, fetched, nil
 }
 
 // fillFromWarcraftDB fetches quests that still lack facts and are not in the overlay yet (or only as missing), within
