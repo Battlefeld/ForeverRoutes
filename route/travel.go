@@ -35,6 +35,7 @@ type network struct {
 	nodes []dataset.Point
 	fm    []bool // node is a flight master (bit index = node index)
 	links map[[2]int]float64
+	byNPC map[int]int // flight master or dock NPC -> node
 	mu    sync.Mutex // the planner looks ahead in parallel
 	cache map[uint64][][]float64
 }
@@ -65,6 +66,7 @@ func (w *World) buildNetwork() {
 			n.links[[2]int{a, b}] = l.Seconds
 		}
 	}
+	n.byNPC = idx
 	w.net = n
 	for _, in := range w.Data.Travel.Inns {
 		if in.Faction == "" || in.Faction == w.Faction {

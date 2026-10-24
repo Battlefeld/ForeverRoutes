@@ -35,12 +35,27 @@ go run ./cmd/foreverroutes plan -race Orc -class Warlock -out orc.json
 go run ./cmd/foreverroutes plan -race Human -class Mage -target 30 -restarts 4 -out human.json
 go run ./cmd/foreverroutes plan -race Orc -class Warlock -profile data/profiles/warlock-orc.json   # Kampfzeiten aus MythicSim
 go run ./cmd/foreverroutes replay -race Orc -class Warlock -route orc.json
+go run ./cmd/foreverroutes next -live state.json -profile data/profiles/warlock-orc.json -horizon 3600   # ab Live-Stand
 go run ./cmd/foreverroutes guide -race Orc -class Warlock -events guide.json   # Guide unter denselben Regeln
 go run ./cmd/foreverroutes audit                                              # was der Datensatz kennt und was fehlt
 ```
 
 `guide` liest eine Liste von Schritten `[{"op":"accept","quest":4641},{"op":"complete","quest":4641},
 {"op":"turnin","quest":4641},{"op":"level","level":6}]`. Guide-Dateien werden nicht eingecheckt (Lizenzen der Guides).
+
+### Planen beim Spielen (`next`)
+
+`next` plant ab dem Stand, den das Addon im Spiel liest, die nächste Stunde (`-horizon` in Sekunden). Mitgegeben
+werden Level, Erfahrung, Position, erledigte Quests, das Questlog mit dem Fortschritt jedes Ziels, bekannte
+Flugmeister, Ruhestein-Ort und -Abklingzeit (`route.Live`, Eingabe `{race, class, live}`). ForeverCore ruft das bei
+jeder Quest-Änderung neu auf. So folgt die Route dem Charakter, statt ihn auf einer festen Route zu halten.
+
+- Eine Entscheidung (Quest, Hub oder Grinden) dauert 0,3–0,8 s und deckt etwa 10 Minuten Spiel ab. Ein Aufruf für eine
+  Stunde braucht mit Laden des Datensatzes etwa 1–3 s.
+- Quests im Log, die der Planer für diesen Charakter nicht kennt, belegen trotzdem einen Platz im Log und stehen in
+  `notes`. Der Fortschritt eines Ziels wird nach benötigter Anzahl und Art zugeordnet, weil das Spiel die Ziele in
+  eigener Reihenfolge liefert. Was sich nicht zuordnen lässt, zählt als nicht begonnen. Der Planer nimmt also nie
+  Fortschritt an, den er nicht sieht.
 
 ### Kampfprofil
 

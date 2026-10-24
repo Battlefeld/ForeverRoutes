@@ -425,15 +425,21 @@ type Result struct {
 
 // Replay checks a route action by action and reports the time line.
 func (w *World) Replay(actions []Action) (*Result, error) {
-	s := w.NewState()
+	return w.replayFrom(w.NewState(), actions)
+}
+
+// replayFrom replays the actions from a copy of s; times in the result count from s.
+func (w *World) replayFrom(s0 *State, actions []Action) (*Result, error) {
+	s := s0.clone()
+	t0, tr0, c0, tk0 := s.Time, s.Travel, s.Combat, s.Talk
 	res := &Result{Character: w.Char, Profile: w.Opt.Profile.Name()}
 	for i, a := range actions {
 		if err := w.Apply(s, a); err != nil {
 			return nil, fmt.Errorf("step %d (%s %d): %w", i+1, a.Op, a.Quest, err)
 		}
-		res.Steps = append(res.Steps, Step{Action: a, Name: w.describe(a), Time: round1(s.Time), Level: w.Level(s), XP: s.XP})
+		res.Steps = append(res.Steps, Step{Action: a, Name: w.describe(a), Time: round1(s.Time - t0), Level: w.Level(s), XP: s.XP})
 	}
-	res.Seconds, res.Travel, res.Combat, res.Talk = round1(s.Time), round1(s.Travel), round1(s.Combat), round1(s.Talk)
+	res.Seconds, res.Travel, res.Combat, res.Talk = round1(s.Time-t0), round1(s.Travel-tr0), round1(s.Combat-c0), round1(s.Talk-tk0)
 	res.Level, res.XP, res.Assumed = w.Level(s), s.XP, s.Assumed
 	for _, st := range s.Status {
 		if st == done {

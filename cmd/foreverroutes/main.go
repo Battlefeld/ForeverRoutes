@@ -24,6 +24,8 @@ func main() {
 		err = cmdPlan(os.Args[2:])
 	case "replay":
 		err = cmdReplay(os.Args[2:])
+	case "next":
+		err = cmdNext(os.Args[2:])
 	case "guide":
 		err = cmdGuide(os.Args[2:])
 	default:
@@ -44,6 +46,7 @@ func usage() {
   audit        what the dataset knows and what is missing
   plan         plan a route (-race Orc -class Warlock -target 30)
   replay       check a planned route step by step
+  next         the next stretch of route from the character's live state (-live state.json -horizon 3600)
   guide        walk a quest guide (list of accept/complete/turnin/level events) with the same model`)
 }
 
