@@ -17,6 +17,7 @@ import (
 	"strings"
 
 	"github.com/Battlefeld/ForeverRoutes/dataset"
+	"github.com/Battlefeld/ForeverRoutes/internal/sources/aegis"
 	"github.com/Battlefeld/ForeverRoutes/internal/sources/foreverchanges"
 	"github.com/Battlefeld/ForeverRoutes/internal/sources/guides"
 	"github.com/Battlefeld/ForeverRoutes/internal/sources/polestar"
@@ -42,6 +43,8 @@ type Inputs struct {
 	GuidesRXP         string
 	GuidesRXPRevision string
 	GuidesPolestar    string
+	Aegis             string // optional: AEGIS Pathfinder's data/merged.json (internal/sources/aegis)
+	AegisRevision     string
 }
 
 type obj = map[string]any
@@ -270,6 +273,11 @@ func Build(in Inputs) (*dataset.Dataset, error) {
 		}
 		facts = append(facts, guides.ParsePolestar(files)...)
 	}
+	if in.Aegis != "" {
+		if b.aeg, err = aegis.Load(in.Aegis, in.AegisRevision); err != nil {
+			return nil, err
+		}
+	}
 	if len(facts) > 0 {
 		b.loadGuides(facts)
 		b.stats["guide_facts"] = len(facts)
@@ -278,6 +286,7 @@ func Build(in Inputs) (*dataset.Dataset, error) {
 	b.npcs()
 	b.objects()
 	b.guideSpawns()
+	b.aegisQuests()
 	if b.pdb != nil {
 		b.dungeonOutside()
 	}
@@ -287,6 +296,10 @@ func Build(in Inputs) (*dataset.Dataset, error) {
 		Sources: b.mergedSources()}
 	d.Sources = append(d.Sources, dataset.Source{Name: "cmangos classic-db", URL: "https://github.com/cmangos/classic-db", Revision: in.CMangosRevision, License: "GPL-3.0",
 		Note: "Classic world data: objective counts, drop chances, spawn positions, respawn times, quest groups. Classic, not Forever: Forever data wins where both exist."})
+	if b.aeg != nil {
+		d.Sources = append(d.Sources, dataset.Source{Name: "AEGIS: Pathfinder (Forever)", URL: "https://github.com/" + aegis.Repository, Revision: in.AegisRevision, License: "MIT",
+			Note: "quest data players collected in game: where quests are taken and handed in, where objectives are, the XP a turn-in gave"})
+	}
 	if b.wcl != nil {
 		d.Sources = append(d.Sources, dataset.Source{Name: "WCLBox", URL: "https://wowforever.wclbox.com", Revision: b.wcl.Fetched,
 			Note: "WoW Forever database (新手盒子·魔兽世界无限数据库): which creature an item drops from, with the zone; the page gives no drop chance"})
@@ -364,6 +377,7 @@ type builder struct {
 	wcl       *wclbox.Overlay
 	fch       *foreverchanges.Overlay
 	pdb       *polestar.DB
+	aeg       *aegis.Data
 	gdx       *guideIndex
 	byName    map[string][]int // lower-case creature name -> cmangos entries
 	zoneID    map[string]int   // lower-case zone name -> uiMapId
@@ -1412,7 +1426,7 @@ func (b *builder) moreItemSources(out *dataset.Quest, o *dataset.Objective) (kee
 			}
 		}
 	}
-	if b.fromWCLBoxQuest(out, o) || b.guideItem(out, o, false) || b.fromWCLBox(o) || b.fromQuestText(out.ID, o) {
+	if b.fromWCLBoxQuest(out, o) || b.guideItem(out, o, false) || b.fromWCLBox(o) || b.fromAegis(out, o) || b.fromQuestText(out.ID, o) {
 		return true, true
 	}
 	if b.wcl == nil || b.wcl.Items[o.ID].ID == 0 {

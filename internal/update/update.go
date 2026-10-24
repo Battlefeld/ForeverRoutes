@@ -51,6 +51,7 @@ var repos = map[string][2]string{
 	"cmangos":          {"https://github.com/cmangos/classic-db", "master"},
 	"polestar":         {"https://github.com/fitzforge/polestar", "next"}, // the default branch carries forever-db
 	"rxp":              {"https://github.com/RestedXP/RXPGuides", "main"},
+	"aegis":            {"https://github.com/Torchlite-bit/Aegis_Pathfinder_Forever", "main"},
 }
 
 // Lock pins the state of every source a dataset was built from.
@@ -61,6 +62,7 @@ type Lock struct {
 	CMangos          string `json:"cmangos"`
 	Polestar         string `json:"polestar,omitempty"` // forever-db (Polestar), empty: not used
 	RXP              string `json:"rxp,omitempty"`      // RestedXP's guides, empty: not used
+	Aegis            string `json:"aegis,omitempty"`    // AEGIS Pathfinder's player data, empty: not used
 	ForeverDBBuild   string `json:"foreverdbBuild"`
 	ForeverDBHash    string `json:"foreverdbHash"`    // of the stored snapshot
 	ForeverDBFetched string `json:"foreverdbFetched"` // when the API was last asked (RFC 3339)
@@ -363,6 +365,13 @@ func Rebuild(ctx context.Context, o Options, l *Lock, in Inputs) (*dataset.Datas
 		}
 		bin.GuidesRXP, bin.GuidesRXPRevision = filepath.Join(dir, "Guides"), l.RXP
 	}
+	if l.Aegis != "" {
+		dir, err := sparseCheckout(ctx, o.Cache, "aegis", repos["aegis"][0], l.Aegis, "data")
+		if err != nil {
+			return nil, nil, err
+		}
+		bin.Aegis, bin.AegisRevision = filepath.Join(dir, "data", "merged.json"), l.Aegis
+	}
 	d, err := build.Build(bin)
 	if err != nil {
 		return nil, nil, err
@@ -384,7 +393,7 @@ func Run(ctx context.Context, o Options) (*Report, error) {
 		if err != nil {
 			return nil, err
 		}
-		cur := map[string]*string{"questie": &next.Questie, "everythingquests": &next.EverythingQuests, "cmangos": &next.CMangos, "polestar": &next.Polestar, "rxp": &next.RXP}[name]
+		cur := map[string]*string{"questie": &next.Questie, "everythingquests": &next.EverythingQuests, "cmangos": &next.CMangos, "polestar": &next.Polestar, "rxp": &next.RXP, "aegis": &next.Aegis}[name]
 		if h != *cur {
 			rep.Sources = append(rep.Sources, fmt.Sprintf("%s %s → %s", name, short(*cur), short(h)))
 			*cur = h

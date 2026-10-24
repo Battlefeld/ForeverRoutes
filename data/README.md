@@ -54,6 +54,11 @@ QuestieDB, EverythingQuests und cmangos werden beim Bau in den festgeschriebenen
   Gegenstand, den nichts droppt und kein Guide suchen lässt, Geber und Abnehmer verschieden) gelten als vom Geber
   übergeben; die Quest trägt dann den Vermerk „item assumed handed over by the giver“. RestedXPs Stand steht in
   `data/sources/lock.json` (`rxp`), Polestars im selben Commit wie forever-db.
+- **AEGIS: Pathfinder (Forever)** (https://github.com/Torchlite-bit/Aegis_Pathfinder_Forever, `data/merged.json`, MIT)
+  — Questdaten, die Spieler mit dem Addon im Spiel sammeln und einschicken: wo eine Quest angenommen und abgegeben wird,
+  die Kartenpunkte des Clients für die Ziele, wo der Zielzähler hochging, die XP der Abgabe. Füllt nur Lücken (Orte von
+  Zielen ohne andere Quelle, Geber- und Abgabeorte, fehlende XP); wo es sich mit den Clientdaten überschneidet, wird die
+  Übereinstimmung der XP gezählt (`aegis_xp_agrees`, `aegis_xp_differs`). Stand in `data/sources/lock.json` (`aegis`).
 - **cmangos classic-db** (https://github.com/cmangos/classic-db, GPL-3.0) — Classic-Weltdaten: Zielmengen,
   Beutechancen, Spawnpositionen, Respawnzeiten, Lebenspunkte und Schaden der Kreaturen, Flugmeister, Gasthäuser,
   Transporte. Classic, nicht Forever: Forever-Angaben haben Vorrang. Werte aus cmangos stehen unter GPL-3.0; damit
