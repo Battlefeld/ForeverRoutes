@@ -39,11 +39,12 @@ type Drop struct {
 
 // Objective is one requirement of a quest.
 type Objective struct {
-	Kind   string `json:"k"` // kill | item | object
-	ID     int    `json:"id"`
-	Count  int    `json:"n"`
-	Source string `json:"src"`
-	Drops  []Drop `json:"drops,omitempty"`
+	Kind    string `json:"k"` // kill | item | object
+	ID      int    `json:"id"`
+	Count   int    `json:"n"`
+	Source  string `json:"src"`
+	Drops   []Drop `json:"drops,omitempty"`
+	Vendors []int  `json:"vendors,omitempty"` // NPCs that sell the item
 }
 
 // Quest is one quest with everything the route engine needs.
@@ -58,6 +59,7 @@ type Quest struct {
 	Start       []Ref             `json:"start"`
 	End         []Ref             `json:"end"`
 	StartAt     *Point            `json:"startAt,omitempty"`
+	StartDrops  []Drop            `json:"startDrops,omitempty"` // started by an item: where the item drops
 	EndAt       *Point            `json:"endAt,omitempty"`
 	PreAll      []int             `json:"preAll,omitempty"`
 	PreAny      []int             `json:"preAny,omitempty"`

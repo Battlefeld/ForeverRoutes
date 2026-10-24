@@ -252,7 +252,17 @@ func (w *World) Apply(s *State, a Action) error {
 		if err := w.CanAccept(s, q); err != nil {
 			return err
 		}
-		if err := w.move(s, q.StartPos); err != nil {
+		if len(q.StartSources) > 0 {
+			// started by an item: kill or loot at the chosen spawn group until it drops
+			src := nearestSource(q.StartSources, a.At)
+			if src.NPC != nil && mobLevel(src.NPC) > w.Level(s)+w.Opt.MaxMobAbove {
+				return fail("%s is too high level", src.NPC.Name)
+			}
+			if err := w.move(s, src.Site.Center); err != nil {
+				return err
+			}
+			w.kill(s, src.NPC, src.Object, src.Site, 1/src.Chance)
+		} else if err := w.move(s, q.StartPos); err != nil {
 			return err
 		}
 		s.Status[q.Index] = active
@@ -347,6 +357,39 @@ func (w *World) Apply(s *State, a Action) error {
 		return fail("unknown action %q", a.Op)
 	}
 	return nil
+}
+
+// nearestSource is the source whose spawn group is closest to p.
+func nearestSource(src []Source, p dataset.Point) *Source {
+	best, bd := &src[0], math.Inf(1)
+	for i := range src {
+		if d := distance(src[i].Site.Center, p); d < bd {
+			best, bd = &src[i], d
+		}
+	}
+	return best
+}
+
+// startAt is where to take quest q from state s: its giver, or for a quest started by an item the drop site that is
+// quickest to reach and farm.
+func (w *World) startAt(s *State, q *Quest) dataset.Point {
+	if len(q.StartSources) == 0 {
+		return q.StartPos
+	}
+	best, bt := q.StartPos, math.Inf(1)
+	for _, src := range q.StartSources {
+		if src.NPC != nil && mobLevel(src.NPC) > w.Level(s)+w.Opt.MaxMobAbove {
+			continue
+		}
+		per := 4 + src.Site.Spacing*w.Opt.PathFactor/w.Opt.RunSpeed
+		if src.NPC != nil {
+			per = w.mobTime(s, src.NPC, src.Site)
+		}
+		if t := w.TravelTime(s, s.Pos, src.Site.Center) + per/src.Chance; t < bt {
+			best, bt = src.Site.Center, t
+		}
+	}
+	return best
 }
 
 // Step is one replayed action with the character after it.

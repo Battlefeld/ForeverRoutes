@@ -51,7 +51,7 @@ func (w *World) FollowGuide(events []GuideEvent, target int) (*GuideResult, erro
 		}
 		switch e.Op {
 		case "accept":
-			if s.Status[q.Index] != notTaken || w.CanAccept(s, q) != nil || !w.try(s, &acts, Action{Op: "accept", Quest: q.ID, At: q.StartPos}) {
+			if s.Status[q.Index] != notTaken || w.CanAccept(s, q) != nil || !w.try(s, &acts, Action{Op: "accept", Quest: q.ID, At: w.startAt(s, q)}) {
 				res.Skipped["cannot accept"]++
 			}
 		case "complete", "turnin":

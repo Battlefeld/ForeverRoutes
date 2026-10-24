@@ -567,7 +567,11 @@ func (b *builder) objectives(out *dataset.Quest, q obj, cm []any) {
 					b.objWanted[d.Object] = true
 				}
 			}
-			if len(o.Drops) == 0 && out.Unsupported == "" {
+			keep, ok := b.moreItemSources(out, &o)
+			if !keep {
+				continue
+			}
+			if !ok && out.Unsupported == "" {
 				out.Unsupported = fmt.Sprintf("item %d: source unknown (crafted, bought or not in the data)", id)
 			}
 			out.Objectives = append(out.Objectives, o)
@@ -606,11 +610,7 @@ func (b *builder) objectives(out *dataset.Quest, q obj, cm []any) {
 		out.Unsupported = "objectives unknown (Forever quest, not in cmangos)"
 		b.stats["objectives_unknown_forever_quests"]++
 	}
-	for _, r := range out.Start {
-		if r.Kind == "item" && out.Unsupported == "" {
-			out.Unsupported = "started by an item"
-		}
-	}
+	b.startItem(out)
 	if out.Unsupported != "" {
 		b.stats["quests_unsupported"]++
 	}
@@ -867,7 +867,11 @@ func (b *builder) applyWarcraftDB(out *dataset.Quest) {
 					b.objWanted[dr.Object] = true
 				}
 			}
-			if len(d.Drops) == 0 && why == "" {
+			keep, ok := b.moreItemSources(out, &d)
+			if !keep {
+				continue
+			}
+			if !ok && why == "" {
 				why = fmt.Sprintf("item %d: source unknown (Forever item, no drop data)", o.ID)
 			}
 			objs = append(objs, d)
@@ -889,6 +893,114 @@ func (b *builder) applyWarcraftDB(out *dataset.Quest) {
 	if why == "" {
 		b.stats["quests_unsupported"]--
 	}
+}
+
+// startItem resolves a quest that only an item starts: the item's drops (cmangos, else QuestieDB's Classic rates)
+// become where the quest begins. Without drops the quest is unsupported.
+func (b *builder) startItem(out *dataset.Quest) {
+	item := 0
+	for _, r := range out.Start {
+		switch r.Kind {
+		case "npc", "object":
+			return // a giver is enough
+		case "item":
+			if item == 0 {
+				item = r.ID
+			}
+		}
+	}
+	if item == 0 {
+		return
+	}
+	o := dataset.Objective{Kind: "item", ID: item, Count: 1, Drops: append([]dataset.Drop(nil), b.w.dropsByItem[item]...)}
+	sort.Slice(o.Drops, func(a, c int) bool {
+		if o.Drops[a].Chance != o.Drops[c].Chance {
+			return o.Drops[a].Chance > o.Drops[c].Chance
+		}
+		return o.Drops[a].NPC+o.Drops[a].Object < o.Drops[c].NPC+o.Drops[c].Object
+	})
+	if len(o.Drops) == 0 {
+		b.moreItemSources(out, &o)
+	}
+	if len(o.Drops) > 12 {
+		o.Drops = o.Drops[:12]
+	}
+	if len(o.Drops) == 0 {
+		if out.Unsupported == "" {
+			out.Unsupported = "started by an item"
+		}
+		return
+	}
+	for _, d := range o.Drops {
+		if d.NPC > 0 {
+			b.npcWanted[d.NPC] = true
+		} else {
+			b.objWanted[d.Object] = true
+		}
+	}
+	out.StartDrops = o.Drops
+	out.Sources["start"] = "item drops"
+	b.stats["quests_started_by_item_drops"]++
+}
+
+// moreItemSources completes an item objective cmangos has no drops for from QuestieDB's item table: Classic drop rates,
+// vendors that sell it, or quests that give it. An item that one earlier quest gives becomes that quest as a
+// prerequisite and the objective is dropped (keep false). ok tells whether the item can be obtained.
+func (b *builder) moreItemSources(out *dataset.Quest, o *dataset.Objective) (keep, ok bool) {
+	if len(o.Drops) > 0 {
+		return true, true
+	}
+	rec, _ := get(b.merged, "items", strconv.Itoa(o.ID)).(map[string]any)
+	if rec == nil {
+		return true, false
+	}
+	if chances, _ := rec["drop_chance_by_npc"].(map[string]any); len(chances) > 0 {
+		for k, v := range chances {
+			npc, _ := strconv.Atoi(k)
+			c, _ := num(get(obj{"v": v}, "v", "chance"))
+			if npc > 0 && c > 0 {
+				o.Drops = append(o.Drops, dataset.Drop{NPC: npc, Chance: round1(c * 100)})
+				b.npcWanted[npc] = true
+			}
+		}
+		sort.Slice(o.Drops, func(a, c int) bool {
+			if o.Drops[a].Chance != o.Drops[c].Chance {
+				return o.Drops[a].Chance > o.Drops[c].Chance
+			}
+			return o.Drops[a].NPC < o.Drops[c].NPC
+		})
+		if len(o.Drops) > 12 {
+			o.Drops = o.Drops[:12]
+		}
+		if len(o.Drops) > 0 {
+			o.Source += "+questiedb_drops"
+			b.stats["items_drops_from_questiedb"]++
+		}
+	}
+	for _, v := range ints(rec["vendors"]) {
+		o.Vendors = append(o.Vendors, v)
+		b.npcWanted[v] = true
+	}
+	if len(o.Vendors) > 0 {
+		b.stats["items_sold_by_vendors"]++
+	}
+	if len(o.Drops) > 0 || len(o.Vendors) > 0 {
+		return true, true
+	}
+	rewards := ints(rec["quest_rewards"])
+	if len(rewards) == 0 || o.Count > 1 {
+		return true, false
+	}
+	switch {
+	case len(rewards) == 1:
+		out.PreAll = append(out.PreAll, rewards[0])
+	case len(out.PreAny) == 0:
+		out.PreAny = rewards
+	default:
+		return true, false
+	}
+	b.stats["items_from_quest_rewards"]++
+	return false, true
 }
 
 // dock is where a zeppelin or boat is boarded, anchored to an NPC standing there (cmangos positions). At overrides

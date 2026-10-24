@@ -143,12 +143,15 @@ type Drop struct {
 	Source string  `json:"source"`
 }
 
-// Item of the catalog: where it drops.
+// Item of the catalog: where it drops, who sells it, which quests give it.
 type Item struct {
 	ID         int             `json:"id"`
 	Name       any             `json:"name"`
 	NPCs       []int           `json:"npc_sources"`
 	Objects    []int           `json:"object_sources"`
+	Items      []int           `json:"item_sources,omitempty"`  // containers it comes out of
+	Vendors    []int           `json:"vendors,omitempty"`       // NPCs that sell it
+	Rewards    []int           `json:"quest_rewards,omitempty"` // quests that give it
 	ChanceByID map[string]Drop `json:"drop_chance_by_npc"`
 	DropSource string          `json:"drop_source"`
 }
@@ -349,10 +352,14 @@ func Build(raw map[string]string, revision string, opt Options) (*Catalog, error
 		}
 		c.Quests[id] = q
 	}
+	vendors := map[int]bool{}
+	for _, row := range rows["items"] {
+		add(vendors, lua.IDs(lua.At(row, 13)))
+	}
 	for id, row := range rows["npc_positions"] {
 		lo, ok1 := lua.At(row, 3).(int)
 		hi, ok2 := lua.At(row, 4).(int)
-		if !ok1 || !ok2 || (lo > opt.MaxMobLevel && !wantNPC[id]) {
+		if !ok1 || !ok2 || (lo > opt.MaxMobLevel && !wantNPC[id] && !vendors[id]) {
 			continue
 		}
 		n := &NPC{ID: id, Name: lua.At(row, 0), MinLevel: lo, MaxLevel: hi, Rank: lua.At(row, 5), HPSource: "unknown",
@@ -367,12 +374,10 @@ func Build(raw map[string]string, revision string, opt Options) (*Catalog, error
 		n.Grind = lo <= opt.MaxMobLevel && n.Rank == 0 && n.Friendly == nil && len(n.Spawns) > 0 && n.HPMin != nil
 		c.NPCs[id] = n
 	}
-	for id := range wantItem {
-		row, ok := rows["items"][id]
-		if !ok {
-			continue
-		}
+	// every item, not only those QuestieDB's own quests name: the build also resolves items from cmangos and WarcraftDB
+	for id, row := range rows["items"] {
 		it := &Item{ID: id, Name: lua.At(row, 0), NPCs: ids(lua.At(row, 1)), Objects: ids(lua.At(row, 2)),
+			Items: lua.IDs(lua.At(row, 3)), Rewards: lua.IDs(lua.At(row, 5)), Vendors: lua.IDs(lua.At(row, 13)),
 			ChanceByID: map[string]Drop{}, DropSource: "questiedb_classic_wowhead"}
 		npcs := make([]int, 0, len(rates[id]))
 		for npc := range rates[id] {
@@ -382,8 +387,11 @@ func Build(raw map[string]string, revision string, opt Options) (*Catalog, error
 		for _, npc := range npcs {
 			it.ChanceByID[strconv.Itoa(npc)] = Drop{Chance: rates[id][npc], Source: "classic_wowhead_sample"}
 		}
-		add(wantNPC, it.NPCs)
-		add(wantObj, it.Objects)
+		if wantItem[id] {
+			add(wantNPC, it.NPCs)
+			add(wantObj, it.Objects)
+		}
+		add(vendors, it.Vendors)
 		c.Items[id] = it
 	}
 	for id := range wantObj {

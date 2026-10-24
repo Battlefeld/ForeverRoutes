@@ -36,13 +36,14 @@ type Objective struct {
 // Quest is a quest this character can do, with resolved positions.
 type Quest struct {
 	*dataset.Quest
-	Index      int
-	StartPos   dataset.Point
-	EndPos     dataset.Point
-	StartNPC   int
-	EndNPC     int
-	Objectives []Objective
-	Unlocks    []int // quests that need this one
+	Index        int
+	StartPos     dataset.Point
+	EndPos       dataset.Point
+	StartNPC     int
+	EndNPC       int
+	Objectives   []Objective
+	Unlocks      []int    // quests that need this one
+	StartSources []Source // for a quest started by an item: where the item drops
 }
 
 // Farm is a place to grind.
@@ -220,7 +221,14 @@ func (w *World) resolve(q *dataset.Quest) (*Quest, string) {
 	rq := &Quest{Quest: q}
 	var ok bool
 	if rq.StartPos, rq.StartNPC, ok = w.refPos(q.Start, q.StartAt); !ok {
-		return nil, "start position unknown"
+		// started by an item: the quest begins where the item drops
+		if len(q.StartDrops) == 0 {
+			return nil, "start position unknown"
+		}
+		if rq.StartSources = usable(w.dropSources(q.StartDrops)); len(rq.StartSources) == 0 {
+			return nil, "start item: no reachable non-elite source"
+		}
+		rq.StartPos = rq.StartSources[0].Site.Center
 	}
 	if rq.EndPos, rq.EndNPC, ok = w.refPos(q.End, q.EndAt); !ok {
 		return nil, "turn-in position unknown"
@@ -248,38 +256,55 @@ func (w *World) resolve(q *dataset.Quest) (*Quest, string) {
 				}
 			}
 		case "item":
-			for _, d := range o.Drops {
-				if d.NPC > 0 {
-					if n := w.NPC[d.NPC]; n != nil && len(n.Spawns) > 0 {
-						for _, st := range w.sites(n.Spawns) {
-							ro.Sources = append(ro.Sources, Source{NPC: n, Chance: math.Min(1, d.Chance/100), Site: st})
-						}
-					}
-				} else if ob := w.Objects[d.Object]; ob != nil && len(ob.Spawns) > 0 {
-					for _, st := range w.sites(ob.Spawns) {
-						ro.Sources = append(ro.Sources, Source{Object: d.Object, Chance: math.Min(1, d.Chance/100), Site: st})
-					}
+			// bought from a vendor: walk there and buy, like talking to an NPC
+			for _, v := range o.Vendors {
+				if n := w.NPC[v]; n != nil && len(n.Spawns) > 0 && w.friendly(n) {
+					ro.Sources = append(ro.Sources, Source{NPC: n, Chance: 1, Site: Site{Center: nearest(n.Spawns, w.Start), Spawns: 1}, Talk: true})
 				}
 			}
+			ro.Sources = append(ro.Sources, w.dropSources(o.Drops)...)
 		}
-		// keep usable sources: this continent, not elite, not friendly
-		kept := ro.Sources[:0]
-		for _, s := range ro.Sources {
-			if s.Site.Spawns == 0 || s.Chance <= 0 {
-				continue
-			}
-			if !s.Talk && s.NPC != nil && (s.NPC.Rank == 1 || s.NPC.Rank == 2 || s.NPC.Rank == 3) {
-				continue
-			}
-			kept = append(kept, s)
-		}
-		ro.Sources = kept
+		ro.Sources = usable(ro.Sources)
 		if len(ro.Sources) == 0 {
 			return nil, fmt.Sprintf("objective %s %d: no reachable non-elite source", o.Kind, o.ID)
 		}
 		rq.Objectives = append(rq.Objectives, ro)
 	}
 	return rq, ""
+}
+
+// dropSources are the spawn groups of the creatures and objects an item drops from.
+func (w *World) dropSources(drops []dataset.Drop) []Source {
+	var out []Source
+	for _, d := range drops {
+		if d.NPC > 0 {
+			if n := w.NPC[d.NPC]; n != nil && len(n.Spawns) > 0 {
+				for _, st := range w.sites(n.Spawns) {
+					out = append(out, Source{NPC: n, Chance: math.Min(1, d.Chance/100), Site: st})
+				}
+			}
+		} else if ob := w.Objects[d.Object]; ob != nil && len(ob.Spawns) > 0 {
+			for _, st := range w.sites(ob.Spawns) {
+				out = append(out, Source{Object: d.Object, Chance: math.Min(1, d.Chance/100), Site: st})
+			}
+		}
+	}
+	return out
+}
+
+// usable keeps the sources a solo character can use: placed, with a chance, not elite.
+func usable(src []Source) []Source {
+	var kept []Source
+	for _, s := range src {
+		if s.Site.Spawns == 0 || s.Chance <= 0 {
+			continue
+		}
+		if !s.Talk && s.NPC != nil && (s.NPC.Rank == 1 || s.NPC.Rank == 2 || s.NPC.Rank == 3) {
+			continue
+		}
+		kept = append(kept, s)
+	}
+	return kept
 }
 
 // maxSites is how many spawn groups of one creature or object a route may choose from.

@@ -316,14 +316,14 @@ func (w *World) questMacro(s0 *State, q *Quest) *macro {
 	var acts []Action
 	group := []*Quest{q}
 	if s.Status[q.Index] == notTaken {
-		if !w.try(s, &acts, Action{Op: "accept", Quest: q.ID, At: q.StartPos}) {
+		if !w.try(s, &acts, Action{Op: "accept", Quest: q.ID, At: w.startAt(s, q)}) {
 			return nil
 		}
 		for _, o := range w.Quests {
 			if o == q || s.Status[o.Index] != notTaken || distance(o.StartPos, q.StartPos) > 30 || !sharesSource(o, q) {
 				continue
 			}
-			if w.try(s, &acts, Action{Op: "accept", Quest: o.ID, At: o.StartPos}) {
+			if w.try(s, &acts, Action{Op: "accept", Quest: o.ID, At: w.startAt(s, o)}) {
 				group = append(group, o)
 			}
 		}
@@ -383,7 +383,7 @@ func (w *World) hubMacro(s0 *State, h hub) *macro {
 	s := s0.clone()
 	var acts []Action
 	for _, q := range h.quests {
-		w.try(s, &acts, Action{Op: "accept", Quest: q.ID, At: q.StartPos})
+		w.try(s, &acts, Action{Op: "accept", Quest: q.ID, At: w.startAt(s, q)})
 	}
 	if len(acts) == 0 {
 		return nil

@@ -36,6 +36,8 @@ func tiny() *dataset.Dataset {
 				End: []dataset.Ref{{Kind: "npc", ID: StartNPC["Orc"]}}},
 			{ID: 4, Name: "Alliance only", Level: 1, MinLevel: 1, XP: 300, Races: RaceBits["Human"], Start: []dataset.Ref{{Kind: "npc", ID: StartNPC["Orc"]}},
 				End: []dataset.Ref{{Kind: "npc", ID: StartNPC["Orc"]}}},
+			{ID: 6, Name: "Found a tusk", Level: 2, MinLevel: 1, XP: 200, Start: []dataset.Ref{{Kind: "item", ID: 9}},
+				StartDrops: []dataset.Drop{{NPC: 100, Chance: 25}}, End: []dataset.Ref{{Kind: "npc", ID: StartNPC["Orc"]}}},
 			{ID: 5, Name: "Elite", Level: 2, MinLevel: 1, XP: 900, Start: []dataset.Ref{{Kind: "npc", ID: StartNPC["Orc"]}},
 				End: []dataset.Ref{{Kind: "npc", ID: StartNPC["Orc"]}}, Objectives: []dataset.Objective{{Kind: "kill", ID: 200, Count: 1}}},
 		},
@@ -237,4 +239,24 @@ func TestDefaultProfile(t *testing.T) {
 
 func (p DefaultProfile) hpAtForTest(l int) float64 {
 	return typical(p.EvenHP, l, 30+12*float64(l)+0.7*float64(l*l))
+}
+
+func TestQuestStartedByAnItem(t *testing.T) {
+	w := tinyWorld(t)
+	q := w.ByID[6]
+	if q == nil || len(q.StartSources) != 2 {
+		t.Fatalf("item-started quest: %v %s", q, w.Excluded[6])
+	}
+	s := w.NewState()
+	at := w.startAt(s, q)
+	if at.X > 0 {
+		t.Errorf("the closer (west) boars should be chosen, got %+v", at)
+	}
+	xp0 := s.XP
+	if err := w.Apply(s, Action{Op: "accept", Quest: 6, At: at}); err != nil {
+		t.Fatal(err)
+	}
+	if s.Status[q.Index] != active || s.XP <= xp0 || s.Combat <= 0 {
+		t.Errorf("accepting should kill about 4 boars first: status %d, xp %d, combat %v", s.Status[q.Index], s.XP, s.Combat)
+	}
 }

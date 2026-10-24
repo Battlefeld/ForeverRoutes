@@ -18,9 +18,10 @@ ForeverCore.exe gebaut (Paket `route`); dort liefert später MythicSim (ForeverS
   reines Grinden landen bis Level 21 im Modell fast gleichauf. Darum grinden die Routen heute zu viel. Echte Zahlen kommen
   über ForeverCore aus MythicSim (`KillProfile`); mit `guide` lassen sich Guides unter denselben Regeln nachgehen und so
   das Modell prüfen.
-- Bekannte Datenlücken (siehe `foreverroutes audit`): 91 Quests brauchen Forever-eigene Gegenstände, deren Beutequelle
-  keine Quelle kennt; 82 brauchen hergestellte oder gekaufte Gegenstände; 44 werden über einen Gegenstand gestartet;
-  Ruf-, Gebiets- und Zauberziele sind noch nicht modelliert. Diese Quests bleiben markiert und werden nicht geraten.
+- Bekannte Datenlücken (siehe `foreverroutes audit`): rund 90 Quests brauchen Forever-eigene Gegenstände, deren
+  Beutequelle keine Quelle kennt; rund 60 brauchen hergestellte Gegenstände oder solche ohne bekannte Quelle; 13 werden
+  über einen Gegenstand ohne bekannte Beutequelle gestartet; Ruf-, Gebiets- und Zauberziele sind noch nicht modelliert.
+  Diese Quests bleiben markiert und werden nicht geraten.
 
 ## Befehle
 
@@ -80,6 +81,9 @@ entsteht.
 - Positionen in Weltyards je Kontinent. Forever-Positionen (Kartenprozent) werden je Karte über NPCs umgerechnet, die in
   beiden Systemen bekannt sind (mittlerer Fehler ~1 Yard). Fehlt Forever eine Position, gilt cmangos.
 - Ziele werden an den dichtesten Spawn-Gruppen erledigt (bis zu 4 je Kreatur); die Route nimmt die schnellste.
+  Gegenstände kommen aus Beute (cmangos, sonst Classic-Dropraten aus QuestieDB), vom Händler (hinlaufen und kaufen)
+  oder als Belohnung einer anderen Quest (die wird dann Voraussetzung). Quests, die ein Gegenstand startet, beginnen
+  dort, wo er droppt.
   Kills zählen für alle Quests im Log, Respawns werden abgewartet, geleerte Gruppen erholen sich über die Respawnzeit.
 - Reisen: Laufen (7 Yards/s, Wegfaktor 1,2), Flugmeister ab Entdeckung (im Vorbeigehen innerhalb 60 Yards), Zeppeline und
   Schiffe mit Zeiten aus der cmangos-Transporttabelle, Ruhestein (10 s, 1 h Abklingzeit, gebunden am letzten Gasthaus).
