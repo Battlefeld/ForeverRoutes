@@ -7,13 +7,14 @@
 
 Routenplaner für WoW Forever, Level 1–30: welche Quests annehmen, wo was töten, wann abgeben und wann Grinden schneller
 ist. Go-Modul ohne Fremdabhängigkeiten. Der Planer läuft offline als Kommandozeilenwerkzeug und ist als Bibliothek für
-ForeverCore.exe gebaut (Paket `route`); dort liefert später MythicSim (ForeverSim) die echten Kampfzeiten.
+ForeverCore.exe gebaut (Paket `route`). Die Kampfzeiten kommen aus MythicSim (ForeverSim) über ForeverCores Auftrag
+`kill-profile` (siehe „Kampfprofil“).
 
 ## Stand
 
 - Datensatz mit 1758 Quests, 2366 NPCs, 348 Objekten, 59 Flugmeistern, 45 Gasthäusern, Zeppelinen und Schiffen.
 - Orc Hexer und Mensch Magier sind die Ausgangstests: Beide erreichen Level 30 mit vollständigen, nachgeprüften Routen.
-- **Die Stundenangaben sind nicht kalibriert.** Das eingebaute Kampfmodell (`DefaultProfile`) ist eine Schätzung. Es
+- **Die Stundenangaben sind nicht kalibriert.** Ohne `-profile` gilt das eingebaute Kampfmodell (`DefaultProfile`), eine Schätzung. Es
   bewertet Grinden im Vergleich zu Quests etwa doppelt so gut wie die Wirklichkeit: Ein Guide-Ablauf (RestedXP) und
   reines Grinden landen bis Level 21 im Modell fast gleichauf. Darum grinden die Routen heute zu viel. Echte Zahlen kommen
   über ForeverCore aus MythicSim (`KillProfile`); mit `guide` lassen sich Guides unter denselben Regeln nachgehen und so
@@ -32,6 +33,7 @@ go test -short ./...               # ohne die langen Planungsläufe
 
 go run ./cmd/foreverroutes plan -race Orc -class Warlock -out orc.json
 go run ./cmd/foreverroutes plan -race Human -class Mage -target 30 -restarts 4 -out human.json
+go run ./cmd/foreverroutes plan -race Orc -class Warlock -profile data/profiles/warlock-orc.json   # Kampfzeiten aus MythicSim
 go run ./cmd/foreverroutes replay -race Orc -class Warlock -route orc.json
 go run ./cmd/foreverroutes guide -race Orc -class Warlock -events guide.json   # Guide unter denselben Regeln
 go run ./cmd/foreverroutes audit                                              # was der Datensatz kennt und was fehlt
@@ -39,6 +41,24 @@ go run ./cmd/foreverroutes audit                                              # 
 
 `guide` liest eine Liste von Schritten `[{"op":"accept","quest":4641},{"op":"complete","quest":4641},
 {"op":"turnin","quest":4641},{"op":"level","level":6}]`. Guide-Dateien werden nicht eingecheckt (Lizenzen der Guides).
+
+### Kampfprofil
+
+`-profile` (bei `plan`, `replay` und `guide`) nimmt die Kampfzeiten aus einem Profil, das ForeverCore mit MythicSim und
+dem Level-Overlay rechnet (`kill-profile`, Schema `foreverroutes.killprofile.v1`). In `data/profiles` liegen die
+Profile der Ausgangstests: Orc Hexer (Gebrechen, Leerwandler) und Mensch Magier (Feuer), Level 10–30.
+
+- **Kampf:** Für jedes Level stehen Schaden, Manaverbrauch und selbst verbrauchte Gesundheit nach 6, 10, 15, 22 und
+  30 Sekunden gegen ein gleich hohes Ziel und gegen eines zwei Level darüber. Der Kampf dauert, bis der Schaden die
+  Lebenspunkte des Gegners erreicht. Zwischen den beiden Zielen wird nach dem Level des Gegners interpoliert.
+- **Pause:** Essen und Trinken holen zurück, was der Kampf gekostet hat, zu den Raten des Händleressens und -wassers des
+  Levels (z. B. ab 15: 243 Leben und 437 Mana in 21 s). Der erlittene Schaden ist der Durchschnittstreffer des Gegners
+  aus cmangos, ein Schlag alle 2 s. Gezählt wird er für die Zeit, in der der Gegner den Charakter erreicht: beim Hexer
+  mit Leerwandler ein Viertel des Kampfs, sonst der Kampf ohne die ersten 3 s Anlauf. Dazu kommen 4 s für Plündern und
+  den nächsten Pull.
+- **Grenzen:** Die Profile gelten für einen Charakter ohne Ausrüstung und Talente; echte Charaktere sind schneller.
+  Unter Level 10 rechnet die Engine nicht, dort gilt weiter `DefaultProfile`. Rüstung und Ausweichen des Charakters
+  sind nicht berücksichtigt. Die Annahmen zu erlittenem Schaden prüft erst die Aufzeichnung im Spiel.
 
 ### Daten aktuell halten
 

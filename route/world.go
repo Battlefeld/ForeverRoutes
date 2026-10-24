@@ -93,6 +93,10 @@ func NewWorld(d *dataset.Dataset, c Character, opt Options) (*World, error) {
 		dp.EvenDmg = medianByLevel(d, func(n *dataset.NPC) float64 { return n.Dmg })
 		w.Opt.Profile = dp
 	}
+	if tp, ok := w.Opt.Profile.(*TableProfile); ok && tp.Fallback.EvenHP == nil {
+		tp.Fallback.EvenHP = medianByLevel(d, func(n *dataset.NPC) float64 { return float64(n.HP) })
+		tp.Fallback.EvenDmg = medianByLevel(d, func(n *dataset.NPC) float64 { return n.Dmg })
+	}
 	startNPC := w.NPC[StartNPC[c.Race]]
 	if startNPC == nil || len(startNPC.Spawns) == 0 {
 		return nil, fmt.Errorf("start position of %s not in the dataset", c.Race)
