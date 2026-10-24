@@ -57,7 +57,8 @@ QuestieDB, EverythingQuests und cmangos werden beim Bau in den festgeschriebenen
 - **Shortest Path Forever** (https://github.com/cjber/shortest-path-forever, GPL-3.0-or-later) von Cillian Berragan —
   Reisedaten: Flugzeiten zwischen benachbarten Flugpunkten (zu 93 % im Spiel gemessen, aus InFlight, MIT), Fahrpläne
   der Schiffe und Zeppeline (Fahrzeit plus im Mittel eine halbe Runde Warten), Portale; die Deeprun-Tram ist
-  geschätzt (106 s). Dazu `walks.json.gz`: Laufkosten zwischen benachbarten 200-Yard-Zellen, gemessen mit dem eigenen
+  geschätzt (106 s); die Aufzüge von Thunder Bluff und Undercity (Fahrt plus mittleres Warten) als Zuschlag für jeden
+  Weg auf die Hochebene oder in die Stadt hinein oder heraus (`travel.lifts`). Dazu `walks.json.gz`: Laufkosten zwischen benachbarten 200-Yard-Zellen, gemessen mit dem eigenen
   Wegsucher von Shortest Path Forever auf seinen selbst aus dem Client gebauten Navigationskarten
   (`tools/walkgrid/README.md`). Stand in `data/sources/lock.json` (`spf`).
 - **EG Link output von Efficient Games** (https://github.com/JIVESCORP/eg-link-output-wowf, CC BY 4.0) — „Data from

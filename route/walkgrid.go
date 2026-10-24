@@ -15,11 +15,11 @@ import (
 // straight line times PathFactor as before.
 
 const (
-	walkReach = 1e9 // a search from one cell covers the whole map
-	walkShort = 250.0  // below this a walk is a straight line times PathFactor
-	walkSnap  = 2      // cells searched around a point outside the walkable cells
-	walkMax   = 6.0    // a walk is never priced above this many times its straight line
-	navFactor = 1.05   // players run a little longer than the finder's path (the chained cells are within 2 % of it)
+	walkReach = 1e9   // a search from one cell covers the whole map
+	walkShort = 250.0 // below this a walk is a straight line times PathFactor
+	walkSnap  = 2     // cells searched around a point outside the walkable cells
+	walkMax   = 6.0   // a walk is never priced above this many times its straight line
+	navFactor = 1.05  // players run a little longer than the finder's path (the chained cells are within 2 % of it)
 )
 
 type walkGrid struct {

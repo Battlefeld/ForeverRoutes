@@ -98,6 +98,26 @@ func (w *World) reachableMaps() map[int]bool {
 }
 
 func (w *World) walk(a, b dataset.Point) float64 {
+	return w.walkFlat(a, b) + w.lift(a, b)
+}
+
+// lift is the lift time of a walk into or out of a place only lifts reach.
+func (w *World) lift(a, b dataset.Point) float64 {
+	t := 0.0
+	for _, l := range w.lifts {
+		if a.Map != l.At.Map && b.Map != l.At.Map {
+			continue
+		}
+		inA := a.Map == l.At.Map && math.Hypot(a.X-l.At.X, a.Y-l.At.Y) <= l.Radius
+		inB := b.Map == l.At.Map && math.Hypot(b.X-l.At.X, b.Y-l.At.Y) <= l.Radius
+		if inA != inB {
+			t += l.Seconds
+		}
+	}
+	return t
+}
+
+func (w *World) walkFlat(a, b dataset.Point) float64 {
 	d := distance(a, b)
 	if d > walkShort && !math.IsInf(d, 1) {
 		if g := w.walkGrids[a.Map]; g != nil {

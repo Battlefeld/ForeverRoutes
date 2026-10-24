@@ -157,6 +157,7 @@ func (b *builder) spfTravel(t *dataset.Travel) {
 		t.Docks = append(t.Docks, dataset.Node{NPC: a, Name: p.Name, Faction: fac, At: from}, dataset.Node{NPC: c, Name: p.Name + " (arrival)", Faction: fac, At: to})
 		link(dataset.Link{From: a, To: c, Seconds: p.Seconds, Name: p.Name})
 	}
+	b.spfLifts(t)
 	if len(tram) == 2 {
 		t.Docks = append(t.Docks, tram...)
 		link(dataset.Link{From: tram[0].NPC, To: tram[1].NPC, Seconds: tramSeconds, Name: "Deeprun Tram"})
@@ -165,6 +166,34 @@ func (b *builder) spfTravel(t *dataset.Travel) {
 }
 
 var flightTitles = map[string]bool{"flight master": true, "gryphon master": true, "wind rider master": true, "hippogryph master": true, "bat handler": true}
+
+// liftAreas: the places only lifts reach, by the prefix of the lift sites, with their reach around the lifts' middle
+// (Thunder Bluff's mesas, Undercity below the ruins).
+var liftAreas = []struct {
+	prefix string
+	radius float64
+}{{"Thunder Bluff", 320}, {"Undercity", 220}}
+
+func (b *builder) spfLifts(t *dataset.Travel) {
+	for _, a := range liftAreas {
+		var x, y, secs float64
+		n, m := 0, 0
+		for _, l := range b.spf.Lifts {
+			if !strings.HasPrefix(l.Site, a.prefix) || l.Cars == 0 {
+				continue
+			}
+			x, y, m = x+l.At.X, y+l.At.Y, l.At.Map
+			secs += l.Ride + l.Period/float64(2*l.Cars)
+			n++
+		}
+		if n == 0 {
+			continue
+		}
+		t.Lifts = append(t.Lifts, dataset.Lift{Name: a.prefix, At: dataset.Point{Map: m, X: round1(x / float64(n)), Y: round1(y / float64(n))},
+			Radius: a.radius, Seconds: math.Round(secs / float64(n))})
+	}
+	b.stats["lift_areas_from_spf"] = len(t.Lifts)
+}
 
 // flightMasterAt is the flight master forever-db places at a point, 0 if none.
 func (b *builder) flightMasterAt(at dataset.Point) int {

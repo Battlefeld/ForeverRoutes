@@ -8,7 +8,9 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
 	"sort"
+	"strconv"
 	"strings"
 
 	"github.com/Battlefeld/ForeverRoutes/internal/lua"
@@ -61,6 +63,16 @@ type Portal struct {
 	Seconds  float64
 }
 
+// Lift is a lift's site: its stops (where it runs, top and bottom alike in x and y), the ride and the loop of each
+// car, and how many cars run there.
+type Lift struct {
+	Site   string
+	At     Point
+	Ride   float64 // seconds from leaving one end to reaching the other
+	Period float64 // seconds per loop of one car
+	Cars   int
+}
+
 // Data is the travel data.
 type Data struct {
 	Revision string
@@ -69,6 +81,7 @@ type Data struct {
 	Docks    map[int]Point // dock -> where passengers board (the dry boarding surface when known)
 	Routes   []Route
 	Portals  []Portal
+	Lifts    []Lift
 }
 
 // Load reads dir (the repository's Data folder).
@@ -141,6 +154,9 @@ func Load(dir, revision string) (*Data, error) {
 		}
 		d.Portals = append(d.Portals, Portal{Name: str(t["name"]), Kind: str(t["kind"]), Faction: str(t["faction"]),
 			From: point(from), To: point(to), Seconds: num(t["seconds"])})
+	}
+	if err := d.readLifts(filepath.Join(dir, "Transports.lua")); err != nil {
+		return nil, err
 	}
 	if len(d.Nodes) == 0 || len(d.Paths) == 0 {
 		return nil, fmt.Errorf("spf: no flight data in %s", dir)
@@ -282,4 +298,65 @@ func num(v any) float64 {
 func str(v any) string {
 	s, _ := v.(string)
 	return s
+}
+
+var (
+	liftDock  = regexp.MustCompile(`(?s)ns\.Docks\[(\d+)\] = (\{.*?\n?\})\n`)
+	liftRoute = regexp.MustCompile(`(?s)ns\.Routes\[(\d+)\] = (\{.*?\n\})\n`)
+)
+
+// readLifts reads the lifts of Transports.lua (single ns.Docks[...] and ns.Routes[...] assignments).
+func (d *Data) readLifts(path string) error {
+	b, err := os.ReadFile(path)
+	if err != nil {
+		return err
+	}
+	src := stripComments(string(b))
+	docks := map[int]Point{}
+	for _, m := range liftDock.FindAllStringSubmatch(src, -1) {
+		id, _ := strconv.Atoi(m[1])
+		v, err := lua.Parse(m[2])
+		if err != nil {
+			return fmt.Errorf("spf: Transports.lua dock %d: %w", id, err)
+		}
+		if t, ok := v.(lua.Table); ok {
+			docks[id] = point(t)
+		}
+	}
+	bySite := map[string]*Lift{}
+	var order []string
+	for _, m := range liftRoute.FindAllStringSubmatch(src, -1) {
+		end, err := matching(m[2], 0)
+		if err != nil {
+			continue
+		}
+		v, err := lua.Parse(m[2][:end])
+		if err != nil {
+			return fmt.Errorf("spf: Transports.lua route %s: %w", m[1], err)
+		}
+		t, _ := v.(lua.Table)
+		if t == nil || str(t["kind"]) != "lift" {
+			continue
+		}
+		stops := list(t["stops"])
+		if len(stops) != 2 {
+			continue
+		}
+		a, _ := stops[0].(lua.Table)
+		c, _ := stops[1].(lua.Table)
+		dock, _ := lua.Int(a["dock"])
+		site := str(t["site"])
+		l := bySite[site]
+		if l == nil {
+			l = &Lift{Site: site, At: docks[dock], Ride: (num(c["arrive"]) - num(a["depart"])) / 1000, Period: num(t["period"]) / 1000}
+			bySite[site] = l
+			order = append(order, site)
+		}
+		l.Cars++
+	}
+	sort.Strings(order)
+	for _, s := range order {
+		d.Lifts = append(d.Lifts, *bySite[s])
+	}
+	return nil
 }

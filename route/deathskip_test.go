@@ -72,3 +72,19 @@ func TestFilterFits(t *testing.T) {
 		}
 	}
 }
+
+func TestLift(t *testing.T) {
+	d := &dataset.Dataset{}
+	d.Travel.Lifts = []dataset.Lift{{Name: "Mesa", At: dataset.Point{Map: 1, X: 0, Y: 0}, Radius: 300, Seconds: 18}}
+	w := &World{Data: d, Opt: Options{}.withDefaults(), lifts: d.Travel.Lifts}
+	top, top2, ground := dataset.Point{Map: 1, X: 100, Y: 0}, dataset.Point{Map: 1, X: -100, Y: 50}, dataset.Point{Map: 1, X: 600, Y: 0}
+	if got := w.walk(top, ground) - w.walkFlat(top, ground); got != 18 {
+		t.Fatalf("down the lift: +%.1f s", got)
+	}
+	if got := w.walk(top, top2) - w.walkFlat(top, top2); got != 0 {
+		t.Fatalf("on the mesa: +%.1f s", got)
+	}
+	if got := w.walk(ground, dataset.Point{Map: 0, X: 0, Y: 0}); !math.IsInf(got, 1) {
+		t.Fatalf("other map: %.1f", got)
+	}
+}

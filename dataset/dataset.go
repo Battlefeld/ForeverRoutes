@@ -135,8 +135,18 @@ type Travel struct {
 	Graveyards []Node `json:"graveyards,omitempty"`
 	// Deaths says which graveyard the server gives a character who dies in a cell of the map.
 	Deaths *DeathGrid `json:"deaths,omitempty"`
+	// Lifts are places reached only by a lift (Thunder Bluff's mesa, Undercity): a walk in or out pays Seconds.
+	Lifts []Lift `json:"lifts,omitempty"`
 	// Deathskips are deathskips leveling guides use: where to die and the graveyard it gives.
 	Deathskips []Deathskip `json:"deathskips,omitempty"`
+}
+
+// Lift is an area only lifts reach: within Radius of At, and the time a lift takes (the ride and the average wait).
+type Lift struct {
+	Name    string  `json:"name"`
+	At      Point   `json:"at"`
+	Radius  float64 `json:"radius"`
+	Seconds float64 `json:"seconds"`
 }
 
 // Deathskip is a known place to die: At, the graveyard it gives (index in Graveyards), and who the guide uses it for
