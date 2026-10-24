@@ -589,13 +589,23 @@ func (b *builder) objectives(out *dataset.Quest, q obj, cm []any) {
 	for _, raw := range list {
 		o, _ := raw.(map[string]any)
 		kind, _ := o["kind"].(string)
-		k := map[string]string{"npc": "kill", "item": "item", "object": "object"}[kind]
+		k := map[string]string{"npc": "kill", "item": "item", "object": "object", "talk": "talk"}[kind]
 		for _, id := range ints(o["ids"]) {
 			if known[k+":"+strconv.Itoa(id)] {
 				continue
 			}
-			if n, ok := num(o["required_count"]); ok && n > 0 {
-				out.Objectives = append(out.Objectives, dataset.Objective{Kind: k, ID: id, Count: int(n), Source: "merged"})
+			if n, ok := num(o["required_count"]); ok && n > 0 && k != "" {
+				obj := dataset.Objective{Kind: k, ID: id, Count: int(n), Source: "merged"}
+				switch k {
+				case "kill", "talk":
+					b.npcWanted[id] = true
+				case "object":
+					b.objWanted[id] = true
+				case "item":
+					obj.Drops = b.w.dropsByItem[id]
+					b.moreItemSources(out, &obj)
+				}
+				out.Objectives = append(out.Objectives, obj)
 				continue
 			}
 			if out.Unsupported == "" {

@@ -6,7 +6,8 @@
 | `sources/lock.json` | festgeschriebene Stände: QuestieDB-, EverythingQuests- und cmangos-Commit, ForeverDB-Build und Prüfsumme |
 | `sources/foreverdb-snapshot.json.gz` | ForeverDB-Questliste Level 1–30 mit Spielmetadaten (Data from ForeverDB.net) |
 | `sources/warcraftdb-forever.json` | Questangaben von WarcraftDB Forever, die den anderen Quellen fehlen |
-| `sources/manual-facts.json` | einzeln belegte Werte (XP, Level, wiederholbar) von WarcraftDB, OctoWow, ClassicDB, Wowhead und Beobachtungen aus ForeverDB, jeweils mit Link; übernommen aus dem früheren Werkzeug |
+| `sources/manual-facts.json` | einzeln belegte Werte (XP, Level, wiederholbar, Questziele mit Mengen) von WarcraftDB, OctoWow, ClassicDB, Wowhead Forever und Beobachtungen aus ForeverDB, jeweils mit Link; übernommen aus dem früheren Python-Werkzeug und dem früheren Addon ForeverQuests |
+| `archive/dungeon-journal/` | Dungeon-Daten des früheren Addons ForeverQuests (Bosse, Beute, Dungeonquests) mit Quellenliste; vom Planer noch nicht gelesen |
 
 QuestieDB, EverythingQuests und cmangos werden beim Bau in den festgeschriebenen Commits geladen und nicht eingecheckt.
 

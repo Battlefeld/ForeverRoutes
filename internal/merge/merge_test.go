@@ -98,3 +98,23 @@ func TestFactsNeedASource(t *testing.T) {
 		t.Error("a fact from an unknown source must be refused")
 	}
 }
+
+func TestObjectivesFact(t *testing.T) {
+	in := inputs(t)
+	in.Facts.Quests["3"] = map[string]*Fact{"objectives": {Value: []any{
+		map[string]any{"kind": "talk", "ids": []any{252476}, "required_count": 1},
+		map[string]any{"kind": "npc", "ids": []any{10721}, "required_count": 3},
+	}, Source: "wowhead_forever", Quality: "forever_reference", URL: "https://www.wowhead.com/forever/quest=3"}}
+	d, err := Merge(in)
+	if err != nil {
+		t.Fatal(err)
+	}
+	o := d.Quests["3"].Objectives
+	if len(o) != 2 || o[0].Kind != "talk" || *o[1].RequiredCount != 3 || d.Quests["3"].Fields["objectives"] != nil {
+		t.Errorf("objectives %+v", o)
+	}
+	in.Facts.Quests["3"]["objectives"].Value = []any{map[string]any{"kind": "npc", "ids": []any{}, "required_count": 1}}
+	if _, err := Merge(in); err == nil {
+		t.Error("an objective without a target must be refused")
+	}
+}

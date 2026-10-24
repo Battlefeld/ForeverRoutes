@@ -516,6 +516,37 @@ var factSources = map[string]string{
 	"warcraftdb_forever": "forever_reference", "warcraftdb_classic": "classic_reference", "octowow_classic": "classic_reference",
 	"classicdb_classic": "classic_reference", "wowhead_classic": "classic_reference", "wowhead_forever": "forever_reference",
 	"foreverdb_client": "forever_reference", "foreverdb_observed": "forever_observed",
+	"questiedb_forever": "forever_reference",
+}
+
+// factObjectives reads an objectives fact: a list of {kind: npc|object|item|talk, ids: [id], required_count: n}.
+func factObjectives(f *Fact) ([]Objective, error) {
+	raw, err := json.Marshal(f.Value)
+	if err != nil {
+		return nil, err
+	}
+	var list []struct {
+		Kind  string `json:"kind"`
+		IDs   []int  `json:"ids"`
+		Count int    `json:"required_count"`
+	}
+	if err := json.Unmarshal(raw, &list); err != nil || len(list) == 0 {
+		return nil, fmt.Errorf("not a list of objectives")
+	}
+	var out []Objective
+	for _, o := range list {
+		switch o.Kind {
+		case "npc", "object", "item", "talk":
+		default:
+			return nil, fmt.Errorf("unknown kind %q", o.Kind)
+		}
+		if len(o.IDs) == 0 || o.Count <= 0 {
+			return nil, fmt.Errorf("objective without target or count")
+		}
+		n := o.Count
+		out = append(out, Objective{Kind: o.Kind, IDs: o.IDs, RequiredCount: &n, CountSource: f.Source, QuantityQuality: "source_reference", TargetSource: f.Source})
+	}
+	return out, nil
 }
 
 // applyFacts sets the individually sourced facts; each needs a known source, a matching quality and an https link.
@@ -534,6 +565,16 @@ func applyFacts(quests map[string]*Quest, f *Facts, conflicts *[]Conflict, audit
 			want, ok := factSources[fact.Source]
 			if !ok || fact.Quality != want || !strings.HasPrefix(fact.URL, "https://") {
 				return fmt.Errorf("merge: fact %s.%s has an unknown source, wrong quality or no https link", key, name)
+			}
+			if name == "objectives" {
+				// the complete objectives of a quest, with counts: they replace targets without counts
+				objs, err := factObjectives(fact)
+				if err != nil {
+					return fmt.Errorf("merge: fact %s.objectives: %w", key, err)
+				}
+				q.Objectives = objs
+				audit["facts_applied"]++
+				continue
 			}
 			if old := q.Fields[name]; old != nil && !sameValue(old.Value, fact.Value) {
 				*conflicts = append(*conflicts, Conflict{Quest: id, Field: name, Base: old, Incoming: fact, Selected: "fact"})
