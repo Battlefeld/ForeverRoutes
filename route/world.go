@@ -73,6 +73,7 @@ type World struct {
 	walkGrids walks
 	deaths    *deaths
 	lifts     []dataset.Lift
+	danger    dangerMap
 	inns      []dataset.Point
 	siteKeys  int
 	siteMemo  map[*dataset.Point][]Site
@@ -91,6 +92,7 @@ func NewWorld(d *dataset.Dataset, c Character, opt Options) (*World, error) {
 	w.walkGrids = newWalks(w.Opt.Walks)
 	w.deaths = newDeaths(d.Travel, c, faction)
 	w.lifts = d.Travel.Lifts
+	w.danger = newDanger(d.NPCs, faction)
 	for i := range d.NPCs {
 		w.NPC[d.NPCs[i].ID] = &d.NPCs[i]
 	}
@@ -271,6 +273,11 @@ func (w *World) resolve(q *dataset.Quest) (*Quest, string) {
 				for _, st := range w.sites(ob.Spawns) {
 					ro.Sources = append(ro.Sources, Source{Object: o.ID, Chance: 1, Site: st})
 				}
+			}
+		case "event":
+			// explore, escort, use something: done at the place, like gathering one thing there
+			for _, st := range w.sites(o.Places) {
+				ro.Sources = append(ro.Sources, Source{Chance: 1, Site: st, Gather: true})
 			}
 		case "item":
 			// bought from a vendor: walk there and buy, like talking to an NPC

@@ -73,6 +73,17 @@ type Lift struct {
 	Cars   int
 }
 
+// Zone is a zone of Zones.lua: its level range, or the side whose capital it is, and the box its map covers (boxes
+// overlap; a box bounds where the zone can be).
+type Zone struct {
+	UIMap      int
+	Low, High  int
+	City       string // Alliance | Horde for a capital
+	Map        int
+	MinX, MinY float64
+	MaxX, MaxY float64
+}
+
 // Data is the travel data.
 type Data struct {
 	Revision string
@@ -82,6 +93,7 @@ type Data struct {
 	Routes   []Route
 	Portals  []Portal
 	Lifts    []Lift
+	Zones    []Zone
 }
 
 // Load reads dir (the repository's Data folder).
@@ -154,6 +166,24 @@ func Load(dir, revision string) (*Data, error) {
 		}
 		d.Portals = append(d.Portals, Portal{Name: str(t["name"]), Kind: str(t["kind"]), Faction: str(t["faction"]),
 			From: point(from), To: point(to), Seconds: num(t["seconds"])})
+	}
+	zones, err := blocks(filepath.Join(dir, "Zones.lua"), "Zones")
+	if err != nil {
+		return nil, err
+	}
+	if zt, ok := zones["Zones"].(lua.Table); ok {
+		for _, k := range lua.SortedKeys(zt) {
+			ui, _ := lua.Int(k)
+			t, _ := zt[k].(lua.Table)
+			if t == nil {
+				continue
+			}
+			lo, _ := lua.Int(t["low"])
+			hi, _ := lua.Int(t["high"])
+			m, _ := lua.Int(t["map"])
+			d.Zones = append(d.Zones, Zone{UIMap: ui, Low: lo, High: hi, City: str(t["city"]), Map: m,
+				MinX: num(t["minX"]), MinY: num(t["minY"]), MaxX: num(t["maxX"]), MaxY: num(t["maxY"])})
+		}
 	}
 	if err := d.readLifts(filepath.Join(dir, "Transports.lua")); err != nil {
 		return nil, err

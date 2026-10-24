@@ -88,3 +88,19 @@ func TestLift(t *testing.T) {
 		t.Fatalf("other map: %.1f", got)
 	}
 }
+
+func TestDanger(t *testing.T) {
+	npcs := []dataset.NPC{{ID: 1, MinLevel: 24, MaxLevel: 26, Hostile: "AH", Spawns: []dataset.Point{{Map: 0, X: 10, Y: 10}, {Map: 0, X: 20, Y: 20}, {Map: 0, X: 30, Y: 30}}}}
+	d := newDanger(npcs, "A")
+	if d.at(dataset.Point{Map: 0, X: 50, Y: 50}) != 25 || d.at(dataset.Point{Map: 0, X: 500, Y: 50}) != 0 {
+		t.Fatalf("%v", d)
+	}
+	w := &World{Opt: Options{}.withDefaults(), danger: d, Data: &dataset.Dataset{LevelXP: []int{100, 100, 100}}}
+	gather := Source{Chance: 1, Site: Site{Center: dataset.Point{Map: 0, X: 15, Y: 15}, Spawns: 1}, Gather: true}
+	if !w.tooDangerous(&State{}, gather) {
+		t.Fatal("level 1 gathering among level 25 creatures")
+	}
+	if w.tooDangerous(&State{}, Source{Talk: true, Site: gather.Site}) {
+		t.Fatal("talking refused")
+	}
+}

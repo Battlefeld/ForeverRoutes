@@ -47,6 +47,7 @@ type Data struct {
 	Builds     []string
 	Drops      map[int][]Drop          // item -> sources, most windows first
 	Objectives map[int]map[int][]Point // quest -> objective (1-based) -> where its count went up
+	Completed  map[int][]Point         // quest -> where it became complete with no count going up (escorts, events)
 }
 
 type lootItem struct {
@@ -75,7 +76,7 @@ func Load(dir, revision string) (*Data, error) {
 	if err != nil {
 		return nil, err
 	}
-	d := &Data{Revision: revision, Drops: map[int][]Drop{}, Objectives: map[int]map[int][]Point{}}
+	d := &Data{Revision: revision, Drops: map[int][]Drop{}, Objectives: map[int]map[int][]Point{}, Completed: map[int][]Point{}}
 	type acc struct{ sum, windows float64 }
 	drops := map[int]map[string]*acc{} // item -> "kind:id" -> chance x windows, windows
 	for _, b := range builds {
@@ -129,9 +130,19 @@ func Load(dir, revision string) (*Data, error) {
 			Quests map[string]map[string]struct {
 				Positions []position `json:"positions"`
 			} `json:"quests"`
+			Completed map[string]struct {
+				Positions []position `json:"positions"`
+			} `json:"completed"`
 		}
 		if err := readJSON(filepath.Join(dir, b.Name(), "objectives.json"), &obj); err != nil {
 			return nil, err
+		}
+		for qs, c := range obj.Completed {
+			if q, err := strconv.Atoi(qs); err == nil {
+				for _, p := range c.Positions {
+					d.Completed[q] = append(d.Completed[q], Point{Map: p.Instance, X: p.WorldX, Y: p.WorldY})
+				}
+			}
 		}
 		for qs, objs := range obj.Quests {
 			q, err := strconv.Atoi(qs)
@@ -173,17 +184,13 @@ func Load(dir, revision string) (*Data, error) {
 			return l[a].ID < l[b].ID
 		})
 	}
+	for q, pts := range d.Completed {
+		sortPoints(pts)
+		d.Completed[q] = pts
+	}
 	for _, objs := range d.Objectives {
 		for n, pts := range objs {
-			sort.Slice(pts, func(a, b int) bool {
-				if pts[a].Map != pts[b].Map {
-					return pts[a].Map < pts[b].Map
-				}
-				if pts[a].X != pts[b].X {
-					return pts[a].X < pts[b].X
-				}
-				return pts[a].Y < pts[b].Y
-			})
+			sortPoints(pts)
 			objs[n] = pts
 		}
 	}
@@ -221,4 +228,16 @@ func readJSON(path string, v any) error {
 		return fmt.Errorf("eglink %s: %w", path, err)
 	}
 	return nil
+}
+
+func sortPoints(pts []Point) {
+	sort.Slice(pts, func(a, b int) bool {
+		if pts[a].Map != pts[b].Map {
+			return pts[a].Map < pts[b].Map
+		}
+		if pts[a].X != pts[b].X {
+			return pts[a].X < pts[b].X
+		}
+		return pts[a].Y < pts[b].Y
+	})
 }

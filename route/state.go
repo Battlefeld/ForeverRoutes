@@ -281,8 +281,8 @@ func (w *World) Apply(s *State, a Action) error {
 		if len(q.StartSources) > 0 {
 			// started by an item: kill or loot at the chosen spawn group until it drops
 			src := nearestSource(q.StartSources, a.At)
-			if src.NPC != nil && mobLevel(src.NPC) > w.Level(s)+w.Opt.MaxMobAbove {
-				return fail("%s is too high level", src.NPC.Name)
+			if w.tooDangerous(s, *src) {
+				return fail("quest %d: its item is found among creatures too high level", q.ID)
 			}
 			if err := w.move(s, src.Site.Center); err != nil {
 				return err
@@ -341,8 +341,8 @@ func (w *World) Apply(s *State, a Action) error {
 		if src == nil {
 			return fail("quest %d objective %d: unknown source", a.Quest, a.Obj)
 		}
-		if !src.Talk && src.NPC != nil && mobLevel(src.NPC) > w.Level(s)+w.Opt.MaxMobAbove {
-			return fail("%s is too high level", src.NPC.Name)
+		if w.tooDangerous(s, *src) {
+			return fail("quest %d objective %d: too high level there", a.Quest, a.Obj)
 		}
 		left := float64(o.Count) - s.Prog[q.Index][a.Obj]
 		if src.Assumed {
@@ -411,7 +411,7 @@ func (w *World) startAt(s *State, q *Quest) dataset.Point {
 	}
 	best, bt := q.StartPos, math.Inf(1)
 	for _, src := range q.StartSources {
-		if src.NPC != nil && mobLevel(src.NPC) > w.Level(s)+w.Opt.MaxMobAbove {
+		if w.tooDangerous(s, src) {
 			continue
 		}
 		per := 4 + src.Site.Spacing*w.Opt.PathFactor/w.Opt.RunSpeed

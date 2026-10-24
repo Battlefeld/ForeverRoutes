@@ -319,6 +319,8 @@ func Build(in Inputs) (*dataset.Dataset, error) {
 	b.npcs()
 	b.objects()
 	b.guideSpawns()
+	b.capitalNPCs()
+	b.instantQuests()
 	b.aegisQuests()
 	b.egChances()
 	if b.pdb != nil {

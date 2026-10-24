@@ -131,6 +131,20 @@ func (b *builder) polestarRefs(rs []polestar.Ref, withItem bool) []dataset.Ref {
 			}
 		}
 	}
+	// a quest an item starts is taken from that item (a book found in the world): the NPCs listed beside it are where
+	// the item is handed in, not givers who offer the quest without it
+	if withItem {
+		items := out[:0:0]
+		for _, r := range out {
+			if r.Kind == "item" {
+				items = append(items, r)
+			}
+		}
+		if len(items) > 0 && len(items) < len(out) {
+			out = items
+			b.stats["quests_item_only_start"]++
+		}
+	}
 	sort.Slice(out, func(a, c int) bool {
 		if out[a].Kind != out[c].Kind {
 			return out[a].Kind < out[c].Kind
@@ -173,9 +187,8 @@ func (b *builder) polestarObjectives(out *dataset.Quest) {
 				continue
 			}
 			if o.Kind == "talk" && (o.Target <= 0 || len(b.pdb.Spawns["npc"][o.Target]) == 0 && len(b.w.spawns[o.Target]) == 0) {
-				// a talk target no source places is an event in disguise (an area to reach): planned without it
-				out.Sources["objectives"] = "event objective not modelled (" + polestarSrc + ")"
-				b.stats["polestar_event_objectives_skipped"]++
+				// a talk target no source places is an event in disguise (an area to reach)
+				b.eventObjective(out, o.N)
 				continue
 			}
 			out.Objectives = append(out.Objectives, dataset.Objective{Kind: o.Kind, ID: o.Target, Count: o.Count, Source: polestarSrc})
@@ -213,12 +226,65 @@ func (b *builder) polestarObjectives(out *dataset.Quest) {
 			}
 			out.Objectives = append(out.Objectives, obj)
 		default:
-			// an event (explore an area, escort someone, use something): its place is not in the data, so the quest
-			// is planned without it, as the other sources have it; the note keeps it visible
-			out.Sources["objectives"] = "event objective not modelled (" + polestarSrc + ")"
-			b.stats["polestar_event_objectives_skipped"]++
+			// an event (explore an area, escort someone, use something)
+			b.eventObjective(out, o.N)
 		}
 	}
+}
+
+// eventObjective: an event (explore an area, escort someone, use something somewhere) is done where the guides send the
+// player for it, or where players' games saw the quest move (EG Link, AEGIS). Without such a place the quest is held
+// back: planned without the objective it would be done the moment it is taken.
+func (b *builder) eventObjective(out *dataset.Quest, n int) {
+	var pts []dataset.Point
+	atGiver, atTurnin, done := false, false, false
+	if b.gdx != nil {
+		for _, f := range b.gdx.byQuest[out.ID] {
+			if f.Obj == n || f.Complete && f.Obj == 0 {
+				pts = append(pts, b.guidePoints(f.Places)...)
+				if f.Complete {
+					done = true
+					atGiver, atTurnin = atGiver || f.Accept, atTurnin || f.Turnin
+				}
+			}
+		}
+	}
+	if b.egl != nil {
+		for _, p := range b.egl.Objectives[out.ID][n] {
+			pts = append(pts, dataset.Point{Map: p.Map, X: round1(p.X), Y: round1(p.Y)})
+		}
+		if len(pts) == 0 {
+			for _, p := range b.egl.Completed[out.ID] {
+				pts = append(pts, dataset.Point{Map: p.Map, X: round1(p.X), Y: round1(p.Y)})
+			}
+		}
+	}
+	if len(pts) == 0 && b.aeg != nil && b.aeg.Quests[out.ID] != nil {
+		pts = b.aegisPoints(b.aeg.Quests[out.ID].ObjectiveCells())
+	}
+	// a guide that completes it in the step that takes or hands in the quest, without a place of its own: the event is
+	// done at the giver or the turn-in (cast a spell, /lay down beside him)
+	if len(pts) == 0 && done {
+		refs := out.Start
+		if atTurnin || !atGiver {
+			refs = out.End
+		}
+		for _, r := range refs {
+			if r.Kind == "npc" {
+				if p, ok := b.npcPoint(r.ID); ok {
+					pts = append(pts, p)
+					break
+				}
+			}
+		}
+	}
+	if len(pts) == 0 {
+		b.unsupported(out, "event objective without a place")
+		b.stats["event_objectives_without_place"]++
+		return
+	}
+	out.Objectives = append(out.Objectives, dataset.Objective{Kind: "event", ID: n, Count: 1, Source: polestarSrc + "+places", Places: dedupePoints(pts)})
+	b.stats["event_objectives_placed"]++
 }
 
 // fromStartItem: a quest started by an item asks for an item of the same name that nothing drops: it is the starting
@@ -519,6 +585,30 @@ func (b *builder) dungeonOutside() {
 			q.Objectives, q.Type = objectives, ""
 			q.Sources["type"] = "dungeon quest done before the instance portal"
 			b.stats["dungeon_quests_outside"]++
+		}
+	}
+}
+
+// instantQuests: a quest with no objective, taken and handed in at the same NPC, would be XP for nothing. That is real
+// only at the end of a chain (the reward of the quests before it); elsewhere its objective is unknown and the quest is
+// held back.
+func (b *builder) instantQuests() {
+	for i := range b.out {
+		q := &b.out[i]
+		if q.Unsupported != "" || len(q.Objectives) > 0 || len(q.PreAll) > 0 || len(q.PreAny) > 0 || q.Repeatable {
+			continue
+		}
+		same := false
+		for _, s := range q.Start {
+			for _, e := range q.End {
+				if s.Kind == e.Kind && s.ID == e.ID {
+					same = true
+				}
+			}
+		}
+		if same {
+			q.Unsupported = "no objective known, and taken and handed in at the same NPC"
+			b.stats["quests_instant_held_back"]++
 		}
 	}
 }

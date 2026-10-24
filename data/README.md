@@ -84,6 +84,14 @@ QuestieDB, EverythingQuests und cmangos werden beim Bau in den festgeschriebenen
   Classic, nicht Forever: Forever-Angaben haben Vorrang. Werte aus cmangos stehen unter GPL-3.0; damit
   steht auch `routes-data.json.gz` unter GPL-3.0 (ebenso die Werte aus Polestars forever-db).
 
+**Was als machbar gilt (Prüfungen beim Bau):** Startet ein Gegenstand eine Quest, ist sie nur mit ihm zu haben (die
+NPCs daneben sind die Abgabe, z. B. die Bücher für Owen Thadd und Garion Wendell). Ein NPC ohne Fraktionsangabe, der nur
+in einer Hauptstadt steht, gehört deren Seite (Hauptstadtgrenzen aus Shortest Path Forevers `Zones.lua`). Ein
+Ereignisziel (erkunden, Eskorte, etwas benutzen) braucht einen Ort: aus den Guides, aus EG Link oder AEGIS, sonst den
+Questgeber oder die Abgabe, wenn ein Guide es dort erledigt; ohne Ort bleibt die Quest draußen. Eine Quest ohne Ziel,
+die beim selben NPC angenommen und abgegeben wird, gilt nur am Ende einer Kette (mit Vorquest); sonst ist ihr Ziel
+unbekannt und sie bleibt draußen.
+
 **Dropchancen:** Wo eine Quelle nur den Gegner nennt, nicht die Chance, steht im Datensatz `unknown` (Chance 0, kein Wert).
 Der Planer nimmt dafür einen ausdrücklich gekennzeichneten Planungswert an (30 %) und meldet im Ergebnis, wie viele Schritte
 davon abhängen (`assumedDropSteps`). Echte Werte kommen aus dem Mitschreiben im Spiel.

@@ -195,6 +195,43 @@ func (b *builder) spfLifts(t *dataset.Travel) {
 	b.stats["lift_areas_from_spf"] = len(t.Lifts)
 }
 
+// capitalNPCs: an NPC no source gives a side, standing only inside one side's capital, is that side's (the other side
+// cannot take quests from it: Owen Thadd in Undercity is no quest giver for a Dwarf).
+func (b *builder) capitalNPCs() {
+	if b.spf == nil {
+		return
+	}
+	for i := range b.npcOut {
+		n := &b.npcOut[i]
+		if n.Hostile != "" || len(n.Spawns) == 0 {
+			continue
+		}
+		side := ""
+		for _, p := range n.Spawns {
+			in := ""
+			for _, z := range b.spf.Zones {
+				if z.City != "" && z.Map == p.Map && p.X >= z.MinX && p.X <= z.MaxX && p.Y >= z.MinY && p.Y <= z.MaxY {
+					in = z.City
+				}
+			}
+			if in == "" || side != "" && side != in {
+				side = ""
+				break
+			}
+			side = in
+		}
+		switch side {
+		case "Alliance":
+			n.Hostile = "H"
+		case "Horde":
+			n.Hostile = "A"
+		default:
+			continue
+		}
+		b.stats["npcs_side_from_capital"]++
+	}
+}
+
 // flightMasterAt is the flight master forever-db places at a point, 0 if none.
 func (b *builder) flightMasterAt(at dataset.Point) int {
 	if b.pdb == nil {

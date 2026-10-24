@@ -49,12 +49,18 @@ type Fact struct {
 	// are found while doing them).
 	Zone string `json:"zone,omitempty"`
 	Near []int  `json:"near,omitempty"`
+	// Complete: a "complete" line (an objective done, or the whole quest when Obj is 0); Accept, Turnin: the same step
+	// also takes or hands in the quest (an event done at the giver or the turn-in).
+	Complete bool `json:"complete,omitempty"`
+	Accept   bool `json:"accept,omitempty"`
+	Turnin   bool `json:"turnin,omitempty"`
 }
 
 var (
 	rxpGuide    = regexp.MustCompile(`(?s)RegisterGuide\(\[\[(.*?)\]\]`)
 	rxpGoto     = regexp.MustCompile(`^\.goto\s+(\d+)(?:/(\d+))?,\s*(-?[\d.]+),\s*(-?[\d.]+)`)
-	rxpComplete = regexp.MustCompile(`^\.complete\s+(\d+),(\d+)`)
+	rxpComplete = regexp.MustCompile(`^\.complete\s+(\d+)(?:,(\d+))?`)
+	rxpTurnin   = regexp.MustCompile(`^\.turnin\s+(\d+)`)
 	rxpCollect  = regexp.MustCompile(`^\.collect\s+(\d+),\d+(?:,(\d+),(\d+))?`)
 	rxpAccept   = regexp.MustCompile(`^\.accept\s+(\d+)`)
 	rxpUse      = regexp.MustCompile(`^\.use\s+(\d+)`)
@@ -101,6 +107,7 @@ func rxpStep(file string, lines []string) []Fact {
 	var cur *Fact
 	var stepMobs, textMobs []string
 	ground, use, accepted := false, 0, 0
+	accepts, turnins := map[int]bool{}, map[int]bool{}
 	for _, l := range lines {
 		switch {
 		case rxpGoto.MatchString(l):
@@ -118,7 +125,7 @@ func rxpStep(file string, lines []string) []Fact {
 			m := rxpComplete.FindStringSubmatch(l)
 			q, _ := strconv.Atoi(m[1])
 			n, _ := strconv.Atoi(m[2])
-			cur = &Fact{Source: "rxp", File: file, Quest: q, Obj: n}
+			cur = &Fact{Source: "rxp", File: file, Quest: q, Obj: n, Complete: true}
 			facts = append(facts, cur)
 		case rxpCollect.MatchString(l):
 			m := rxpCollect.FindStringSubmatch(l)
@@ -140,6 +147,10 @@ func rxpStep(file string, lines []string) []Fact {
 			use, _ = strconv.Atoi(rxpUse.FindStringSubmatch(l)[1])
 		case rxpAccept.MatchString(l):
 			accepted, _ = strconv.Atoi(rxpAccept.FindStringSubmatch(l)[1])
+			accepts[accepted] = true
+		case rxpTurnin.MatchString(l):
+			q, _ := strconv.Atoi(rxpTurnin.FindStringSubmatch(l)[1])
+			turnins[q] = true
 		case strings.HasPrefix(l, ">>"):
 			if strings.Contains(l, "on the ground") || strings.Contains(l, "cRXP_PICK_") {
 				ground = true
@@ -162,7 +173,8 @@ func rxpStep(file string, lines []string) []Fact {
 		if f.Item != 0 && f.Item == use && accepted != 0 {
 			f.Start, f.Quest, f.Obj = true, accepted, 0
 		}
-		if f.Quest != 0 && (len(f.Mobs) > 0 || len(f.Places) > 0) {
+		f.Accept, f.Turnin = accepts[f.Quest], turnins[f.Quest]
+		if f.Quest != 0 && (len(f.Mobs) > 0 || len(f.Places) > 0 || f.Complete) {
 			out = append(out, *f)
 		}
 	}
@@ -175,6 +187,8 @@ var (
 	psAt      = regexp.MustCompile(`@(-?[\d.]+),(-?[\d.]+)`)
 	psGoto    = regexp.MustCompile(`^goto\s+(-?[\d.]+),(-?[\d.]+)`)
 	psZone    = regexp.MustCompile(`^zone\s+(.+)$`)
+	psDone    = regexp.MustCompile(`^complete\s+(\d+)(?:\.(\d+))?`)
+	psTake    = regexp.MustCompile(`^(accept|turnin)\s+(\d+)`)
 	psComment = regexp.MustCompile(`\s+--.*$`)
 	psTip     = regexp.MustCompile(`^tip\s+(.*)$`)
 	psName    = regexp.MustCompile(`[A-Z][a-z'-]+(?:\s+[A-Z][a-z'-]+)*`)
@@ -238,7 +252,24 @@ func polestarStep(file, zone string, lines []string) []Fact {
 		}
 	}
 	var out []Fact
+	accepts, turnins := map[int]bool{}, map[int]bool{}
 	for _, l := range lines {
+		if m := psTake.FindStringSubmatch(l); m != nil {
+			q, _ := strconv.Atoi(m[2])
+			if m[1] == "accept" {
+				accepts[q] = true
+			} else {
+				turnins[q] = true
+			}
+		}
+	}
+	for _, l := range lines {
+		if m := psDone.FindStringSubmatch(l); m != nil {
+			q, _ := strconv.Atoi(m[1])
+			n, _ := strconv.Atoi(m[2])
+			out = append(out, Fact{Source: "polestar", File: file, Quest: q, Obj: n, Places: stepPlaces, Zone: zone, Complete: true, Accept: accepts[q], Turnin: turnins[q]})
+			continue
+		}
 		m := psObj.FindStringSubmatch(l)
 		if m == nil {
 			continue

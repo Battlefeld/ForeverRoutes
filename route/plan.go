@@ -219,7 +219,7 @@ func (w *World) bestSource(s *State, q *Quest, oi int) (Action, bool) {
 	left := float64(o.Count) - s.Prog[q.Index][oi]
 	best, bt := Action{}, math.Inf(1)
 	for _, src := range o.Sources {
-		if !src.Talk && src.NPC != nil && mobLevel(src.NPC) > w.Level(s)+w.Opt.MaxMobAbove {
+		if w.tooDangerous(s, src) {
 			continue
 		}
 		work := w.Opt.InteractSecs
