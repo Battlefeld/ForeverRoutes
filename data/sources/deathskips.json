@@ -1,10 +1,14 @@
 {
  "schema": "foreverroutes.deathskips.v1",
- "note": "Deathskips the guides do not carry. die: where to die (world yards, m 0 Eastern Kingdoms, 1 Kalimdor); graveyard: the world_safe_locs name it gives; filter: who may use it (as in the guides); approx: the place is estimated, check it in game; off: known but the place is not yet known.",
+ "note": "Deathskips the guides do not carry. die: where to die (world yards, m 0 Eastern Kingdoms, 1 Kalimdor); graveyard: the world_safe_locs name it gives; filter: who may use it (as in the guides); approx: the place is estimated, check it in game; off: known but the place is not yet known. A skip that dies by a fall names where to jump (die), not where the body lands; the graveyard is the one the landing gives.",
  "skips": [
   {
    "name": "Menethil Harbor -> Dun Morogh (Kharanos)",
-   "die": {"m": 0, "x": -3950, "y": -350},
+   "die": {
+    "m": 0,
+    "x": -3950,
+    "y": -350
+   },
    "graveyard": "Dun Morogh, Kharanos",
    "filter": "Alliance",
    "approx": true,
@@ -13,7 +17,11 @@
   },
   {
    "name": "Ironforge / Dun Morogh -> Wetlands (Menethil Harbor)",
-   "die": {"m": 0, "x": -5115, "y": -65},
+   "die": {
+    "m": 0,
+    "x": -5115,
+    "y": -65
+   },
    "graveyard": "Wetlands, Baradin Bay",
    "filter": "Alliance",
    "how": "Climb the mountains north of Ironforge, jump down towards the Wetlands and die from the fall.",
@@ -26,6 +34,32 @@
    "off": true,
    "how": "From Ratchet run to an unlisted map area (a mountain cleft) in the southern Barrens and die: with no graveyard for the area the Alliance default graveyard, Sentinel Hill, takes the ghost.",
    "source": "community knowledge (Warcraft Tavern); the exact place is not published"
+  },
+  {
+   "name": "Mulgore -> The Barrens (Crossroads)",
+   "die": {
+    "m": 1,
+    "x": -1500,
+    "y": -1367
+   },
+   "graveyard": "The Barrens, The Crossroads",
+   "filter": "Horde",
+   "approx": true,
+   "how": "Run to the eastern mountain ridge of Mulgore north of the Barrens border and jump off the cliff towards the Barrens; the fall is lethal and the ghost rises at the Crossroads.",
+   "source": "community knowledge; jump point estimated: the ridge cell the walk grid reaches nearest the border at the north end (further south the body lies nearer Camp Taurajo, whose graveyard the server then gives)"
+  },
+  {
+   "name": "Mulgore -> The Barrens (Camp Taurajo)",
+   "die": {
+    "m": 1,
+    "x": -1900,
+    "y": -1367
+   },
+   "graveyard": "The Barrens, Camp Taurajo",
+   "filter": "Horde",
+   "approx": true,
+   "how": "Jump off the eastern ridge of southern Mulgore into the Barrens; the ghost rises at Camp Taurajo.",
+   "source": "community knowledge; jump point estimated: a ridge cell the walk grid reaches at the border"
   }
  ]
 }
