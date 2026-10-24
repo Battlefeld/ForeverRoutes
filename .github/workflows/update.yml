@@ -1,0 +1,89 @@
+name: update
+
+# Checks every data source for a new state. When the dataset changes and every check passes, the new data is pushed
+# to main and published as a release (dataset + SHA-256) that ForeverCore downloads. A failed check changes nothing
+# and is reported in an issue. ForeverCore starts this workflow when WoW starts; the schedule is the fallback.
+on:
+  workflow_dispatch:
+    inputs:
+      force:
+        description: Rebuild even when no source changed
+        type: boolean
+        default: false
+  schedule:
+    - cron: "17 4 * * *"
+
+permissions:
+  contents: write
+  issues: write
+
+concurrency:
+  group: data-update
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - name: download cache (QuestieDB, cmangos, WarcraftDB pages)
+        uses: actions/cache@v4
+        with:
+          path: .cache
+          key: sources-${{ github.run_id }}
+          restore-keys: sources-
+
+      - name: check sources and rebuild
+        id: update
+        env:
+          FOREVERDB_API_KEY: ${{ secrets.FOREVERDB_API_KEY }}
+        run: |
+          args="-require-foreverdb -report /tmp/report.md"
+          if [ "${{ inputs.force }}" = "true" ]; then args="$args -force"; fi
+          go run ./cmd/foreverroutes update $args
+          if git diff --quiet -- data; then echo "changed=false" >> "$GITHUB_OUTPUT"; else echo "changed=true" >> "$GITHUB_OUTPUT"; fi
+
+      - name: checks before publishing
+        if: steps.update.outputs.changed == 'true'
+        run: |
+          test -z "$(gofmt -l .)"
+          go vet ./...
+          go test -timeout 25m ./...
+          go run ./cmd/foreverroutes build-data -out /tmp/rebuilt.json.gz
+          cmp data/routes-data.json.gz /tmp/rebuilt.json.gz
+
+      - name: push to main and publish
+        if: steps.update.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          stamp="$(date -u +%Y%m%d-%H%M%S)"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data
+          { echo "Data update $stamp"; echo; cat /tmp/report.md; } > /tmp/message.txt
+          git commit -q -F /tmp/message.txt
+          git push origin HEAD:main
+          cp data/routes-data.json.gz /tmp/routes-data.json.gz
+          (cd /tmp && sha256sum routes-data.json.gz > routes-data.json.gz.sha256)
+          gh release create "data-$stamp" /tmp/routes-data.json.gz /tmp/routes-data.json.gz.sha256 \
+            --title "Data $stamp" --notes-file /tmp/report.md --latest
+
+      - name: report a failure
+        if: failure()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          body="The data update failed, main and the published data stay as they were. Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          if [ -s /tmp/report.md ]; then body="$body"$'\n\n'"$(cat /tmp/report.md)"; fi
+          open="$(gh issue list --label data-update --state open --json number --jq '.[0].number')"
+          if [ -n "$open" ]; then
+            gh issue comment "$open" --body "$body"
+          else
+            gh label create data-update --color B60205 --description "automatic data update" 2>/dev/null || true
+            gh issue create --title "Data update failed" --label data-update --body "$body"
+          fi

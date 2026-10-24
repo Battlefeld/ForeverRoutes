@@ -228,17 +228,47 @@ func Build(in Inputs) (*dataset.Dataset, error) {
 	travel := b.travel()
 	build, _ := merged["build"].(string)
 	d := &dataset.Dataset{Schema: dataset.Schema, Build: build, LevelXP: b.levelXP(), Quests: b.out, NPCs: b.npcOut, Objects: b.objOut, Travel: travel, Stats: b.stats,
-		Sources: []dataset.Source{
-			{Name: "ForeverRoutes merged quest database", URL: "https://github.com/Battlefeld/ForeverRoutes (data/sources/merged-quests-1-30.json.gz)", Revision: in.MergedRevision,
-				Note: "ForeverDB (Data from ForeverDB.net, https://foreverdb.net), QuestieDB Forever, EverythingQuests Forever, WarcraftDB/OctoWow XP"},
-			{Name: "cmangos classic-db", URL: "https://github.com/cmangos/classic-db", Revision: in.CMangosRevision, License: "GPL-3.0",
-				Note: "Classic world data: objective counts, drop chances, spawn positions, respawn times, quest groups. Classic, not Forever: Forever data wins where both exist."},
-		}}
+		Sources: b.mergedSources()}
+	d.Sources = append(d.Sources, dataset.Source{Name: "cmangos classic-db", URL: "https://github.com/cmangos/classic-db", Revision: in.CMangosRevision, License: "GPL-3.0",
+		Note: "Classic world data: objective counts, drop chances, spawn positions, respawn times, quest groups. Classic, not Forever: Forever data wins where both exist."})
 	if b.wdb != nil {
 		d.Sources = append(d.Sources, dataset.Source{Name: "WarcraftDB Forever", URL: "https://forever.warcraftdb.com", Revision: b.wdb.Fetched,
 			Note: "Forever client quest data (objectives with amounts, XP, levels, positions) for quests the other sources lack"})
 	}
 	return d, nil
+}
+
+// mergedSources lists the sources of the merged quest database with their revisions.
+func (b *builder) mergedSources() []dataset.Source {
+	src, _ := b.merged["sources"].(map[string]any)
+	rev := func(k string) string {
+		m, _ := src[k].(map[string]any)
+		s, _ := m["revision"].(string)
+		return s
+	}
+	out := []dataset.Source{}
+	if b.in.MergedRevision != "" {
+		out = append(out, dataset.Source{Name: "ForeverRoutes merged quest database", URL: "https://github.com/Battlefeld/ForeverRoutes (data/sources/merged-quests-1-30.json.gz)",
+			Revision: b.in.MergedRevision, Note: "frozen input"})
+	}
+	if r := rev("questiedb"); r != "" && b.in.MergedRevision == "" {
+		out = append(out, dataset.Source{Name: "QuestieDB", URL: "https://github.com/Questie/QuestieDB", Revision: r,
+			Note: "Forever quests, NPCs, objects and items; Classic quest XP and drop rates labelled as Classic references"})
+	}
+	if b.in.MergedRevision == "" {
+		build, _ := b.merged["build"].(string)
+		out = append(out, dataset.Source{Name: "ForeverDB", URL: "https://foreverdb.net", Revision: build,
+			Note: "Data from ForeverDB.net (https://foreverdb.net): quest list, givers, turn-ins and positions seen in WoW Forever. ForeverDB is not affiliated with Blizzard Entertainment."})
+	}
+	if r := rev("everythingquests"); r != "" && b.in.MergedRevision == "" {
+		out = append(out, dataset.Source{Name: "EverythingQuests", URL: "https://github.com/wheelbarrel00/EverythingQuests", Revision: r, License: "MIT",
+			Note: "Forever quest starts, turn-ins, targets and prerequisites (partly from AllTheThings)"})
+	}
+	if b.in.MergedRevision == "" {
+		out = append(out, dataset.Source{Name: "Individually sourced facts", URL: "https://github.com/Battlefeld/ForeverRoutes (data/sources/manual-facts.json)",
+			Note: "Quest XP, levels and repeatable flags from WarcraftDB, OctoWow, ClassicDB and Wowhead pages, each with its link"})
+	}
+	return out
 }
 
 type builder struct {

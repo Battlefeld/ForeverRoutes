@@ -38,18 +38,24 @@ go run ./cmd/foreverroutes audit                                              # 
 `guide` liest eine Liste von Schritten `[{"op":"accept","quest":4641},{"op":"complete","quest":4641},
 {"op":"turnin","quest":4641},{"op":"level","level":6}]`. Guide-Dateien werden nicht eingecheckt (Lizenzen der Guides).
 
-### Datensatz neu bauen
+### Daten aktuell halten
 
 ```sh
-git clone https://github.com/cmangos/classic-db /tmp/classic-db
-git -C /tmp/classic-db checkout f460448df8986331e1f068323259e3780e09571f
-go run ./cmd/foreverroutes build-data -cmangos /tmp/classic-db/Full_DB/ClassicDB_1_12_1_z2815.sql.gz \
-  -cmangos-revision f460448df8986331e1f068323259e3780e09571f
+FOREVERDB_API_KEY=… go run ./cmd/foreverroutes update   # alle Quellen prüfen, bei Neuem neu bauen und prüfen
+go run ./cmd/foreverroutes build-data                     # Datensatz exakt aus data/sources/lock.json neu bauen
 ```
 
-Der Bau ist byte-genau wiederholbar; die CI prüft, dass `data/routes-data.json.gz` aus den festgeschriebenen Quellen
-entsteht. Fehlende Questangaben holt `fetch-warcraftdb` von WarcraftDB Forever (höflich: 1,5 s Abstand, Zwischenspeicher
-in `.cache/`) nach `data/sources/warcraftdb-forever.json`.
+`update` fragt die neuesten Stände von QuestieDB, EverythingQuests und cmangos ab (Git), liest die Questliste von
+ForeverDB über die API (höchstens einmal pro Stunde, 2,1 s Abstand) und holt für Quests, denen noch Angaben fehlen,
+die Clientdaten von WarcraftDB (1,5 s Abstand, Zwischenspeicher). Ändert sich am Datensatz etwas, wird er neu gebaut und
+gegen den bisherigen geprüft (keine großen Verluste an Quests, NPCs, Positionen); nur dann werden die Dateien
+geschrieben. Neue Commits upstream, die am Inhalt nichts ändern, lassen alles, wie es ist.
+
+Auf GitHub läuft das als Workflow `update` (beim Start von WoW über ForeverCore angestoßen, sonst täglich): Bei
+Änderungen laufen alle Tests und der Ausgangstest, dann wird auf `main` gepusht und der Datensatz mit SHA-256 als Release
+veröffentlicht. Schlägt etwas fehl, bleibt alles beim alten Stand und ein Issue „Data update failed“ beschreibt den
+Grund. Der Workflow `data` prüft bei jeder Änderung, dass der Datensatz byte-genau aus den festgeschriebenen Quellen
+entsteht.
 
 ## Aufbau
 
@@ -58,12 +64,16 @@ in `.cache/`) nach `data/sources/warcraftdb-forever.json`.
 | `route/` | Planer: Welt je Charakter, Zustand und Regeln (`Apply`/`Replay`), Reisen (Laufen, Flugmeister, Zeppelin, Schiff, Ruhestein), Suche, Guide-Nachgang, Kampfmodell |
 | `dataset/` | Format des Datensatzes (`foreverroutes.dataset.v1`), Laden und Schreiben |
 | `xp/` | Classic-XP-Regeln: Quest-XP nach Levelabstand, Kill-XP (cmangos), Levelkurve |
+| `internal/update/` | Quellen prüfen, neu bauen, Ergebnis prüfen (`update`, `build-data`) |
+| `internal/sources/` | Importer: QuestieDB (Lua-Datentabellen), ForeverDB (API), EverythingQuests |
+| `internal/merge/` | Zusammenführen der Questquellen feldweise mit Quelle und Vorrangregeln |
 | `internal/build/` | Bau des Datensatzes aus Quest-Datenbank, cmangos und WarcraftDB; Umrechnung Kartenprozent → Weltyards |
+| `internal/lua/` | Leser für Lua-Tabellenliterale (führt keinen Code aus) |
 | `internal/sqldump/` | Leser für den cmangos-SQL-Dump |
 | `internal/warcraftdb/` | Abruf und Format der WarcraftDB-Ergänzung |
 | `cmd/foreverroutes/` | Kommandozeile |
 | `data/routes-data.json.gz` | der fertige Datensatz |
-| `data/sources/` | eingefrorene Eingaben: zusammengeführte Quest-Datenbank (aus dem früheren Python-Werkzeug, Commit `7d66f93`) und WarcraftDB-Ergänzung |
+| `data/sources/` | festgeschriebene Stände der Quellen (`lock.json`), ForeverDB-Stand, WarcraftDB-Ergänzung, einzeln belegte Werte |
 
 ## Modell in Kürze
 

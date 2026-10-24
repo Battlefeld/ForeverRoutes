@@ -1,6 +1,6 @@
 name: data
 
-# The shipped dataset must come out of the pinned sources byte for byte.
+# The shipped dataset must come out of the pinned sources (data/sources/lock.json) byte for byte.
 on:
   push:
     paths: ["data/**", "dataset/**", "internal/**", "xp/**", "cmd/**", ".github/workflows/data.yml"]
@@ -20,19 +20,11 @@ jobs:
       - uses: actions/setup-go@v5
         with:
           go-version-file: go.mod
-      - name: cmangos revision of the shipped dataset
-        id: rev
-        run: echo "cmangos=$(zcat data/routes-data.json.gz | jq -r '.sources[] | select(.name == "cmangos classic-db") | .revision')" >> "$GITHUB_OUTPUT"
-      - name: fetch cmangos classic-db
-        run: |
-          git init -q /tmp/classic-db
-          git -C /tmp/classic-db fetch -q --depth 1 https://github.com/cmangos/classic-db "${{ steps.rev.outputs.cmangos }}"
-          git -C /tmp/classic-db checkout -q FETCH_HEAD
-      - name: rebuild
-        run: go run ./cmd/foreverroutes build-data -cmangos /tmp/classic-db/Full_DB/ClassicDB_1_12_1_z2815.sql.gz -cmangos-revision "${{ steps.rev.outputs.cmangos }}" -out /tmp/routes-data.json.gz
+      - name: rebuild from the pinned sources
+        run: go run ./cmd/foreverroutes build-data -out /tmp/routes-data.json.gz
       - name: compare
         run: |
           if ! cmp -s data/routes-data.json.gz /tmp/routes-data.json.gz; then
-            echo "::error::data/routes-data.json.gz does not match a rebuild from the pinned sources; run build-data and commit the result"
+            echo "::error::data/routes-data.json.gz does not match a rebuild from data/sources/lock.json; run build-data and commit the result"
             exit 1
           fi

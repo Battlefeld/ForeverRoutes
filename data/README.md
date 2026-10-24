@@ -1,17 +1,23 @@
 # Daten
 
-| Datei | Inhalt | Herkunft |
-|---|---|---|
-| `routes-data.json.gz` | Datensatz des Planers (`foreverroutes.dataset.v1`) | gebaut mit `foreverroutes build-data` aus den Dateien unten und cmangos classic-db |
-| `sources/merged-quests-1-30.json.gz` | zusammengeführte Quest-Datenbank Level 1–30 (`foreverroutes.unified_quests.v1`) | früheres ForeverRoutes-Werkzeug, Branch `artifacts`, Commit `7d66f93074d538a9f9e056c4ee712d176219d1f1`, unverändert |
-| `sources/warcraftdb-forever.json` | Questangaben, die den anderen Quellen fehlen | `foreverroutes fetch-warcraftdb`, WarcraftDB Forever, Stand 23.10.2026 |
+| Datei | Inhalt |
+|---|---|
+| `routes-data.json.gz` | Datensatz des Planers (`foreverroutes.dataset.v1`), gebaut von `foreverroutes update` / `build-data` |
+| `sources/lock.json` | festgeschriebene Stände: QuestieDB-, EverythingQuests- und cmangos-Commit, ForeverDB-Build und Prüfsumme |
+| `sources/foreverdb-snapshot.json.gz` | ForeverDB-Questliste Level 1–30 mit Spielmetadaten (Data from ForeverDB.net) |
+| `sources/warcraftdb-forever.json` | Questangaben von WarcraftDB Forever, die den anderen Quellen fehlen |
+| `sources/manual-facts.json` | einzeln belegte Werte (XP, Level, wiederholbar) von WarcraftDB, OctoWow, ClassicDB, Wowhead und Beobachtungen aus ForeverDB, jeweils mit Link; übernommen aus dem früheren Werkzeug |
+
+QuestieDB, EverythingQuests und cmangos werden beim Bau in den festgeschriebenen Commits geladen und nicht eingecheckt.
 
 ## Quellen und Hinweise
 
 - **ForeverDB** — Data from [ForeverDB.net](https://foreverdb.net). Wo ForeverDB-Daten angezeigt werden, muss dieser
   Hinweis mit Link sichtbar sein. ForeverDB ist nicht mit Blizzard Entertainment verbunden.
-- **QuestieDB Forever**, **EverythingQuests Forever** — Questgeber, Abgaben, Ziele und Positionen (über die
-  zusammengeführte Datenbank, jede Angabe mit Quelle).
+- **QuestieDB** (https://github.com/Questie/QuestieDB) — Forever-Quests, NPCs, Objekte, Gegenstände; Classic-XP und
+  Beutechancen als Classic-Referenz gekennzeichnet.
+- **EverythingQuests** (https://github.com/wheelbarrel00/EverythingQuests, MIT) — Forever-Questgeber, Abgaben, Ziele,
+  Voraussetzungen (teils aus AllTheThings).
 - **WarcraftDB Forever** (https://forever.warcraftdb.com) — Spielclient-Questdaten (Ziele mit Mengen, XP, Level,
   Positionen). Abruf laut robots.txt erlaubt, mit 1,5 s Abstand und Zwischenspeicher.
 - **cmangos classic-db** (https://github.com/cmangos/classic-db, GPL-3.0) — Classic-Weltdaten: Zielmengen,

@@ -1,28 +1,30 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"os"
-	"sort"
 
 	"github.com/Battlefeld/ForeverRoutes/dataset"
-	"github.com/Battlefeld/ForeverRoutes/internal/build"
+	"github.com/Battlefeld/ForeverRoutes/internal/update"
 )
 
+// cmdBuildData rebuilds the dataset exactly from the pinned sources (data/sources/lock.json).
 func cmdBuildData(args []string) error {
 	fs := newFlags("build-data")
-	merged := fs.String("merged", "data/sources/merged-quests-1-30.json.gz", "merged quest database (plain or gzip JSON)")
-	mergedRev := fs.String("merged-revision", "7d66f93074d538a9f9e056c4ee712d176219d1f1", "revision of the merged database")
-	cm := fs.String("cmangos", "", "cmangos classic-db dump (Full_DB/*.sql.gz)")
-	cmRev := fs.String("cmangos-revision", "", "cmangos classic-db commit")
-	wdb := fs.String("warcraftdb", "data/sources/warcraftdb-forever.json", "WarcraftDB Forever overlay (fetch-warcraftdb); empty = none")
-	out := fs.String("out", "data/routes-data.json.gz", "output file")
+	out := fs.String("out", update.DatasetFile, "output file")
+	cache := fs.String("cache", ".cache", "download cache")
 	fs.Parse(args)
-	if *cm == "" {
-		return fmt.Errorf("-cmangos is required (Full_DB/ClassicDB_*.sql.gz of cmangos/classic-db)")
+	l, err := update.ReadLock(".")
+	if err != nil {
+		return err
 	}
-	d, err := build.Build(build.Inputs{Merged: *merged, MergedRevision: *mergedRev, CMangos: *cm, CMangosRevision: *cmRev, WarcraftDB: *wdb})
+	snap, err := update.ReadSnapshot(update.SnapshotFile)
+	if err != nil {
+		return err
+	}
+	d, _, err := update.Rebuild(context.Background(), update.Options{Cache: *cache}, l, update.Inputs{Snapshot: snap, Overlay: update.OverlayFile})
 	if err != nil {
 		return err
 	}
@@ -32,39 +34,66 @@ func cmdBuildData(args []string) error {
 	return printJSON(d.Stats)
 }
 
+// cmdUpdate checks every source for a new state and rebuilds the dataset when one changed.
+func cmdUpdate(args []string) error {
+	fs := newFlags("update")
+	force := fs.Bool("force", false, "rebuild even when no source changed")
+	require := fs.Bool("require-foreverdb", false, "fail when FOREVERDB_API_KEY is not set")
+	budget := fs.Int("warcraftdb-budget", 150, "WarcraftDB requests per run")
+	report := fs.String("report", "", "write the report (Markdown) here")
+	cache := fs.String("cache", ".cache", "download cache")
+	fs.Parse(args)
+	rep, err := update.Run(context.Background(), update.Options{Cache: *cache, ForeverDBKey: os.Getenv("FOREVERDB_API_KEY"),
+		RequireForeverDB: *require, WarcraftDBBudget: *budget, Force: *force,
+		Log: func(f string, a ...any) { fmt.Fprintf(os.Stderr, f+"\n", a...) }})
+	if err != nil {
+		return err
+	}
+	md := rep.Markdown()
+	if *report != "" {
+		if err := os.WriteFile(*report, []byte(md), 0o644); err != nil {
+			return err
+		}
+	}
+	switch {
+	case len(rep.Problems) > 0:
+		fmt.Fprint(os.Stderr, md)
+		return fmt.Errorf("checks failed, nothing written")
+	case rep.Changed:
+		fmt.Fprint(os.Stderr, "dataset updated\n"+md)
+	case len(rep.Sources) > 0:
+		fmt.Fprint(os.Stderr, "sources changed, the dataset stayed the same\n"+md)
+	default:
+		fmt.Fprintln(os.Stderr, "nothing new")
+	}
+	return nil
+}
+
 func cmdAudit(args []string) error {
 	fs := newFlags("audit")
-	path := fs.String("data", "data/routes-data.json.gz", "dataset")
+	path := fs.String("data", update.DatasetFile, "dataset")
 	fs.Parse(args)
 	d, err := dataset.Load(*path)
 	if err != nil {
 		return err
 	}
-	reasons := map[string]int{}
+	unsupported := map[string]int{}
 	for _, q := range d.Quests {
 		if q.Unsupported != "" {
-			key := q.Unsupported
-			if i := indexColon(key); i > 0 {
-				key = key[i+2:]
-			}
-			reasons[key]++
+			unsupported[reason(q.Unsupported)]++
 		}
 	}
-	keys := make([]string, 0, len(reasons))
-	for k := range reasons {
-		keys = append(keys, k)
-	}
-	sort.Strings(keys)
-	return printJSON(map[string]any{"build": d.Build, "stats": d.Stats, "unsupported": reasons, "sources": d.Sources})
+	return printJSON(map[string]any{"build": d.Build, "sources": d.Sources, "stats": d.Stats, "unsupported": unsupported})
 }
 
-func indexColon(s string) int {
+// reason drops the quest-specific part ("item 3713: ") of an unsupported note.
+func reason(s string) string {
 	for i := 0; i+1 < len(s); i++ {
 		if s[i] == ':' && s[i+1] == ' ' {
-			return i
+			return s[i+2:]
 		}
 	}
-	return -1
+	return s
 }
 
 func printJSON(v any) error {

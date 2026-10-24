@@ -181,13 +181,7 @@ func Write(path string, d *Dataset) error {
 	if err != nil {
 		return err
 	}
-	gz, _ := gzip.NewWriterLevel(f, gzip.BestCompression)
-	enc := json.NewEncoder(gz)
-	if err := enc.Encode(d); err != nil {
-		f.Close()
-		return err
-	}
-	if err := gz.Close(); err != nil {
+	if err := Encode(f, d); err != nil {
 		f.Close()
 		return err
 	}
@@ -195,6 +189,15 @@ func Write(path string, d *Dataset) error {
 		return err
 	}
 	return os.Rename(tmp, path)
+}
+
+// Encode writes the dataset as gzip JSON; equal datasets give equal bytes.
+func Encode(w io.Writer, d *Dataset) error {
+	gz, _ := gzip.NewWriterLevel(w, gzip.BestCompression)
+	if err := json.NewEncoder(gz).Encode(d); err != nil {
+		return err
+	}
+	return gz.Close()
 }
 
 type peekReader struct {

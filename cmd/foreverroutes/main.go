@@ -18,8 +18,8 @@ func main() {
 		err = cmdBuildData(os.Args[2:])
 	case "audit":
 		err = cmdAudit(os.Args[2:])
-	case "fetch-warcraftdb":
-		err = cmdFetchWarcraftDB(os.Args[2:])
+	case "update":
+		err = cmdUpdate(os.Args[2:])
 	case "plan":
 		err = cmdPlan(os.Args[2:])
 	case "replay":
@@ -39,9 +39,9 @@ func main() {
 func usage() {
 	fmt.Fprintln(os.Stderr, `foreverroutes <command> [flags]
 
-  build-data   build data/routes-data.json.gz from the merged quest database and the cmangos dump
+  update       check every source for a new state; rebuild and check the dataset when one changed
+  build-data   rebuild data/routes-data.json.gz exactly from the pinned sources (data/sources/lock.json)
   audit        what the dataset knows and what is missing
-  fetch-warcraftdb  fetch missing quest facts (objectives, XP, positions) from WarcraftDB Forever
   plan         plan a route (-race Orc -class Warlock -target 30)
   replay       check a planned route step by step
   guide        walk a quest guide (list of accept/complete/turnin/level events) with the same model`)
