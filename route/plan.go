@@ -222,13 +222,11 @@ func (w *World) bestSource(s *State, q *Quest, oi int) (Action, bool) {
 		if !src.Talk && src.NPC != nil && mobLevel(src.NPC) > w.Level(s)+w.Opt.MaxMobAbove {
 			continue
 		}
-		per := 4 + src.Site.Spacing*w.Opt.PathFactor/w.Opt.RunSpeed
-		if src.Talk {
-			per = w.Opt.InteractSecs
-		} else if src.NPC != nil {
-			per = w.mobTime(s, src.NPC, src.Site)
+		work := w.Opt.InteractSecs
+		if !src.Talk {
+			work, _, _ = w.killSeconds(s, src.NPC, src.Site, left/src.Chance) // respawns included: a lone rare is slow
 		}
-		t := w.TravelTime(s, s.Pos, src.Site.Center) + per*left/src.Chance
+		t := w.TravelTime(s, s.Pos, src.Site.Center) + work
 		if t < bt {
 			bt = t
 			best = Action{Op: "work", Quest: q.ID, Obj: oi, At: src.Site.Center}

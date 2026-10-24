@@ -83,14 +83,21 @@ func TestSitesSplitSpawnGroups(t *testing.T) {
 	if src[0].Site.Spawns != 10 || src[1].Site.Spawns != 4 {
 		t.Errorf("groups: %d and %d spawns", src[0].Site.Spawns, src[1].Site.Spawns)
 	}
-	// from the start the west group is closer, so a short objective is worked there
+	// from the start the west group is closer, so a short objective (4 kills, as many as it has boars) is worked there
 	s := w.NewState()
 	if err := w.Apply(s, Action{Op: "accept", Quest: 1, At: w.ByID[1].StartPos}); err != nil {
 		t.Fatal(err)
 	}
-	a, ok := w.bestSource(s, w.ByID[1], 0)
+	q := w.ByID[1]
+	s.Prog[q.Index][0] = 1
+	a, ok := w.bestSource(s, q, 0)
 	if !ok || a.At.X > 0 {
 		t.Errorf("expected the west group, got %+v", a.At)
+	}
+	// five kills there would mean waiting for a respawn: the larger east group is faster
+	s.Prog[q.Index][0] = 0
+	if a, _ := w.bestSource(s, q, 0); a.At.X < 0 {
+		t.Errorf("expected the east group for more kills than the west group has, got %+v", a.At)
 	}
 }
 

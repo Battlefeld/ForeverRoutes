@@ -177,39 +177,50 @@ func mobLevel(n *dataset.NPC) int { return (n.MinLevel + n.MaxLevel + 1) / 2 }
 
 // kill applies k kills of creature n (or k uses of object obj) at site: time, XP, and the credit for every quest in the
 // log that counts this creature or gets items from it.
-func (w *World) kill(s *State, n *dataset.NPC, obj int, site Site, k float64) {
-	if k <= 0 {
-		return
-	}
+// killSeconds is how long k kills (or uses of an object) take at a site from s, and the part of it spent waiting
+// for respawns: mobs still dead from earlier visits are not there, and more kills than living mobs means waiting.
+// after is how many of the site's mobs are dead when done.
+func (w *World) killSeconds(s *State, n *dataset.NPC, site Site, k float64) (t, wait, after float64) {
 	per := 0.0
 	if n != nil {
 		per = w.mobTime(s, n, site)
 	} else {
 		per = 4 + site.Spacing*w.Opt.PathFactor/w.Opt.RunSpeed // using an object
 	}
-	t := per * k
-	// mobs still dead from earlier visits are not there; more kills than living mobs means waiting for respawns
+	t = per * k
+	if n == nil || site.Spawns <= 0 {
+		return t, 0, 0
+	}
+	respawn := float64(n.Respawn)
+	if respawn <= 0 {
+		respawn = 300
+	}
+	spawns := float64(site.Spawns)
+	gone := 0.0
+	if d, ok := s.Dead[site.Key]; ok {
+		gone = d.N * math.Max(0, 1-(s.Time-d.At)/respawn)
+	}
+	alive := spawns - gone
+	after = gone + k
+	if extra := k - alive; extra > 0 {
+		cycles := math.Ceil(extra / spawns)
+		if cycle := per * spawns; respawn > cycle {
+			wait = cycles * (respawn - cycle)
+			t += wait
+		}
+		after = spawns
+	}
+	return t, wait, math.Min(spawns, after)
+}
+
+func (w *World) kill(s *State, n *dataset.NPC, obj int, site Site, k float64) {
+	if k <= 0 {
+		return
+	}
+	t, wait, after := w.killSeconds(s, n, site, k)
+	s.Wait += wait
 	if n != nil && site.Spawns > 0 {
-		respawn := float64(n.Respawn)
-		if respawn <= 0 {
-			respawn = 300
-		}
-		spawns := float64(site.Spawns)
-		gone := 0.0
-		if d, ok := s.Dead[site.Key]; ok {
-			gone = d.N * math.Max(0, 1-(s.Time-d.At)/respawn)
-		}
-		alive := spawns - gone
-		after := gone + k
-		if extra := k - alive; extra > 0 {
-			cycles := math.Ceil(extra / spawns)
-			if cycle := per * spawns; respawn > cycle {
-				t += cycles * (respawn - cycle)
-				s.Wait += cycles * (respawn - cycle)
-			}
-			after = spawns
-		}
-		s.Dead[site.Key] = dead{N: math.Min(spawns, after), At: s.Time + t}
+		s.Dead[site.Key] = dead{N: after, At: s.Time + t}
 	}
 	s.Time += t
 	s.Combat += t

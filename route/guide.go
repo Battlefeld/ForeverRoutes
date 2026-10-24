@@ -15,6 +15,15 @@ type GuideResult struct {
 	Quests  int            `json:"guideQuests"`  // quests turned in
 	Grind   float64        `json:"grindSeconds"` // grinding the guide asks for (level steps) and to the target level
 	Skipped map[string]int `json:"skipped"`      // events that could not be followed, by reason
+	Missed  []GuideMiss    `json:"missed"`       // each skipped quest event with its reason
+}
+
+// GuideMiss is a guide event that could not be followed.
+type GuideMiss struct {
+	Op     string `json:"op"`
+	Quest  int    `json:"quest"`
+	Reason string `json:"reason"`
+	Detail string `json:"detail,omitempty"` // why the dataset leaves the quest out for this character
 }
 
 // FollowGuide walks the events of a guide in order: objectives are worked when the guide completes or turns in a
@@ -44,30 +53,44 @@ func (w *World) FollowGuide(events []GuideEvent, target int) (*GuideResult, erro
 			grindTo(e.Level)
 			continue
 		}
+		miss := func(reason, detail string) {
+			res.Skipped[reason]++
+			res.Missed = append(res.Missed, GuideMiss{Op: e.Op, Quest: e.Quest, Reason: reason, Detail: detail})
+		}
 		q := w.ByID[e.Quest]
 		if q == nil {
-			res.Skipped["quest not available"]++
+			detail, known := w.Excluded[e.Quest]
+			if !known {
+				detail = "not in the dataset"
+			}
+			miss("quest not available", detail)
 			continue
 		}
 		switch e.Op {
 		case "accept":
 			if s.Status[q.Index] != notTaken || w.CanAccept(s, q) != nil || !w.try(s, &acts, Action{Op: "accept", Quest: q.ID, At: w.startAt(s, q)}) {
-				res.Skipped["cannot accept"]++
+				detail := ""
+				if err := w.CanAccept(s, q); err != nil {
+					detail = err.Error()
+				} else if s.Status[q.Index] != notTaken {
+					detail = "already taken or done"
+				}
+				miss("cannot accept", detail)
 			}
 		case "complete", "turnin":
 			if s.Status[q.Index] != active {
-				res.Skipped[e.Op+": not in the log"]++
+				miss(e.Op+": not in the log", "")
 				continue
 			}
 			if !w.workLog(s, &acts, []*Quest{q}) {
-				res.Skipped[e.Op+": objective not possible"]++
+				miss(e.Op+": objective not possible", "")
 				continue
 			}
 			if e.Op == "turnin" {
 				if w.try(s, &acts, Action{Op: "turnin", Quest: q.ID, At: q.EndPos}) {
 					res.Quests++
 				} else {
-					res.Skipped["turnin failed"]++
+					miss("turnin failed", "")
 				}
 			}
 		default:
