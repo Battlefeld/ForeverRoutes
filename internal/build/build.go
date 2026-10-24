@@ -253,6 +253,9 @@ func Build(in Inputs) (*dataset.Dataset, error) {
 	b.quests()
 	b.npcs()
 	b.objects()
+	if b.pdb != nil {
+		b.dungeonOutside()
+	}
 	travel := b.travel()
 	build, _ := merged["build"].(string)
 	d := &dataset.Dataset{Schema: dataset.Schema, Build: build, LevelXP: b.levelXP(), Quests: b.out, NPCs: b.npcOut, Objects: b.objOut, Travel: travel, Stats: b.stats,

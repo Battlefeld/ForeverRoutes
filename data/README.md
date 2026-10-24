@@ -33,7 +33,10 @@ QuestieDB, EverythingQuests und cmangos werden beim Bau in den festgeschriebenen
   Level, Volks- und Klassenmasken mit den Skyborne-Bits, Questgeber, Abgaben, Ziele mit Mengen, Voraussetzungen, was einen
   Gegenstand droppt, Spawnpunkte und Kartenrahmen. Wo Polestar eine Quest kennt, gelten seine Clientwerte vor allen
   Referenzen außer im Spiel beobachteten Werten; Quests, die nur Polestar kennt, kommen hinzu. Ereignisziele (Gebiet
-  erkunden, Eskorte) haben keinen Ort in den Daten und werden ohne sie geplant. Die Abreise der Skyborne von Zephras Isle
+  erkunden, Eskorte) haben keinen Ort in den Daten und werden ohne sie geplant. Dungeonquests bleiben aus Solo-Routen
+  draußen, außer alle Ziele liegen vor dem Instanzportal: Gegner oder Objekte in der offenen Welt, höchstens 450 Yards von
+  einem Dungeoneingang (Polestars `data/codex/entrances.json`), keine Elite. So sind Red Silk Bandanas (Defias im Stollen
+  vor den Todesminen) und The Essence of Aku'Mai (Saphire vor der Tiefschwarzen Grotte) solo planbar. Die Abreise der Skyborne von Zephras Isle
   (Luftschiff nach Mulgore, Skycutter nach Alterac und Portal nach Sturmwind) stammt aus Polestars Skyborne-Guides, die
   Fahrzeiten sind geschätzt. Stand und Commit stehen in `data/sources/lock.json` (`polestar`).
 - **cmangos classic-db** (https://github.com/cmangos/classic-db, GPL-3.0) — Classic-Weltdaten: Zielmengen,

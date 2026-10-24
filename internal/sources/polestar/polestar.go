@@ -126,6 +126,15 @@ type UIMap struct {
 	Bottom float64 `json:"bottom"`
 }
 
+// Entrance is where a dungeon or raid is entered on its zone map (data/codex/entrances.json, curated by Polestar).
+type Entrance struct {
+	Key      string  `json:"key"`
+	Instance int     `json:"instance"` // instance map id
+	UIMap    int     `json:"map"`
+	X        float64 `json:"x"`
+	Y        float64 `json:"y"`
+}
+
 // DB is forever-db, indexed.
 type DB struct {
 	Revision    string
@@ -141,6 +150,7 @@ type DB struct {
 	ItemSources map[int][]ItemSource
 	Spawns      map[string]map[int][]Spawn // kind -> id -> points
 	UIMaps      []UIMap
+	Entrances   []Entrance
 }
 
 func readTable[T any](dir, table string, each func(T)) error {
@@ -190,6 +200,15 @@ func Load(dir, revision string) (*DB, error) {
 		}),
 		readTable(dir, "ui_map", func(u UIMap) { db.UIMaps = append(db.UIMaps, u) }),
 	}
+	if b, err := os.ReadFile(filepath.Join(dir, "entrances.json")); err == nil {
+		var e struct {
+			Entrances []Entrance `json:"entrances"`
+		}
+		if err := json.Unmarshal(b, &e); err != nil {
+			return nil, fmt.Errorf("polestar entrances: %w", err)
+		}
+		db.Entrances = e.Entrances
+	}
 	for _, err := range steps {
 		if err != nil {
 			return nil, err
@@ -218,11 +237,14 @@ func Fetch(ctx context.Context, client *http.Client, cache, revision string) (st
 	if err := os.MkdirAll(dir, 0o755); err != nil {
 		return "", err
 	}
-	for _, name := range append(append([]string{}, Tables...), "index") {
+	for _, name := range append(append([]string{}, Tables...), "index", "entrances") {
 		file := name + ".jsonl"
 		path := "forever-db/data/" + file
-		if name == "index" {
+		switch name {
+		case "index":
 			file, path = "index.json", "forever-db/index.json"
+		case "entrances":
+			file, path = "entrances.json", "data/codex/entrances.json"
 		}
 		url := "https://raw.githubusercontent.com/" + Repository + "/" + revision + "/" + path
 		req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
