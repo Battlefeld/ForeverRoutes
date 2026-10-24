@@ -35,9 +35,9 @@ go test -short ./...               # ohne die langen Planungsläufe
 
 go run ./cmd/foreverroutes plan -race Orc -class Warlock -out orc.json
 go run ./cmd/foreverroutes plan -race Human -class Mage -target 30 -restarts 4 -out human.json
-go run ./cmd/foreverroutes plan -race Orc -class Warlock -profile data/profiles/warlock-orc.json   # Kampfzeiten aus MythicSim
+go run ./cmd/foreverroutes plan -race Orc -class Warlock -profile data/profiles/warlock.json   # Kampfzeiten aus MythicSim
 go run ./cmd/foreverroutes replay -race Orc -class Warlock -route orc.json
-go run ./cmd/foreverroutes next -live state.json -profile data/profiles/warlock-orc.json -horizon 3600   # ab Live-Stand
+go run ./cmd/foreverroutes next -live state.json -profile data/profiles/warlock.json -horizon 3600   # ab Live-Stand
 go run ./cmd/foreverroutes guide -race Orc -class Warlock -events guide.json   # Guide unter denselben Regeln
 go run ./cmd/foreverroutes audit                                              # was der Datensatz kennt und was fehlt
 ```
@@ -63,7 +63,8 @@ jeder Quest-Änderung neu auf. So folgt die Route dem Charakter, statt ihn auf e
 
 `-profile` (bei `plan`, `replay` und `guide`) nimmt die Kampfzeiten aus einem Profil, das ForeverCore mit MythicSim und
 dem Level-Overlay rechnet (`kill-profile`, Schema `foreverroutes.killprofile.v1`). In `data/profiles` liegen die
-Profile der Ausgangstests: Orc Hexer (Gebrechen, Leerwandler) und Mensch Magier (Feuer), Level 10–30.
+Profile aller neun Klassen (Level 10–30): synthetischer Charakter mit der weißen Startwaffe, ohne weitere Ausrüstung
+und Talente. Der Unterschied zwischen den Völkern ist ohne Ausrüstung gering; ein Profil gilt für alle Völker der Klasse.
 
 - **Kampf:** Für jedes Level stehen Schaden, Manaverbrauch und selbst verbrauchte Gesundheit nach 6, 10, 15, 22 und
   30 Sekunden gegen ein gleich hohes Ziel und gegen eines zwei Level darüber. Der Kampf dauert, bis der Schaden die

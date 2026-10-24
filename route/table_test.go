@@ -55,7 +55,7 @@ func TestTableProfile(t *testing.T) {
 
 // The profiles in data/profiles load and give plausible fights for a normal mob of the character's level.
 func TestShippedProfiles(t *testing.T) {
-	for _, f := range []string{"warlock-orc", "mage-human"} {
+	for _, f := range []string{"warrior", "paladin", "hunter", "rogue", "priest", "shaman", "mage", "warlock", "druid"} {
 		r, err := os.Open("../data/profiles/" + f + ".json")
 		if err != nil {
 			t.Fatal(err)
@@ -69,7 +69,7 @@ func TestShippedProfiles(t *testing.T) {
 			t.Errorf("%s: levels %d-%d", f, lo, hi)
 		}
 		fight, rest := p.KillSeconds(Character{Class: p.Class}, 20, &dataset.NPC{HP: 600, MaxLevel: 20, Dmg: 25})
-		if fight < 5 || fight > 60 || rest < 4 || rest > 60 {
+		if fight < 5 || fight > 90 || rest < 4 || rest > 90 {
 			t.Errorf("%s: level 20 mob %.1f s fight, %.1f s rest", f, fight, rest)
 		}
 		t.Logf("%s: level 20 mob (600 HP) %.1f s fight, %.1f s rest", f, fight, rest)
