@@ -18,6 +18,7 @@ import (
 
 	"github.com/Battlefeld/ForeverRoutes/dataset"
 	"github.com/Battlefeld/ForeverRoutes/internal/sources/foreverchanges"
+	"github.com/Battlefeld/ForeverRoutes/internal/sources/guides"
 	"github.com/Battlefeld/ForeverRoutes/internal/sources/polestar"
 	"github.com/Battlefeld/ForeverRoutes/internal/sources/wclbox"
 	"github.com/Battlefeld/ForeverRoutes/internal/sqldump"
@@ -37,6 +38,10 @@ type Inputs struct {
 	MaxQuestLevel    int    // quests above this level are left out (0 = 35)
 	Polestar         string // optional folder with Polestar's forever-db tables (internal/sources/polestar)
 	PolestarRevision string
+	// optional guide folders (internal/sources/guides): RestedXP's Forever guides and Polestar's
+	GuidesRXP         string
+	GuidesRXPRevision string
+	GuidesPolestar    string
 }
 
 type obj = map[string]any
@@ -250,9 +255,29 @@ func Build(in Inputs) (*dataset.Dataset, error) {
 	}
 	b.fitTransforms()
 	b.indexNames()
+	var facts []guides.Fact
+	if in.GuidesRXP != "" {
+		files, err := guides.ReadDir(in.GuidesRXP, ".lua")
+		if err != nil {
+			return nil, err
+		}
+		facts = append(facts, guides.ParseRXP(files)...)
+	}
+	if in.GuidesPolestar != "" {
+		files, err := guides.ReadDir(in.GuidesPolestar, ".guide")
+		if err != nil {
+			return nil, err
+		}
+		facts = append(facts, guides.ParsePolestar(files)...)
+	}
+	if len(facts) > 0 {
+		b.loadGuides(facts)
+		b.stats["guide_facts"] = len(facts)
+	}
 	b.quests()
 	b.npcs()
 	b.objects()
+	b.guideSpawns()
 	if b.pdb != nil {
 		b.dungeonOutside()
 	}
@@ -274,6 +299,14 @@ func Build(in Inputs) (*dataset.Dataset, error) {
 		d.Sources = append(d.Sources, dataset.Source{Name: "Polestar forever-db", URL: "https://github.com/" + polestar.Repository + "/tree/" + in.PolestarRevision + "/forever-db",
 			Revision: in.PolestarRevision, License: "GPL-3.0",
 			Note: "Forever client quest data (client build " + b.pdb.Build + "): Forever XP (dungeon quests raised), levels, race masks with Skyborne, objectives with counts, prerequisites, item sources, positions"})
+	}
+	if b.gdx != nil && b.gdx.credit["rxp"] {
+		d.Sources = append(d.Sources, dataset.Source{Name: "RestedXP Forever guides", URL: "https://github.com/RestedXP/RXPGuides", Revision: in.GuidesRXPRevision, License: "CC BY-NC-SA 4.0",
+			Note: "Where Forever quest items drop and where they lie (the creatures and places the guides send the player to); facts only, no guide text"})
+	}
+	if b.gdx != nil && b.gdx.credit["polestar"] {
+		d.Sources = append(d.Sources, dataset.Source{Name: "Polestar Forever guides", URL: "https://github.com/" + polestar.Repository + "/tree/" + in.PolestarRevision + "/guides/forever", Revision: in.PolestarRevision, License: "GPL-3.0",
+			Note: "Creatures, objects and places of quest objectives (kill, collect, interact steps); facts only"})
 	}
 	if b.wdb != nil {
 		d.Sources = append(d.Sources, dataset.Source{Name: "WarcraftDB Forever", URL: "https://forever.warcraftdb.com", Revision: b.wdb.Fetched,
@@ -331,6 +364,7 @@ type builder struct {
 	wcl       *wclbox.Overlay
 	fch       *foreverchanges.Overlay
 	pdb       *polestar.DB
+	gdx       *guideIndex
 	byName    map[string][]int // lower-case creature name -> cmangos entries
 	zoneID    map[string]int   // lower-case zone name -> uiMapId
 	itemWhy   map[int]string   // item -> why it has no usable source
@@ -1023,6 +1057,13 @@ func (b *builder) startItem(out *dataset.Quest) {
 		}
 		return o.Drops[a].NPC+o.Drops[a].Object < o.Drops[c].NPC+o.Drops[c].Object
 	})
+	if len(o.Drops) == 0 && b.guideItem(out, &o, true) && len(o.Drops) == 0 && len(o.Places) > 0 {
+		// the starting item lies on the ground: the quest starts where the guides find it
+		at := o.Places[0]
+		out.StartAt, out.Sources["start"], out.Sources["startAt"] = &at, "guide place", guideSrc
+		b.stats["quests_started_by_guide_places"]++
+		return
+	}
 	if len(o.Drops) == 0 {
 		b.moreItemSources(out, &o)
 	}
@@ -1362,7 +1403,7 @@ func (b *builder) moreItemSources(out *dataset.Quest, o *dataset.Objective) (kee
 			}
 		}
 	}
-	if b.fromWCLBox(o) || b.fromQuestText(out.ID, o) {
+	if b.guideItem(out, o, false) || b.fromWCLBox(o) || b.fromQuestText(out.ID, o) {
 		return true, true
 	}
 	if b.wcl == nil || b.wcl.Items[o.ID].ID == 0 {

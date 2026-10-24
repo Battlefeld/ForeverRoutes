@@ -1,0 +1,237 @@
+package build
+
+import (
+	"math"
+	"sort"
+	"strconv"
+
+	"github.com/Battlefeld/ForeverRoutes/dataset"
+	"github.com/Battlefeld/ForeverRoutes/internal/sources/guides"
+)
+
+// Guide facts (internal/sources/guides) fill what no database knows, mostly for Forever's own quests: which creature
+// drops an item (the creatures a guide sends the player to kill for it; the chance stays unknown), where items lie on
+// the ground (the guide's places), where a creature or object stands that no source places, and where the item that
+// starts a quest drops. A guide fact never replaces a database value; it only fills a gap.
+
+const guideSrc = "guide"
+
+// guideNear: a named creature counts for a guide step when it stands this close to one of the step's places.
+const guideNear = 400
+
+type guideIndex struct {
+	byQuest map[int][]guides.Fact
+	credit  map[string]bool // sources used
+}
+
+func (b *builder) loadGuides(facts []guides.Fact) {
+	b.gdx = &guideIndex{byQuest: map[int][]guides.Fact{}, credit: map[string]bool{}}
+	for _, f := range facts {
+		b.gdx.byQuest[f.Quest] = append(b.gdx.byQuest[f.Quest], f)
+	}
+}
+
+// guidePoints turns a step's places into world yards.
+func (b *builder) guidePoints(ps []guides.Place) []dataset.Point {
+	var out []dataset.Point
+	for _, p := range ps {
+		switch {
+		case p.World:
+			out = append(out, dataset.Point{Map: p.Map, X: round1(p.X), Y: round1(p.Y)})
+		case p.UIMap > 0:
+			if pt, ok := b.uiPoint(p.UIMap, p.X, p.Y); ok {
+				out = append(out, pt)
+			}
+		case p.Zone != "":
+			if ui, ok := b.zoneID[normName(p.Zone)]; ok {
+				if pt, ok := b.uiPoint(ui, p.X, p.Y); ok {
+					out = append(out, pt)
+				}
+			}
+		}
+	}
+	return out
+}
+
+// uiPoint converts map percent with forever-db's map frames, else the fitted transforms.
+func (b *builder) uiPoint(ui int, x, y float64) (dataset.Point, bool) {
+	if b.pdb != nil {
+		if p, ok := b.uiToWorld(ui, x, y); ok {
+			return p, true
+		}
+	}
+	if t, ok := b.uiT[strconv.Itoa(ui)]; ok {
+		return t.apply(x, y), true
+	}
+	return dataset.Point{}, false
+}
+
+// creaturePoints is where a creature stands in any source.
+func (b *builder) creaturePoints(id int) []dataset.Point {
+	pts := b.worldPoints(id)
+	if b.pdb != nil {
+		for _, s := range b.pdb.Spawns["npc"][id] {
+			pts = append(pts, dataset.Point{Map: s.Map, X: s.X, Y: s.Y})
+		}
+	}
+	return pts
+}
+
+// namedCreatures are the creatures a guide names, near the step's places when it gives any.
+func (b *builder) namedCreatures(names []string, near []dataset.Point) []int {
+	var out []int
+	for _, name := range names {
+		ids := append([]int(nil), b.byName[normName(name)]...)
+		if b.pdb != nil {
+			for id, n := range b.pdb.NPCs {
+				if normName(n.Name) == normName(name) {
+					ids = append(ids, id)
+				}
+			}
+		}
+		ids = dedupe(sortedInts(ids))
+		var close []int
+		for _, id := range ids {
+			if len(near) == 0 || closeTo(b.creaturePoints(id), near) {
+				close = append(close, id)
+			}
+		}
+		if len(close) == 0 && len(near) == 0 {
+			close = ids
+		}
+		out = append(out, close...)
+	}
+	return dedupe(sortedInts(out))
+}
+
+func closeTo(pts, near []dataset.Point) bool {
+	for _, p := range pts {
+		for _, n := range near {
+			if p.Map == n.Map && math.Hypot(p.X-n.X, p.Y-n.Y) <= guideNear {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+func sortedInts(l []int) []int { sort.Ints(l); return l }
+
+// guideFacts are the facts about an item of a quest: by the item's id, or by the objective's number when forever-db
+// names the item behind it.
+func (b *builder) guideFacts(quest, item int, start bool) []guides.Fact {
+	if b.gdx == nil {
+		return nil
+	}
+	var out []guides.Fact
+	for _, f := range b.gdx.byQuest[quest] {
+		if f.Start != start {
+			continue
+		}
+		match := f.Item == item
+		if !match && !start && f.Obj > 0 && b.pdb != nil {
+			for _, o := range b.pdb.Objectives[quest] {
+				if o.N == f.Obj && o.Target == item {
+					match = true
+				}
+			}
+		}
+		if match {
+			out = append(out, f)
+		}
+	}
+	return out
+}
+
+// guideItem fills an item objective (or a quest's starting item) that no source explains: the creatures the guides
+// send the player to kill become drops of unknown chance; without creatures, the places where the items lie become
+// the objective's places. It tells whether anything was found.
+func (b *builder) guideItem(out *dataset.Quest, o *dataset.Objective, start bool) bool {
+	facts := b.guideFacts(out.ID, o.ID, start)
+	if len(facts) == 0 {
+		return false
+	}
+	var npcs []int
+	var places []dataset.Point
+	for _, f := range facts {
+		pts := b.guidePoints(f.Places)
+		ids := append(b.namedCreatures(f.Mobs, pts), f.NPCs...)
+		npcs = append(npcs, ids...)
+		if len(ids) == 0 && len(f.Objects) == 0 {
+			places = append(places, pts...)
+		}
+		for _, ob := range f.Objects {
+			o.Drops = append(o.Drops, dataset.Drop{Object: ob, Chance: 100})
+			b.objWanted[ob] = true
+		}
+		b.gdx.credit[f.Source] = true
+	}
+	for _, id := range dedupe(sortedInts(npcs)) {
+		o.Drops = append(o.Drops, dataset.Drop{NPC: id, Unknown: true})
+		b.npcWanted[id] = true
+	}
+	if len(o.Drops) > 12 {
+		o.Drops = o.Drops[:12]
+	}
+	if len(o.Drops) == 0 && len(places) > 0 {
+		o.Places = dedupePoints(places)
+	}
+	if len(o.Drops) == 0 && len(o.Places) == 0 {
+		return false
+	}
+	o.Source += "+" + guideSrc
+	b.stats["items_sources_from_guides"]++
+	return true
+}
+
+// guideSpawns: creatures and objects a quest needs that no source places get the guides' places for that objective.
+func (b *builder) guideSpawns() {
+	if b.gdx == nil {
+		return
+	}
+	npcs := map[int]*dataset.NPC{}
+	for i := range b.npcOut {
+		npcs[b.npcOut[i].ID] = &b.npcOut[i]
+	}
+	objs := map[int]*dataset.Object{}
+	for i := range b.objOut {
+		objs[b.objOut[i].ID] = &b.objOut[i]
+	}
+	for _, q := range b.out {
+		for _, f := range b.gdx.byQuest[q.ID] {
+			if f.Obj == 0 || len(f.Places) == 0 || b.pdb == nil {
+				continue
+			}
+			for _, o := range b.pdb.Objectives[q.ID] {
+				if o.N != f.Obj {
+					continue
+				}
+				pts := b.guidePoints(f.Places)
+				switch o.Kind {
+				case "kill", "talk":
+					if n := npcs[o.Target]; n != nil && len(n.Spawns) == 0 && len(pts) > 0 {
+						n.Spawns, n.Source = pts, "guide_places"
+						b.stats["npcs_placed_by_guides"]++
+					}
+				case "object":
+					if ob := objs[o.Target]; ob != nil && len(ob.Spawns) == 0 && len(pts) > 0 {
+						ob.Spawns = pts
+						b.stats["objects_placed_by_guides"]++
+					}
+				}
+			}
+		}
+	}
+}
+
+func dedupePoints(ps []dataset.Point) []dataset.Point {
+	seen := map[dataset.Point]bool{}
+	var out []dataset.Point
+	for _, p := range ps {
+		if !seen[p] {
+			seen[p] = true
+			out = append(out, p)
+		}
+	}
+	return thin(out, 24)
+}

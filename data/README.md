@@ -39,6 +39,13 @@ QuestieDB, EverythingQuests und cmangos werden beim Bau in den festgeschriebenen
   vor den Todesminen) und The Essence of Aku'Mai (Saphire vor der Tiefschwarzen Grotte) solo planbar. Die Abreise der Skyborne von Zephras Isle
   (Luftschiff nach Mulgore, Skycutter nach Alterac und Portal nach Sturmwind) stammt aus Polestars Skyborne-Guides, die
   Fahrzeiten sind geschätzt. Stand und Commit stehen in `data/sources/lock.json` (`polestar`).
+- **Guide-Fakten aus RestedXP** (https://github.com/RestedXP/RXPGuides, `Guides/forever`, CC BY-NC-SA 4.0) **und Polestars
+  Forever-Guides** (`guides/forever`, GPL-3.0) — was die Guides dem Spieler zu einem Questziel sagen: welche Gegner man
+  dafür tötet, wo man hingeht, ob die Gegenstände am Boden liegen, welches Objekt man benutzt, wo der Gegenstand droppt,
+  der eine Quest startet. Nur Fakten (IDs, Namen, Orte), kein Guidetext. Sie füllen nur Lücken, die keine Datenbank
+  schließt: genannte Gegner werden Drops mit unbekannter Chance, Objekte Drops zu 100 %, sonst werden die Orte des Guides
+  die Orte des Ziels; Gegner und Objekte ohne Spawnpunkt bekommen die Orte des Guideschritts. RestedXPs Stand steht in
+  `data/sources/lock.json` (`rxp`), Polestars im selben Commit wie forever-db.
 - **cmangos classic-db** (https://github.com/cmangos/classic-db, GPL-3.0) — Classic-Weltdaten: Zielmengen,
   Beutechancen, Spawnpositionen, Respawnzeiten, Lebenspunkte und Schaden der Kreaturen, Flugmeister, Gasthäuser,
   Transporte. Classic, nicht Forever: Forever-Angaben haben Vorrang. Werte aus cmangos stehen unter GPL-3.0; damit

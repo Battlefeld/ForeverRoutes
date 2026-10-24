@@ -50,6 +50,7 @@ var repos = map[string][2]string{
 	"everythingquests": {"https://github.com/wheelbarrel00/EverythingQuests", "main"},
 	"cmangos":          {"https://github.com/cmangos/classic-db", "master"},
 	"polestar":         {"https://github.com/fitzforge/polestar", "next"}, // the default branch carries forever-db
+	"rxp":              {"https://github.com/RestedXP/RXPGuides", "main"},
 }
 
 // Lock pins the state of every source a dataset was built from.
@@ -59,6 +60,7 @@ type Lock struct {
 	EverythingQuests string `json:"everythingquests"`
 	CMangos          string `json:"cmangos"`
 	Polestar         string `json:"polestar,omitempty"` // forever-db (Polestar), empty: not used
+	RXP              string `json:"rxp,omitempty"`      // RestedXP's guides, empty: not used
 	ForeverDBBuild   string `json:"foreverdbBuild"`
 	ForeverDBHash    string `json:"foreverdbHash"`    // of the stored snapshot
 	ForeverDBFetched string `json:"foreverdbFetched"` // when the API was last asked (RFC 3339)
@@ -201,6 +203,32 @@ func head(ctx context.Context, repo, branch string) (string, error) {
 	return f[0], nil
 }
 
+// sparseCheckout checks out only some folders of one commit of a repository (shallow, without other files' contents)
+// into cache/<name>-<commit> and returns that folder.
+func sparseCheckout(ctx context.Context, cache, name, repo, rev string, paths ...string) (string, error) {
+	dir := filepath.Join(cache, name+"-"+rev)
+	if _, err := os.Stat(filepath.Join(dir, ".done")); err == nil {
+		return dir, nil
+	}
+	os.RemoveAll(dir)
+	steps := [][]string{
+		{"init", "-q", dir},
+		{"-C", dir, "remote", "add", "origin", repo},
+		{"-C", dir, "sparse-checkout", "set", "--no-cone"},
+		{"-C", dir, "fetch", "-q", "--depth", "1", "--filter=blob:none", "origin", rev},
+		{"-C", dir, "checkout", "-q", "FETCH_HEAD"},
+	}
+	for _, p := range paths {
+		steps[2] = append(steps[2], "/"+p+"/")
+	}
+	for _, args := range steps {
+		if out, err := exec.CommandContext(ctx, "git", args...).CombinedOutput(); err != nil {
+			return "", fmt.Errorf("git %s: %v: %s", strings.Join(args, " "), err, out)
+		}
+	}
+	return dir, os.WriteFile(filepath.Join(dir, ".done"), nil, 0o644)
+}
+
 // cmangosDump checks out one commit of cmangos classic-db (shallow) and returns its Full_DB dump.
 func cmangosDump(ctx context.Context, cache, rev string) (string, error) {
 	dir := filepath.Join(cache, "classic-db-"+rev)
@@ -323,6 +351,17 @@ func Rebuild(ctx context.Context, o Options, l *Lock, in Inputs) (*dataset.Datas
 			return nil, nil, err
 		}
 		bin.PolestarRevision = l.Polestar
+		if bin.GuidesPolestar, err = sparseCheckout(ctx, o.Cache, "polestar-guides", repos["polestar"][0], l.Polestar, "guides/forever"); err != nil {
+			return nil, nil, err
+		}
+		bin.GuidesPolestar = filepath.Join(bin.GuidesPolestar, "guides", "forever")
+	}
+	if l.RXP != "" {
+		dir, err := sparseCheckout(ctx, o.Cache, "rxp", repos["rxp"][0], l.RXP, "Guides/forever", "Guides/Forever")
+		if err != nil {
+			return nil, nil, err
+		}
+		bin.GuidesRXP, bin.GuidesRXPRevision = filepath.Join(dir, "Guides"), l.RXP
 	}
 	d, err := build.Build(bin)
 	if err != nil {
@@ -345,7 +384,7 @@ func Run(ctx context.Context, o Options) (*Report, error) {
 		if err != nil {
 			return nil, err
 		}
-		cur := map[string]*string{"questie": &next.Questie, "everythingquests": &next.EverythingQuests, "cmangos": &next.CMangos, "polestar": &next.Polestar}[name]
+		cur := map[string]*string{"questie": &next.Questie, "everythingquests": &next.EverythingQuests, "cmangos": &next.CMangos, "polestar": &next.Polestar, "rxp": &next.RXP}[name]
 		if h != *cur {
 			rep.Sources = append(rep.Sources, fmt.Sprintf("%s %s → %s", name, short(*cur), short(h)))
 			*cur = h

@@ -1,6 +1,9 @@
 package route
 
-import "fmt"
+import (
+	"fmt"
+	"math"
+)
 
 // GuideEvent is one step of a quest guide: accept, complete or turn in a quest, or reach a level.
 type GuideEvent struct {
@@ -30,7 +33,18 @@ type GuideMiss struct {
 // quest, level steps are reached by grinding at the best spot nearby, and after the last event the character grinds to
 // the target level. Quests this character or the dataset cannot do are skipped and counted.
 func (w *World) FollowGuide(events []GuideEvent, target int) (*GuideResult, error) {
-	s := w.NewState()
+	return w.followFrom(w.NewState(), events, target, math.Inf(1))
+}
+
+// FollowGuideFrom walks a guide from a live state for at most horizon seconds of play: what the character has done
+// already is skipped (its accepts fail silently, its objectives are complete), the rest follows the guide's order.
+// The result's times count from s.
+func (w *World) FollowGuideFrom(s *State, events []GuideEvent, target int, horizon float64) (*GuideResult, error) {
+	return w.followFrom(s.clone(), events, target, horizon)
+}
+
+func (w *World) followFrom(s *State, events []GuideEvent, target int, horizon float64) (*GuideResult, error) {
+	s0 := s.clone()
 	var acts []Action
 	res := &GuideResult{Skipped: map[string]int{}}
 	grindTo := func(level int) {
@@ -46,8 +60,11 @@ func (w *World) FollowGuide(events []GuideEvent, target int) (*GuideResult, erro
 		}
 	}
 	for _, e := range events {
-		if w.Level(s) >= target {
+		if w.Level(s) >= target || s.Time-s0.Time >= horizon {
 			break
+		}
+		if q := w.ByID[e.Quest]; q != nil && s0.Status[q.Index] == done {
+			continue // done before this walk began
 		}
 		if e.Op == "level" {
 			grindTo(e.Level)
@@ -100,8 +117,13 @@ func (w *World) FollowGuide(events []GuideEvent, target int) (*GuideResult, erro
 			return nil, fmt.Errorf("unknown guide event %q", e.Op)
 		}
 	}
-	grindTo(target)
-	r, err := w.Replay(acts)
+	if s.Time-s0.Time < horizon {
+		grindTo(target)
+	}
+	if len(acts) == 0 {
+		return nil, fmt.Errorf("nothing left to do in this guide")
+	}
+	r, err := w.replayFrom(s0, acts)
 	if err != nil {
 		return nil, err
 	}

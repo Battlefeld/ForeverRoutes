@@ -1,0 +1,300 @@
+// Package guides reads what leveling guides tell the player about a quest objective: which creatures to kill for it,
+// where to go, whether its items lie on the ground, which object to use. For Forever's own quests this is often the
+// only public record of where an item drops. Two guide sets are read, both under licences that allow it:
+//
+//   - RestedXP's Forever guides (github.com/RestedXP/RXPGuides, Guides/forever and Guides/Forever; CC BY-NC-SA 4.0):
+//     a step's ".complete Q,N" and ".collect ITEM,COUNT,Q,N" name the objective, ".mob" the creatures, ".goto" the
+//     places (world yards "uiMap/instance,y,x" or map percent "uiMap,x,y"), ".use ITEM" an item that starts a quest.
+//   - Polestar's Forever guides (github.com/fitzforge/polestar, guides/forever; GPL-3.0): "kill NPC quest Q.N",
+//     "collect ITEM quest Q.N", "interact OBJECT quest Q.N", with "@x,y" or a step's "goto x,y" on the zone's map.
+//
+// Only facts are taken (ids, names, places); no guide text.
+package guides
+
+import (
+	"os"
+	"path/filepath"
+	"regexp"
+	"sort"
+	"strconv"
+	"strings"
+)
+
+// Place is where a guide sends the player: world yards (World: Map is the instance, X north, Y west) or percent on an
+// in-game map (UIMap, or Zone by name when the guide names the zone instead).
+type Place struct {
+	World bool    `json:"world,omitempty"`
+	Map   int     `json:"map,omitempty"`
+	UIMap int     `json:"ui,omitempty"`
+	Zone  string  `json:"zone,omitempty"`
+	X     float64 `json:"x"`
+	Y     float64 `json:"y"`
+}
+
+// Fact is what one guide step says about one objective (Obj, numbered as the game numbers them, from 1) of a quest, or
+// about the item that starts a quest (Start).
+type Fact struct {
+	Source  string   `json:"source"` // rxp | polestar
+	File    string   `json:"file"`
+	Quest   int      `json:"quest"`
+	Obj     int      `json:"obj,omitempty"`
+	Item    int      `json:"item,omitempty"`
+	Start   bool     `json:"start,omitempty"`
+	Mobs    []string `json:"mobs,omitempty"`
+	NPCs    []int    `json:"npcs,omitempty"`
+	Objects []int    `json:"objects,omitempty"`
+	Places  []Place  `json:"places,omitempty"`
+	Ground  bool     `json:"ground,omitempty"` // the items lie on the ground (or in the open): picked up, not dropped
+}
+
+var (
+	rxpGuide    = regexp.MustCompile(`(?s)RegisterGuide\(\[\[(.*?)\]\]`)
+	rxpGoto     = regexp.MustCompile(`^\.goto\s+(\d+)(?:/(\d+))?,\s*(-?[\d.]+),\s*(-?[\d.]+)`)
+	rxpComplete = regexp.MustCompile(`^\.complete\s+(\d+),(\d+)`)
+	rxpCollect  = regexp.MustCompile(`^\.collect\s+(\d+),\d+(?:,(\d+),(\d+))?`)
+	rxpAccept   = regexp.MustCompile(`^\.accept\s+(\d+)`)
+	rxpUse      = regexp.MustCompile(`^\.use\s+(\d+)`)
+	rxpEnemy    = regexp.MustCompile(`cRXP_ENEMY_([^|]+)\|r`)
+)
+
+// ParseRXP reads RestedXP guide files (name -> content).
+func ParseRXP(files map[string]string) []Fact {
+	var out []Fact
+	for _, name := range sortedKeys(files) {
+		for _, body := range rxpGuide.FindAllStringSubmatch(files[name], -1) {
+			var step []string
+			flush := func() {
+				out = append(out, rxpStep(name, step)...)
+				step = nil
+			}
+			for _, raw := range strings.Split(body[1], "\n") {
+				line := strings.TrimSpace(raw)
+				if strings.HasPrefix(line, "--") || line == "" {
+					continue
+				}
+				if strings.HasPrefix(line, "step") {
+					flush()
+					continue
+				}
+				// a line's own class or race filter does not change where things are
+				if i := strings.Index(line, " << "); i > 0 {
+					line = strings.TrimSpace(line[:i])
+				}
+				if i := strings.Index(line, " --"); i > 0 {
+					line = strings.TrimSpace(line[:i])
+				}
+				step = append(step, line)
+			}
+			flush()
+		}
+	}
+	return out
+}
+
+func rxpStep(file string, lines []string) []Fact {
+	var places []Place
+	var facts []*Fact
+	var cur *Fact
+	var stepMobs, textMobs []string
+	ground, use, accepted := false, 0, 0
+	for _, l := range lines {
+		switch {
+		case rxpGoto.MatchString(l):
+			m := rxpGoto.FindStringSubmatch(l)
+			ui, _ := strconv.Atoi(m[1])
+			a, _ := strconv.ParseFloat(m[3], 64)
+			b, _ := strconv.ParseFloat(m[4], 64)
+			if m[2] != "" {
+				inst, _ := strconv.Atoi(m[2])
+				places = append(places, Place{World: true, Map: inst, UIMap: ui, X: b, Y: a})
+			} else {
+				places = append(places, Place{UIMap: ui, X: a, Y: b})
+			}
+		case rxpComplete.MatchString(l):
+			m := rxpComplete.FindStringSubmatch(l)
+			q, _ := strconv.Atoi(m[1])
+			n, _ := strconv.Atoi(m[2])
+			cur = &Fact{Source: "rxp", File: file, Quest: q, Obj: n}
+			facts = append(facts, cur)
+		case rxpCollect.MatchString(l):
+			m := rxpCollect.FindStringSubmatch(l)
+			item, _ := strconv.Atoi(m[1])
+			cur = &Fact{Source: "rxp", File: file, Item: item}
+			if m[2] != "" {
+				cur.Quest, _ = strconv.Atoi(m[2])
+				cur.Obj, _ = strconv.Atoi(m[3])
+			}
+			facts = append(facts, cur)
+		case strings.HasPrefix(l, ".mob "):
+			name := strings.TrimSpace(strings.TrimPrefix(strings.TrimPrefix(l, ".mob "), "+"))
+			if cur != nil {
+				cur.Mobs = appendName(cur.Mobs, name)
+			} else {
+				stepMobs = appendName(stepMobs, name)
+			}
+		case rxpUse.MatchString(l):
+			use, _ = strconv.Atoi(rxpUse.FindStringSubmatch(l)[1])
+		case rxpAccept.MatchString(l):
+			accepted, _ = strconv.Atoi(rxpAccept.FindStringSubmatch(l)[1])
+		case strings.HasPrefix(l, ">>"):
+			if strings.Contains(l, "on the ground") || strings.Contains(l, "cRXP_PICK_") {
+				ground = true
+			}
+			for _, m := range rxpEnemy.FindAllStringSubmatch(l, -1) {
+				textMobs = appendName(textMobs, singular(strings.TrimSpace(m[1])))
+			}
+		}
+	}
+	var out []Fact
+	for _, f := range facts {
+		if len(f.Mobs) == 0 {
+			f.Mobs = stepMobs
+		}
+		if len(f.Mobs) == 0 {
+			f.Mobs = textMobs
+		}
+		f.Places, f.Ground = places, ground && len(f.Mobs) == 0
+		// ".collect ITEM,1,Q" with ".use ITEM" and ".accept Q": the item that starts the quest
+		if f.Item != 0 && f.Item == use && accepted != 0 {
+			f.Start, f.Quest, f.Obj = true, accepted, 0
+		}
+		if f.Quest != 0 && (len(f.Mobs) > 0 || len(f.Places) > 0) {
+			out = append(out, *f)
+		}
+	}
+	return out
+}
+
+var (
+	psStep    = regexp.MustCompile(`^step\b`)
+	psObj     = regexp.MustCompile(`^(kill|collect|interact)\s+(\d+)(?:\s+x\d+)?\s+quest\s+(\d+)\.(\d+)(.*)$`)
+	psAt      = regexp.MustCompile(`@(-?[\d.]+),(-?[\d.]+)`)
+	psGoto    = regexp.MustCompile(`^goto\s+(-?[\d.]+),(-?[\d.]+)`)
+	psZone    = regexp.MustCompile(`^zone\s+(.+)$`)
+	psComment = regexp.MustCompile(`\s+--.*$`)
+)
+
+// ParsePolestar reads Polestar guide files (name -> content).
+func ParsePolestar(files map[string]string) []Fact {
+	var out []Fact
+	for _, name := range sortedKeys(files) {
+		guideZone, zone := "", ""
+		var step []string
+		flush := func() {
+			out = append(out, polestarStep(name, zone, step)...)
+			step, zone = nil, guideZone
+		}
+		for _, raw := range strings.Split(files[name], "\n") {
+			if strings.HasPrefix(strings.TrimSpace(raw), "#") {
+				continue
+			}
+			line := strings.TrimSpace(psComment.ReplaceAllString(raw, ""))
+			if line == "" {
+				continue
+			}
+			indented := strings.HasPrefix(raw, " ") || strings.HasPrefix(raw, "\t")
+			switch {
+			case !indented && psStep.MatchString(line):
+				flush()
+			case !indented && psZone.MatchString(line):
+				guideZone = psZone.FindStringSubmatch(line)[1]
+				zone = guideZone
+			case indented && psZone.MatchString(line):
+				zone = psZone.FindStringSubmatch(line)[1]
+			case indented:
+				step = append(step, line)
+			}
+		}
+		flush()
+	}
+	return out
+}
+
+func polestarStep(file, zone string, lines []string) []Fact {
+	var stepPlaces []Place
+	for _, l := range lines {
+		if m := psGoto.FindStringSubmatch(l); m != nil {
+			x, _ := strconv.ParseFloat(m[1], 64)
+			y, _ := strconv.ParseFloat(m[2], 64)
+			stepPlaces = append(stepPlaces, Place{Zone: zone, X: x, Y: y})
+		}
+	}
+	var out []Fact
+	for _, l := range lines {
+		m := psObj.FindStringSubmatch(l)
+		if m == nil {
+			continue
+		}
+		id, _ := strconv.Atoi(m[2])
+		q, _ := strconv.Atoi(m[3])
+		n, _ := strconv.Atoi(m[4])
+		f := Fact{Source: "polestar", File: file, Quest: q, Obj: n, Places: stepPlaces}
+		if at := psAt.FindStringSubmatch(m[5]); at != nil {
+			x, _ := strconv.ParseFloat(at[1], 64)
+			y, _ := strconv.ParseFloat(at[2], 64)
+			f.Places = []Place{{Zone: zone, X: x, Y: y}}
+		}
+		switch m[1] {
+		case "kill":
+			f.NPCs = []int{id}
+		case "collect":
+			f.Item = id
+		case "interact":
+			f.Objects = []int{id}
+		}
+		out = append(out, f)
+	}
+	return out
+}
+
+// singular turns a guide's plural creature name ("Kobold Vermins") into the creature's.
+func singular(n string) string {
+	switch {
+	case strings.HasSuffix(n, "ies"):
+		return n[:len(n)-3] + "y"
+	case strings.HasSuffix(n, "ves"):
+		return n[:len(n)-3] + "f"
+	case strings.HasSuffix(n, "s") && !strings.HasSuffix(n, "ss"):
+		return n[:len(n)-1]
+	}
+	return n
+}
+
+func appendName(l []string, n string) []string {
+	if n == "" {
+		return l
+	}
+	for _, x := range l {
+		if x == n {
+			return l
+		}
+	}
+	return append(l, n)
+}
+
+func sortedKeys(m map[string]string) []string {
+	out := make([]string, 0, len(m))
+	for k := range m {
+		out = append(out, k)
+	}
+	sort.Strings(out)
+	return out
+}
+
+// ReadDir reads every file below dir whose name ends in suffix (name relative to dir -> content).
+func ReadDir(dir, suffix string) (map[string]string, error) {
+	files := map[string]string{}
+	err := filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
+		if err != nil || info.IsDir() || !strings.HasSuffix(path, suffix) {
+			return err
+		}
+		b, err := os.ReadFile(path)
+		if err != nil {
+			return err
+		}
+		rel, _ := filepath.Rel(dir, path)
+		files[filepath.ToSlash(rel)] = string(b)
+		return nil
+	})
+	return files, err
+}

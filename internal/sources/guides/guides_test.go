@@ -1,0 +1,67 @@
+package guides
+
+import "testing"
+
+func TestParseRXP(t *testing.T) {
+	src := `RXPGuides.RegisterGuide([[
+#forever
+step
+    .goto 1429,48.314,36.487,45,0
+    .goto 1429,49.070,36.438,45,0
+    >>Kill |cRXP_ENEMY_Kobold Vermins|r. Loot them for the [|cRXP_LOOT_Nibbled-On Book|r]
+    .use 247834 >> Use it
+    .collect 247834,1,91741,1 -- Nibbled-On Book (1)
+    .accept 91741 >> Accept Nibbled-On Book
+    .complete 7,1 --Kill Kobold Vermin (x10)
+    .mob Kobold Vermin
+step
+    .goto 1411/1,-4260.000,-404.200
+    >>Loot |cRXP_PICK_Abandoned Training Weapons|r on the ground
+    .complete 97279,1 --|6/6 Abandoned Training Weapon
+step
+    >>Kill |cRXP_ENEMY_Pygmy Surf Crawlers|r
+    .complete 818,2 --Crawler Mucus (8)
+    .mob +Pygmy Surf Crawler
+    .complete 818,1 --Intact Makrura Eye (4)
+    .mob +Makrura Shellhide << Warrior
+]])`
+	facts := ParseRXP(map[string]string{"g.lua": src})
+	by := map[[2]int]Fact{}
+	for _, f := range facts {
+		by[[2]int{f.Quest, f.Obj}] = f
+	}
+	start := by[[2]int{91741, 0}]
+	if !start.Start || start.Item != 247834 || len(start.Places) != 2 || start.Places[0].UIMap != 1429 || start.Places[0].X != 48.314 {
+		t.Errorf("start item: %+v", start)
+	}
+	if f := by[[2]int{7, 1}]; len(f.Mobs) != 1 || f.Mobs[0] != "Kobold Vermin" {
+		t.Errorf("kill: %+v", f)
+	}
+	ground := by[[2]int{97279, 1}]
+	if !ground.Ground || len(ground.Places) != 1 || !ground.Places[0].World || ground.Places[0].Map != 1 || ground.Places[0].X != -404.2 || ground.Places[0].Y != -4260 {
+		t.Errorf("ground: %+v", ground)
+	}
+	if a, b := by[[2]int{818, 2}], by[[2]int{818, 1}]; len(a.Mobs) != 1 || a.Mobs[0] != "Pygmy Surf Crawler" || len(b.Mobs) != 1 || b.Mobs[0] != "Makrura Shellhide" {
+		t.Errorf("mobs per objective: %+v %+v", a, b)
+	}
+}
+
+func TestParsePolestar(t *testing.T) {
+	src := "guide forever/horde/orc-troll/01-durotar\nzone Durotar\n\nstep Training weapons and boars\n  tip The weapons lie around the Den.\n  collect 277653 quest 97279.1\n  kill 3098 quest 788.1\n  goto 42.4,68.6 \"The Den\"\n\nstep Isle\n  zone Thunder Bluff\n  collect 251918 quest 92473.1 @41.4,26.4\n  interact 460001 quest 92598.1 \"Cast Skysight\"   -- note\n"
+	facts := ParsePolestar(map[string]string{"g.guide": src})
+	if len(facts) != 4 {
+		t.Fatalf("%d facts: %+v", len(facts), facts)
+	}
+	if f := facts[0]; f.Item != 277653 || f.Quest != 97279 || f.Obj != 1 || len(f.Places) != 1 || f.Places[0].Zone != "Durotar" || f.Places[0].X != 42.4 {
+		t.Errorf("collect: %+v", f)
+	}
+	if f := facts[1]; len(f.NPCs) != 1 || f.NPCs[0] != 3098 {
+		t.Errorf("kill: %+v", f)
+	}
+	if f := facts[2]; f.Places[0].Zone != "Thunder Bluff" || f.Places[0].X != 41.4 {
+		t.Errorf("@ place in the step's zone: %+v", f)
+	}
+	if f := facts[3]; len(f.Objects) != 1 || f.Objects[0] != 460001 {
+		t.Errorf("interact: %+v", f)
+	}
+}

@@ -40,12 +40,13 @@ type Drop struct {
 
 // Objective is one requirement of a quest.
 type Objective struct {
-	Kind    string `json:"k"` // kill | item | object
-	ID      int    `json:"id"`
-	Count   int    `json:"n"`
-	Source  string `json:"src"`
-	Drops   []Drop `json:"drops,omitempty"`
-	Vendors []int  `json:"vendors,omitempty"` // NPCs that sell the item
+	Kind    string  `json:"k"` // kill | item | object
+	ID      int     `json:"id"`
+	Count   int     `json:"n"`
+	Source  string  `json:"src"`
+	Drops   []Drop  `json:"drops,omitempty"`
+	Vendors []int   `json:"vendors,omitempty"` // NPCs that sell the item
+	Places  []Point `json:"places,omitempty"`  // where the items lie, from guides, when no creature or object is known
 }
 
 // Quest is one quest with everything the route engine needs.

@@ -317,7 +317,8 @@ func (w *World) Apply(s *State, a Action) error {
 		var src *Source
 		bd := math.Inf(1)
 		for i := range o.Sources {
-			if (a.NPC != 0 && o.Sources[i].NPC != nil && o.Sources[i].NPC.ID == a.NPC) || (a.Object != 0 && o.Sources[i].Object == a.Object) {
+			if (a.NPC != 0 && o.Sources[i].NPC != nil && o.Sources[i].NPC.ID == a.NPC) || (a.Object != 0 && o.Sources[i].Object == a.Object) ||
+				(a.NPC == 0 && a.Object == 0 && o.Sources[i].Gather) {
 				if d := distance(o.Sources[i].Site.Center, a.At); d < bd {
 					src, bd = &o.Sources[i], d
 				}
@@ -468,7 +469,7 @@ func (w *World) describe(a Action) string {
 		if q := w.ByID[a.Quest]; q != nil {
 			if a.Op == "work" {
 				o := q.Objectives[a.Obj]
-				target := ""
+				target := "where the guides find it"
 				if a.NPC != 0 {
 					target = w.NPC[a.NPC].Name
 				} else if ob := w.Objects[a.Object]; ob != nil {

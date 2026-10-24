@@ -25,6 +25,8 @@ type Source struct {
 	Talk   bool // talk to the NPC: no fight
 	// Assumed: the data gives no chance for this source; the model's AssumedDrop is used and the result says so
 	Assumed bool
+	// Gather: the items lie at the site (a guide's places, no creature or object known): picked up like using objects
+	Gather bool
 }
 
 // Objective of a quest, resolved to the places that serve it.
@@ -272,6 +274,11 @@ func (w *World) resolve(q *dataset.Quest) (*Quest, string) {
 				}
 			}
 			ro.Sources = append(ro.Sources, w.dropSources(o.Drops)...)
+			if len(usable(ro.Sources)) == 0 && len(o.Places) > 0 {
+				for _, st := range w.sites(o.Places) {
+					ro.Sources = append(ro.Sources, Source{Chance: 1, Site: st, Gather: true})
+				}
+			}
 		}
 		ro.Sources = usable(ro.Sources)
 		if len(ro.Sources) == 0 {
