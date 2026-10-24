@@ -2,6 +2,7 @@ package route
 
 import (
 	"math"
+	"strings"
 
 	"github.com/Battlefeld/ForeverRoutes/dataset"
 )
@@ -25,13 +26,19 @@ type deaths struct {
 	cell   float64
 	grave  map[[3]int][2]int32 // map, i, j -> graveyard index + 1 for Alliance, Horde
 	graves []dataset.Node
+	known  []dataset.Deathskip // the guides' deathskips this character may use
 }
 
-func newDeaths(t dataset.Travel) *deaths {
+func newDeaths(t dataset.Travel, char Character, faction string) *deaths {
 	if t.Deaths == nil || len(t.Graveyards) == 0 {
 		return nil
 	}
 	d := &deaths{cell: t.Deaths.Cell, grave: map[[3]int][2]int32{}, graves: t.Graveyards}
+	for _, k := range t.Deathskips {
+		if k.Grave >= 0 && k.Grave < len(t.Graveyards) && filterFits(k.Filter, char, faction) {
+			d.known = append(d.known, k)
+		}
+	}
 	c := t.Deaths.Cells
 	for k := 0; k+4 < len(c); k += 5 {
 		d.grave[[3]int{c[k], c[k+1], c[k+2]}] = [2]int32{int32(c[k+3]), int32(c[k+4])}
@@ -86,5 +93,62 @@ func (w *World) deathskip(s *State, a, b dataset.Point) (float64, int) {
 			}
 		}
 	}
+	// the guides' deathskips: walk to where they die
+	for _, k := range d.known {
+		if k.At.Map != a.Map || d.graves[k.Grave].At.Map != b.Map {
+			continue
+		}
+		die := w.walk(a, k.At)
+		if die+deathSecs >= best {
+			continue
+		}
+		g := d.graves[k.Grave].At
+		after, _ := w.overland(s, g, b)
+		if t := die + deathSecs + after + math.Max(0, sick-after); t < best {
+			best, bestG = t, k.Grave
+		}
+	}
 	return best, bestG
+}
+
+// filterFits reads a guide step's filter: alternatives split by "/", each a list of words that must all fit (a race,
+// a class, Alliance or Horde; "!" negates). Words it does not know fit.
+func filterFits(filter string, c Character, faction string) bool {
+	if strings.TrimSpace(filter) == "" {
+		return true
+	}
+	race := c.Race
+	if race == "Undead" {
+		race = "Scourge"
+	}
+	side := map[string]string{"A": "Alliance", "H": "Horde"}[faction]
+	word := func(w string) bool {
+		switch {
+		case strings.EqualFold(w, c.Class), strings.EqualFold(w, side), strings.EqualFold(w, race), strings.EqualFold(w, c.Race):
+			return true
+		case ClassBits[w] != 0, RaceBits[w] != 0, w == "Alliance", w == "Horde", w == "Skyborne", w == "Scourge", w == "Undead":
+			return false
+		}
+		return true
+	}
+	for _, alt := range strings.Split(filter, "/") {
+		ok := true
+		for _, w := range strings.Fields(alt) {
+			if neg := strings.HasPrefix(w, "!"); neg {
+				if word(w[1:]) && known(w[1:]) {
+					ok = false
+				}
+			} else if !word(w) {
+				ok = false
+			}
+		}
+		if ok {
+			return true
+		}
+	}
+	return false
+}
+
+func known(w string) bool {
+	return ClassBits[w] != 0 || RaceBits[w] != 0 || w == "Alliance" || w == "Horde" || w == "Skyborne" || w == "Scourge" || w == "Undead"
 }

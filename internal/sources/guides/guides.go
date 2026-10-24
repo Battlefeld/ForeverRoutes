@@ -325,3 +325,70 @@ func ReadDir(dir, suffix string) (map[string]string, error) {
 	})
 	return files, err
 }
+
+// Deathskip is a deathskip a guide uses: where to die, where the guide goes next (by the graveyard's Spirit Healer),
+// and the step's race, class and faction filter as written ("Horde Shaman", "!Warlock", "Human Warrior/Dwarf Paladin").
+type Deathskip struct {
+	File   string `json:"file"`
+	Line   int    `json:"line"`
+	Die    Place  `json:"die"`
+	Rise   Place  `json:"rise"`
+	Filter string `json:"filter,omitempty"`
+}
+
+var rxpStepFilter = regexp.MustCompile(`^step\b(?:\s*<<\s*(.*))?`)
+
+// RXPDeathskips reads the deathskips of RestedXP guide files: the last place before a ".deathskip" line and the first
+// after it. Steps marked skip (switched off in the guide) are left out.
+func RXPDeathskips(files map[string]string) []Deathskip {
+	var out []Deathskip
+	for _, name := range sortedKeys(files) {
+		lines := strings.Split(files[name], "\n")
+		for i, raw := range lines {
+			if !strings.HasPrefix(strings.TrimSpace(raw), ".deathskip") {
+				continue
+			}
+			filter, skip := "", false
+			for k := i; k >= 0 && k > i-40; k-- {
+				if m := rxpStepFilter.FindStringSubmatch(strings.TrimSpace(lines[k])); m != nil {
+					filter = strings.TrimSpace(m[1])
+					if c := strings.Index(filter, "--"); c >= 0 {
+						filter = strings.TrimSpace(filter[:c])
+					}
+					skip = strings.Contains(" "+filter+" ", " skip ")
+					break
+				}
+			}
+			die, okD := nearGoto(lines, i, -1)
+			rise, okR := nearGoto(lines, i, 1)
+			if skip || !okD || !okR {
+				continue
+			}
+			out = append(out, Deathskip{File: name, Line: i + 1, Die: die, Rise: rise, Filter: filter})
+		}
+	}
+	return out
+}
+
+// nearGoto is the first ".goto" from line i going in direction dir, within 30 lines.
+func nearGoto(lines []string, i, dir int) (Place, bool) {
+	for k := i + dir; k >= 0 && k < len(lines) && k != i+30*dir; k += dir {
+		l := strings.TrimSpace(lines[k])
+		if j := strings.Index(l, " << "); j > 0 {
+			l = strings.TrimSpace(l[:j])
+		}
+		m := rxpGoto.FindStringSubmatch(l)
+		if m == nil {
+			continue
+		}
+		ui, _ := strconv.Atoi(m[1])
+		a, _ := strconv.ParseFloat(m[3], 64)
+		b, _ := strconv.ParseFloat(m[4], 64)
+		if m[2] != "" {
+			inst, _ := strconv.Atoi(m[2])
+			return Place{World: true, Map: inst, UIMap: ui, X: b, Y: a}, true
+		}
+		return Place{UIMap: ui, X: a, Y: b}, true
+	}
+	return Place{}, false
+}

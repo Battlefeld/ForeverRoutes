@@ -95,3 +95,26 @@ step Moonbrook
 		t.Fatalf("crates: %+v", crates)
 	}
 }
+
+func TestRXPDeathskips(t *testing.T) {
+	skips := RXPDeathskips(map[string]string{"g.lua": `
+step << Horde Shaman
+    .goto 2521,41.06,22.32
+    .deathskip >>Talk to the Spirit Healer
+step
+    .goto 1413/1,-2672.76,-544.77
+    .turnin 1 >> x
+step << skip
+    .goto 1411/1,-5002.81,-774.08
+    .deathskip >> Die
+step
+    .goto 1411/1,-4948.88,-768.79
+`})
+	if len(skips) != 1 {
+		t.Fatalf("%+v", skips)
+	}
+	s := skips[0]
+	if s.Filter != "Horde Shaman" || s.Die.UIMap != 2521 || s.Die.X != 41.06 || !s.Rise.World || s.Rise.Map != 1 || s.Rise.X != -544.77 || s.Rise.Y != -2672.76 {
+		t.Fatalf("%+v", s)
+	}
+}

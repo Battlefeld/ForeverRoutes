@@ -135,6 +135,17 @@ type Travel struct {
 	Graveyards []Node `json:"graveyards,omitempty"`
 	// Deaths says which graveyard the server gives a character who dies in a cell of the map.
 	Deaths *DeathGrid `json:"deaths,omitempty"`
+	// Deathskips are deathskips leveling guides use: where to die and the graveyard it gives.
+	Deathskips []Deathskip `json:"deathskips,omitempty"`
+}
+
+// Deathskip is a known place to die: At, the graveyard it gives (index in Graveyards), and who the guide uses it for
+// (its race, class and faction filter, "" for everyone).
+type Deathskip struct {
+	At     Point  `json:"at"`
+	Grave  int    `json:"grave"`
+	Filter string `json:"filter,omitempty"`
+	Source string `json:"source"`
 }
 
 // DeathGrid: cells of Cell yards from (0, 0) on each map, cell (i, j) covering x in [i*Cell, +Cell) and y in

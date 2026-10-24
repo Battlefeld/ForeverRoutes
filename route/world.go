@@ -88,7 +88,7 @@ func NewWorld(d *dataset.Dataset, c Character, opt Options) (*World, error) {
 	w := &World{Data: d, Char: c, Faction: faction, Opt: opt.withDefaults(), ByID: map[int]*Quest{}, NPC: map[int]*dataset.NPC{},
 		Objects: map[int]*dataset.Object{}, Excluded: map[int]string{}}
 	w.walkGrids = newWalks(w.Opt.Walks)
-	w.deaths = newDeaths(d.Travel)
+	w.deaths = newDeaths(d.Travel, c, faction)
 	for i := range d.NPCs {
 		w.NPC[d.NPCs[i].ID] = &d.NPCs[i]
 	}

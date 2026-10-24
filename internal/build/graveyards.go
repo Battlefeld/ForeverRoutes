@@ -4,8 +4,10 @@ import (
 	"math"
 	"sort"
 	"strconv"
+	"strings"
 
 	"github.com/Battlefeld/ForeverRoutes/dataset"
+	"github.com/Battlefeld/ForeverRoutes/internal/sources/guides"
 )
 
 // Deathskips need two things: the graveyards (where a released ghost appears; only those with a Spirit Healer, who
@@ -119,6 +121,27 @@ func (b *builder) graveyards(t *dataset.Travel) {
 			graves = append(graves, &grave{node: dataset.Node{NPC: -(5000 + extra), Name: "Spirit Healer", At: h}, zones: map[int]string{}})
 		}
 	}
+	// the deathskips the guides use; a map without any graveyard (Zephras Isle) gets one where the guide rises
+	type known struct {
+		die, rise dataset.Point
+		filter    string
+		src       string
+	}
+	var skips []known
+	hasGrave := map[int]bool{}
+	for _, g := range graves {
+		hasGrave[g.node.At.Map] = true
+	}
+	for k, ds := range b.rxpSkips {
+		die, rise := b.guidePoints([]guides.Place{ds.Die}), b.guidePoints([]guides.Place{ds.Rise})
+		if len(die) == 0 || len(rise) == 0 || !overland[die[0].Map] || !overland[rise[0].Map] {
+			continue
+		}
+		if !hasGrave[rise[0].Map] {
+			graves = append(graves, &grave{node: dataset.Node{NPC: -(6000 + k), Name: "Spirit Healer (RestedXP)", At: rise[0]}, zones: map[int]string{}})
+		}
+		skips = append(skips, known{die: die[0], rise: rise[0], filter: ds.Filter, src: "RestedXP " + ds.File + ":" + strconv.Itoa(ds.Line)})
+	}
 	sort.SliceStable(graves, func(a, c int) bool { return graves[a].node.NPC < graves[c].node.NPC })
 	index := map[*grave]int{}
 	for i, g := range graves {
@@ -228,5 +251,41 @@ func (b *builder) graveyards(t *dataset.Travel) {
 	if len(dg.Cells) > 0 {
 		t.Deaths = dg
 	}
+	// a guide's deathskip gives the graveyard nearest where the guide goes on, when there is one in reach; else the
+	// one the server's rule gives at the place of death
+	for _, k := range skips {
+		g, bd := 0, math.Inf(1)
+		for i, c := range graves {
+			if c.node.At.Map == k.rise.Map {
+				if d := math.Hypot(c.node.At.X-k.rise.X, c.node.At.Y-k.rise.Y); d < bd {
+					g, bd = i+1, d
+				}
+			}
+		}
+		if bd > 600 {
+			key := key{k.die.Map, int(math.Floor(k.die.X / deathCell)), int(math.Floor(k.die.Y / deathCell))}
+			side := "A"
+			if filterHorde(k.filter) {
+				side = "H"
+			}
+			g = pick(k.die.Map, k.die.X, k.die.Y, cells[key], side)
+		}
+		if g == 0 {
+			continue
+		}
+		t.Deathskips = append(t.Deathskips, dataset.Deathskip{At: k.die, Grave: g - 1, Filter: k.filter, Source: k.src})
+	}
+	b.stats["deathskips_from_guides"] = len(t.Deathskips)
 	b.stats["death_cells"] = len(dg.Cells) / 5
+}
+
+// filterHorde: a guide filter for Horde characters only (a Horde race or the word Horde, not negated).
+func filterHorde(f string) bool {
+	for _, w := range strings.FieldsFunc(f, func(r rune) bool { return r == ' ' || r == '/' }) {
+		switch w {
+		case "Horde", "Orc", "Troll", "Tauren", "Undead", "Scourge":
+			return true
+		}
+	}
+	return false
 }

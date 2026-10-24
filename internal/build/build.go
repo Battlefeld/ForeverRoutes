@@ -273,6 +273,7 @@ func Build(in Inputs) (*dataset.Dataset, error) {
 			return nil, err
 		}
 		facts = append(facts, guides.ParseRXP(files)...)
+		b.rxpSkips = guides.RXPDeathskips(files)
 	}
 	if in.GuidesPolestar != "" {
 		files, err := guides.ReadDir(in.GuidesPolestar, ".guide")
@@ -407,6 +408,7 @@ type builder struct {
 	aeg       *aegis.Data
 	egl       *eglink.Data
 	spf       *spf.Data
+	rxpSkips  []guides.Deathskip
 	gdx       *guideIndex
 	byName    map[string][]int // lower-case creature name -> cmangos entries
 	zoneID    map[string]int   // lower-case zone name -> uiMapId

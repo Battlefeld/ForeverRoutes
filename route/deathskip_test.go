@@ -25,7 +25,7 @@ func TestDeathskip(t *testing.T) {
 	// the cave at x 2100: its cell (10, 0) gives the village graveyard to both sides
 	d.Travel.Deaths = &dataset.DeathGrid{Cell: 200, Cells: []int{0, 10, 0, 1, 1}}
 	w := &World{Data: d, Faction: "A", Opt: Options{}.withDefaults()}
-	w.deaths, w.net = newDeaths(d.Travel), &network{}
+	w.deaths, w.net = newDeaths(d.Travel, Character{Race: "Dwarf", Class: "Warrior"}, "A"), &network{}
 	cave, village := dataset.Point{Map: 0, X: 2100, Y: 100}, dataset.Point{Map: 0, X: 150, Y: 100}
 	s := &State{Hearth: math.Inf(1)} // hearthstone on cooldown
 	walk := w.walk(cave, village)
@@ -50,5 +50,25 @@ func TestDeathskip(t *testing.T) {
 	}
 	if s2.Deathskips != 1 || s2.via != "deathskip: Village" {
 		t.Fatalf("move: %d deathskips, via %q", s2.Deathskips, s2.via)
+	}
+}
+
+func TestFilterFits(t *testing.T) {
+	dw := Character{Race: "Dwarf", Class: "Warrior"}
+	ud := Character{Race: "Undead", Class: "Mage"}
+	for _, c := range []struct {
+		f    string
+		c    Character
+		side string
+		want bool
+	}{
+		{"", dw, "A", true}, {"Horde Shaman", dw, "A", false}, {"!Warlock", dw, "A", true}, {"Warlock", dw, "A", false},
+		{"Human Warrior/Dwarf Warrior", dw, "A", true}, {"!Paladin !Warlock !Hunter !Shaman", dw, "A", true},
+		{"Alliance", dw, "A", true}, {"Scourge", ud, "H", true}, {"!Tauren", ud, "H", true}, {"Rogue/Druid", ud, "H", false},
+		{"NightElf Hunter", dw, "A", false},
+	} {
+		if got := filterFits(c.f, c.c, c.side); got != c.want {
+			t.Errorf("%q for %s %s: %v", c.f, c.c.Race, c.c.Class, got)
+		}
 	}
 }
