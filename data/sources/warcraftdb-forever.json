@@ -1,7 +1,7 @@
 {
  "schema": "foreverroutes.warcraftdb.v1",
  "source": "WarcraftDB Forever (https://forever.warcraftdb.com), game client quest data",
- "fetched": "2026-10-23",
+ "fetched": "2026-10-24",
  "quests": {
   "1016": {
    "id": 1016,
@@ -5587,6 +5587,22 @@
    ],
    "url": "https://forever.warcraftdb.com/data/quest/94979"
   },
+  "95041": {
+   "id": 95041,
+   "name": "Data Hoarders",
+   "level": 10,
+   "min": 7,
+   "xp": 630,
+   "objectives": [
+    {
+     "type": 1,
+     "id": 267413,
+     "amount": 7,
+     "desc": "Gnomeregan Archival Data"
+    }
+   ],
+   "url": "https://forever.warcraftdb.com/data/quest/95041"
+  },
   "95216": {
    "id": 95216,
    "name": "The New Plague",
@@ -5938,6 +5954,22 @@
    ],
    "url": "https://forever.warcraftdb.com/data/quest/96390"
   },
+  "96392": {
+   "id": 96392,
+   "name": "Farsen's Watch",
+   "level": 13,
+   "min": 9,
+   "xp": 680,
+   "objectives": [
+    {
+     "type": 0,
+     "id": 264936,
+     "amount": 1,
+     "desc": "Use Farsen's Far Sight"
+    }
+   ],
+   "url": "https://forever.warcraftdb.com/data/quest/96392"
+  },
   "96394": {
    "id": 96394,
    "name": "The Restless Dead",
@@ -5975,6 +6007,15 @@
     }
    ],
    "url": "https://forever.warcraftdb.com/data/quest/96403"
+  },
+  "96408": {
+   "id": 96408,
+   "name": "A Visitor to Dun Morogh",
+   "level": 13,
+   "min": 9,
+   "xp": 680,
+   "objectives": [],
+   "url": "https://forever.warcraftdb.com/data/quest/96408"
   },
   "96604": {
    "id": 96604,
@@ -6811,6 +6852,22 @@
    ],
    "url": "https://forever.warcraftdb.com/data/quest/97253"
   },
+  "97263": {
+   "id": 97263,
+   "name": "Your Package Has Arrived",
+   "level": 2,
+   "min": 1,
+   "xp": 45,
+   "objectives": [
+    {
+     "type": 1,
+     "id": 277505,
+     "amount": 1,
+     "desc": "Misplaced Package"
+    }
+   ],
+   "url": "https://forever.warcraftdb.com/data/quest/97263"
+  },
   "97277": {
    "id": 97277,
    "name": "Grund and Gozwin",
@@ -7031,6 +7088,37 @@
    "objectives": [],
    "url": "https://forever.warcraftdb.com/data/quest/97891"
   },
+  "97894": {
+   "id": 97894,
+   "name": "Business in Auberdine",
+   "level": 17,
+   "min": 13,
+   "xp": 630,
+   "startNpc": [
+    7232
+   ],
+   "endNpc": [
+    6301
+   ],
+   "starts": [
+    {
+     "uiMap": 1453,
+     "u": 0.597298,
+     "v": 0.346376,
+     "label": "Borgus Steelhand"
+    }
+   ],
+   "ends": [
+    {
+     "uiMap": 1439,
+     "u": 0.380803,
+     "v": 0.412766,
+     "label": "Gorbold Steelhand"
+    }
+   ],
+   "objectives": [],
+   "url": "https://forever.warcraftdb.com/data/quest/97894"
+  },
   "97914": {
    "id": 97914,
    "name": "Expanding Horizons",
@@ -7237,6 +7325,34 @@
    ],
    "url": "https://forever.warcraftdb.com/data/quest/98025"
   },
+  "98027": {
+   "id": 98027,
+   "name": "Gleaming Crescent Necklace",
+   "level": 26,
+   "min": 22,
+   "xp": 1600,
+   "endNpc": [
+    3961
+   ],
+   "starts": [
+    {
+     "uiMap": 1440,
+     "u": 0.629823,
+     "v": 0.716332,
+     "label": "Gleaming Crescent Pendant"
+    }
+   ],
+   "ends": [
+    {
+     "uiMap": 1440,
+     "u": 0.366707,
+     "v": 0.49958,
+     "label": "Maliynn"
+    }
+   ],
+   "objectives": [],
+   "url": "https://forever.warcraftdb.com/data/quest/98027"
+  },
   "98067": {
    "id": 98067,
    "name": "Eyes of the Sentinels",
@@ -7353,6 +7469,271 @@
    ],
    "url": "https://forever.warcraftdb.com/data/quest/98093"
   },
+  "98189": {
+   "id": 98189,
+   "name": "Return the Statuette",
+   "level": 25,
+   "min": 20,
+   "xp": 200,
+   "startNpc": [
+    1242
+   ],
+   "endNpc": [
+    2104
+   ],
+   "starts": [
+    {
+     "uiMap": 1437,
+     "u": 0.0838644,
+     "v": 0.585415,
+     "label": "Karl Boran"
+    }
+   ],
+   "ends": [
+    {
+     "uiMap": 1437,
+     "u": 0.0986458,
+     "v": 0.574179,
+     "label": "Captain Stoutfist"
+    }
+   ],
+   "objectives": [
+    {
+     "type": 1,
+     "id": 279589,
+     "amount": 1,
+     "desc": "Menethil Statuette"
+    }
+   ],
+   "url": "https://forever.warcraftdb.com/data/quest/98189"
+  },
+  "98190": {
+   "id": 98190,
+   "name": "A Friend of the Family",
+   "level": 25,
+   "min": 20,
+   "xp": 200,
+   "startNpc": [
+    2104
+   ],
+   "endNpc": [
+    1748
+   ],
+   "starts": [
+    {
+     "uiMap": 1437,
+     "u": 0.0986458,
+     "v": 0.574179,
+     "label": "Captain Stoutfist"
+    }
+   ],
+   "ends": [
+    {
+     "uiMap": 1453,
+     "u": 0.800784,
+     "v": 0.385071,
+     "label": "Highlord Bolvar Fordragon"
+    }
+   ],
+   "objectives": [
+    {
+     "type": 1,
+     "id": 279595,
+     "amount": 1,
+     "desc": "Menethil Statuette"
+    }
+   ],
+   "url": "https://forever.warcraftdb.com/data/quest/98190"
+  },
+  "98191": {
+   "id": 98191,
+   "name": "A Friend of the Family",
+   "level": 25,
+   "min": 20,
+   "xp": 200,
+   "startNpc": [
+    1748
+   ],
+   "endNpc": [
+    928
+   ],
+   "starts": [
+    {
+     "uiMap": 1453,
+     "u": 0.800784,
+     "v": 0.385071,
+     "label": "Highlord Bolvar Fordragon"
+    }
+   ],
+   "ends": [
+    {
+     "uiMap": 1453,
+     "u": 0.485543,
+     "v": 0.50014,
+     "label": "Lord Grayson Shadowbreaker"
+    }
+   ],
+   "objectives": [
+    {
+     "type": 1,
+     "id": 279598,
+     "amount": 1,
+     "desc": "Menethil Statuette"
+    }
+   ],
+   "url": "https://forever.warcraftdb.com/data/quest/98191"
+  },
+  "98197": {
+   "id": 98197,
+   "name": "Spoils of War",
+   "level": 22,
+   "min": 18,
+   "xp": 1750,
+   "startNpc": [
+    2086
+   ],
+   "endNpc": [
+    2086
+   ],
+   "starts": [
+    {
+     "uiMap": 1437,
+     "u": 0.100901,
+     "v": 0.56844,
+     "label": "Valstag Ironjaw"
+    }
+   ],
+   "ends": [
+    {
+     "uiMap": 1437,
+     "u": 0.100901,
+     "v": 0.56844,
+     "label": "Valstag Ironjaw"
+    }
+   ],
+   "objectives": [
+    {
+     "type": 1,
+     "id": 279821,
+     "amount": 6,
+     "desc": "Khaz Modan Timber"
+    },
+    {
+     "type": 1,
+     "id": 279822,
+     "amount": 30,
+     "desc": "Khaz Modan Iron"
+    }
+   ],
+   "url": "https://forever.warcraftdb.com/data/quest/98197"
+  },
+  "98208": {
+   "id": 98208,
+   "name": "Bloom of the Heavens",
+   "level": 29,
+   "min": 22,
+   "xp": 1750,
+   "startNpc": [
+    270844
+   ],
+   "endNpc": [
+    270844
+   ],
+   "starts": [
+    {
+     "uiMap": 1437,
+     "u": 0.0794267,
+     "v": 0.558582,
+     "label": "Sylessa Duskwhisper"
+    }
+   ],
+   "ends": [
+    {
+     "uiMap": 1437,
+     "u": 0.0794267,
+     "v": 0.558582,
+     "label": "Sylessa Duskwhisper"
+    }
+   ],
+   "objectives": [
+    {
+     "type": 1,
+     "id": 279915,
+     "amount": 1,
+     "desc": "Nord'el"
+    }
+   ],
+   "url": "https://forever.warcraftdb.com/data/quest/98208"
+  },
+  "98209": {
+   "id": 98209,
+   "name": "Bloom of the Heavens",
+   "level": 29,
+   "min": 22,
+   "xp": 1200,
+   "startNpc": [
+    270844
+   ],
+   "endNpc": [
+    3649
+   ],
+   "starts": [
+    {
+     "uiMap": 1437,
+     "u": 0.0794267,
+     "v": 0.558582,
+     "label": "Sylessa Duskwhisper"
+    }
+   ],
+   "ends": [
+    {
+     "uiMap": 1439,
+     "u": 0.374318,
+     "v": 0.401723,
+     "label": "Thundris Windweaver"
+    }
+   ],
+   "objectives": [
+    {
+     "type": 1,
+     "id": 279924,
+     "amount": 1,
+     "desc": "Nord'el"
+    }
+   ],
+   "url": "https://forever.warcraftdb.com/data/quest/98209"
+  },
+  "98219": {
+   "id": 98219,
+   "name": "The Shamed Lieutenant",
+   "level": 30,
+   "min": 20,
+   "xp": 245,
+   "startNpc": [
+    928
+   ],
+   "endNpc": [
+    2228
+   ],
+   "starts": [
+    {
+     "uiMap": 1453,
+     "u": 0.485543,
+     "v": 0.50014,
+     "label": "Lord Grayson Shadowbreaker"
+    }
+   ],
+   "ends": [
+    {
+     "uiMap": 1424,
+     "u": 0.514234,
+     "v": 0.584441,
+     "label": "Lieutenant Farren Orinelle"
+    }
+   ],
+   "objectives": [],
+   "url": "https://forever.warcraftdb.com/data/quest/98219"
+  },
   "98221": {
    "id": 98221,
    "name": "From the Ashes",
@@ -7408,6 +7789,15 @@
     }
    ],
    "url": "https://forever.warcraftdb.com/data/quest/98221"
+  },
+  "98230": {
+   "id": 98230,
+   "name": "This Land Was Their Land",
+   "level": 29,
+   "min": 22,
+   "xp": 235,
+   "objectives": [],
+   "url": "https://forever.warcraftdb.com/data/quest/98230"
   },
   "98245": {
    "id": 98245,
@@ -7605,6 +7995,162 @@
    ],
    "url": "https://forever.warcraftdb.com/data/quest/98282"
   },
+  "98283": {
+   "id": 98283,
+   "name": "Carnage",
+   "level": 30,
+   "min": 22,
+   "xp": 3050,
+   "startNpc": [
+    1244
+   ],
+   "endNpc": [
+    1244
+   ],
+   "starts": [
+    {
+     "uiMap": 1437,
+     "u": 0.56301,
+     "v": 0.405012,
+     "label": "Rethiel the Greenwarden"
+    }
+   ],
+   "ends": [
+    {
+     "uiMap": 1437,
+     "u": 0.56301,
+     "v": 0.405012,
+     "label": "Rethiel the Greenwarden"
+    }
+   ],
+   "objectives": [
+    {
+     "type": 1,
+     "id": 280331,
+     "amount": 1,
+     "desc": "Malignant Rotclaw Flesh"
+    },
+    {
+     "type": 1,
+     "id": 280330,
+     "amount": 1,
+     "desc": "Carnage's Head"
+    }
+   ],
+   "url": "https://forever.warcraftdb.com/data/quest/98283"
+  },
+  "98291": {
+   "id": 98291,
+   "name": "Death to the Dragonmaw",
+   "level": 30,
+   "min": 22,
+   "xp": 3050,
+   "startNpc": [
+    270637
+   ],
+   "starts": [
+    {
+     "uiMap": 1437,
+     "u": 0.49314,
+     "v": 0.420684,
+     "label": "Howin Kindfeather"
+    }
+   ],
+   "objectives": [
+    {
+     "type": 0,
+     "id": 271351,
+     "amount": 8,
+     "desc": "Dragonmaw Reclaimer"
+    },
+    {
+     "type": 0,
+     "id": 271348,
+     "amount": 5,
+     "desc": "Dragonmaw Soulbinder"
+    },
+    {
+     "type": 0,
+     "id": 271346,
+     "amount": 3,
+     "desc": "Dragonmaw Infiltrator"
+    }
+   ],
+   "url": "https://forever.warcraftdb.com/data/quest/98291"
+  },
+  "98293": {
+   "id": 98293,
+   "name": "Forced Disarmament",
+   "level": 30,
+   "min": 22,
+   "xp": 2450,
+   "endNpc": [
+    2104
+   ],
+   "starts": [
+    {
+     "uiMap": 1437,
+     "u": 0.588326,
+     "v": 0.450583,
+     "label": "Dragonmaw Armaments"
+    }
+   ],
+   "ends": [
+    {
+     "uiMap": 1437,
+     "u": 0.0986458,
+     "v": 0.574179,
+     "label": "Captain Stoutfist"
+    }
+   ],
+   "objectives": [
+    {
+     "type": 1,
+     "id": 280369,
+     "amount": 30,
+     "desc": "Dragonmaw Armaments"
+    }
+   ],
+   "url": "https://forever.warcraftdb.com/data/quest/98293"
+  },
+  "98319": {
+   "id": 98319,
+   "name": "Secure the Mountain",
+   "level": 8,
+   "min": 4,
+   "xp": 350,
+   "startNpc": [
+    271546
+   ],
+   "endNpc": [
+    271546
+   ],
+   "objectives": [
+    {
+     "type": 19,
+     "id": 44117,
+     "amount": 0,
+     "desc": "Mountaineer Cornelius found"
+    }
+   ],
+   "url": "https://forever.warcraftdb.com/data/quest/98319"
+  },
+  "98321": {
+   "id": 98321,
+   "name": "Flintfire's Shipment",
+   "level": 7,
+   "min": 4,
+   "xp": 630,
+   "objectives": [
+    {
+     "type": 1,
+     "id": 280413,
+     "amount": 8,
+     "desc": "Flintfire's Shipment"
+    }
+   ],
+   "url": "https://forever.warcraftdb.com/data/quest/98321"
+  },
   "98322": {
    "id": 98322,
    "name": "Secure the Mountain",
@@ -7619,6 +8165,44 @@
    ],
    "objectives": [],
    "url": "https://forever.warcraftdb.com/data/quest/98322"
+  },
+  "98323": {
+   "id": 98323,
+   "name": "Secure the Mountain",
+   "level": 8,
+   "min": 4,
+   "xp": 70,
+   "startNpc": [
+    271546
+   ],
+   "endNpc": [
+    1252
+   ],
+   "objectives": [
+    {
+     "type": 1,
+     "id": 280430,
+     "amount": 1,
+     "desc": "Mountaineer Gretchen's Report"
+    }
+   ],
+   "url": "https://forever.warcraftdb.com/data/quest/98323"
+  },
+  "98326": {
+   "id": 98326,
+   "name": "Frosthowl",
+   "level": 9,
+   "min": 5,
+   "xp": 780,
+   "objectives": [
+    {
+     "type": 1,
+     "id": 280426,
+     "amount": 1,
+     "desc": "Sack of Fish"
+    }
+   ],
+   "url": "https://forever.warcraftdb.com/data/quest/98326"
   },
   "98386": {
    "id": 98386,
@@ -8201,6 +8785,98 @@
     }
    ],
    "url": "https://forever.warcraftdb.com/data/quest/99143"
+  },
+  "99158": {
+   "id": 99158,
+   "name": "Dawn in the Mountains",
+   "level": 8,
+   "min": 5,
+   "xp": 70,
+   "objectives": [
+    {
+     "type": 1,
+     "id": 286355,
+     "amount": 1,
+     "desc": "Crate of Candles"
+    }
+   ],
+   "url": "https://forever.warcraftdb.com/data/quest/99158"
+  },
+  "99159": {
+   "id": 99159,
+   "name": "Finding Warmth",
+   "level": 8,
+   "min": 5,
+   "xp": 700,
+   "objectives": [
+    {
+     "type": 1,
+     "id": 286339,
+     "amount": 14,
+     "desc": "Mostly Dry Firewood"
+    }
+   ],
+   "url": "https://forever.warcraftdb.com/data/quest/99159"
+  },
+  "99160": {
+   "id": 99160,
+   "name": "Rime's Wrath",
+   "level": 8,
+   "min": 5,
+   "xp": 700,
+   "objectives": [
+    {
+     "type": 0,
+     "id": 276003,
+     "amount": 10,
+     "desc": "Minor Ice Elemental"
+    }
+   ],
+   "url": "https://forever.warcraftdb.com/data/quest/99160"
+  },
+  "99161": {
+   "id": 99161,
+   "name": "Rime's Wrath",
+   "level": 8,
+   "min": 5,
+   "xp": 700,
+   "objectives": [
+    {
+     "type": 1,
+     "id": 286325,
+     "amount": 1,
+     "desc": "Avala's Core"
+    }
+   ],
+   "url": "https://forever.warcraftdb.com/data/quest/99161"
+  },
+  "99162": {
+   "id": 99162,
+   "name": "Treacherous Cold",
+   "level": 8,
+   "min": 5,
+   "xp": 700,
+   "objectives": [
+    {
+     "type": 1,
+     "id": 286360,
+     "amount": 1,
+     "desc": "Stoneanvil's Rifle"
+    },
+    {
+     "type": 1,
+     "id": 286359,
+     "amount": 1,
+     "desc": "Sunhammer's Rifle"
+    },
+    {
+     "type": 1,
+     "id": 286358,
+     "amount": 1,
+     "desc": "Coalbeard's Rifle"
+    }
+   ],
+   "url": "https://forever.warcraftdb.com/data/quest/99162"
   },
   "99260": {
    "id": 99260,
