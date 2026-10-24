@@ -11,12 +11,12 @@ import (
 )
 
 // loadWorld opens the dataset; profile is a kill profile written by ForeverCore ("" = the default estimate).
-func loadWorld(path, race, class, profile string) (*route.World, error) {
+func loadWorld(path, race, class, faction, profile string) (*route.World, error) {
 	d, err := dataset.Load(path)
 	if err != nil {
 		return nil, err
 	}
-	c := route.Character{Race: race, Class: class}
+	c := route.Character{Race: race, Class: class, Faction: faction}
 	var opt route.Options
 	if profile != "" {
 		f, err := os.Open(profile)
@@ -41,13 +41,14 @@ func cmdPlan(args []string) error {
 	path := fs.String("data", "data/routes-data.json.gz", "dataset")
 	race := fs.String("race", "Orc", "race")
 	class := fs.String("class", "Warlock", "class")
+	faction := fs.String("faction", "", "A or H (only for Skyborne)")
 	profile := fs.String("profile", "", "kill profile from ForeverCore (job kill-profile); empty = default estimate")
 	target := fs.Int("target", 30, "target level")
 	restarts := fs.Int("restarts", 4, "search runs")
 	seed := fs.Int64("seed", 1, "seed")
 	out := fs.String("out", "", "write the route (JSON) here")
 	fs.Parse(args)
-	w, err := loadWorld(*path, *race, *class, *profile)
+	w, err := loadWorld(*path, *race, *class, *faction, *profile)
 	if err != nil {
 		return err
 	}
@@ -70,10 +71,11 @@ func cmdReplay(args []string) error {
 	path := fs.String("data", "data/routes-data.json.gz", "dataset")
 	race := fs.String("race", "Orc", "race")
 	class := fs.String("class", "Warlock", "class")
+	faction := fs.String("faction", "", "A or H (only for Skyborne)")
 	profile := fs.String("profile", "", "kill profile from ForeverCore (job kill-profile); empty = default estimate")
 	file := fs.String("route", "", "route file (output of plan)")
 	fs.Parse(args)
-	w, err := loadWorld(*path, *race, *class, *profile)
+	w, err := loadWorld(*path, *race, *class, *faction, *profile)
 	if err != nil {
 		return err
 	}
@@ -102,12 +104,13 @@ func cmdGuide(args []string) error {
 	path := fs.String("data", "data/routes-data.json.gz", "dataset")
 	race := fs.String("race", "Orc", "race")
 	class := fs.String("class", "Warlock", "class")
+	faction := fs.String("faction", "", "A or H (only for Skyborne)")
 	profile := fs.String("profile", "", "kill profile from ForeverCore (job kill-profile); empty = default estimate")
 	target := fs.Int("target", 30, "target level")
 	file := fs.String("events", "", `guide events: JSON list of {"op":"accept|complete|turnin|level","quest":id,"level":n}`)
 	out := fs.String("out", "", "write the walked route (JSON) here")
 	fs.Parse(args)
-	w, err := loadWorld(*path, *race, *class, *profile)
+	w, err := loadWorld(*path, *race, *class, *faction, *profile)
 	if err != nil {
 		return err
 	}

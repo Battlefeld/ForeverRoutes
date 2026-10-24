@@ -12,9 +12,10 @@ import (
 
 // liveRequest is what ForeverCore hands over: who the character is and what the game shows of it.
 type liveRequest struct {
-	Race  string     `json:"race"`
-	Class string     `json:"class"`
-	Live  route.Live `json:"live"`
+	Race    string     `json:"race"`
+	Class   string     `json:"class"`
+	Faction string     `json:"faction,omitempty"` // A or H (Alliance, Horde): needed for the Skyborne
+	Live    route.Live `json:"live"`
 }
 
 // nextReply is the next stretch of route.
@@ -54,7 +55,7 @@ func cmdNext(args []string) error {
 		return fmt.Errorf("live state: %w", err)
 	}
 	t0 := time.Now()
-	w, err := loadWorld(*path, req.Race, req.Class, *profile)
+	w, err := loadWorld(*path, req.Race, req.Class, req.Faction, *profile)
 	if err != nil {
 		return err
 	}

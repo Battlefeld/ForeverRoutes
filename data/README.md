@@ -28,10 +28,18 @@ QuestieDB, EverythingQuests und cmangos werden beim Bau in den festgeschriebenen
   Seitenlink; jeder Eintrag behält seinen Link. Abruf: eine Anfrage pro Sekunde, nur für Gegenstände ohne andere Quelle.
 - **ForeverChanges** (https://foreverchanges.pro) — Questseiten (Daten aus dem Spielclient und aus Wowheads Forever-Datenbank):
   Questart und Zielsatz. robots.txt erlaubt die Questseiten; eine Anfrage pro Sekunde, nur für offene Quests.
+- **Polestar forever-db** (https://github.com/fitzforge/polestar, Ordner `forever-db`, GPL-3.0) — aus dem Forever-Spielclient
+  gebaute Questdaten: Forever-XP (Dungeonquests mit Ziel im Dungeon wurden auf etwa das 2- bis 2,7-Fache angehoben),
+  Level, Volks- und Klassenmasken mit den Skyborne-Bits, Questgeber, Abgaben, Ziele mit Mengen, Voraussetzungen, was einen
+  Gegenstand droppt, Spawnpunkte und Kartenrahmen. Wo Polestar eine Quest kennt, gelten seine Clientwerte vor allen
+  Referenzen außer im Spiel beobachteten Werten; Quests, die nur Polestar kennt, kommen hinzu. Ereignisziele (Gebiet
+  erkunden, Eskorte) haben keinen Ort in den Daten und werden ohne sie geplant. Die Abreise der Skyborne von Zephras Isle
+  (Luftschiff nach Mulgore, Skycutter nach Alterac und Portal nach Sturmwind) stammt aus Polestars Skyborne-Guides, die
+  Fahrzeiten sind geschätzt. Stand und Commit stehen in `data/sources/lock.json` (`polestar`).
 - **cmangos classic-db** (https://github.com/cmangos/classic-db, GPL-3.0) — Classic-Weltdaten: Zielmengen,
   Beutechancen, Spawnpositionen, Respawnzeiten, Lebenspunkte und Schaden der Kreaturen, Flugmeister, Gasthäuser,
   Transporte. Classic, nicht Forever: Forever-Angaben haben Vorrang. Werte aus cmangos stehen unter GPL-3.0; damit
-  steht auch `routes-data.json.gz` unter GPL-3.0.
+  steht auch `routes-data.json.gz` unter GPL-3.0 (ebenso die Werte aus Polestars forever-db).
 
 **Dropchancen:** Wo eine Quelle nur den Gegner nennt, nicht die Chance, steht im Datensatz `unknown` (Chance 0, kein Wert).
 Der Planer nimmt dafür einen ausdrücklich gekennzeichneten Planungswert an (30 %) und meldet im Ergebnis, wie viele Schritte

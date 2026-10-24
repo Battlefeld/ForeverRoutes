@@ -10,11 +10,13 @@ import (
 	"github.com/Battlefeld/ForeverRoutes/dataset"
 )
 
-// Race and class bits of the Classic client (quest masks use them).
+// Race and class bits of the Classic client (quest masks use them). Forever's Skyborne play on either side and have a
+// bit per side past the classic races (SkyborneBits); Character.Faction picks it.
 var RaceBits = map[string]int{"Human": 1, "Orc": 2, "Dwarf": 4, "NightElf": 8, "Undead": 16, "Scourge": 16, "Tauren": 32, "Gnome": 64, "Troll": 128}
+var SkyborneBits = map[string]int{"A": 1 << 32, "H": 1 << 33}
 var ClassBits = map[string]int{"Warrior": 1, "Paladin": 2, "Hunter": 4, "Rogue": 8, "Priest": 16, "Shaman": 64, "Mage": 128, "Warlock": 256, "Druid": 1024}
 
-// FactionOf is the faction of a race.
+// FactionOf is the faction of a race (A or H); the Skyborne have none of their own (Character.Faction).
 func FactionOf(race string) string {
 	switch race {
 	case "Orc", "Undead", "Scourge", "Tauren", "Troll":
@@ -23,13 +25,26 @@ func FactionOf(race string) string {
 	return "A"
 }
 
-// StartNPC is the first quest giver of each start area (where a new character stands).
-var StartNPC = map[string]int{"Human": 823, "Orc": 10176, "Troll": 10176, "Dwarf": 658, "Gnome": 658, "NightElf": 2079, "Undead": 1569, "Scourge": 1569, "Tauren": 2981}
+// StartNPC is the first quest giver of each start area (where a new character stands). The Skyborne start in Thendal
+// Village on Zephras Isle (Ailee Farheart).
+var StartNPC = map[string]int{"Human": 823, "Orc": 10176, "Troll": 10176, "Dwarf": 658, "Gnome": 658, "NightElf": 2079, "Undead": 1569, "Scourge": 1569, "Tauren": 2981, "Skyborne": 251362}
 
 // Character is who walks the route.
 type Character struct {
-	Race  string `json:"race"`
-	Class string `json:"class"`
+	Race    string `json:"race"`
+	Class   string `json:"class"`
+	Faction string `json:"faction,omitempty"` // A or H (Alliance, Horde also read); needed for the Skyborne only
+}
+
+// side is the character's faction (A or H) and its race bit; ok is false for an unknown race or a Skyborne without a
+// faction.
+func (c Character) side() (faction string, race int, ok bool) {
+	if c.Race == "Skyborne" {
+		f := map[string]string{"A": "A", "Alliance": "A", "H": "H", "Horde": "H"}[c.Faction]
+		return f, SkyborneBits[f], f != ""
+	}
+	race = RaceBits[c.Race]
+	return FactionOf(c.Race), race, race != 0
 }
 
 // KillProfile tells how long the character needs for one mob. ForeverCore supplies MythicSim's numbers; without it the

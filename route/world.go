@@ -76,11 +76,12 @@ type World struct {
 
 // NewWorld prepares the dataset for one character.
 func NewWorld(d *dataset.Dataset, c Character, opt Options) (*World, error) {
-	race, cls := RaceBits[c.Race], ClassBits[c.Class]
-	if race == 0 || cls == 0 {
-		return nil, fmt.Errorf("unknown race or class: %s %s", c.Race, c.Class)
+	faction, race, ok := c.side()
+	cls := ClassBits[c.Class]
+	if !ok || cls == 0 {
+		return nil, fmt.Errorf("unknown race or class: %s %s %s", c.Race, c.Class, c.Faction)
 	}
-	w := &World{Data: d, Char: c, Faction: FactionOf(c.Race), Opt: opt.withDefaults(), ByID: map[int]*Quest{}, NPC: map[int]*dataset.NPC{},
+	w := &World{Data: d, Char: c, Faction: faction, Opt: opt.withDefaults(), ByID: map[int]*Quest{}, NPC: map[int]*dataset.NPC{},
 		Objects: map[int]*dataset.Object{}, Excluded: map[int]string{}}
 	for i := range d.NPCs {
 		w.NPC[d.NPCs[i].ID] = &d.NPCs[i]
@@ -176,6 +177,8 @@ func (w *World) usable(q *dataset.Quest, race, cls int) string {
 		return "other class"
 	case q.Repeatable:
 		return "repeatable"
+	case q.Type != "":
+		return q.Type + " quest (not solo)"
 	case q.Unsupported != "":
 		return "data: " + q.Unsupported
 	}

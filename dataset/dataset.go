@@ -67,6 +67,7 @@ type Quest struct {
 	Exclusive   int               `json:"excl,omitempty"` // exclusive group: only one quest of a positive group
 	Breadcrumb  int               `json:"breadcrumb,omitempty"`
 	Repeatable  bool              `json:"repeat,omitempty"`
+	Type        string            `json:"type,omitempty"` // dungeon, raid or pvp (Forever client quest type); empty = open world
 	Objectives  []Objective       `json:"obj,omitempty"`
 	Unsupported string            `json:"unsupported,omitempty"`
 	NeedItems   []int             `json:"needItems,omitempty"` // items the quest needs whose source no data has yet

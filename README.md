@@ -1,8 +1,9 @@
 # ForeverRoutes
 
 > **Datengrundlage:** ForeverRoutes nutzt Daten von **[ForeverDB.net](https://foreverdb.net)** (Data from ForeverDB.net),
-> QuestieDB Forever, EverythingQuests Forever, [WarcraftDB Forever](https://forever.warcraftdb.com) und der
-> Weltdatenbank von [cmangos classic-db](https://github.com/cmangos/classic-db). Herkunft und Revision jeder Quelle stehen
+> QuestieDB Forever, EverythingQuests Forever, [WarcraftDB Forever](https://forever.warcraftdb.com), der Forever-Datenbank
+> von [Polestar](https://github.com/fitzforge/polestar) (forever-db) und der Weltdatenbank von
+> [cmangos classic-db](https://github.com/cmangos/classic-db). Herkunft und Revision jeder Quelle stehen
 > im Datensatz selbst (`sources`). ForeverDB ist nicht mit Blizzard Entertainment verbunden.
 
 Routenplaner für WoW Forever, Level 1–30: welche Quests annehmen, wo was töten, wann abgeben und wann Grinden schneller
@@ -12,7 +13,8 @@ ForeverCore.exe gebaut (Paket `route`). Die Kampfzeiten kommen aus MythicSim (Fo
 
 ## Stand
 
-- Datensatz mit 1758 Quests, 2366 NPCs, 348 Objekten, 59 Flugmeistern, 45 Gasthäusern, Zeppelinen und Schiffen.
+- Datensatz mit 2349 Quests, 3060 NPCs, 393 Objekten, 59 Flugmeistern, 45 Gasthäusern, Zeppelinen und Schiffen, dazu das
+  Skyborne-Startgebiet Zephras Isle mit der Abreise beider Fraktionen. Skyborne brauchen `-faction A` oder `-faction H`.
 - Orc Hexer und Mensch Magier sind die Ausgangstests: Beide erreichen Level 30 mit vollständigen, nachgeprüften Routen.
 - **Die Stundenangaben sind nicht kalibriert.** Ohne `-profile` gilt das eingebaute Kampfmodell (`DefaultProfile`), eine Schätzung. Es
   bewertet Grinden im Vergleich zu Quests etwa doppelt so gut wie die Wirklichkeit: Ein Guide-Ablauf (RestedXP) und
@@ -131,4 +133,4 @@ entsteht.
 ## Lizenz
 
 Code: MIT (siehe `LICENSE`). Daten: siehe [`data/README.md`](data/README.md); der Datensatz enthält aus cmangos
-classic-db abgeleitete Werte (GPL-3.0).
+classic-db und Polestars forever-db abgeleitete Werte (GPL-3.0).

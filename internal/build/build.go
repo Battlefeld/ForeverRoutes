@@ -18,6 +18,7 @@ import (
 
 	"github.com/Battlefeld/ForeverRoutes/dataset"
 	"github.com/Battlefeld/ForeverRoutes/internal/sources/foreverchanges"
+	"github.com/Battlefeld/ForeverRoutes/internal/sources/polestar"
 	"github.com/Battlefeld/ForeverRoutes/internal/sources/wclbox"
 	"github.com/Battlefeld/ForeverRoutes/internal/sqldump"
 	"github.com/Battlefeld/ForeverRoutes/internal/warcraftdb"
@@ -26,14 +27,16 @@ import (
 
 // Inputs names the source files and their pinned revisions.
 type Inputs struct {
-	Merged          string // merged quest database JSON (schema foreverroutes.unified_quests.v1)
-	MergedRevision  string
-	CMangos         string // cmangos classic-db full dump (.sql or .sql.gz)
-	CMangosRevision string
-	WarcraftDB      string // optional overlay of Forever client quest facts
-	WCLBox          string // optional overlay of item sources from WCLBox (internal/sources/wclbox)
-	ForeverChanges  string // optional overlay of quest summaries from ForeverChanges (internal/sources/foreverchanges)
-	MaxQuestLevel   int    // quests above this level are left out (0 = 35)
+	Merged           string // merged quest database JSON (schema foreverroutes.unified_quests.v1)
+	MergedRevision   string
+	CMangos          string // cmangos classic-db full dump (.sql or .sql.gz)
+	CMangosRevision  string
+	WarcraftDB       string // optional overlay of Forever client quest facts
+	WCLBox           string // optional overlay of item sources from WCLBox (internal/sources/wclbox)
+	ForeverChanges   string // optional overlay of quest summaries from ForeverChanges (internal/sources/foreverchanges)
+	MaxQuestLevel    int    // quests above this level are left out (0 = 35)
+	Polestar         string // optional folder with Polestar's forever-db tables (internal/sources/polestar)
+	PolestarRevision string
 }
 
 type obj = map[string]any
@@ -240,6 +243,11 @@ func Build(in Inputs) (*dataset.Dataset, error) {
 			return nil, fmt.Errorf("foreverchanges overlay: %w", err)
 		}
 	}
+	if in.Polestar != "" {
+		if b.pdb, err = polestar.Load(in.Polestar, in.PolestarRevision); err != nil {
+			return nil, err
+		}
+	}
 	b.fitTransforms()
 	b.indexNames()
 	b.quests()
@@ -258,6 +266,11 @@ func Build(in Inputs) (*dataset.Dataset, error) {
 	if b.fch != nil {
 		d.Sources = append(d.Sources, dataset.Source{Name: "ForeverChanges", URL: "https://foreverchanges.pro", Revision: b.fch.Fetched,
 			Note: "WoW Forever database (client data and Wowhead's Forever data): kind of quest (normal, elite, dungeon) and the creature named in the objective sentence"})
+	}
+	if b.pdb != nil {
+		d.Sources = append(d.Sources, dataset.Source{Name: "Polestar forever-db", URL: "https://github.com/" + polestar.Repository + "/tree/" + in.PolestarRevision + "/forever-db",
+			Revision: in.PolestarRevision, License: "GPL-3.0",
+			Note: "Forever client quest data (client build " + b.pdb.Build + "): Forever XP (dungeon quests raised), levels, race masks with Skyborne, objectives with counts, prerequisites, item sources, positions"})
 	}
 	if b.wdb != nil {
 		d.Sources = append(d.Sources, dataset.Source{Name: "WarcraftDB Forever", URL: "https://forever.warcraftdb.com", Revision: b.wdb.Fetched,
@@ -314,6 +327,7 @@ type builder struct {
 	wdb       *warcraftdb.Overlay
 	wcl       *wclbox.Overlay
 	fch       *foreverchanges.Overlay
+	pdb       *polestar.DB
 	byName    map[string][]int // lower-case creature name -> cmangos entries
 	zoneID    map[string]int   // lower-case zone name -> uiMapId
 	itemWhy   map[int]string   // item -> why it has no usable source
@@ -458,12 +472,14 @@ func (b *builder) quests() {
 		}
 	}
 	sort.Ints(ids)
+	seen := map[int]bool{}
 	for _, id := range ids {
 		q := qs[strconv.Itoa(id)].(map[string]any)
 		if na, _ := q["not_actionable"].(bool); na {
 			b.stats["quests_not_actionable"]++
 			continue
 		}
+		seen[id] = true
 		out := dataset.Quest{ID: id, Sources: map[string]string{}}
 		if v, s := field(q, "name"); v != nil {
 			out.Name, _ = v.(string)
@@ -482,7 +498,7 @@ func (b *builder) quests() {
 			continue
 		}
 		if f, ok := num(first(field(q, "required_races_mask"))); ok {
-			out.Races = int(uint64(f) & 0xFFFF)
+			out.Races = raceMask(int(f))
 		}
 		if f, ok := num(first(field(q, "required_classes_mask"))); ok {
 			out.Classes = int(uint64(f) & 0xFFFF)
@@ -544,22 +560,44 @@ func (b *builder) quests() {
 		}
 		b.objectives(&out, q, cm)
 		b.applyWarcraftDB(&out)
+		if b.pdb != nil {
+			b.applyPolestar(&out)
+		}
 		b.classify(&out)
-		for _, r := range out.Start {
-			if r.Kind == "npc" {
-				b.npcWanted[r.ID] = true
-			} else if r.Kind == "object" {
-				b.objWanted[r.ID] = true
-			}
-		}
-		for _, r := range out.End {
-			if r.Kind == "npc" {
-				b.npcWanted[r.ID] = true
-			} else {
-				b.objWanted[r.ID] = true
-			}
-		}
+		b.wantRefs(out)
 		b.out = append(b.out, out)
+	}
+	if b.pdb == nil {
+		return
+	}
+	extra := make([]int, 0)
+	for id := range b.pdb.Quests {
+		if !seen[id] {
+			extra = append(extra, id)
+		}
+	}
+	sort.Ints(extra)
+	for _, id := range extra {
+		out, ok := b.newPolestarQuest(b.pdb.Quests[id])
+		if !ok {
+			continue
+		}
+		b.classify(&out)
+		b.wantRefs(out)
+		b.out = append(b.out, out)
+	}
+	sort.Slice(b.out, func(a, c int) bool { return b.out[a].ID < b.out[c].ID })
+}
+
+// wantRefs marks the givers and turn-ins of a quest for the NPC and object tables.
+func (b *builder) wantRefs(out dataset.Quest) {
+	for _, r := range append(append([]dataset.Ref{}, out.Start...), out.End...) {
+		switch r.Kind {
+		case "npc":
+			b.npcWanted[r.ID] = true
+		case "object":
+			b.objWanted[r.ID] = true
+		}
 	}
 }
 
@@ -679,11 +717,24 @@ func (b *builder) npcs() {
 	for _, id := range ids {
 		rec := b.npcRecord(id)
 		cm := b.w.creature[id]
+		n := dataset.NPC{ID: id}
 		if rec == nil && cm == nil {
-			b.stats["npcs_unknown"]++
+			if b.pdb == nil || !b.polestarNPC(&n, false) {
+				b.stats["npcs_unknown"]++
+				continue
+			}
+			b.stats["npcs_from_polestar"]++
+			if len(n.Spawns) == 0 {
+				n.Source = "no_positions"
+				b.stats["npcs_without_positions"]++
+			}
+			n.Spawns = thin(n.Spawns, 80)
+			if n.MaxLevel < n.MinLevel {
+				n.MaxLevel = n.MinLevel
+			}
+			b.npcOut = append(b.npcOut, n)
 			continue
 		}
-		n := dataset.NPC{ID: id}
 		if rec != nil {
 			n.Name, _ = rec["name"].(string)
 			if f, ok := num(rec["min_level"]); ok {
@@ -755,6 +806,9 @@ func (b *builder) npcs() {
 			n.Spawns = append(n.Spawns, b.w.spawns[id]...)
 			n.Source = "cmangos_positions"
 		}
+		if len(n.Spawns) == 0 && b.pdb != nil {
+			b.polestarNPC(&n, true)
+		}
 		if len(n.Spawns) == 0 {
 			n.Source = "no_positions"
 			b.stats["npcs_without_positions"]++
@@ -809,6 +863,9 @@ func (b *builder) objects() {
 		}
 		if len(o.Spawns) == 0 {
 			o.Spawns = b.w.objSpawns[id]
+		}
+		if b.pdb != nil {
+			b.polestarObject(&o)
 		}
 		o.Spawns = thin(o.Spawns, 60)
 		b.objOut = append(b.objOut, o)
@@ -1252,6 +1309,9 @@ func (b *builder) moreItemSources(out *dataset.Quest, o *dataset.Objective) (kee
 	if len(o.Drops) > 0 {
 		return true, true
 	}
+	if b.polestarDrops(o) {
+		return true, true
+	}
 	if rec, _ := get(b.merged, "items", strconv.Itoa(o.ID)).(map[string]any); rec != nil {
 		if chances, _ := rec["drop_chance_by_npc"].(map[string]any); len(chances) > 0 {
 			for k, v := range chances {
@@ -1472,6 +1532,9 @@ func (b *builder) travel() dataset.Travel {
 			back.Name = kind + " " + l.Name[i+3:] + " - " + rest
 		}
 		t.Links = append(t.Links, l, back)
+	}
+	if b.pdb != nil {
+		b.polestarTravel(&t)
 	}
 	b.stats["flight_masters"] = len(t.FlightMasters)
 	b.stats["inns"] = len(t.Inns)

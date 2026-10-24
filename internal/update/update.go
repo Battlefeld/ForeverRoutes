@@ -27,6 +27,7 @@ import (
 	"github.com/Battlefeld/ForeverRoutes/internal/sources/everythingquests"
 	"github.com/Battlefeld/ForeverRoutes/internal/sources/foreverchanges"
 	"github.com/Battlefeld/ForeverRoutes/internal/sources/foreverdb"
+	"github.com/Battlefeld/ForeverRoutes/internal/sources/polestar"
 	"github.com/Battlefeld/ForeverRoutes/internal/sources/questie"
 	"github.com/Battlefeld/ForeverRoutes/internal/sources/wclbox"
 	"github.com/Battlefeld/ForeverRoutes/internal/warcraftdb"
@@ -48,6 +49,7 @@ var repos = map[string][2]string{
 	"questie":          {"https://github.com/Questie/QuestieDB", "master"},
 	"everythingquests": {"https://github.com/wheelbarrel00/EverythingQuests", "main"},
 	"cmangos":          {"https://github.com/cmangos/classic-db", "master"},
+	"polestar":         {"https://github.com/fitzforge/polestar", "next"}, // the default branch carries forever-db
 }
 
 // Lock pins the state of every source a dataset was built from.
@@ -56,6 +58,7 @@ type Lock struct {
 	Questie          string `json:"questie"`
 	EverythingQuests string `json:"everythingquests"`
 	CMangos          string `json:"cmangos"`
+	Polestar         string `json:"polestar,omitempty"` // forever-db (Polestar), empty: not used
 	ForeverDBBuild   string `json:"foreverdbBuild"`
 	ForeverDBHash    string `json:"foreverdbHash"`    // of the stored snapshot
 	ForeverDBFetched string `json:"foreverdbFetched"` // when the API was last asked (RFC 3339)
@@ -314,7 +317,14 @@ func Rebuild(ctx context.Context, o Options, l *Lock, in Inputs) (*dataset.Datas
 	if err := os.WriteFile(mergedPath, mb, 0o644); err != nil {
 		return nil, nil, err
 	}
-	d, err := build.Build(build.Inputs{Merged: mergedPath, CMangos: dump, CMangosRevision: l.CMangos, WarcraftDB: in.Overlay, WCLBox: in.WCLBox, ForeverChanges: in.FChanges})
+	bin := build.Inputs{Merged: mergedPath, CMangos: dump, CMangosRevision: l.CMangos, WarcraftDB: in.Overlay, WCLBox: in.WCLBox, ForeverChanges: in.FChanges}
+	if l.Polestar != "" {
+		if bin.Polestar, err = polestar.Fetch(ctx, o.HTTP, o.Cache, l.Polestar); err != nil {
+			return nil, nil, err
+		}
+		bin.PolestarRevision = l.Polestar
+	}
+	d, err := build.Build(bin)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -335,7 +345,7 @@ func Run(ctx context.Context, o Options) (*Report, error) {
 		if err != nil {
 			return nil, err
 		}
-		cur := map[string]*string{"questie": &next.Questie, "everythingquests": &next.EverythingQuests, "cmangos": &next.CMangos}[name]
+		cur := map[string]*string{"questie": &next.Questie, "everythingquests": &next.EverythingQuests, "cmangos": &next.CMangos, "polestar": &next.Polestar}[name]
 		if h != *cur {
 			rep.Sources = append(rep.Sources, fmt.Sprintf("%s %s → %s", name, short(*cur), short(h)))
 			*cur = h
