@@ -59,6 +59,12 @@ func (b *builder) applyPolestar(out *dataset.Quest) {
 	if len(out.PreAll) == 0 && len(out.PreAny) == 0 {
 		out.PreAll, out.PreAny, out.Breadcrumb = b.polestarPrereqs(out.ID, out.Breadcrumb)
 	}
+	// a quest the client marks as a breadcrumb leads here but is not needed (other sources list it as a prerequisite)
+	for _, p := range b.pdb.Prereqs[out.ID] {
+		if p.Breadcrumb {
+			out.PreAll, out.PreAny = without(out.PreAll, p.Pre), without(out.PreAny, p.Pre)
+		}
+	}
 	// objectives: the client's list where the other sources have none, or only some without a count
 	if objectivesUnknown(out) && len(b.pdb.Objectives[out.ID]) > 0 {
 		out.Objectives, out.Unsupported, out.NeedItems = nil, "", nil
@@ -170,8 +176,8 @@ func (b *builder) polestarObjectives(out *dataset.Quest) {
 			out.Objectives = append(out.Objectives, dataset.Objective{Kind: "object", ID: o.Target, Count: o.Count, Source: polestarSrc})
 			b.objWanted[o.Target] = true
 		case "item":
-			if o.Target == b.providedItem(out.ID) {
-				continue // handed over by the giver with the quest (cmangos SrcItemId): nothing to collect
+			if o.Target == b.providedItem(out.ID) || b.fromStartItem(out, o.Target) {
+				continue // handed over with the quest (cmangos SrcItemId, or what the starting item becomes): nothing to collect
 			}
 			obj := dataset.Objective{Kind: "item", ID: o.Target, Count: o.Count, Source: polestarSrc}
 			b.polestarDrops(&obj)
@@ -200,6 +206,34 @@ func (b *builder) polestarObjectives(out *dataset.Quest) {
 			b.stats["polestar_event_objectives_skipped"]++
 		}
 	}
+}
+
+// fromStartItem: a quest started by an item asks for an item of the same name that nothing drops: it is the starting
+// item itself (the client gives the quest's own copy), not something to collect.
+func (b *builder) fromStartItem(out *dataset.Quest, item int) bool {
+	it := b.pdb.Items[item]
+	if it == nil || len(b.pdb.ItemSources[item]) > 0 || len(b.w.dropsByItem[item]) > 0 {
+		return false
+	}
+	for _, r := range b.pdb.Starts[out.ID] {
+		if s := b.pdb.Items[r.ID]; r.Kind == "item" && s != nil && s.Name == it.Name {
+			return true
+		}
+	}
+	return false
+}
+
+func without(l []int, v int) []int {
+	out := l[:0:0]
+	for _, x := range l {
+		if x != v {
+			out = append(out, x)
+		}
+	}
+	if len(out) == 0 {
+		return nil
+	}
+	return out
 }
 
 // providedItem is the item the giver hands over with the quest (cmangos SrcItemId), 0 if none or unknown.
