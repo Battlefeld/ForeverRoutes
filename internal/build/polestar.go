@@ -190,6 +190,11 @@ func (b *builder) polestarObjectives(out *dataset.Quest) {
 			if !keep {
 				continue
 			}
+			if !ok && b.delivered(out.ID, o) {
+				b.stats["items_delivered_by_giver"]++
+				out.Sources["objectives"] = "item assumed handed over by the giver (delivery quest)"
+				continue // a letter or package the giver hands over: nothing to collect
+			}
 			if !ok {
 				b.unsupported(out, b.noSourceReason(o.Target, fmt.Sprintf("item %d: source unknown (crafted, bought or not in the data)", o.Target)))
 			}
@@ -236,6 +241,29 @@ func without(l []int, v int) []int {
 		return nil
 	}
 	return out
+}
+
+// delivered: Forever's delivery quests (a letter, a package, a note for someone else) ask for one item that no source
+// drops and no guide sends the player to find; it is their only objective and the giver is not the one who takes it.
+// The giver hands it over with the quest (cmangos would say SrcItemId; Forever's own quests are not in cmangos).
+func (b *builder) delivered(quest int, o polestar.Objective) bool {
+	if b.pdb == nil || o.Count != 1 || len(b.pdb.Objectives[quest]) != 1 || len(b.pdb.Starts[quest]) == 0 || len(b.pdb.Ends[quest]) == 0 {
+		return false
+	}
+	if b.gdx != nil && len(b.gdx.byQuest[quest]) > 0 {
+		return false
+	}
+	for _, s := range b.pdb.Starts[quest] {
+		if s.Kind != "npc" {
+			return false
+		}
+		for _, e := range b.pdb.Ends[quest] {
+			if e.Kind == s.Kind && e.ID == s.ID {
+				return false
+			}
+		}
+	}
+	return true
 }
 
 // providedItem is the item the giver hands over with the quest (cmangos SrcItemId), 0 if none or unknown.

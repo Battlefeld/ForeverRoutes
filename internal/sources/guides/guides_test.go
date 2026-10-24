@@ -65,3 +65,33 @@ func TestParsePolestar(t *testing.T) {
 		t.Errorf("interact: %+v", f)
 	}
 }
+
+func TestPolestarWithoutPlaces(t *testing.T) {
+	facts := ParsePolestar(map[string]string{"e.guide": `zone Elwynn Forest
+
+step Crystal Lake and the wolves
+  tip Skinners: Gray Forest Wolves roam the woods near the Tower of Azora.
+  collect 247877 quest 91751 optional         -- Rough Wolf Pelts
+
+step Moonbrook
+  kill 121 quest 14
+  collect 254676 quest 92747.1 only Dwarf -- from the crates
+`})
+	if len(facts) != 3 {
+		t.Fatalf("facts: %+v", facts)
+	}
+	pelts := facts[0]
+	if pelts.Quest != 91751 || pelts.Obj != 0 || pelts.Item != 247877 || pelts.Zone != "Elwynn Forest" || len(pelts.Near) != 0 {
+		t.Fatalf("pelts: %+v", pelts)
+	}
+	found := false
+	for _, m := range pelts.Mobs {
+		found = found || m == "Gray Forest Wolf"
+	}
+	if !found {
+		t.Fatalf("tip names: %v", pelts.Mobs)
+	}
+	if crates := facts[2]; crates.Item != 254676 || crates.Obj != 1 || len(crates.Mobs) != 0 || len(crates.Near) != 1 || crates.Near[0] != 121 {
+		t.Fatalf("crates: %+v", crates)
+	}
+}

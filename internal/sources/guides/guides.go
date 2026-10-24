@@ -45,6 +45,10 @@ type Fact struct {
 	Objects []int    `json:"objects,omitempty"`
 	Places  []Place  `json:"places,omitempty"`
 	Ground  bool     `json:"ground,omitempty"` // the items lie on the ground (or in the open): picked up, not dropped
+	// Polestar steps without coordinates: the step's zone, and the creatures its other objectives kill there (the items
+	// are found while doing them).
+	Zone string `json:"zone,omitempty"`
+	Near []int  `json:"near,omitempty"`
 }
 
 var (
@@ -167,11 +171,13 @@ func rxpStep(file string, lines []string) []Fact {
 
 var (
 	psStep    = regexp.MustCompile(`^step\b`)
-	psObj     = regexp.MustCompile(`^(kill|collect|interact)\s+(\d+)(?:\s+x\d+)?\s+quest\s+(\d+)\.(\d+)(.*)$`)
+	psObj     = regexp.MustCompile(`^(kill|collect|interact)\s+(\d+)(?:\s+x\d+)?\s+quest\s+(\d+)(?:\.(\d+))?(.*)$`)
 	psAt      = regexp.MustCompile(`@(-?[\d.]+),(-?[\d.]+)`)
 	psGoto    = regexp.MustCompile(`^goto\s+(-?[\d.]+),(-?[\d.]+)`)
 	psZone    = regexp.MustCompile(`^zone\s+(.+)$`)
 	psComment = regexp.MustCompile(`\s+--.*$`)
+	psTip     = regexp.MustCompile(`^tip\s+(.*)$`)
+	psName    = regexp.MustCompile(`[A-Z][a-z'-]+(?:\s+[A-Z][a-z'-]+)*`)
 )
 
 // ParsePolestar reads Polestar guide files (name -> content).
@@ -212,11 +218,23 @@ func ParsePolestar(files map[string]string) []Fact {
 
 func polestarStep(file, zone string, lines []string) []Fact {
 	var stepPlaces []Place
+	var kills []int
+	var tipNames []string
 	for _, l := range lines {
 		if m := psGoto.FindStringSubmatch(l); m != nil {
 			x, _ := strconv.ParseFloat(m[1], 64)
 			y, _ := strconv.ParseFloat(m[2], 64)
 			stepPlaces = append(stepPlaces, Place{Zone: zone, X: x, Y: y})
+		}
+		if m := psObj.FindStringSubmatch(l); m != nil && m[1] == "kill" {
+			id, _ := strconv.Atoi(m[2])
+			kills = append(kills, id)
+		}
+		// the creatures a tip names ("Gray Forest Wolves roam the woods"); the build keeps those that exist in the zone
+		if m := psTip.FindStringSubmatch(l); m != nil {
+			for _, n := range psName.FindAllString(m[1], -1) {
+				tipNames = appendName(tipNames, singular(n))
+			}
 		}
 	}
 	var out []Fact
@@ -228,7 +246,7 @@ func polestarStep(file, zone string, lines []string) []Fact {
 		id, _ := strconv.Atoi(m[2])
 		q, _ := strconv.Atoi(m[3])
 		n, _ := strconv.Atoi(m[4])
-		f := Fact{Source: "polestar", File: file, Quest: q, Obj: n, Places: stepPlaces}
+		f := Fact{Source: "polestar", File: file, Quest: q, Obj: n, Places: stepPlaces, Zone: zone}
 		if at := psAt.FindStringSubmatch(m[5]); at != nil {
 			x, _ := strconv.ParseFloat(at[1], 64)
 			y, _ := strconv.ParseFloat(at[2], 64)
@@ -241,6 +259,15 @@ func polestarStep(file, zone string, lines []string) []Fact {
 			f.Item = id
 		case "interact":
 			f.Objects = []int{id}
+		}
+		// an item without a place: found while killing the step's creatures, or dropped by the creatures its tip
+		// names when the step kills nothing
+		if f.Item != 0 && len(f.Places) == 0 {
+			if len(kills) > 0 {
+				f.Near = kills
+			} else {
+				f.Mobs = tipNames
+			}
 		}
 		out = append(out, f)
 	}

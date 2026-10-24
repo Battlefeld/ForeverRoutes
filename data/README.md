@@ -44,7 +44,11 @@ QuestieDB, EverythingQuests und cmangos werden beim Bau in den festgeschriebenen
   dafür tötet, wo man hingeht, ob die Gegenstände am Boden liegen, welches Objekt man benutzt, wo der Gegenstand droppt,
   der eine Quest startet. Nur Fakten (IDs, Namen, Orte), kein Guidetext. Sie füllen nur Lücken, die keine Datenbank
   schließt: genannte Gegner werden Drops mit unbekannter Chance, Objekte Drops zu 100 %, sonst werden die Orte des Guides
-  die Orte des Ziels; Gegner und Objekte ohne Spawnpunkt bekommen die Orte des Guideschritts. RestedXPs Stand steht in
+  die Orte des Ziels; Gegner und Objekte ohne Spawnpunkt bekommen die Orte des Guideschritts. Polestar-Schritte ohne
+  Koordinaten zählen über ihr Gebiet: die Gegner, die der Hinweis des Schritts nennt (nur in diesem Gebiet, keine
+  Questgeber, Händler oder Lehrer), oder die Orte der Gegner, die der Schritt ohnehin tötet. Lieferquests (ein einziger
+  Gegenstand, den nichts droppt und kein Guide suchen lässt, Geber und Abnehmer verschieden) gelten als vom Geber
+  übergeben; die Quest trägt dann den Vermerk „item assumed handed over by the giver“. RestedXPs Stand steht in
   `data/sources/lock.json` (`rxp`), Polestars im selben Commit wie forever-db.
 - **cmangos classic-db** (https://github.com/cmangos/classic-db, GPL-3.0) — Classic-Weltdaten: Zielmengen,
   Beutechancen, Spawnpositionen, Respawnzeiten, Lebenspunkte und Schaden der Kreaturen, Flugmeister, Gasthäuser,

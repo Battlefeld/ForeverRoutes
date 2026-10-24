@@ -1009,6 +1009,11 @@ func (b *builder) applyWarcraftDB(out *dataset.Quest) {
 			if !keep {
 				continue
 			}
+			if !ok && b.delivered(out.ID, polestar.Objective{Target: o.ID, Count: o.Amount}) {
+				b.stats["items_delivered_by_giver"]++
+				out.Sources["objectives"] = "item assumed handed over by the giver (delivery quest)"
+				continue
+			}
 			if !ok && why == "" {
 				why = b.noSourceReason(o.ID, fmt.Sprintf("item %d: source unknown (Forever item, no drop data)", o.ID))
 			}

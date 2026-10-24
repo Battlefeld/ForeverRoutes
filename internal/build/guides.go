@@ -7,6 +7,7 @@ import (
 
 	"github.com/Battlefeld/ForeverRoutes/dataset"
 	"github.com/Battlefeld/ForeverRoutes/internal/sources/guides"
+	"github.com/Battlefeld/ForeverRoutes/internal/sources/polestar"
 )
 
 // Guide facts (internal/sources/guides) fill what no database knows, mostly for Forever's own quests: which creature
@@ -20,14 +21,31 @@ const guideSrc = "guide"
 const guideNear = 400
 
 type guideIndex struct {
-	byQuest map[int][]guides.Fact
-	credit  map[string]bool // sources used
+	byQuest  map[int][]guides.Fact
+	credit   map[string]bool // sources used
+	friendly map[int]bool    // quest givers, turn-ins and NPCs with a title (vendors, trainers): never a drop
 }
 
 func (b *builder) loadGuides(facts []guides.Fact) {
-	b.gdx = &guideIndex{byQuest: map[int][]guides.Fact{}, credit: map[string]bool{}}
+	b.gdx = &guideIndex{byQuest: map[int][]guides.Fact{}, credit: map[string]bool{}, friendly: map[int]bool{}}
 	for _, f := range facts {
 		b.gdx.byQuest[f.Quest] = append(b.gdx.byQuest[f.Quest], f)
+	}
+	if b.pdb != nil {
+		for _, refs := range []map[int][]polestar.Ref{b.pdb.Starts, b.pdb.Ends} {
+			for _, l := range refs {
+				for _, r := range l {
+					if r.Kind == "npc" {
+						b.gdx.friendly[r.ID] = true
+					}
+				}
+			}
+		}
+		for id, n := range b.pdb.NPCs {
+			if n.Subname != "" {
+				b.gdx.friendly[id] = true
+			}
+		}
 	}
 }
 
@@ -77,8 +95,25 @@ func (b *builder) creaturePoints(id int) []dataset.Point {
 	return pts
 }
 
-// namedCreatures are the creatures a guide names, near the step's places when it gives any.
-func (b *builder) namedCreatures(names []string, near []dataset.Point) []int {
+// inZone tells whether a point lies inside a zone's in-game map.
+func (b *builder) inZone(zone string, p dataset.Point) bool {
+	ui, ok := b.zoneID[normName(zone)]
+	if !ok || b.pdb == nil {
+		return false
+	}
+	for _, m := range b.pdb.UIMaps {
+		if m.UIMap == ui && m.Map == p.Map &&
+			p.X >= math.Min(m.Top, m.Bottom) && p.X <= math.Max(m.Top, m.Bottom) &&
+			p.Y >= math.Min(m.Left, m.Right) && p.Y <= math.Max(m.Left, m.Right) {
+			return true
+		}
+	}
+	return false
+}
+
+// namedCreatures are the creatures a guide names, near the step's places when it gives any, else in the step's zone
+// when the guide names one.
+func (b *builder) namedCreatures(names []string, near []dataset.Point, zone string) []int {
 	var out []int
 	for _, name := range names {
 		ids := append([]int(nil), b.byName[normName(name)]...)
@@ -92,11 +127,26 @@ func (b *builder) namedCreatures(names []string, near []dataset.Point) []int {
 		ids = dedupe(sortedInts(ids))
 		var close []int
 		for _, id := range ids {
-			if len(near) == 0 || closeTo(b.creaturePoints(id), near) {
+			if b.gdx.friendly[id] {
+				continue
+			}
+			switch {
+			case len(near) > 0:
+				if closeTo(b.creaturePoints(id), near) {
+					close = append(close, id)
+				}
+			case zone != "":
+				for _, p := range b.creaturePoints(id) {
+					if b.inZone(zone, p) {
+						close = append(close, id)
+						break
+					}
+				}
+			default:
 				close = append(close, id)
 			}
 		}
-		if len(close) == 0 && len(near) == 0 {
+		if len(close) == 0 && len(near) == 0 && zone == "" {
 			close = ids
 		}
 		out = append(out, close...)
@@ -155,7 +205,10 @@ func (b *builder) guideItem(out *dataset.Quest, o *dataset.Objective, start bool
 	var places []dataset.Point
 	for _, f := range facts {
 		pts := b.guidePoints(f.Places)
-		ids := append(b.namedCreatures(f.Mobs, pts), f.NPCs...)
+		for _, id := range f.Near {
+			pts = append(pts, b.creaturePoints(id)...)
+		}
+		ids := append(b.namedCreatures(f.Mobs, pts, f.Zone), f.NPCs...)
 		npcs = append(npcs, ids...)
 		if len(ids) == 0 && len(f.Objects) == 0 {
 			places = append(places, pts...)
