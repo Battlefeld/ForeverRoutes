@@ -2,7 +2,6 @@ package route
 
 import (
 	"math"
-	"sort"
 	"sync"
 
 	"github.com/Battlefeld/ForeverRoutes/dataset"
@@ -30,6 +29,7 @@ const (
 	byWalk = iota
 	byNetwork
 	byHearth
+	byDeath
 )
 
 type network struct {
@@ -152,24 +152,35 @@ func (w *World) table(known uint64) [][]float64 {
 	return d
 }
 
-// nearestNodes: the few network nodes closest to p on its continent.
+// nearestNodes: the few (at most 4) network nodes closest to p on its continent, nearest first.
 func (w *World) nearestNodes(p dataset.Point, max int) []int {
-	type c struct {
-		i int
-		d float64
+	var idx [4]int
+	var dist [4]float64
+	n := 0
+	if max > 4 {
+		max = 4
 	}
-	var cs []c
 	for i, q := range w.net.nodes {
-		if q.Map == p.Map {
-			cs = append(cs, c{i, distance(p, q)})
+		if q.Map != p.Map {
+			continue
 		}
+		d := (p.X-q.X)*(p.X-q.X) + (p.Y-q.Y)*(p.Y-q.Y)
+		if n == max && d >= dist[n-1] {
+			continue
+		}
+		k := n
+		if n < max {
+			n++
+		} else {
+			k = n - 1
+		}
+		for k > 0 && dist[k-1] > d {
+			idx[k], dist[k] = idx[k-1], dist[k-1]
+			k--
+		}
+		idx[k], dist[k] = i, d
 	}
-	sort.Slice(cs, func(a, b int) bool { return cs[a].d < cs[b].d })
-	var out []int
-	for i := 0; i < len(cs) && i < max; i++ {
-		out = append(out, cs[i].i)
-	}
-	return out
+	return append([]int(nil), idx[:n]...)
 }
 
 // TravelTime is the fastest way from a to b in state s: walking, the network of known flight masters and transports,
@@ -184,6 +195,11 @@ func (w *World) travel(s *State, a, b dataset.Point) (float64, int) {
 	if best > hearthCast+30 && s.Time >= s.Hearth && w.walk(s.Bind, a) > 60 {
 		if h, _ := w.overland(s, s.Bind, b); hearthCast+h < best {
 			best, how = hearthCast+h, byHearth
+		}
+	}
+	if best > deathMinLeg && w.deaths != nil {
+		if d, _ := w.deathskip(s, a, b); d+deathMargin < best {
+			best, how = d, byDeath
 		}
 	}
 	return best, how
@@ -201,9 +217,10 @@ func (w *World) overland(s *State, a, b dataset.Point) (float64, int) {
 	}
 	how := byWalk
 	d := w.table(s.Known)
+	near := w.nearestNodes(b, 4)
 	for _, i := range w.nearestNodes(a, 4) {
 		wi := w.walk(a, w.net.nodes[i])
-		for _, j := range w.nearestNodes(b, 4) {
+		for _, j := range near {
 			if v := wi + d[i][j] + w.walk(w.net.nodes[j], b); v < best {
 				best, how = v, byNetwork
 			}

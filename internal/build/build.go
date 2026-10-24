@@ -91,6 +91,7 @@ func field(q obj, name string) (any, string) {
 
 type world struct {
 	qt, ct, cr, cl, gob, gt, gl, cqr, cir, gqr, gir *sqldump.Table
+	safeLocs, graveZones                            *sqldump.Table
 	creature                                        map[int][]any
 	spawns                                          map[int][]dataset.Point
 	respawn                                         map[int]int
@@ -105,13 +106,14 @@ func loadCMangos(path string) (*world, error) {
 	t, err := sqldump.ReadFile(path, "quest_template", "creature_template", "creature", "creature_loot_template",
 		"gameobject", "gameobject_template", "gameobject_loot_template", "creature_questrelation",
 		"creature_involvedrelation", "gameobject_questrelation", "gameobject_involvedrelation", "creature_spawn_entry",
-		"gameobject_spawn_entry")
+		"gameobject_spawn_entry", "world_safe_locs", "game_graveyard_zone")
 	if err != nil {
 		return nil, err
 	}
 	w := &world{qt: t["quest_template"], ct: t["creature_template"], cr: t["creature"], cl: t["creature_loot_template"],
 		gob: t["gameobject"], gt: t["gameobject_template"], gl: t["gameobject_loot_template"], cqr: t["creature_questrelation"],
 		cir: t["creature_involvedrelation"], gqr: t["gameobject_questrelation"], gir: t["gameobject_involvedrelation"],
+		safeLocs: t["world_safe_locs"], graveZones: t["game_graveyard_zone"],
 		creature: map[int][]any{}, spawns: map[int][]dataset.Point{}, respawn: map[int]int{}, quest: map[int][]any{},
 		lootCreatures: map[int][]int{}, objSpawns: map[int][]dataset.Point{}, objLoot: map[int][]int{}, dropsByItem: map[int][]dataset.Drop{}}
 	if len(w.qt.Rows) == 0 || len(w.ct.Rows) == 0 {
@@ -1633,6 +1635,7 @@ func (b *builder) travel() dataset.Travel {
 	if b.spf != nil {
 		b.spfTravel(&t)
 	}
+	b.graveyards(&t)
 	b.stats["flight_masters"] = len(t.FlightMasters)
 	b.stats["inns"] = len(t.Inns)
 	b.stats["transport_links"] = len(t.Links)

@@ -30,6 +30,8 @@ type State struct {
 	Wait                 float64      // part of Combat spent waiting for respawns
 	Assumed              int          // steps that rely on an assumed drop chance
 	Dead                 map[int]dead // site key -> mobs of that site still dead
+	Deathskips           int          // deaths taken on purpose to travel
+	via                  string       // how the last action travelled when not on foot (hearth, network, deathskip: <graveyard>)
 }
 
 // dead counts the mobs of one creature killed at its site, as of a time. They come back over the respawn time.
@@ -94,6 +96,18 @@ func (w *World) move(s *State, to dataset.Point) error {
 	case byHearth:
 		s.Hearth = s.Time + hearthCooldown
 		from = s.Bind
+		s.via = "hearth"
+	case byDeath:
+		if _, g := w.deathskip(s, from, to); g >= 0 {
+			from = w.deaths.graves[g].At
+			s.via = "deathskip: " + w.deaths.graves[g].Name
+		}
+		s.Deathskips++
+		w.discoverAlong(s, from, to)
+	case byNetwork:
+		if s.via == "" {
+			s.via = "network"
+		}
 	case byWalk:
 		w.discoverAlong(s, from, to)
 	}
@@ -414,6 +428,7 @@ func (w *World) startAt(s *State, q *Quest) dataset.Point {
 // Step is one replayed action with the character after it.
 type Step struct {
 	Action
+	Via   string  `json:"via,omitempty"` // how the step travelled when not on foot: hearth, network, deathskip: <graveyard>
 	Name  string  `json:"name"`
 	Time  float64 `json:"time"`
 	Level int     `json:"level"`
@@ -432,6 +447,7 @@ type Result struct {
 	Quests    int       `json:"questsDone"`
 	Profile   string    `json:"killProfile"`
 	Assumed   int       `json:"assumedDropSteps"` // steps that rely on a drop chance the data does not give
+	Deaths    int       `json:"deathskips"`
 	Steps     []Step    `json:"steps"`
 }
 
@@ -445,12 +461,15 @@ func (w *World) replayFrom(s0 *State, actions []Action) (*Result, error) {
 	s := s0.clone()
 	t0, tr0, c0, tk0 := s.Time, s.Travel, s.Combat, s.Talk
 	res := &Result{Character: w.Char, Profile: w.Opt.Profile.Name()}
+	d0 := s.Deathskips
 	for i, a := range actions {
+		s.via = ""
 		if err := w.Apply(s, a); err != nil {
 			return nil, fmt.Errorf("step %d (%s %d): %w", i+1, a.Op, a.Quest, err)
 		}
-		res.Steps = append(res.Steps, Step{Action: a, Name: w.describe(a), Time: round1(s.Time - t0), Level: w.Level(s), XP: s.XP})
+		res.Steps = append(res.Steps, Step{Action: a, Via: s.via, Name: w.describe(a), Time: round1(s.Time - t0), Level: w.Level(s), XP: s.XP})
 	}
+	res.Deaths = s.Deathskips - d0
 	res.Seconds, res.Travel, res.Combat, res.Talk = round1(s.Time-t0), round1(s.Travel-tr0), round1(s.Combat-c0), round1(s.Talk-tk0)
 	res.Level, res.XP, res.Assumed = w.Level(s), s.XP, s.Assumed
 	for _, st := range s.Status {

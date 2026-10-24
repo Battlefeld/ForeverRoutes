@@ -131,6 +131,18 @@ type Travel struct {
 	// Flights are the direct flights between neighbouring flight masters with their time, one way; without them a
 	// flight is estimated from the distance.
 	Flights []Link `json:"flights,omitempty"`
+	// Graveyards are where a released ghost appears and the Spirit Healer resurrects (NPC is the graveyard's id).
+	Graveyards []Node `json:"graveyards,omitempty"`
+	// Deaths says which graveyard the server gives a character who dies in a cell of the map.
+	Deaths *DeathGrid `json:"deaths,omitempty"`
+}
+
+// DeathGrid: cells of Cell yards from (0, 0) on each map, cell (i, j) covering x in [i*Cell, +Cell) and y in
+// [j*Cell, +Cell). Cells has five numbers per cell: map, i, j, and the graveyard (its index in Graveyards plus one,
+// 0 for none) an Alliance and a Horde character get when dying there.
+type DeathGrid struct {
+	Cell  float64 `json:"cell"`
+	Cells []int   `json:"cells"`
 }
 
 // Dataset is the whole file.

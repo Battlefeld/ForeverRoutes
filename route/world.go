@@ -71,6 +71,7 @@ type World struct {
 	Farms     []Farm
 	net       *network
 	walkGrids walks
+	deaths    *deaths
 	inns      []dataset.Point
 	siteKeys  int
 	siteMemo  map[*dataset.Point][]Site
@@ -87,6 +88,7 @@ func NewWorld(d *dataset.Dataset, c Character, opt Options) (*World, error) {
 	w := &World{Data: d, Char: c, Faction: faction, Opt: opt.withDefaults(), ByID: map[int]*Quest{}, NPC: map[int]*dataset.NPC{},
 		Objects: map[int]*dataset.Object{}, Excluded: map[int]string{}}
 	w.walkGrids = newWalks(w.Opt.Walks)
+	w.deaths = newDeaths(d.Travel)
 	for i := range d.NPCs {
 		w.NPC[d.NPCs[i].ID] = &d.NPCs[i]
 	}

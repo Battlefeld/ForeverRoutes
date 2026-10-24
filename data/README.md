@@ -74,7 +74,10 @@ QuestieDB, EverythingQuests und cmangos werden beim Bau in den festgeschriebenen
   Übereinstimmung der XP gezählt (`aegis_xp_agrees`, `aegis_xp_differs`). Stand in `data/sources/lock.json` (`aegis`).
 - **cmangos classic-db** (https://github.com/cmangos/classic-db, GPL-3.0) — Classic-Weltdaten: Zielmengen,
   Beutechancen, Spawnpositionen, Respawnzeiten, Lebenspunkte und Schaden der Kreaturen, Flugmeister, Gasthäuser,
-  Transporte. Classic, nicht Forever: Forever-Angaben haben Vorrang. Werte aus cmangos stehen unter GPL-3.0; damit
+  Transporte, Friedhöfe (`world_safe_locs`, nur mit Geistheiler) und welcher Friedhof für einen Tod in welcher Zone
+  gilt (`game_graveyard_zone`; die Zone eines Orts nach den QuestieDB-Spawns der Kreaturen dort, als Raster aus
+  200-Yard-Zellen in `travel.deaths`). Forevers eigene Friedhöfe sind Geistheiler aus forever-db fern jedem
+  klassischen. Classic, nicht Forever: Forever-Angaben haben Vorrang. Werte aus cmangos stehen unter GPL-3.0; damit
   steht auch `routes-data.json.gz` unter GPL-3.0 (ebenso die Werte aus Polestars forever-db).
 
 **Dropchancen:** Wo eine Quelle nur den Gegner nennt, nicht die Chance, steht im Datensatz `unknown` (Chance 0, kein Wert).

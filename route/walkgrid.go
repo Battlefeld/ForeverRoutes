@@ -3,7 +3,7 @@ package route
 import (
 	"container/heap"
 	"math"
-	"sync"
+	"sync/atomic"
 
 	"github.com/Battlefeld/ForeverRoutes/dataset"
 )
@@ -23,18 +23,30 @@ const (
 
 type walkGrid struct {
 	m     dataset.WalkMap
-	index map[[2]int]int32 // (i, j) -> cell
+	index []int32 // i*NJ + j -> cell, -1 for none
 	n     int
-	mu    sync.Mutex
-	from  map[int32]map[int32]float32 // source cell -> reached cell -> cost
+	from  []atomic.Pointer[[]float32] // source cell -> cost to every cell (+Inf beyond walkReach), searched once
 }
 
 func newWalkGrid(m dataset.WalkMap) *walkGrid {
-	g := &walkGrid{m: m, index: map[[2]int]int32{}, n: len(m.Cells) / 4, from: map[int32]map[int32]float32{}}
-	for c := 0; c < g.n; c++ {
-		g.index[[2]int{int(m.Cells[4*c]), int(m.Cells[4*c+1])}] = int32(c)
+	g := &walkGrid{m: m, index: make([]int32, m.NI*m.NJ), n: len(m.Cells) / 4}
+	for k := range g.index {
+		g.index[k] = -1
 	}
+	for c := 0; c < g.n; c++ {
+		if i, j := int(m.Cells[4*c]), int(m.Cells[4*c+1]); i >= 0 && j >= 0 && i < m.NI && j < m.NJ {
+			g.index[i*m.NJ+j] = int32(c)
+		}
+	}
+	g.from = make([]atomic.Pointer[[]float32], g.n)
 	return g
+}
+
+func (g *walkGrid) at(i, j int) int32 {
+	if i < 0 || j < 0 || i >= g.m.NI || j >= g.m.NJ {
+		return -1
+	}
+	return g.index[i*g.m.NJ+j]
 }
 
 func (g *walkGrid) point(c int32) (float64, float64) { return g.m.Cells[4*c+2], g.m.Cells[4*c+3] }
@@ -43,13 +55,13 @@ func (g *walkGrid) point(c int32) (float64, float64) { return g.m.Cells[4*c+2], 
 func (g *walkGrid) cellOf(p dataset.Point) int32 {
 	i := int(math.Floor((p.X - g.m.X0) / g.m.Cell))
 	j := int(math.Floor((p.Y - g.m.Y0) / g.m.Cell))
-	if c, ok := g.index[[2]int{i, j}]; ok {
+	if c := g.at(i, j); c >= 0 {
 		return c
 	}
 	best, bestD := int32(-1), math.Inf(1)
 	for di := -walkSnap; di <= walkSnap; di++ {
 		for dj := -walkSnap; dj <= walkSnap; dj++ {
-			if c, ok := g.index[[2]int{i + di, j + dj}]; ok {
+			if c := g.at(i+di, j+dj); c >= 0 {
 				x, y := g.point(c)
 				if d := math.Hypot(x-p.X, y-p.Y); d < bestD {
 					best, bestD = c, d
@@ -77,15 +89,17 @@ func (h *walkHeap) Pop() any {
 	return it
 }
 
-// costs from a source cell to every cell within walkReach, searched once and kept.
-func (g *walkGrid) costs(src int32) map[int32]float32 {
-	g.mu.Lock()
-	if m, ok := g.from[src]; ok {
-		g.mu.Unlock()
-		return m
+// costs from a source cell to every cell within walkReach (+Inf beyond), searched once and kept.
+func (g *walkGrid) costs(src int32) []float32 {
+	if p := g.from[src].Load(); p != nil {
+		return *p
 	}
-	g.mu.Unlock()
-	dist := map[int32]float32{src: 0}
+	inf := float32(math.Inf(1))
+	dist := make([]float32, g.n)
+	for k := range dist {
+		dist[k] = inf
+	}
+	dist[src] = 0
 	h := &walkHeap{{src, 0}}
 	for h.Len() > 0 {
 		it := heap.Pop(h).(walkItem)
@@ -98,23 +112,17 @@ func (g *walkGrid) costs(src int32) map[int32]float32 {
 			if cost <= 0 {
 				continue
 			}
-			nb, ok := g.index[[2]int{i + mv[0], j + mv[1]}]
-			if !ok {
+			nb := g.at(i+mv[0], j+mv[1])
+			if nb < 0 {
 				continue
 			}
-			nd := it.d + float32(cost)
-			if nd > walkReach {
-				continue
-			}
-			if old, seen := dist[nb]; !seen || nd < old {
+			if nd := it.d + float32(cost); nd <= walkReach && nd < dist[nb] {
 				dist[nb] = nd
 				heap.Push(h, walkItem{nb, nd})
 			}
 		}
 	}
-	g.mu.Lock()
-	g.from[src] = dist
-	g.mu.Unlock()
+	g.from[src].Store(&dist)
 	return dist
 }
 
@@ -124,8 +132,8 @@ func (g *walkGrid) walkTime(a, b dataset.Point, straight float64) (float64, bool
 	if ca < 0 || cb < 0 || ca == cb {
 		return 0, false
 	}
-	cost, ok := g.costs(ca)[cb]
-	if !ok {
+	cost := g.costs(ca)[cb]
+	if math.IsInf(float64(cost), 1) {
 		return 0, false
 	}
 	ax, ay := g.point(ca)
