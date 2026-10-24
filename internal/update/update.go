@@ -24,6 +24,7 @@ import (
 	"github.com/Battlefeld/ForeverRoutes/dataset"
 	"github.com/Battlefeld/ForeverRoutes/internal/build"
 	"github.com/Battlefeld/ForeverRoutes/internal/merge"
+	"github.com/Battlefeld/ForeverRoutes/internal/sources/eglink"
 	"github.com/Battlefeld/ForeverRoutes/internal/sources/everythingquests"
 	"github.com/Battlefeld/ForeverRoutes/internal/sources/foreverchanges"
 	"github.com/Battlefeld/ForeverRoutes/internal/sources/foreverdb"
@@ -52,6 +53,7 @@ var repos = map[string][2]string{
 	"polestar":         {"https://github.com/fitzforge/polestar", "next"}, // the default branch carries forever-db
 	"rxp":              {"https://github.com/RestedXP/RXPGuides", "main"},
 	"aegis":            {"https://github.com/Torchlite-bit/Aegis_Pathfinder_Forever", "main"},
+	"eglink":           {"https://github.com/JIVESCORP/eg-link-output-wowf", "main"},
 }
 
 // Lock pins the state of every source a dataset was built from.
@@ -63,6 +65,7 @@ type Lock struct {
 	Polestar         string `json:"polestar,omitempty"` // forever-db (Polestar), empty: not used
 	RXP              string `json:"rxp,omitempty"`      // RestedXP's guides, empty: not used
 	Aegis            string `json:"aegis,omitempty"`    // AEGIS Pathfinder's player data, empty: not used
+	EGLink           string `json:"eglink,omitempty"`   // EG Link output (Efficient Games), empty: not used
 	ForeverDBBuild   string `json:"foreverdbBuild"`
 	ForeverDBHash    string `json:"foreverdbHash"`    // of the stored snapshot
 	ForeverDBFetched string `json:"foreverdbFetched"` // when the API was last asked (RFC 3339)
@@ -221,7 +224,11 @@ func sparseCheckout(ctx context.Context, cache, name, repo, rev string, paths ..
 		{"-C", dir, "checkout", "-q", "FETCH_HEAD"},
 	}
 	for _, p := range paths {
-		steps[2] = append(steps[2], "/"+p+"/")
+		if strings.HasSuffix(p, ".json") {
+			steps[2] = append(steps[2], "/"+p) // a file pattern
+		} else {
+			steps[2] = append(steps[2], "/"+p+"/")
+		}
 	}
 	for _, args := range steps {
 		if out, err := exec.CommandContext(ctx, "git", args...).CombinedOutput(); err != nil {
@@ -372,6 +379,14 @@ func Rebuild(ctx context.Context, o Options, l *Lock, in Inputs) (*dataset.Datas
 		}
 		bin.Aegis, bin.AegisRevision = filepath.Join(dir, "data", "merged.json"), l.Aegis
 	}
+	if l.EGLink != "" {
+		dir, err := sparseCheckout(ctx, o.Cache, "eglink", repos["eglink"][0], l.EGLink,
+			"data/"+eglink.Product+"/*/loot.json", "data/"+eglink.Product+"/*/objectives.json")
+		if err != nil {
+			return nil, nil, err
+		}
+		bin.EGLink, bin.EGLinkRevision = filepath.Join(dir, "data", eglink.Product), l.EGLink
+	}
 	d, err := build.Build(bin)
 	if err != nil {
 		return nil, nil, err
@@ -393,7 +408,7 @@ func Run(ctx context.Context, o Options) (*Report, error) {
 		if err != nil {
 			return nil, err
 		}
-		cur := map[string]*string{"questie": &next.Questie, "everythingquests": &next.EverythingQuests, "cmangos": &next.CMangos, "polestar": &next.Polestar, "rxp": &next.RXP, "aegis": &next.Aegis}[name]
+		cur := map[string]*string{"questie": &next.Questie, "everythingquests": &next.EverythingQuests, "cmangos": &next.CMangos, "polestar": &next.Polestar, "rxp": &next.RXP, "aegis": &next.Aegis, "eglink": &next.EGLink}[name]
 		if h != *cur {
 			rep.Sources = append(rep.Sources, fmt.Sprintf("%s %s → %s", name, short(*cur), short(h)))
 			*cur = h

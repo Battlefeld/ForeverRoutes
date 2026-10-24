@@ -18,6 +18,7 @@ import (
 
 	"github.com/Battlefeld/ForeverRoutes/dataset"
 	"github.com/Battlefeld/ForeverRoutes/internal/sources/aegis"
+	"github.com/Battlefeld/ForeverRoutes/internal/sources/eglink"
 	"github.com/Battlefeld/ForeverRoutes/internal/sources/foreverchanges"
 	"github.com/Battlefeld/ForeverRoutes/internal/sources/guides"
 	"github.com/Battlefeld/ForeverRoutes/internal/sources/polestar"
@@ -43,6 +44,8 @@ type Inputs struct {
 	GuidesRXP         string
 	GuidesRXPRevision string
 	GuidesPolestar    string
+	EGLink            string // optional: EG Link output's data/wow_classic_beta (internal/sources/eglink)
+	EGLinkRevision    string
 	Aegis             string // optional: AEGIS Pathfinder's data/merged.json (internal/sources/aegis)
 	AegisRevision     string
 }
@@ -273,6 +276,11 @@ func Build(in Inputs) (*dataset.Dataset, error) {
 		}
 		facts = append(facts, guides.ParsePolestar(files)...)
 	}
+	if in.EGLink != "" {
+		if b.egl, err = eglink.Load(in.EGLink, in.EGLinkRevision); err != nil {
+			return nil, err
+		}
+	}
 	if in.Aegis != "" {
 		if b.aeg, err = aegis.Load(in.Aegis, in.AegisRevision); err != nil {
 			return nil, err
@@ -287,6 +295,7 @@ func Build(in Inputs) (*dataset.Dataset, error) {
 	b.objects()
 	b.guideSpawns()
 	b.aegisQuests()
+	b.egChances()
 	if b.pdb != nil {
 		b.dungeonOutside()
 	}
@@ -296,6 +305,10 @@ func Build(in Inputs) (*dataset.Dataset, error) {
 		Sources: b.mergedSources()}
 	d.Sources = append(d.Sources, dataset.Source{Name: "cmangos classic-db", URL: "https://github.com/cmangos/classic-db", Revision: in.CMangosRevision, License: "GPL-3.0",
 		Note: "Classic world data: objective counts, drop chances, spawn positions, respawn times, quest groups. Classic, not Forever: Forever data wins where both exist."})
+	if b.egl != nil {
+		d.Sources = append(d.Sources, dataset.Source{Name: "EG Link output (Efficient Games)", URL: "https://github.com/" + eglink.Repository, Revision: in.EGLinkRevision, License: "CC BY 4.0",
+			Note: eglink.Credit + ". Players' recordings over the Forever beta builds: drops with the chance per kill while on the quest, where objective counts went up. Combined over the builds by ForeverRoutes."})
+	}
 	if b.aeg != nil {
 		d.Sources = append(d.Sources, dataset.Source{Name: "AEGIS: Pathfinder (Forever)", URL: "https://github.com/" + aegis.Repository, Revision: in.AegisRevision, License: "MIT",
 			Note: "quest data players collected in game: where quests are taken and handed in, where objectives are, the XP a turn-in gave"})
@@ -378,6 +391,7 @@ type builder struct {
 	fch       *foreverchanges.Overlay
 	pdb       *polestar.DB
 	aeg       *aegis.Data
+	egl       *eglink.Data
 	gdx       *guideIndex
 	byName    map[string][]int // lower-case creature name -> cmangos entries
 	zoneID    map[string]int   // lower-case zone name -> uiMapId
@@ -1426,7 +1440,7 @@ func (b *builder) moreItemSources(out *dataset.Quest, o *dataset.Objective) (kee
 			}
 		}
 	}
-	if b.fromWCLBoxQuest(out, o) || b.guideItem(out, o, false) || b.fromWCLBox(o) || b.fromAegis(out, o) || b.fromQuestText(out.ID, o) {
+	if b.fromEGLink(o) || b.fromWCLBoxQuest(out, o) || b.guideItem(out, o, false) || b.fromWCLBox(o) || b.fromAegis(out, o) || b.fromEGLinkPlaces(out, o) || b.fromQuestText(out.ID, o) {
 		return true, true
 	}
 	if b.wcl == nil || b.wcl.Items[o.ID].ID == 0 {

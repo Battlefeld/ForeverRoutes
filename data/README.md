@@ -54,6 +54,13 @@ QuestieDB, EverythingQuests und cmangos werden beim Bau in den festgeschriebenen
   Gegenstand, den nichts droppt und kein Guide suchen lässt, Geber und Abnehmer verschieden) gelten als vom Geber
   übergeben; die Quest trägt dann den Vermerk „item assumed handed over by the giver“. RestedXPs Stand steht in
   `data/sources/lock.json` (`rxp`), Polestars im selben Commit wie forever-db.
+- **EG Link output von Efficient Games** (https://github.com/JIVESCORP/eg-link-output-wowf, CC BY 4.0) — „Data from
+  Efficient Games (https://efficient.games), licensed under CC BY 4.0.“ Was das Addon EG Link bei Spielern aufzeichnet,
+  ein Ordner je Beta-Build. Gelesen werden `loot` (was ein Gegner oder Objekt droppte, mit der Chance je Kill, gezählt
+  während der Quest, die den Gegenstand braucht) und `objectives` (wo der Zielzähler hochging, in Weltkoordinaten).
+  ForeverRoutes fasst die Builds zusammen (Chancen nach Beutefenstern gewichtet, erst ab 5 Fenstern); das ist eine
+  Veränderung der Daten im Sinne der Lizenz. Gemessene Drops füllen Gegenstände ohne Quelle und ersetzen die angenommene
+  Chance; die Zielorte füllen Ziele ohne andere Quelle. Stand in `data/sources/lock.json` (`eglink`).
 - **AEGIS: Pathfinder (Forever)** (https://github.com/Torchlite-bit/Aegis_Pathfinder_Forever, `data/merged.json`, MIT)
   — Questdaten, die Spieler mit dem Addon im Spiel sammeln und einschicken: wo eine Quest angenommen und abgegeben wird,
   die Kartenpunkte des Clients für die Ziele, wo der Zielzähler hochging, die XP der Abgabe. Füllt nur Lücken (Orte von
