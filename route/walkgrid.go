@@ -9,12 +9,13 @@ import (
 )
 
 // Walking on the walk grid (dataset.Walks): costs measured on navigation maps between neighbouring cells, chained by
-// Dijkstra from the cell a walk starts in, out to walkReach running yards. A walk between two points takes the
-// chained cost between their cells' points, scaled to the points' own distance; a walk the grid cannot answer (off the
-// grid, too long, short) is a straight line times PathFactor as before.
+// Dijkstra from the cell a walk starts in over the whole map. A walk between two points takes the chained cost between
+// their cells' points, scaled to the points' own distance. Two cells the grid does not connect are walkMax times their
+// straight line apart (a way exists in game only where the maps miss it); a walk off the grid or a short one is a
+// straight line times PathFactor as before.
 
 const (
-	walkReach = 6000.0 // running yards a search from one cell covers
+	walkReach = 1e9 // a search from one cell covers the whole map
 	walkShort = 250.0  // below this a walk is a straight line times PathFactor
 	walkSnap  = 2      // cells searched around a point outside the walkable cells
 	walkMax   = 6.0    // a walk is never priced above this many times its straight line
@@ -134,7 +135,7 @@ func (g *walkGrid) walkTime(a, b dataset.Point, straight float64) (float64, bool
 	}
 	cost := g.costs(ca)[cb]
 	if math.IsInf(float64(cost), 1) {
-		return 0, false
+		return straight * walkMax, true
 	}
 	ax, ay := g.point(ca)
 	bx, by := g.point(cb)

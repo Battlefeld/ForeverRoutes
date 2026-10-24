@@ -276,6 +276,23 @@ func (b *builder) graveyards(t *dataset.Travel) {
 		t.Deathskips = append(t.Deathskips, dataset.Deathskip{At: k.die, Grave: g - 1, Filter: k.filter, Source: k.src})
 	}
 	b.stats["deathskips_from_guides"] = len(t.Deathskips)
+	// curated deathskips: the graveyard by its name
+	for _, c := range b.curatedSkips {
+		if c.Off || c.Die == nil || !overland[c.Die.Map] {
+			continue
+		}
+		for i, g := range graves {
+			if g.classic && g.node.Name == c.Graveyard {
+				src := "curated: " + c.Name
+				if c.Approx {
+					src += " (place estimated)"
+				}
+				t.Deathskips = append(t.Deathskips, dataset.Deathskip{At: *c.Die, Grave: i, Filter: c.Filter, Source: src})
+				b.stats["deathskips_curated"]++
+				break
+			}
+		}
+	}
 	b.stats["death_cells"] = len(dg.Cells) / 5
 }
 
@@ -288,4 +305,14 @@ func filterHorde(f string) bool {
 		}
 	}
 	return false
+}
+
+// curatedSkip is an entry of data/sources/deathskips.json.
+type curatedSkip struct {
+	Name      string         `json:"name"`
+	Die       *dataset.Point `json:"die"`
+	Graveyard string         `json:"graveyard"`
+	Filter    string         `json:"filter"`
+	Approx    bool           `json:"approx"`
+	Off       bool           `json:"off"`
 }

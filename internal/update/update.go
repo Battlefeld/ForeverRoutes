@@ -36,13 +36,14 @@ import (
 
 // Files in the repository.
 const (
-	LockFile     = "data/sources/lock.json"
-	SnapshotFile = "data/sources/foreverdb-snapshot.json.gz"
-	FactsFile    = "data/sources/manual-facts.json"
-	OverlayFile  = "data/sources/warcraftdb-forever.json"
-	WCLBoxFile   = "data/sources/wclbox-items.json"
-	FChangesFile = "data/sources/foreverchanges-quests.json"
-	DatasetFile  = "data/routes-data.json.gz"
+	LockFile       = "data/sources/lock.json"
+	SnapshotFile   = "data/sources/foreverdb-snapshot.json.gz"
+	FactsFile      = "data/sources/manual-facts.json"
+	OverlayFile    = "data/sources/warcraftdb-forever.json"
+	WCLBoxFile     = "data/sources/wclbox-items.json"
+	DeathskipsFile = "data/sources/deathskips.json"
+	FChangesFile   = "data/sources/foreverchanges-quests.json"
+	DatasetFile    = "data/routes-data.json.gz"
 )
 
 // Upstream repositories and the branch followed.
@@ -303,10 +304,11 @@ func encodeSnapshot(s *foreverdb.Snapshot) ([]byte, string, error) {
 
 // Inputs are the source files a rebuild reads, besides what the lock pins.
 type Inputs struct {
-	Snapshot *foreverdb.Snapshot
-	Overlay  string // WarcraftDB overlay file, empty for none
-	WCLBox   string // WCLBox item sources file, empty for none
-	FChanges string // ForeverChanges quest summaries file, empty for none
+	Snapshot   *foreverdb.Snapshot
+	Overlay    string // WarcraftDB overlay file, empty for none
+	WCLBox     string // WCLBox item sources file, empty for none
+	FChanges   string // ForeverChanges quest summaries file, empty for none
+	Deathskips string // curated deathskips file, empty for none
 }
 
 // Rebuild makes the merged quest database and the dataset from a lock. It fetches QuestieDB and EverythingQuests at
@@ -357,6 +359,9 @@ func Rebuild(ctx context.Context, o Options, l *Lock, in Inputs) (*dataset.Datas
 		return nil, nil, err
 	}
 	bin := build.Inputs{Merged: mergedPath, CMangos: dump, CMangosRevision: l.CMangos, WarcraftDB: in.Overlay, WCLBox: in.WCLBox, ForeverChanges: in.FChanges}
+	if _, err := os.Stat(in.Deathskips); in.Deathskips != "" && err == nil {
+		bin.Deathskips = in.Deathskips
+	}
 	if l.Polestar != "" {
 		if bin.Polestar, err = polestar.Fetch(ctx, o.HTTP, o.Cache, l.Polestar); err != nil {
 			return nil, nil, err
@@ -469,7 +474,7 @@ func Run(ctx context.Context, o Options) (*Report, error) {
 		return rep, nil
 	}
 	// first pass, then WarcraftDB and WCLBox for what is still missing, then the final pass
-	in := Inputs{Snapshot: snap, Overlay: o.path(OverlayFile), WCLBox: o.path(WCLBoxFile), FChanges: o.path(FChangesFile)}
+	in := Inputs{Snapshot: snap, Overlay: o.path(OverlayFile), WCLBox: o.path(WCLBoxFile), FChanges: o.path(FChangesFile), Deathskips: o.path(DeathskipsFile)}
 	d, doc, err := Rebuild(ctx, o, &next, in)
 	if err != nil {
 		return nil, err

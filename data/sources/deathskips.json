@@ -1,0 +1,31 @@
+{
+ "schema": "foreverroutes.deathskips.v1",
+ "note": "Deathskips the guides do not carry. die: where to die (world yards, m 0 Eastern Kingdoms, 1 Kalimdor); graveyard: the world_safe_locs name it gives; filter: who may use it (as in the guides); approx: the place is estimated, check it in game; off: known but the place is not yet known.",
+ "skips": [
+  {
+   "name": "Menethil Harbor -> Dun Morogh (Kharanos)",
+   "die": {"m": 0, "x": -3950, "y": -350},
+   "graveyard": "Dun Morogh, Kharanos",
+   "filter": "Alliance",
+   "approx": true,
+   "how": "Swim west of the Theramore boat dock in Menethil Harbor until the subzone text shows Dun Morogh, then drown.",
+   "source": "community knowledge (Warcraft Tavern, Death Skipping from Kalimdor to Eastern Kingdoms); place estimated"
+  },
+  {
+   "name": "Ironforge / Dun Morogh -> Wetlands (Menethil Harbor)",
+   "die": {"m": 0, "x": -5115, "y": -65},
+   "graveyard": "Wetlands, Baradin Bay",
+   "filter": "Alliance",
+   "how": "Climb the mountains north of Ironforge, jump down towards the Wetlands and die from the fall.",
+   "source": "RestedXP Forever guides (Guides/Forever/dungeon/Alliance-11-20.lua: the Dun Morogh -> Wetlands deathskip location)"
+  },
+  {
+   "name": "The Barrens -> Westfall (Sentinel Hill)",
+   "graveyard": "Westfall, Sentinel Hill",
+   "filter": "Alliance",
+   "off": true,
+   "how": "From Ratchet run to an unlisted map area (a mountain cleft) in the southern Barrens and die: with no graveyard for the area the Alliance default graveyard, Sentinel Hill, takes the ghost.",
+   "source": "community knowledge (Warcraft Tavern); the exact place is not published"
+  }
+ ]
+}

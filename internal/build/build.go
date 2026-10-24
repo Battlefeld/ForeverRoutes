@@ -45,6 +45,7 @@ type Inputs struct {
 	GuidesRXP         string
 	GuidesRXPRevision string
 	GuidesPolestar    string
+	Deathskips        string // optional: curated deathskips (data/sources/deathskips.json)
 	SPF               string // optional: Shortest Path Forever's Data folder (internal/sources/spf)
 	SPFRevision       string
 	EGLink            string // optional: EG Link output's data/wow_classic_beta (internal/sources/eglink)
@@ -282,6 +283,19 @@ func Build(in Inputs) (*dataset.Dataset, error) {
 		}
 		facts = append(facts, guides.ParsePolestar(files)...)
 	}
+	if in.Deathskips != "" {
+		raw, err := os.ReadFile(in.Deathskips)
+		if err != nil {
+			return nil, err
+		}
+		var f struct {
+			Skips []curatedSkip `json:"skips"`
+		}
+		if err := json.Unmarshal(raw, &f); err != nil {
+			return nil, fmt.Errorf("deathskips: %w", err)
+		}
+		b.curatedSkips = f.Skips
+	}
 	if in.SPF != "" {
 		if b.spf, err = spf.Load(in.SPF, in.SPFRevision); err != nil {
 			return nil, err
@@ -390,29 +404,30 @@ func (b *builder) mergedSources() []dataset.Source {
 }
 
 type builder struct {
-	in        Inputs
-	merged    obj
-	w         *world
-	stats     map[string]int
-	zoneT     map[string]transform // questie zone id -> transform
-	uiT       map[string]transform // uiMapId -> transform
-	out       []dataset.Quest
-	npcOut    []dataset.NPC
-	objOut    []dataset.Object
-	npcWanted map[int]bool
-	objWanted map[int]bool
-	wdb       *warcraftdb.Overlay
-	wcl       *wclbox.Overlay
-	fch       *foreverchanges.Overlay
-	pdb       *polestar.DB
-	aeg       *aegis.Data
-	egl       *eglink.Data
-	spf       *spf.Data
-	rxpSkips  []guides.Deathskip
-	gdx       *guideIndex
-	byName    map[string][]int // lower-case creature name -> cmangos entries
-	zoneID    map[string]int   // lower-case zone name -> uiMapId
-	itemWhy   map[int]string   // item -> why it has no usable source
+	in           Inputs
+	merged       obj
+	w            *world
+	stats        map[string]int
+	zoneT        map[string]transform // questie zone id -> transform
+	uiT          map[string]transform // uiMapId -> transform
+	out          []dataset.Quest
+	npcOut       []dataset.NPC
+	objOut       []dataset.Object
+	npcWanted    map[int]bool
+	objWanted    map[int]bool
+	wdb          *warcraftdb.Overlay
+	wcl          *wclbox.Overlay
+	fch          *foreverchanges.Overlay
+	pdb          *polestar.DB
+	aeg          *aegis.Data
+	egl          *eglink.Data
+	spf          *spf.Data
+	rxpSkips     []guides.Deathskip
+	curatedSkips []curatedSkip
+	gdx          *guideIndex
+	byName       map[string][]int // lower-case creature name -> cmangos entries
+	zoneID       map[string]int   // lower-case zone name -> uiMapId
+	itemWhy      map[int]string   // item -> why it has no usable source
 }
 
 func (b *builder) levelXP() []int {

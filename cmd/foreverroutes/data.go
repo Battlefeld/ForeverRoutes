@@ -24,7 +24,7 @@ func cmdBuildData(args []string) error {
 	if err != nil {
 		return err
 	}
-	d, _, err := update.Rebuild(context.Background(), update.Options{Cache: *cache}, l, update.Inputs{Snapshot: snap, Overlay: update.OverlayFile, WCLBox: update.WCLBoxFile, FChanges: update.FChangesFile})
+	d, _, err := update.Rebuild(context.Background(), update.Options{Cache: *cache}, l, update.Inputs{Snapshot: snap, Overlay: update.OverlayFile, WCLBox: update.WCLBoxFile, FChanges: update.FChangesFile, Deathskips: update.DeathskipsFile})
 	if err != nil {
 		return err
 	}
