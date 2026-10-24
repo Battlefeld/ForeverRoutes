@@ -1358,6 +1358,10 @@ func (b *builder) moreItemSources(out *dataset.Quest, o *dataset.Objective) (kee
 	if len(o.Drops) > 0 {
 		return true, true
 	}
+	if it, known := b.wclQuestItem(out.ID, o.ID); known && it.Provided {
+		b.stats["items_provided_by_giver_wclbox"]++
+		return false, true
+	}
 	if b.polestarDrops(o) {
 		return true, true
 	}
@@ -1408,7 +1412,7 @@ func (b *builder) moreItemSources(out *dataset.Quest, o *dataset.Objective) (kee
 			}
 		}
 	}
-	if b.guideItem(out, o, false) || b.fromWCLBox(o) || b.fromQuestText(out.ID, o) {
+	if b.fromWCLBoxQuest(out, o) || b.guideItem(out, o, false) || b.fromWCLBox(o) || b.fromQuestText(out.ID, o) {
 		return true, true
 	}
 	if b.wcl == nil || b.wcl.Items[o.ID].ID == 0 {

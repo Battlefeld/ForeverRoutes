@@ -697,6 +697,9 @@ func fillFromWCLBox(o Options, d *dataset.Dataset) (*wclbox.Overlay, int, error)
 			ov.Items = map[int]wclbox.Item{}
 		}
 	}
+	if ov.Quests == nil {
+		ov.Quests = map[int]wclbox.Quest{}
+	}
 	need := map[int]bool{}
 	for _, q := range d.Quests {
 		for _, id := range q.NeedItems {
@@ -727,6 +730,35 @@ func fillFromWCLBox(o Options, d *dataset.Dataset) (*wclbox.Overlay, int, error)
 			break
 		}
 		ov.Items[id] = it
+		fetched++
+	}
+	// quest pages: for quests still without a source for an item, or whose item the build only assumes is handed over
+	var quests []int
+	for _, q := range d.Quests {
+		if _, have := ov.Quests[q.ID]; have {
+			continue
+		}
+		if strings.Contains(q.Unsupported, "item") || strings.Contains(q.Unsupported, "objectives unknown") ||
+			strings.Contains(q.Sources["objectives"], "assumed") {
+			quests = append(quests, q.ID)
+		}
+	}
+	sort.Ints(quests)
+	for _, id := range quests {
+		if c.Calls >= o.WCLBoxBudget {
+			break
+		}
+		q, err := c.Quest(id)
+		if wclbox.IsNotFound(err) {
+			ov.Quests[id] = wclbox.Quest{ID: id, URL: wclbox.Base + "/en/renwu/" + fmt.Sprint(id)}
+			fetched++
+			continue
+		}
+		if err != nil {
+			o.Log("WCLBox: stopping: %v", err)
+			break
+		}
+		ov.Quests[id] = q
 		fetched++
 	}
 	if fetched > 0 {

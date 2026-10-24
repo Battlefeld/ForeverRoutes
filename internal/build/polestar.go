@@ -72,6 +72,12 @@ func (b *builder) applyPolestar(out *dataset.Quest) {
 		out.Objectives, out.Unsupported, out.NeedItems = nil, "", nil
 		b.polestarObjectives(out)
 		b.stats["objectives_from_polestar"]++
+	} else if strings.Contains(out.Unsupported, "objectives unknown") && len(b.pdb.Objectives[out.ID]) == 0 &&
+		b.pdb.Quests[out.ID] != nil && len(b.pdb.Starts[out.ID]) > 0 && len(b.pdb.Ends[out.ID]) > 0 {
+		// the client lists no objective at all: the quest is only taken to whoever ends it
+		out.Objectives, out.Unsupported, out.NeedItems = nil, "", nil
+		out.Sources["objectives"] = "none in the client: taken to the turn-in (" + polestarSrc + ")"
+		b.stats["quests_without_objectives_polestar"]++
 	}
 }
 
@@ -252,6 +258,9 @@ func (b *builder) delivered(quest int, o polestar.Objective) bool {
 	}
 	if b.gdx != nil && len(b.gdx.byQuest[quest]) > 0 {
 		return false
+	}
+	if it, known := b.wclQuestItem(quest, o.Target); known {
+		return it.Provided // the quest page says
 	}
 	for _, s := range b.pdb.Starts[quest] {
 		if s.Kind != "npc" {

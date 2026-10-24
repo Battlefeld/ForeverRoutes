@@ -26,6 +26,10 @@ QuestieDB, EverythingQuests und cmangos werden beim Bau in den festgeschriebenen
 - **WCLBox** (https://wowforever.wclbox.com, „新手盒子·魔兽世界无限数据库“) — Gegenstandsseiten mit „Source: Gegner, Gebiet“.
   robots.txt erlaubt die Seiten, die Seite lädt automatische Leser ausdrücklich ein (llms.txt) und bittet um Nennung mit
   Seitenlink; jeder Eintrag behält seinen Link. Abruf: eine Anfrage pro Sekunde, nur für Gegenstände ohne andere Quelle.
+  Dazu die Questseiten (Daten aus Wowheads Forever-Datenbank) der Quests, die sonst ohne Quelle blieben: welcher
+  Gegenstand vom Questgeber übergeben wird („Provided“), woher ein Gegenstand kommt (Gegner, Objekt, Händler) und die
+  Punkte auf der Gebietskarte, wo die Ziele liegen. Genannte Gegner und Objekte nahe den Punkten werden Quellen
+  (Gegner mit unbekannter Chance), sonst werden die Punkte die Orte des Ziels.
 - **ForeverChanges** (https://foreverchanges.pro) — Questseiten (Daten aus dem Spielclient und aus Wowheads Forever-Datenbank):
   Questart und Zielsatz. robots.txt erlaubt die Questseiten; eine Anfrage pro Sekunde, nur für offene Quests.
 - **Polestar forever-db** (https://github.com/fitzforge/polestar, Ordner `forever-db`, GPL-3.0) — aus dem Forever-Spielclient
