@@ -36,7 +36,7 @@ type network struct {
 	fm    []bool // node is a flight master (bit index = node index)
 	links map[[2]int]float64
 	byNPC map[int]int // flight master or dock NPC -> node
-	mu    sync.Mutex // the planner looks ahead in parallel
+	mu    sync.Mutex  // the planner looks ahead in parallel
 	cache map[uint64][][]float64
 }
 
