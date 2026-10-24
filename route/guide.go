@@ -68,6 +68,9 @@ func (w *World) FollowGuide(events []GuideEvent, target int) (*GuideResult, erro
 		}
 		switch e.Op {
 		case "accept":
+			if s.Status[q.Index] == notTaken && w.Level(s) < q.MinLevel && q.MinLevel <= target {
+				grindTo(q.MinLevel) // a follower grinds to the level the next quest needs
+			}
 			if s.Status[q.Index] != notTaken || w.CanAccept(s, q) != nil || !w.try(s, &acts, Action{Op: "accept", Quest: q.ID, At: w.startAt(s, q)}) {
 				detail := ""
 				if err := w.CanAccept(s, q); err != nil {
