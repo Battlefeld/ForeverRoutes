@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"path/filepath"
 	"time"
 
 	"github.com/Battlefeld/ForeverRoutes/dataset"
@@ -18,6 +19,12 @@ func loadWorld(path, race, class, faction, profile string) (*route.World, error)
 	}
 	c := route.Character{Race: race, Class: class, Faction: faction}
 	var opt route.Options
+	// the walk grid beside the dataset, when there is one
+	if wk := filepath.Join(filepath.Dir(path), "walks.json.gz"); fileExists(wk) {
+		if opt.Walks, err = dataset.LoadWalks(wk); err != nil {
+			return nil, err
+		}
+	}
 	if profile != "" {
 		f, err := os.Open(profile)
 		if err != nil {
@@ -133,4 +140,9 @@ func cmdGuide(args []string) error {
 		return os.WriteFile(*out, b, 0o644)
 	}
 	return nil
+}
+
+func fileExists(path string) bool {
+	st, err := os.Stat(path)
+	return err == nil && !st.IsDir()
 }

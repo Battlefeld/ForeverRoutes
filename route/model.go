@@ -120,13 +120,14 @@ func medianByLevel(d *dataset.Dataset, val func(*dataset.NPC) float64) []float64
 
 // Options of the model; zero values take the defaults.
 type Options struct {
-	RunSpeed     float64     // yards per second (7 = Classic run speed)
-	PathFactor   float64     // real paths are longer than straight lines (1.2)
-	QuestLogCap  int         // 20 in Classic
-	InteractSecs float64     // talking to an NPC (accept / turn in)
-	Profile      KillProfile // nil = DefaultProfile
-	MaxMobAbove  int         // mobs more than this many levels above the character are not attacked (3)
-	AssumedDrop  float64     // chance per kill assumed where a source names the creature but no chance (0.3); reported in the result
+	RunSpeed     float64        // yards per second (7 = Classic run speed)
+	PathFactor   float64        // real paths are longer than straight lines (1.2)
+	QuestLogCap  int            // 20 in Classic
+	InteractSecs float64        // talking to an NPC (accept / turn in)
+	Profile      KillProfile    // nil = DefaultProfile
+	MaxMobAbove  int            // mobs more than this many levels above the character are not attacked (3)
+	AssumedDrop  float64        // chance per kill assumed where a source names the creature but no chance (0.3); reported in the result
+	Walks        *dataset.Walks // walking costs measured on navigation maps (nil: straight lines times PathFactor)
 }
 
 func (o Options) withDefaults() Options {

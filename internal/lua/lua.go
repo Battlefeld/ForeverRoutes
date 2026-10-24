@@ -10,7 +10,7 @@ import (
 	"strings"
 )
 
-// Table is a Lua table with explicit keys ([k] = v). Keys are int or string. Tables with only positional values are
+// Table is a Lua table with explicit keys ([k] = v, or name = v for a string key). Keys are int or string. Tables with only positional values are
 // returned as []any instead.
 type Table map[any]any
 
@@ -48,6 +48,7 @@ func (r *reader) take(c byte) bool {
 	return false
 }
 
+var nameKey = regexp.MustCompile(`^([A-Za-z_][A-Za-z0-9_]*)\s*=`)
 var number = regexp.MustCompile(`^-?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?`)
 var keyword = regexp.MustCompile(`^(?:true|false|nil)\b`)
 
@@ -122,7 +123,17 @@ func (r *reader) table() (any, error) {
 		if r.take('}') {
 			break
 		}
-		if r.take('[') {
+		if m := nameKey.FindStringSubmatch(r.s[r.i:]); m != nil && !strings.HasPrefix(r.s[r.i+len(m[0]):], "=") {
+			r.i += len(m[0])
+			v, err := r.value()
+			if err != nil {
+				return nil, err
+			}
+			if idx == nil {
+				idx = Table{}
+			}
+			idx[m[1]] = v
+		} else if r.take('[') {
 			k, err := r.value()
 			if err != nil {
 				return nil, err

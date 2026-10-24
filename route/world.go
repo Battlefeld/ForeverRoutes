@@ -58,22 +58,23 @@ type Farm struct {
 
 // World is the dataset seen by one character.
 type World struct {
-	Data     *dataset.Dataset
-	Char     Character
-	Faction  string
-	Opt      Options
-	Quests   []*Quest
-	ByID     map[int]*Quest
-	NPC      map[int]*dataset.NPC
-	Objects  map[int]*dataset.Object
-	Start    dataset.Point
-	Excluded map[int]string // quest -> why this character cannot use it
-	Farms    []Farm
-	net      *network
-	inns     []dataset.Point
-	siteKeys int
-	siteMemo map[*dataset.Point][]Site
-	maps     map[int]bool
+	Data      *dataset.Dataset
+	Char      Character
+	Faction   string
+	Opt       Options
+	Quests    []*Quest
+	ByID      map[int]*Quest
+	NPC       map[int]*dataset.NPC
+	Objects   map[int]*dataset.Object
+	Start     dataset.Point
+	Excluded  map[int]string // quest -> why this character cannot use it
+	Farms     []Farm
+	net       *network
+	walkGrids walks
+	inns      []dataset.Point
+	siteKeys  int
+	siteMemo  map[*dataset.Point][]Site
+	maps      map[int]bool
 }
 
 // NewWorld prepares the dataset for one character.
@@ -85,6 +86,7 @@ func NewWorld(d *dataset.Dataset, c Character, opt Options) (*World, error) {
 	}
 	w := &World{Data: d, Char: c, Faction: faction, Opt: opt.withDefaults(), ByID: map[int]*Quest{}, NPC: map[int]*dataset.NPC{},
 		Objects: map[int]*dataset.Object{}, Excluded: map[int]string{}}
+	w.walkGrids = newWalks(w.Opt.Walks)
 	for i := range d.NPCs {
 		w.NPC[d.NPCs[i].ID] = &d.NPCs[i]
 	}

@@ -128,6 +128,9 @@ type Travel struct {
 	Inns          []Node `json:"inns"` // innkeepers: where the hearthstone can be bound
 	Docks         []Node `json:"docks"`
 	Links         []Link `json:"links"`
+	// Flights are the direct flights between neighbouring flight masters with their time, one way; without them a
+	// flight is estimated from the distance.
+	Flights []Link `json:"flights,omitempty"`
 }
 
 // Dataset is the whole file.

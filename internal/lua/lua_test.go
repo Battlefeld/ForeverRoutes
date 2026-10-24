@@ -40,3 +40,17 @@ func TestRows(t *testing.T) {
 		t.Errorf("%#v", rows)
 	}
 }
+
+func TestParseNameKeys(t *testing.T) {
+	v, err := Parse(`{ map = 0, x = -8832.77, name = "Stormwind, Elwynn", { dock = 1, arrive = 66861 }, ok = true }`)
+	if err != nil {
+		t.Fatal(err)
+	}
+	tb := v.(Table)
+	if tb["map"] != 0 || tb["x"] != -8832.77 || tb["name"] != "Stormwind, Elwynn" || tb["ok"] != true {
+		t.Fatalf("%v", tb)
+	}
+	if stop := tb[1].(Table); stop["dock"] != 1 || stop["arrive"] != 66861 {
+		t.Fatalf("%v", stop)
+	}
+}

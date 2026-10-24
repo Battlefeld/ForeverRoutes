@@ -8,9 +8,10 @@ import (
 	"github.com/Battlefeld/ForeverRoutes/dataset"
 )
 
-// Travel model: walking on straight lines times PathFactor; flights between flight masters the character has found
-// (flying ~30 yards per second plus 20 s for take-off and landing, on a slightly longer line than straight); zeppelins
-// and boats as fixed connections; the hearthstone (10 s cast, one hour cooldown) back to where it is bound. A flight
+// Travel model: walking on straight lines times PathFactor; flights between flight masters the character has found,
+// with the dataset's flight times between neighbouring flight masters chained over known ones (as the game routes
+// them), else estimated (flying ~30 yards per second plus 20 s for take-off and landing, on a slightly longer line
+// than straight); zeppelins, boats, portals and the tram as fixed connections; the hearthstone (10 s cast, one hour cooldown) back to where it is bound. A flight
 // master is found by walking past it within 60 yards. The hearthstone starts bound at the start position and is bound
 // at an inn whenever the character accepts or turns in a quest within 40 yards of an innkeeper.
 
@@ -35,13 +36,15 @@ type network struct {
 	nodes []dataset.Point
 	fm    []bool // node is a flight master (bit index = node index)
 	links map[[2]int]float64
-	byNPC map[int]int // flight master or dock NPC -> node
-	mu    sync.Mutex  // the planner looks ahead in parallel
+	fly   map[[2]int]float64 // direct flights between flight master nodes
+	timed []bool             // node has flight times: flights from and to it take only them
+	byNPC map[int]int        // flight master or dock NPC -> node
+	mu    sync.Mutex         // the planner looks ahead in parallel
 	cache map[uint64][][]float64
 }
 
 func (w *World) buildNetwork() {
-	n := &network{links: map[[2]int]float64{}, cache: map[uint64][][]float64{}}
+	n := &network{links: map[[2]int]float64{}, fly: map[[2]int]float64{}, cache: map[uint64][][]float64{}}
 	idx := map[int]int{}
 	for _, f := range w.Data.Travel.FlightMasters {
 		if f.Faction != w.Faction || len(n.nodes) >= 64 {
@@ -66,6 +69,15 @@ func (w *World) buildNetwork() {
 			n.links[[2]int{a, b}] = l.Seconds
 		}
 	}
+	n.timed = make([]bool, len(n.nodes))
+	for _, l := range w.Data.Travel.Flights {
+		a, okA := idx[l.From]
+		b, okB := idx[l.To]
+		if okA && okB && n.fm[a] && n.fm[b] {
+			n.fly[[2]int{a, b}] = l.Seconds
+			n.timed[a], n.timed[b] = true, true
+		}
+	}
 	n.byNPC = idx
 	w.net = n
 	for _, in := range w.Data.Travel.Inns {
@@ -86,7 +98,15 @@ func (w *World) reachableMaps() map[int]bool {
 }
 
 func (w *World) walk(a, b dataset.Point) float64 {
-	return distance(a, b) * w.Opt.PathFactor / w.Opt.RunSpeed
+	d := distance(a, b)
+	if d > walkShort && !math.IsInf(d, 1) {
+		if g := w.walkGrids[a.Map]; g != nil {
+			if yards, ok := g.walkTime(a, b, d); ok {
+				return yards / w.Opt.RunSpeed
+			}
+		}
+	}
+	return d * w.Opt.PathFactor / w.Opt.RunSpeed
 }
 
 // table is the fastest time between every two network nodes for a set of known flight masters.
@@ -107,8 +127,12 @@ func (w *World) table(known uint64) [][]float64 {
 			}
 			d[i][j] = w.walk(n.nodes[i], n.nodes[j])
 			if n.fm[i] && n.fm[j] && known&(1<<i) != 0 && known&(1<<j) != 0 && n.nodes[i].Map == n.nodes[j].Map {
-				fly := distance(n.nodes[i], n.nodes[j])*flightDetour/flightSpeed + flightOverhead
-				d[i][j] = math.Min(d[i][j], fly)
+				if s, ok := n.fly[[2]int{i, j}]; ok {
+					d[i][j] = math.Min(d[i][j], s)
+				} else if !n.timed[i] || !n.timed[j] {
+					fly := distance(n.nodes[i], n.nodes[j])*flightDetour/flightSpeed + flightOverhead
+					d[i][j] = math.Min(d[i][j], fly)
+				}
 			}
 			if s, ok := n.links[[2]int{i, j}]; ok {
 				d[i][j] = math.Min(d[i][j], s)

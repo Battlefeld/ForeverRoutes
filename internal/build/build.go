@@ -22,6 +22,7 @@ import (
 	"github.com/Battlefeld/ForeverRoutes/internal/sources/foreverchanges"
 	"github.com/Battlefeld/ForeverRoutes/internal/sources/guides"
 	"github.com/Battlefeld/ForeverRoutes/internal/sources/polestar"
+	"github.com/Battlefeld/ForeverRoutes/internal/sources/spf"
 	"github.com/Battlefeld/ForeverRoutes/internal/sources/wclbox"
 	"github.com/Battlefeld/ForeverRoutes/internal/sqldump"
 	"github.com/Battlefeld/ForeverRoutes/internal/warcraftdb"
@@ -44,6 +45,8 @@ type Inputs struct {
 	GuidesRXP         string
 	GuidesRXPRevision string
 	GuidesPolestar    string
+	SPF               string // optional: Shortest Path Forever's Data folder (internal/sources/spf)
+	SPFRevision       string
 	EGLink            string // optional: EG Link output's data/wow_classic_beta (internal/sources/eglink)
 	EGLinkRevision    string
 	Aegis             string // optional: AEGIS Pathfinder's data/merged.json (internal/sources/aegis)
@@ -276,6 +279,11 @@ func Build(in Inputs) (*dataset.Dataset, error) {
 		}
 		facts = append(facts, guides.ParsePolestar(files)...)
 	}
+	if in.SPF != "" {
+		if b.spf, err = spf.Load(in.SPF, in.SPFRevision); err != nil {
+			return nil, err
+		}
+	}
 	if in.EGLink != "" {
 		if b.egl, err = eglink.Load(in.EGLink, in.EGLinkRevision); err != nil {
 			return nil, err
@@ -305,6 +313,10 @@ func Build(in Inputs) (*dataset.Dataset, error) {
 		Sources: b.mergedSources()}
 	d.Sources = append(d.Sources, dataset.Source{Name: "cmangos classic-db", URL: "https://github.com/cmangos/classic-db", Revision: in.CMangosRevision, License: "GPL-3.0",
 		Note: "Classic world data: objective counts, drop chances, spawn positions, respawn times, quest groups. Classic, not Forever: Forever data wins where both exist."})
+	if b.spf != nil {
+		d.Sources = append(d.Sources, dataset.Source{Name: "Shortest Path Forever", URL: "https://github.com/" + spf.Repository, Revision: in.SPFRevision, License: "GPL-3.0-or-later",
+			Note: "by Cillian Berragan: flight times (most measured in game by InFlight, MIT), boat and zeppelin timetables, portals"})
+	}
 	if b.egl != nil {
 		d.Sources = append(d.Sources, dataset.Source{Name: "EG Link output (Efficient Games)", URL: "https://github.com/" + eglink.Repository, Revision: in.EGLinkRevision, License: "CC BY 4.0",
 			Note: eglink.Credit + ". Players' recordings over the Forever beta builds: drops with the chance per kill while on the quest, where objective counts went up. Combined over the builds by ForeverRoutes."})
@@ -392,6 +404,7 @@ type builder struct {
 	pdb       *polestar.DB
 	aeg       *aegis.Data
 	egl       *eglink.Data
+	spf       *spf.Data
 	gdx       *guideIndex
 	byName    map[string][]int // lower-case creature name -> cmangos entries
 	zoneID    map[string]int   // lower-case zone name -> uiMapId
@@ -1616,6 +1629,9 @@ func (b *builder) travel() dataset.Travel {
 	}
 	if b.pdb != nil {
 		b.polestarTravel(&t)
+	}
+	if b.spf != nil {
+		b.spfTravel(&t)
 	}
 	b.stats["flight_masters"] = len(t.FlightMasters)
 	b.stats["inns"] = len(t.Inns)

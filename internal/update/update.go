@@ -54,6 +54,7 @@ var repos = map[string][2]string{
 	"rxp":              {"https://github.com/RestedXP/RXPGuides", "main"},
 	"aegis":            {"https://github.com/Torchlite-bit/Aegis_Pathfinder_Forever", "main"},
 	"eglink":           {"https://github.com/JIVESCORP/eg-link-output-wowf", "main"},
+	"spf":              {"https://github.com/cjber/shortest-path-forever", "main"},
 }
 
 // Lock pins the state of every source a dataset was built from.
@@ -66,6 +67,7 @@ type Lock struct {
 	RXP              string `json:"rxp,omitempty"`      // RestedXP's guides, empty: not used
 	Aegis            string `json:"aegis,omitempty"`    // AEGIS Pathfinder's player data, empty: not used
 	EGLink           string `json:"eglink,omitempty"`   // EG Link output (Efficient Games), empty: not used
+	SPF              string `json:"spf,omitempty"`      // Shortest Path Forever's travel data, empty: not used
 	ForeverDBBuild   string `json:"foreverdbBuild"`
 	ForeverDBHash    string `json:"foreverdbHash"`    // of the stored snapshot
 	ForeverDBFetched string `json:"foreverdbFetched"` // when the API was last asked (RFC 3339)
@@ -387,6 +389,13 @@ func Rebuild(ctx context.Context, o Options, l *Lock, in Inputs) (*dataset.Datas
 		}
 		bin.EGLink, bin.EGLinkRevision = filepath.Join(dir, "data", eglink.Product), l.EGLink
 	}
+	if l.SPF != "" {
+		dir, err := sparseCheckout(ctx, o.Cache, "spf", repos["spf"][0], l.SPF, "Data")
+		if err != nil {
+			return nil, nil, err
+		}
+		bin.SPF, bin.SPFRevision = filepath.Join(dir, "Data"), l.SPF
+	}
 	d, err := build.Build(bin)
 	if err != nil {
 		return nil, nil, err
@@ -408,7 +417,7 @@ func Run(ctx context.Context, o Options) (*Report, error) {
 		if err != nil {
 			return nil, err
 		}
-		cur := map[string]*string{"questie": &next.Questie, "everythingquests": &next.EverythingQuests, "cmangos": &next.CMangos, "polestar": &next.Polestar, "rxp": &next.RXP, "aegis": &next.Aegis, "eglink": &next.EGLink}[name]
+		cur := map[string]*string{"questie": &next.Questie, "everythingquests": &next.EverythingQuests, "cmangos": &next.CMangos, "polestar": &next.Polestar, "rxp": &next.RXP, "aegis": &next.Aegis, "eglink": &next.EGLink, "spf": &next.SPF}[name]
 		if h != *cur {
 			rep.Sources = append(rep.Sources, fmt.Sprintf("%s %s → %s", name, short(*cur), short(h)))
 			*cur = h

@@ -54,6 +54,12 @@ QuestieDB, EverythingQuests und cmangos werden beim Bau in den festgeschriebenen
   Gegenstand, den nichts droppt und kein Guide suchen lässt, Geber und Abnehmer verschieden) gelten als vom Geber
   übergeben; die Quest trägt dann den Vermerk „item assumed handed over by the giver“. RestedXPs Stand steht in
   `data/sources/lock.json` (`rxp`), Polestars im selben Commit wie forever-db.
+- **Shortest Path Forever** (https://github.com/cjber/shortest-path-forever, GPL-3.0-or-later) von Cillian Berragan —
+  Reisedaten: Flugzeiten zwischen benachbarten Flugpunkten (zu 93 % im Spiel gemessen, aus InFlight, MIT), Fahrpläne
+  der Schiffe und Zeppeline (Fahrzeit plus im Mittel eine halbe Runde Warten), Portale; die Deeprun-Tram ist
+  geschätzt (106 s). Dazu `walks.json.gz`: Laufkosten zwischen benachbarten 200-Yard-Zellen, gemessen mit dem eigenen
+  Wegsucher von Shortest Path Forever auf seinen selbst aus dem Client gebauten Navigationskarten
+  (`tools/walkgrid/README.md`). Stand in `data/sources/lock.json` (`spf`).
 - **EG Link output von Efficient Games** (https://github.com/JIVESCORP/eg-link-output-wowf, CC BY 4.0) — „Data from
   Efficient Games (https://efficient.games), licensed under CC BY 4.0.“ Was das Addon EG Link bei Spielern aufzeichnet,
   ein Ordner je Beta-Build. Gelesen werden `loot` (was ein Gegner oder Objekt droppte, mit der Chance je Kill, gezählt
