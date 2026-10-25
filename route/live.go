@@ -143,3 +143,15 @@ func (w *World) PlanAhead(s *State, po PlanOptions, horizon float64) (*Result, e
 	}
 	return w.replayFrom(start, acts)
 }
+
+// StateAfter is the state a route's steps lead to from a fresh character.
+func (w *World) StateAfter(steps []Step) (*State, error) {
+	s := w.NewState()
+	for i, st := range steps {
+		s.via, s.viaAt = "", nil
+		if err := w.Apply(s, st.Action); err != nil {
+			return nil, fmt.Errorf("step %d (%s %d): %w", i+1, st.Op, st.Quest, err)
+		}
+	}
+	return s, nil
+}

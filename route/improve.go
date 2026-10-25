@@ -39,7 +39,7 @@ func (w *World) Improve(events []GuideEvent, target int, budget time.Duration) (
 			}
 		}
 		for i := 0; i < len(cur) && time.Now().Before(deadline); i++ {
-			if cur[i].Op == "level" {
+			if cur[i].Op == "level" || cur[i].Op == "dungeon" {
 				if try(append(append([]GuideEvent(nil), cur[:i]...), cur[i+1:]...)) {
 					improved = true
 					i--
@@ -131,6 +131,8 @@ func EventsOf(steps []Step) []GuideEvent {
 				done[s.Quest] = true
 				out = append(out, GuideEvent{Op: "complete", Quest: s.Quest})
 			}
+		case "dungeon":
+			out = append(out, GuideEvent{Op: "dungeon", Dungeon: s.Dungeon})
 		}
 	}
 	return out

@@ -7,9 +7,10 @@ import (
 
 // GuideEvent is one step of a quest guide: accept, complete or turn in a quest, or reach a level.
 type GuideEvent struct {
-	Op    string `json:"op"` // accept, complete, turnin, level
-	Quest int    `json:"quest,omitempty"`
-	Level int    `json:"level,omitempty"`
+	Op      string `json:"op"` // accept, complete, turnin, level, dungeon (a group run)
+	Quest   int    `json:"quest,omitempty"`
+	Level   int    `json:"level,omitempty"`
+	Dungeon string `json:"dungeon,omitempty"`
 }
 
 // GuideResult is a guide walked with this model, for comparing guides with planned routes on equal terms.
@@ -71,6 +72,20 @@ func (w *World) followFrom(s *State, events []GuideEvent, target int, horizon fl
 		}
 		if e.Op == "level" {
 			grindTo(e.Level)
+			continue
+		}
+		if e.Op == "dungeon" {
+			d := w.dungeonOf[e.Dungeon]
+			if d == nil {
+				res.Skipped["dungeon not in this route"]++
+				continue
+			}
+			if w.Level(s) < d.Min {
+				grindTo(d.Min)
+			}
+			if !w.try(s, &acts, Action{Op: "dungeon", Dungeon: d.Key, At: d.Entrance}) {
+				res.Skipped["dungeon run not possible"]++
+			}
 			continue
 		}
 		miss := func(reason, detail string) {
