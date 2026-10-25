@@ -25,64 +25,64 @@ no source places) are left out of every route alike.
 
 | Race | Class | RestedXP | RestedXP improved | Plan | Plan improved | Kept |
 |---|---|---|---|---|---|---|
-| Dwarf | Hunter | 18.7 | 16.9 | 17.3 | 17.1 | guide |
-| Dwarf | Paladin | 17.7 | 15.7 | 16.6 | 16.2 | guide |
-| Dwarf | Priest | 19.1 | 18.1 | 17.5 | 17.4 | plan |
-| Dwarf | Rogue | 16.1 | 14.8 | 15.1 | 14.8 | guide |
-| Dwarf | Shaman | 19.2 | 17.6 | 15.7 | 15.7 | plan |
-| Dwarf | Warrior | 15.7 | 14.5 | 14.5 | 13.9 | plan |
-| Gnome | Mage | 20.0 | 18.8 | 17.1 | 16.7 | plan |
-| Gnome | Priest | 19.1 | 17.6 | 17.6 | 17.3 | guide |
-| Gnome | Rogue | 16.1 | 14.8 | 15.1 | 14.8 | guide |
-| Gnome | Warlock | 16.7 | 16.1 | 15.7 | 15.8 | guide |
-| Gnome | Warrior | 15.7 | 14.5 | 14.5 | 13.9 | plan |
-| Human | Hunter | 18.7 | 16.8 | 16.8 | 16.6 | guide |
-| Human | Mage | 19.2 | 18.4 | 16.9 | 17.1 | plan |
-| Human | Paladin | 18.2 | 15.6 | 15.2 | 15.1 | guide |
-| Human | Priest | 18.0 | 17.4 | 17.5 | 17.3 | guide |
-| Human | Rogue | 16.0 | 15.0 | 14.4 | 14.1 | plan |
-| Human | Warlock | 16.8 | 15.4 | 16.3 | 15.3 | guide |
-| Human | Warrior | 15.2 | 14.2 | 15.2 | 15.3 | guide |
-| NightElf | Druid | 24.4 | 20.1 | 18.1 | 17.6 | plan |
-| NightElf | Hunter | 19.6 | 17.8 | 17.4 | 17.5 | guide |
-| NightElf | Priest | 21.9 | 18.9 | 17.8 | 17.5 | plan |
-| NightElf | Rogue | 18.2 | 16.3 | 14.0 | 14.4 | plan |
-| NightElf | Warrior | 17.8 | 16.0 | 14.3 | 14.4 | plan |
-| Orc | Hunter | 19.9 | 19.5 | 16.4 | 16.3 | plan |
-| Orc | Mage | 18.4 | 16.2 | 16.1 | 16.3 | guide |
-| Orc | Rogue | 15.1 | 13.3 | 13.7 | 13.8 | guide |
-| Orc | Shaman | 18.4 | 17.9 | 15.5 | 15.3 | plan |
-| Orc | Warlock | 16.1 | 14.9 | 15.0 | 15.3 | guide |
-| Orc | Warrior | 14.5 | 12.6 | 13.5 | 13.9 | guide |
-| Skyborne (A) | Druid | 20.7 | 19.2 | 18.7 | 18.2 | plan |
-| Skyborne (A) | Hunter | 19.7 | 18.0 | 17.8 | 17.4 | plan |
-| Skyborne (A) | Mage | 20.8 | 19.8 | 18.5 | 18.1 | plan |
-| Skyborne (A) | Rogue | 17.3 | 16.3 | 14.9 | 14.5 | plan |
-| Skyborne (A) | Warrior | 17.0 | 15.6 | 15.4 | 15.0 | plan |
-| Skyborne (H) | Druid | 18.5 | 17.0 | 16.7 | 16.5 | guide |
-| Skyborne (H) | Hunter | 16.9 | 16.1 | 15.9 | 16.1 | guide |
-| Skyborne (H) | Rogue | 15.6 | 13.3 | 15.3 | 15.1 | guide |
-| Skyborne (H) | Shaman | 17.5 | 14.5 | 15.9 | 15.7 | guide |
-| Skyborne (H) | Warrior | 15.4 | 13.3 | 13.7 | 14.1 | guide |
-| Tauren | Druid | 19.9 | 18.4 | 16.6 | 16.5 | plan |
-| Tauren | Hunter | 17.7 | 16.5 | 16.2 | 16.2 | guide |
-| Tauren | Shaman | 17.8 | 15.2 | 15.0 | 15.2 | guide |
-| Tauren | Warrior | 16.2 | 14.5 | 13.2 | 13.1 | plan |
-| Troll | Hunter | 19.9 | 19.5 | 16.4 | 16.3 | plan |
-| Troll | Mage | 18.4 | 16.3 | 17.2 | 16.3 | guide |
-| Troll | Priest | 17.9 | 15.3 | 16.1 | 16.1 | guide |
-| Troll | Rogue | 14.8 | 12.7 | 13.7 | 13.8 | guide |
-| Troll | Shaman | 18.4 | 17.9 | 15.5 | 15.3 | plan |
-| Troll | Warlock | 16.1 | 14.9 | 15.0 | 15.3 | guide |
-| Troll | Warrior | 14.5 | 12.6 | 13.5 | 13.9 | guide |
-| Undead | Mage | 18.3 | 16.0 | 17.5 | 17.9 | guide |
-| Undead | Paladin | 15.1 | 13.6 | 13.9 | 13.9 | guide |
-| Undead | Priest | 17.9 | 15.0 | 18.6 | 18.0 | guide |
-| Undead | Rogue | 14.9 | 12.8 | 14.5 | 14.3 | guide |
-| Undead | Warlock | 16.4 | 15.2 | 15.1 | 14.8 | guide |
-| Undead | Warrior | 14.3 | 12.5 | 14.5 | 14.2 | guide |
+| Dwarf | Hunter | 18.7 | 17.0 | 18.4 | 16.9 | guide |
+| Dwarf | Paladin | 17.7 | 16.0 | 17.1 | 16.6 | guide |
+| Dwarf | Priest | 19.1 | 18.1 | 18.8 | 18.4 | guide |
+| Dwarf | Rogue | 16.3 | 14.8 | 15.1 | 14.6 | guide |
+| Dwarf | Shaman | 19.1 | 17.4 | 16.2 | 16.4 | plan |
+| Dwarf | Warrior | 16.1 | 14.7 | 15.2 | 14.9 | guide |
+| Gnome | Mage | 20.0 | 18.5 | 18.3 | 17.8 | plan |
+| Gnome | Priest | 19.1 | 17.9 | 19.2 | 18.9 | guide |
+| Gnome | Rogue | 16.3 | 14.8 | 15.1 | 14.6 | guide |
+| Gnome | Warlock | 17.1 | 16.4 | 16.4 | 16.4 | guide |
+| Gnome | Warrior | 16.1 | 14.7 | 15.2 | 14.9 | guide |
+| Human | Hunter | 21.7 | 16.9 | 16.2 | 16.0 | plan |
+| Human | Mage | 19.2 | 18.3 | 17.9 | 17.3 | plan |
+| Human | Paladin | 17.9 | 15.8 | 15.7 | 15.6 | guide |
+| Human | Priest | 18.1 | 17.4 | 17.2 | 17.4 | guide |
+| Human | Rogue | 16.3 | 14.9 | 14.3 | 14.8 | guide |
+| Human | Warlock | 19.7 | 15.7 | 15.4 | 15.0 | plan |
+| Human | Warrior | 15.6 | 14.3 | 14.8 | 14.8 | guide |
+| NightElf | Druid | 23.8 | 19.6 | 17.8 | 17.8 | plan |
+| NightElf | Hunter | 18.7 | 16.8 | 17.1 | 17.1 | guide |
+| NightElf | Priest | 21.2 | 18.4 | 17.6 | 17.4 | plan |
+| NightElf | Rogue | 18.0 | 15.9 | 15.2 | 15.4 | plan |
+| NightElf | Warrior | 18.0 | 15.5 | 14.9 | 14.7 | plan |
+| Orc | Hunter | 19.4 | 19.1 | 15.4 | 15.6 | plan |
+| Orc | Mage | 16.6 | 15.5 | 15.9 | 15.9 | guide |
+| Orc | Rogue | 16.1 | 15.3 | 15.1 | 15.5 | guide |
+| Orc | Shaman | 18.5 | 18.2 | 15.7 | 15.8 | plan |
+| Orc | Warlock | 15.1 | 14.5 | 14.3 | 14.3 | guide |
+| Orc | Warrior | 15.6 | 13.4 | 14.4 | 14.7 | guide |
+| Skyborne (A) | Druid | 20.7 | 19.2 | 17.9 | 17.7 | plan |
+| Skyborne (A) | Hunter | 19.1 | 17.7 | 17.0 | 16.7 | plan |
+| Skyborne (A) | Mage | 20.6 | 19.1 | 18.3 | 18.0 | plan |
+| Skyborne (A) | Rogue | 19.4 | 17.2 | 14.8 | 14.5 | plan |
+| Skyborne (A) | Warrior | 19.2 | 16.4 | 15.0 | 15.1 | plan |
+| Skyborne (H) | Druid | 18.3 | 16.4 | 19.1 | 19.5 | guide |
+| Skyborne (H) | Hunter | 17.0 | 15.7 | 19.0 | 19.0 | guide |
+| Skyborne (H) | Rogue | 17.9 | 15.0 | 15.2 | 14.8 | guide |
+| Skyborne (H) | Shaman | 19.1 | 18.2 | 16.7 | 16.8 | plan |
+| Skyborne (H) | Warrior | 17.3 | 14.2 | 14.4 | 14.4 | guide |
+| Tauren | Druid | 20.1 | 17.8 | 18.8 | 19.1 | guide |
+| Tauren | Hunter | 17.7 | 16.5 | 16.1 | 15.7 | plan |
+| Tauren | Shaman | 18.5 | 16.5 | 16.0 | 16.7 | guide |
+| Tauren | Warrior | 17.5 | 15.9 | 14.2 | 14.4 | plan |
+| Troll | Hunter | 19.4 | 19.1 | 15.4 | 15.6 | plan |
+| Troll | Mage | 16.6 | 15.5 | 15.8 | 16.5 | guide |
+| Troll | Priest | 16.4 | 15.0 | 16.0 | 15.5 | guide |
+| Troll | Rogue | 15.7 | 15.2 | 14.8 | 15.0 | guide |
+| Troll | Shaman | 18.5 | 18.2 | 15.7 | 15.8 | plan |
+| Troll | Warlock | 15.1 | 14.5 | 14.3 | 14.3 | guide |
+| Troll | Warrior | 15.6 | 13.4 | 14.4 | 14.7 | guide |
+| Undead | Mage | 16.2 | 14.8 | 16.0 | 16.4 | guide |
+| Undead | Paladin | 16.8 | 14.9 | 16.4 | 16.5 | guide |
+| Undead | Priest | 15.3 | 14.7 | 18.3 | 18.0 | guide |
+| Undead | Rogue | 15.4 | 13.5 | 14.0 | 14.2 | guide |
+| Undead | Warlock | 15.1 | 14.6 | 15.2 | 15.5 | guide |
+| Undead | Warrior | 15.3 | 13.1 | 13.2 | 13.8 | guide |
 
-Average over the 56 combinations: RestedXP 17.66 h, the kept route 15.33 h (13.2 % faster). A planned route stays at home until the first class quests are done and crosses between Kalimdor and the Eastern Kingdoms at most twice up to level 20.
+Average over the 56 combinations: RestedXP 17.84 h, the kept route 15.62 h (12.4 % faster). A planned route stays at home until the first class quests are done and crosses between Kalimdor and the Eastern Kingdoms at most twice up to level 20.
 
 ## Solo with dungeons
 
@@ -92,63 +92,63 @@ in, across the sea if need be (Ragefire's quest from Undercity). The addon shows
 estimates (`data/sources/dungeons.json`); better gear from the runs is not counted yet, so the routes with dungeons are rather
 faster in game than here.
 
-Average over the 56 combinations: 13.25 h to level 20 (solo 15.33 h).
+Average over the 56 combinations: 13.48 h to level 20 (without dungeons 15.62 h).
 
 | Race | Class | Hours | Basis |
 |---|---|---|---|
-| Dwarf | Hunter | 13.8 | plan |
+| Dwarf | Hunter | 13.5 | plan |
 | Dwarf | Paladin | 13.7 | plan |
-| Dwarf | Priest | 14.3 | plan |
-| Dwarf | Rogue | 12.7 | plan |
-| Dwarf | Shaman | 13.9 | plan |
-| Dwarf | Warrior | 12.4 | plan |
-| Gnome | Mage | 15.2 | plan |
-| Gnome | Priest | 15.5 | plan |
-| Gnome | Rogue | 12.7 | plan |
-| Gnome | Warlock | 14.0 | plan |
-| Gnome | Warrior | 12.4 | plan |
-| Human | Hunter | 14.8 | plan |
-| Human | Mage | 15.3 | plan |
-| Human | Paladin | 13.7 | plan |
-| Human | Priest | 15.0 | plan |
-| Human | Rogue | 13.2 | plan |
-| Human | Warlock | 13.4 | plan |
-| Human | Warrior | 12.8 | plan |
-| NightElf | Druid | 15.2 | plan |
-| NightElf | Hunter | 14.6 | plan |
-| NightElf | Priest | 15.8 | plan |
-| NightElf | Rogue | 12.8 | plan |
-| NightElf | Warrior | 13.2 | plan |
+| Dwarf | Priest | 14.8 | plan |
+| Dwarf | Rogue | 12.2 | plan |
+| Dwarf | Shaman | 14.2 | plan |
+| Dwarf | Warrior | 13.1 | plan |
+| Gnome | Mage | 14.5 | plan |
+| Gnome | Priest | 14.7 | plan |
+| Gnome | Rogue | 12.2 | plan |
+| Gnome | Warlock | 13.6 | plan |
+| Gnome | Warrior | 13.1 | plan |
+| Human | Hunter | 13.8 | plan |
+| Human | Mage | 14.5 | plan |
+| Human | Paladin | 13.9 | plan |
+| Human | Priest | 14.5 | plan |
+| Human | Rogue | 12.9 | plan |
+| Human | Warlock | 14.0 | plan |
+| Human | Warrior | 12.3 | plan |
+| NightElf | Druid | 15.6 | plan |
+| NightElf | Hunter | 14.2 | plan |
+| NightElf | Priest | 15.2 | plan |
+| NightElf | Rogue | 12.9 | plan |
+| NightElf | Warrior | 13.9 | plan |
 | Orc | Hunter | 13.9 | plan |
-| Orc | Mage | 14.4 | plan |
-| Orc | Rogue | 11.4 | plan |
-| Orc | Shaman | 13.3 | plan |
-| Orc | Warlock | 13.1 | plan |
-| Orc | Warrior | 11.6 | plan |
-| Skyborne (A) | Druid | 14.9 | plan |
-| Skyborne (A) | Hunter | 13.9 | plan |
-| Skyborne (A) | Mage | 15.9 | plan |
-| Skyborne (A) | Rogue | 13.6 | plan |
-| Skyborne (A) | Warrior | 13.4 | plan |
-| Skyborne (H) | Druid | 13.3 | plan |
-| Skyborne (H) | Hunter | 13.8 | plan |
-| Skyborne (H) | Rogue | 12.6 | plan |
-| Skyborne (H) | Shaman | 11.3 | plan |
-| Skyborne (H) | Warrior | 11.5 | plan |
-| Tauren | Druid | 12.8 | plan |
-| Tauren | Hunter | 11.8 | plan |
+| Orc | Mage | 14.9 | plan |
+| Orc | Rogue | 12.8 | plan |
+| Orc | Shaman | 15.0 | plan |
+| Orc | Warlock | 12.9 | plan |
+| Orc | Warrior | 10.2 | plan |
+| Skyborne (A) | Druid | 15.4 | plan |
+| Skyborne (A) | Hunter | 14.3 | plan |
+| Skyborne (A) | Mage | 15.3 | plan |
+| Skyborne (A) | Rogue | 13.4 | plan |
+| Skyborne (A) | Warrior | 13.5 | plan |
+| Skyborne (H) | Druid | 14.8 | plan |
+| Skyborne (H) | Hunter | 14.7 | plan |
+| Skyborne (H) | Rogue | 12.9 | plan |
+| Skyborne (H) | Shaman | 12.1 | plan |
+| Skyborne (H) | Warrior | 12.5 | plan |
+| Tauren | Druid | 14.6 | plan |
+| Tauren | Hunter | 14.6 | plan |
 | Tauren | Shaman | 12.1 | plan |
-| Tauren | Warrior | 10.1 | plan |
+| Tauren | Warrior | 10.0 | plan |
 | Troll | Hunter | 13.9 | plan |
-| Troll | Mage | 13.1 | plan |
-| Troll | Priest | 13.2 | plan |
-| Troll | Rogue | 11.4 | plan |
-| Troll | Shaman | 13.3 | plan |
-| Troll | Warlock | 13.1 | plan |
-| Troll | Warrior | 11.6 | plan |
-| Undead | Mage | 13.6 | plan |
-| Undead | Paladin | 12.8 | plan |
-| Undead | Priest | 12.4 | plan |
-| Undead | Rogue | 10.6 | plan |
-| Undead | Warlock | 12.1 | plan |
-| Undead | Warrior | 10.7 | plan |
+| Troll | Mage | 14.9 | plan |
+| Troll | Priest | 13.3 | plan |
+| Troll | Rogue | 12.8 | plan |
+| Troll | Shaman | 15.0 | plan |
+| Troll | Warlock | 12.9 | plan |
+| Troll | Warrior | 10.2 | plan |
+| Undead | Mage | 12.6 | plan |
+| Undead | Paladin | 13.4 | plan |
+| Undead | Priest | 14.8 | plan |
+| Undead | Rogue | 11.8 | plan |
+| Undead | Warlock | 10.5 | plan |
+| Undead | Warrior | 11.7 | plan |
