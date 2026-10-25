@@ -128,6 +128,7 @@ type Options struct {
 	MaxMobAbove  int            // mobs more than this many levels above the character are not attacked (3)
 	AssumedDrop  float64        // chance per kill assumed where a source names the creature but no chance (0.3); reported in the result
 	Walks        *dataset.Walks // walking costs measured on navigation maps (nil: straight lines times PathFactor)
+	Dungeons     bool           // group route: dungeon runs with their quests are part of the route
 }
 
 func (o Options) withDefaults() Options {

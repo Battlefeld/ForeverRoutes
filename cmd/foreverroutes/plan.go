@@ -12,13 +12,14 @@ import (
 )
 
 // loadWorld opens the dataset; profile is a kill profile written by ForeverCore ("" = the default estimate).
-func loadWorld(path, race, class, faction, profile string) (*route.World, error) {
+func loadWorld(path, race, class, faction, profile string, dungeons ...bool) (*route.World, error) {
 	d, err := dataset.Load(path)
 	if err != nil {
 		return nil, err
 	}
 	c := route.Character{Race: race, Class: class, Faction: faction}
 	var opt route.Options
+	opt.Dungeons = len(dungeons) > 0 && dungeons[0]
 	// the walk grid beside the dataset, when there is one
 	if wk := filepath.Join(filepath.Dir(path), "walks.json.gz"); fileExists(wk) {
 		if opt.Walks, err = dataset.LoadWalks(wk); err != nil {
@@ -54,8 +55,9 @@ func cmdPlan(args []string) error {
 	restarts := fs.Int("restarts", 4, "search runs")
 	seed := fs.Int64("seed", 1, "seed")
 	out := fs.String("out", "", "write the route (JSON) here")
+	group := fs.Bool("dungeons", false, "group route: dungeon runs with their quests are part of the route")
 	fs.Parse(args)
-	w, err := loadWorld(*path, *race, *class, *faction, *profile)
+	w, err := loadWorld(*path, *race, *class, *faction, *profile, *group)
 	if err != nil {
 		return err
 	}

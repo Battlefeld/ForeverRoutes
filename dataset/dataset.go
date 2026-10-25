@@ -11,6 +11,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"math"
 	"os"
 )
 
@@ -47,6 +48,7 @@ type Objective struct {
 	Drops   []Drop  `json:"drops,omitempty"`
 	Vendors []int   `json:"vendors,omitempty"` // NPCs that sell the item
 	Places  []Point `json:"places,omitempty"`  // where the items lie, from guides, when no creature or object is known
+	Inside  bool    `json:"inside,omitempty"`  // done inside the quest's dungeon (no open-world source): a group run completes it
 }
 
 // Quest is one quest with everything the route engine needs.
@@ -68,7 +70,8 @@ type Quest struct {
 	Exclusive   int               `json:"excl,omitempty"` // exclusive group: only one quest of a positive group
 	Breadcrumb  int               `json:"breadcrumb,omitempty"`
 	Repeatable  bool              `json:"repeat,omitempty"`
-	Type        string            `json:"type,omitempty"` // dungeon, raid or pvp (Forever client quest type); empty = open world
+	Type        string            `json:"type,omitempty"`    // dungeon, raid or pvp (Forever client quest type); empty = open world
+	Dungeon     string            `json:"dungeon,omitempty"` // key of the dungeon the quest belongs to (Dataset.Dungeons)
 	Objectives  []Objective       `json:"obj,omitempty"`
 	Unsupported string            `json:"unsupported,omitempty"`
 	NeedItems   []int             `json:"needItems,omitempty"` // items the quest needs whose source no data has yet
@@ -172,12 +175,43 @@ type Dataset struct {
 	Build   string   `json:"build"`
 	Sources []Source `json:"sources"`
 	// LevelXP[i] is the XP needed from level i+1 to i+2.
-	LevelXP []int          `json:"levelXp"`
-	Quests  []Quest        `json:"quests"`
-	NPCs    []NPC          `json:"npcs"`
-	Objects []Object       `json:"objects"`
-	Travel  Travel         `json:"travel"`
-	Stats   map[string]int `json:"stats"`
+	LevelXP []int    `json:"levelXp"`
+	Quests  []Quest  `json:"quests"`
+	NPCs    []NPC    `json:"npcs"`
+	Objects []Object `json:"objects"`
+	Travel  Travel   `json:"travel"`
+	// Dungeons are the instances group routes may run.
+	Dungeons []Dungeon      `json:"dungeons,omitempty"`
+	Stats    map[string]int `json:"stats"`
+}
+
+// Dungeon is an instance a group runs: where it is entered, the levels it is for, a usual run's time and the trash
+// it holds.
+type Dungeon struct {
+	Key      string  `json:"key"`
+	Name     string  `json:"name"`
+	Instance int     `json:"instance"`
+	Faction  string  `json:"faction,omitempty"` // A or H: only that side reaches it without a long detour
+	Min      int     `json:"min"`               // levels the dungeon is for
+	Max      int     `json:"max"`
+	Minutes  float64 `json:"minutes"` // a usual group run with the quest bosses (estimate)
+	Entrance Point   `json:"entrance"`
+	// Mobs are the creatures of the instance (cmangos spawns): level, elite and how many; empty when unknown.
+	Mobs   []DungeonMob `json:"mobs,omitempty"`
+	Quests []int        `json:"quests,omitempty"`
+	Source string       `json:"src"`
+}
+
+// AtEntrance: a point this close to a dungeon's entrance is a place inside the dungeon that a source put at its door.
+func AtEntrance(p, door Point) bool {
+	return p.Map == door.Map && math.Hypot(p.X-door.X, p.Y-door.Y) <= 30
+}
+
+// DungeonMob is a kind of creature in a dungeon.
+type DungeonMob struct {
+	Level int  `json:"lvl"`
+	Elite bool `json:"elite,omitempty"`
+	N     int  `json:"n"`
 }
 
 // Load reads a dataset file (plain or gzip JSON) and checks its schema.

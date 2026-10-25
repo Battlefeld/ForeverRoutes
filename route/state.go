@@ -31,6 +31,7 @@ type State struct {
 	Assumed              int            // steps that rely on an assumed drop chance
 	Dead                 map[int]dead   // site key -> mobs of that site still dead
 	Deathskips           int            // deaths taken on purpose to travel
+	Runs                 uint64         // dungeons run (bit per World.Dungeons index)
 	via                  string         // how the last action travelled when not on foot (hearth, network, deathskip: <graveyard>)
 	viaAt                *dataset.Point // where to die for that deathskip
 }
@@ -71,13 +72,15 @@ func (w *World) Level(s *State) int {
 // Action is one step of a route. Op: accept, turnin, work (objective Obj of Quest at source NPC/Object until done),
 // grind (Kills of NPC at its site).
 type Action struct {
-	Op     string        `json:"op"`
-	Quest  int           `json:"quest,omitempty"`
-	Obj    int           `json:"obj,omitempty"`
-	NPC    int           `json:"npc,omitempty"`
-	Object int           `json:"object,omitempty"`
-	Kills  int           `json:"kills,omitempty"`
-	At     dataset.Point `json:"at"`
+	Op     string `json:"op"`
+	Quest  int    `json:"quest,omitempty"`
+	Obj    int    `json:"obj,omitempty"`
+	NPC    int    `json:"npc,omitempty"`
+	Object int    `json:"object,omitempty"`
+	Kills  int    `json:"kills,omitempty"`
+	// Dungeon: the dungeon a "dungeon" step runs with the group (key of Dataset.Dungeons)
+	Dungeon string        `json:"dungeon,omitempty"`
+	At      dataset.Point `json:"at"`
 }
 
 // RouteError explains why an action is not possible in a state.
@@ -280,6 +283,9 @@ func (w *World) Apply(s *State, a Action) error {
 		if err := w.CanAccept(s, q); err != nil {
 			return err
 		}
+		if q.StartInside {
+			return fail("quest %d is given inside %s", q.ID, q.Dungeon.Name)
+		}
 		if len(q.StartSources) > 0 {
 			// started by an item: kill or loot at the chosen spawn group until it drops
 			src := nearestSource(q.StartSources, a.At)
@@ -309,6 +315,9 @@ func (w *World) Apply(s *State, a Action) error {
 		}
 		if !w.complete(s, q) {
 			return fail("quest %d is not complete", a.Quest)
+		}
+		if q.EndInside {
+			return fail("quest %d is handed in inside %s", q.ID, q.Dungeon.Name)
 		}
 		if err := w.move(s, q.EndPos); err != nil {
 			return err
@@ -388,6 +397,12 @@ func (w *World) Apply(s *State, a Action) error {
 			return err
 		}
 		w.kill(s, n, 0, farm.Site, float64(a.Kills))
+	case "dungeon":
+		d := w.dungeonOf[a.Dungeon]
+		if d == nil {
+			return fail("dungeon %q not part of this route", a.Dungeon)
+		}
+		return w.run(s, d)
 	default:
 		return fail("unknown action %q", a.Op)
 	}
@@ -504,6 +519,10 @@ func (w *World) describe(a Action) string {
 	case "grind":
 		if n := w.NPC[a.NPC]; n != nil {
 			return fmt.Sprintf("%d × %s", a.Kills, n.Name)
+		}
+	case "dungeon":
+		if d := w.dungeonOf[a.Dungeon]; d != nil {
+			return d.Name + " (group)"
 		}
 	}
 	return ""

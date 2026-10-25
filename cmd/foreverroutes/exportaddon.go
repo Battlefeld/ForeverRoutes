@@ -95,6 +95,8 @@ func cmdExportAddon(args []string) error {
 				if n := w.NPC[st.NPC]; n != nil {
 					fmt.Fprintf(&b, ", tg = %s", luaStr(n.Name))
 				}
+			case "dungeon":
+				fmt.Fprintf(&b, "op = \"d\", n = %s", luaStr(strings.TrimSuffix(st.Name, " (group)")))
 			default:
 				fmt.Fprintf(&b, "op = %s", luaStr(st.Op))
 			}

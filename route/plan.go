@@ -151,7 +151,7 @@ func (w *World) options(s *State, target int) []macro {
 	// quests in the log, and quests that can be taken now
 	for _, q := range w.Quests {
 		st := s.Status[q.Index]
-		if st == done || seen[q.ID] {
+		if st == done || seen[q.ID] || q.Dungeon != nil {
 			continue
 		}
 		if st == notTaken && w.CanAccept(s, q) != nil {
@@ -163,6 +163,9 @@ func (w *World) options(s *State, target int) []macro {
 	// hubs: groups of quests that can be taken at one place
 	for _, h := range w.hubs(s) {
 		add(w.hubMacro(s, h))
+	}
+	for _, d := range w.Dungeons {
+		add(w.dungeonMacro(s, d))
 	}
 	g := w.grindMacro(s, target)
 	add(g)
@@ -349,7 +352,7 @@ var hubRadii = []float64{60, 250, 600}
 func (w *World) hubs(s *State) []hub {
 	var avail []*Quest
 	for _, q := range w.Quests {
-		if s.Status[q.Index] == notTaken && w.CanAccept(s, q) == nil {
+		if s.Status[q.Index] == notTaken && q.Dungeon == nil && w.CanAccept(s, q) == nil {
 			avail = append(avail, q)
 		}
 	}

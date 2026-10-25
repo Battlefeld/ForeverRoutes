@@ -35,6 +35,7 @@ type Objective struct {
 	ID      int
 	Count   int
 	Sources []Source
+	Inside  bool // a dungeon run does it (group routes)
 }
 
 // Quest is a quest this character can do, with resolved positions.
@@ -48,6 +49,9 @@ type Quest struct {
 	Objectives   []Objective
 	Unlocks      []int    // quests that need this one
 	StartSources []Source // for a quest started by an item: where the item drops
+	Dungeon      *Dungeon // the dungeon a dungeon quest belongs to (group routes)
+	StartInside  bool     // given inside the dungeon: taken during the run
+	EndInside    bool     // handed in inside the dungeon: turned in during the run
 }
 
 // Farm is a place to grind.
@@ -74,6 +78,8 @@ type World struct {
 	deaths    *deaths
 	lifts     []dataset.Lift
 	danger    dangerMap
+	Dungeons  []*Dungeon // dungeons a group route may run (Options.Dungeons)
+	dungeonOf map[string]*Dungeon
 	inns      []dataset.Point
 	siteKeys  int
 	siteMemo  map[*dataset.Point][]Site
@@ -115,13 +121,20 @@ func NewWorld(d *dataset.Dataset, c Character, opt Options) (*World, error) {
 	w.Start = startNPC.Spawns[0]
 	w.buildNetwork()
 	w.maps = w.reachableMaps()
+	w.dungeons()
 	for i := range d.Quests {
 		q := &d.Quests[i]
 		if why := w.usable(q, race, cls); why != "" {
 			w.Excluded[q.ID] = why
 			continue
 		}
-		rq, why := w.resolve(q)
+		var rq *Quest
+		var why string
+		if q.Type == "dungeon" {
+			rq, why = w.dungeonQuest(q)
+		} else {
+			rq, why = w.resolve(q)
+		}
 		if why != "" {
 			w.Excluded[q.ID] = why
 			continue
@@ -169,6 +182,11 @@ func NewWorld(d *dataset.Dataset, c Character, opt Options) (*World, error) {
 	}
 	w.Quests = kept
 	for _, q := range w.Quests {
+		if q.Dungeon != nil {
+			q.Dungeon.Quests = append(q.Dungeon.Quests, q)
+		}
+	}
+	for _, q := range w.Quests {
 		for _, p := range append(append([]int{}, q.PreAll...), q.PreAny...) {
 			if pq := w.ByID[p]; pq != nil {
 				pq.Unlocks = append(pq.Unlocks, q.ID)
@@ -187,6 +205,8 @@ func (w *World) usable(q *dataset.Quest, race, cls int) string {
 		return "other class"
 	case q.Repeatable:
 		return "repeatable"
+	case q.Type == "dungeon" && w.Opt.Dungeons && q.Dungeon != "":
+		// a group route runs it
 	case q.Type != "":
 		return q.Type + " quest (not solo)"
 	case q.Unsupported != "":

@@ -46,6 +46,7 @@ type Inputs struct {
 	GuidesRXPRevision string
 	GuidesPolestar    string
 	Deathskips        string // optional: curated deathskips (data/sources/deathskips.json)
+	Dungeons          string // optional: curated dungeons (data/sources/dungeons.json)
 	SPF               string // optional: Shortest Path Forever's Data folder (internal/sources/spf)
 	SPFRevision       string
 	EGLink            string // optional: EG Link output's data/wow_classic_beta (internal/sources/eglink)
@@ -101,6 +102,7 @@ type world struct {
 	objSpawns                                       map[int][]dataset.Point
 	objLoot                                         map[int][]int // loot id -> objects
 	dropsByItem                                     map[int][]dataset.Drop
+	inside                                          map[int]map[int]int // instance map -> creature -> spawns
 }
 
 func loadCMangos(path string) (*world, error) {
@@ -116,7 +118,7 @@ func loadCMangos(path string) (*world, error) {
 		cir: t["creature_involvedrelation"], gqr: t["gameobject_questrelation"], gir: t["gameobject_involvedrelation"],
 		safeLocs: t["world_safe_locs"], graveZones: t["game_graveyard_zone"],
 		creature: map[int][]any{}, spawns: map[int][]dataset.Point{}, respawn: map[int]int{}, quest: map[int][]any{},
-		lootCreatures: map[int][]int{}, objSpawns: map[int][]dataset.Point{}, objLoot: map[int][]int{}, dropsByItem: map[int][]dataset.Drop{}}
+		lootCreatures: map[int][]int{}, inside: map[int]map[int]int{}, objSpawns: map[int][]dataset.Point{}, objLoot: map[int][]int{}, dropsByItem: map[int][]dataset.Drop{}}
 	if len(w.qt.Rows) == 0 || len(w.ct.Rows) == 0 {
 		return nil, fmt.Errorf("cmangos dump without quest_template/creature_template")
 	}
@@ -148,7 +150,13 @@ func loadCMangos(path string) (*world, error) {
 	respawns := map[int][]int{}
 	for _, r := range w.cr.Rows {
 		m := w.cr.Int(r, "map")
-		if m != 0 && m != 1 { // instances and other maps are not part of open-world routes
+		if m != 0 && m != 1 { // instances and other maps are not part of open-world routes; dungeons count their trash
+			if w.inside[m] == nil {
+				w.inside[m] = map[int]int{}
+			}
+			for _, id := range idsOf(w.cr, r, crAlt) {
+				w.inside[m][id]++
+			}
 			continue
 		}
 		for _, id := range idsOf(w.cr, r, crAlt) {
@@ -296,6 +304,19 @@ func Build(in Inputs) (*dataset.Dataset, error) {
 		}
 		b.curatedSkips = f.Skips
 	}
+	if in.Dungeons != "" {
+		raw, err := os.ReadFile(in.Dungeons)
+		if err != nil {
+			return nil, err
+		}
+		var f struct {
+			Dungeons []curatedDungeon `json:"dungeons"`
+		}
+		if err := json.Unmarshal(raw, &f); err != nil {
+			return nil, fmt.Errorf("dungeons: %w", err)
+		}
+		b.curatedDungeons = f.Dungeons
+	}
 	if in.SPF != "" {
 		if b.spf, err = spf.Load(in.SPF, in.SPFRevision); err != nil {
 			return nil, err
@@ -326,10 +347,11 @@ func Build(in Inputs) (*dataset.Dataset, error) {
 	if b.pdb != nil {
 		b.dungeonOutside()
 	}
+	dungeons := b.dungeons()
 	travel := b.travel()
 	build, _ := merged["build"].(string)
 	d := &dataset.Dataset{Schema: dataset.Schema, Build: build, LevelXP: b.levelXP(), Quests: b.out, NPCs: b.npcOut, Objects: b.objOut, Travel: travel, Stats: b.stats,
-		Sources: b.mergedSources()}
+		Dungeons: dungeons, Sources: b.mergedSources()}
 	d.Sources = append(d.Sources, dataset.Source{Name: "cmangos classic-db", URL: "https://github.com/cmangos/classic-db", Revision: in.CMangosRevision, License: "GPL-3.0",
 		Note: "Classic world data: objective counts, drop chances, spawn positions, respawn times, quest groups. Classic, not Forever: Forever data wins where both exist."})
 	if b.spf != nil {
@@ -406,30 +428,31 @@ func (b *builder) mergedSources() []dataset.Source {
 }
 
 type builder struct {
-	in           Inputs
-	merged       obj
-	w            *world
-	stats        map[string]int
-	zoneT        map[string]transform // questie zone id -> transform
-	uiT          map[string]transform // uiMapId -> transform
-	out          []dataset.Quest
-	npcOut       []dataset.NPC
-	objOut       []dataset.Object
-	npcWanted    map[int]bool
-	objWanted    map[int]bool
-	wdb          *warcraftdb.Overlay
-	wcl          *wclbox.Overlay
-	fch          *foreverchanges.Overlay
-	pdb          *polestar.DB
-	aeg          *aegis.Data
-	egl          *eglink.Data
-	spf          *spf.Data
-	rxpSkips     []guides.Deathskip
-	curatedSkips []curatedSkip
-	gdx          *guideIndex
-	byName       map[string][]int // lower-case creature name -> cmangos entries
-	zoneID       map[string]int   // lower-case zone name -> uiMapId
-	itemWhy      map[int]string   // item -> why it has no usable source
+	in              Inputs
+	merged          obj
+	w               *world
+	stats           map[string]int
+	zoneT           map[string]transform // questie zone id -> transform
+	uiT             map[string]transform // uiMapId -> transform
+	out             []dataset.Quest
+	npcOut          []dataset.NPC
+	objOut          []dataset.Object
+	npcWanted       map[int]bool
+	objWanted       map[int]bool
+	wdb             *warcraftdb.Overlay
+	wcl             *wclbox.Overlay
+	fch             *foreverchanges.Overlay
+	pdb             *polestar.DB
+	aeg             *aegis.Data
+	egl             *eglink.Data
+	spf             *spf.Data
+	rxpSkips        []guides.Deathskip
+	curatedDungeons []curatedDungeon
+	curatedSkips    []curatedSkip
+	gdx             *guideIndex
+	byName          map[string][]int // lower-case creature name -> cmangos entries
+	zoneID          map[string]int   // lower-case zone name -> uiMapId
+	itemWhy         map[int]string   // item -> why it has no usable source
 }
 
 func (b *builder) levelXP() []int {
