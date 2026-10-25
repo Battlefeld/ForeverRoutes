@@ -102,7 +102,7 @@ type world struct {
 	objSpawns                                       map[int][]dataset.Point
 	objLoot                                         map[int][]int // loot id -> objects
 	dropsByItem                                     map[int][]dataset.Drop
-	inside                                          map[int]map[int]int // instance map -> creature -> spawns
+	inside                                          map[int]map[int]float64 // instance map -> creature -> spawns (a spawn of one of several creatures counts for each in part)
 }
 
 func loadCMangos(path string) (*world, error) {
@@ -118,7 +118,7 @@ func loadCMangos(path string) (*world, error) {
 		cir: t["creature_involvedrelation"], gqr: t["gameobject_questrelation"], gir: t["gameobject_involvedrelation"],
 		safeLocs: t["world_safe_locs"], graveZones: t["game_graveyard_zone"],
 		creature: map[int][]any{}, spawns: map[int][]dataset.Point{}, respawn: map[int]int{}, quest: map[int][]any{},
-		lootCreatures: map[int][]int{}, inside: map[int]map[int]int{}, objSpawns: map[int][]dataset.Point{}, objLoot: map[int][]int{}, dropsByItem: map[int][]dataset.Drop{}}
+		lootCreatures: map[int][]int{}, inside: map[int]map[int]float64{}, objSpawns: map[int][]dataset.Point{}, objLoot: map[int][]int{}, dropsByItem: map[int][]dataset.Drop{}}
 	if len(w.qt.Rows) == 0 || len(w.ct.Rows) == 0 {
 		return nil, fmt.Errorf("cmangos dump without quest_template/creature_template")
 	}
@@ -152,10 +152,11 @@ func loadCMangos(path string) (*world, error) {
 		m := w.cr.Int(r, "map")
 		if m != 0 && m != 1 { // instances and other maps are not part of open-world routes; dungeons count their trash
 			if w.inside[m] == nil {
-				w.inside[m] = map[int]int{}
+				w.inside[m] = map[int]float64{}
 			}
-			for _, id := range idsOf(w.cr, r, crAlt) {
-				w.inside[m][id]++
+			ids := idsOf(w.cr, r, crAlt)
+			for _, id := range ids {
+				w.inside[m][id] += 1 / float64(len(ids))
 			}
 			continue
 		}

@@ -211,6 +211,9 @@ func (w *World) options(s *State, target int) []macro {
 	for _, m := range w.pickupMacros(s) {
 		add(m)
 	}
+	for _, m := range w.handInMacros(s) {
+		add(m)
+	}
 	g := w.grindMacro(s, target)
 	add(g)
 	// Grinding is possible almost anywhere and never runs out; quests are bound to places and fade as the character

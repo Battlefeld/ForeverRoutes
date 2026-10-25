@@ -22,6 +22,9 @@ const (
 	groupShare = 1.4 / 5
 	// runClear: the share of the instance's trash a usual quest run kills.
 	runClear = 0.6
+	// elitesPerMinute: elites per minute of a usual run where the instance's spawns are not known (Ragefire 6.6,
+	// Shadowfang 3.3, Wailing Caverns 3.4, Deadmines 2.7, Blackfathom 4.8 in cmangos)
+	elitesPerMinute = 3.5
 	// pickupReach: a dungeon quest further than this from the last stop is left for another time (a quest across the
 	// sea or at the other end of the continent costs more than it brings to this run).
 	pickupReach = 900.0
@@ -123,10 +126,10 @@ func (q *Quest) runnable() bool {
 // killXP a run's trash gives one member of a full group at level l.
 func (w *World) killXP(d *Dungeon, l int) int {
 	if len(d.Mobs) == 0 {
-		// trash unknown (a dungeon cmangos does not have): elite mobs of the dungeon's middle level, as many as a
-		// usual Classic dungeon of its size
+		// trash unknown (a dungeon cmangos does not have): elites of the dungeon's middle level, as many per minute of
+		// the run as the Classic dungeons of these levels hold (3 to 7, about 3.5)
 		mid := (d.Min + d.Max + 1) / 2
-		return int(math.Round(float64(xp.Kill(l, mid, true)) * groupShare * runClear * 200))
+		return int(math.Round(float64(xp.Kill(l, mid, true)) * groupShare * runClear * elitesPerMinute * d.Minutes))
 	}
 	v := 0.0
 	for _, m := range d.Mobs {
@@ -212,20 +215,68 @@ func (w *World) dungeonMacro(s0 *State, d *Dungeon) *macro {
 	if !w.try(s, &acts, Action{Op: "dungeon", Dungeon: d.Key, At: d.Entrance}) {
 		return nil
 	}
+	w.handInDungeonQuests(s, &acts, d)
+	return w.finish(s0, s, acts, "dungeon")
+}
+
+// handInDungeonQuests turns in the finished dungeon quests on this continent, nearest first: this run's wherever they
+// are handed in on the continent, other runs' within pickupReach (Ragefire's quest from Undercity when a later run
+// brings the character to Lordaeron). A quest handed in across the sea waits until the route is there anyway.
+func (w *World) handInDungeonQuests(s *State, acts *[]Action, d *Dungeon) {
 	for {
 		var next *Quest
 		bt := math.Inf(1)
-		for _, q := range d.Quests {
-			if q.EndInside || s.Status[q.Index] != active || !w.complete(s, q) {
-				continue
-			}
-			if t := w.TravelTime(s, s.Pos, q.EndPos); t < bt {
-				next, bt = q, t
+		for _, rd := range w.Dungeons {
+			for _, q := range rd.Quests {
+				if q.EndInside || s.Status[q.Index] != active || !w.complete(s, q) || q.EndPos.Map != s.Pos.Map {
+					continue
+				}
+				t := w.TravelTime(s, s.Pos, q.EndPos)
+				if rd != d && t > pickupReach {
+					continue
+				}
+				if t < bt {
+					next, bt = q, t
+				}
 			}
 		}
-		if next == nil || !w.try(s, &acts, Action{Op: "turnin", Quest: next.ID, At: next.EndPos}) {
-			break
+		if next == nil || !w.try(s, acts, Action{Op: "turnin", Quest: next.ID, At: next.EndPos}) {
+			return
 		}
 	}
-	return w.finish(s0, s, acts, "dungeon")
+}
+
+// handInMacros: a finished dungeon quest left in the log (handed in across the sea) is turned in when the route comes
+// by; one block per quest, the planner weighs the detour against its XP.
+func (w *World) handInMacros(s0 *State) []*macro {
+	var out []*macro
+	for _, d := range w.Dungeons {
+		for _, q := range d.Quests {
+			if q.EndInside || s0.Status[q.Index] != active || !w.complete(s0, q) || q.EndPos.Map != s0.Pos.Map ||
+				w.TravelTime(s0, s0.Pos, q.EndPos) > pickupNear {
+				continue
+			}
+			s := s0.clone()
+			var acts []Action
+			if w.try(s, &acts, Action{Op: "turnin", Quest: q.ID, At: q.EndPos}) {
+				out = append(out, w.finish(s0, s, acts, "handin"))
+			}
+		}
+	}
+	return out
+}
+
+// StartedInside lists the quests of a dungeon this character takes inside it (from an NPC or an item in there).
+func (w *World) StartedInside(key string) []*Quest {
+	d := w.dungeonOf[key]
+	if d == nil {
+		return nil
+	}
+	var out []*Quest
+	for _, q := range d.Quests {
+		if q.StartInside && q.runnable() {
+			out = append(out, q)
+		}
+	}
+	return out
 }

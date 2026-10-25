@@ -1,6 +1,7 @@
 package build
 
 import (
+	"math"
 	"sort"
 
 	"github.com/Battlefeld/ForeverRoutes/dataset"
@@ -187,7 +188,7 @@ func (b *builder) dungeons() []dataset.Dungeon {
 // dungeonMobs: the creatures cmangos spawns in an instance, by level and elite; a monastery's wings share the
 // instance, each gets its share.
 func (b *builder) dungeonMobs(instance, wings int) []dataset.DungeonMob {
-	n := map[[2]int]int{}
+	n := map[[2]int]float64{}
 	ct := b.w.ct
 	for id, c := range b.w.inside[instance] {
 		r := b.w.creature[id]
@@ -206,7 +207,7 @@ func (b *builder) dungeonMobs(instance, wings int) []dataset.DungeonMob {
 	}
 	var out []dataset.DungeonMob
 	for k, c := range n {
-		if c = (c + wings/2) / wings; c > 0 {
+		if c := int(math.Round(c / float64(wings))); c > 0 {
 			out = append(out, dataset.DungeonMob{Level: k[0], Elite: k[1] == 1, N: c})
 		}
 	}

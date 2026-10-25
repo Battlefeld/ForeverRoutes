@@ -43,6 +43,34 @@ func newDanger(npcs []dataset.NPC, faction string) dangerMap {
 	return d
 }
 
+// eliteMin: elite spawns in a cell from which the cell is an elite place (the outer caves of dungeons, ogre camps);
+// a lone patrolling elite does not make one.
+const eliteMin = 3
+
+// newElites: cells with eliteMin or more spawns of elites that may attack this faction, with the highest level among
+// them. Solo, such a place is only for a warlock or hunter of that level (the pet tanks).
+func newElites(npcs []dataset.NPC, faction string) dangerMap {
+	n, top := map[[3]int]int{}, map[[3]int]int{}
+	for i := range npcs {
+		c := &npcs[i]
+		if c.Rank < 1 || c.Rank > 3 || c.Hostile == "-" || (c.Hostile != "" && c.Hostile != "AH" && c.Hostile != faction) {
+			continue
+		}
+		for _, p := range c.Spawns {
+			k := [3]int{p.Map, int(math.Floor(p.X / dangerCell)), int(math.Floor(p.Y / dangerCell))}
+			n[k]++
+			top[k] = max(top[k], mobLevel(c))
+		}
+	}
+	d := dangerMap{}
+	for k, c := range n {
+		if c >= eliteMin {
+			d[k] = top[k]
+		}
+	}
+	return d
+}
+
 // at is the danger level of a place (0: nothing known).
 func (d dangerMap) at(p dataset.Point) int {
 	return d[[3]int{p.Map, int(math.Floor(p.X / dangerCell)), int(math.Floor(p.Y / dangerCell))}]
@@ -54,6 +82,9 @@ func (w *World) tooDangerous(s *State, src Source) bool {
 	lvl := w.Level(s) + w.Opt.MaxMobAbove
 	if src.Talk {
 		return false
+	}
+	if e := w.elites.at(src.Site.Center); e > 0 && !(w.Opt.SoloElites && e <= w.Level(s)) {
+		return true // among elites: not alone
 	}
 	if src.NPC != nil {
 		if src.NPC.Rank == 1 {

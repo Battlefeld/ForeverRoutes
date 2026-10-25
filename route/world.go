@@ -80,6 +80,7 @@ type World struct {
 	deaths    *deaths
 	lifts     []dataset.Lift
 	danger    dangerMap
+	elites    dangerMap  // elite places: cell -> highest elite level
 	Dungeons  []*Dungeon // dungeons a route with dungeons may run (Options.Dungeons)
 	dungeonOf map[string]*Dungeon
 	landMemo  sync.Map // landKey -> landResult
@@ -104,6 +105,7 @@ func NewWorld(d *dataset.Dataset, c Character, opt Options) (*World, error) {
 	w.deaths = newDeaths(d.Travel, c, faction)
 	w.lifts = d.Travel.Lifts
 	w.danger = newDanger(d.NPCs, faction)
+	w.elites = newElites(d.NPCs, faction)
 	for i := range d.NPCs {
 		w.NPC[d.NPCs[i].ID] = &d.NPCs[i]
 	}

@@ -103,4 +103,15 @@ func TestDanger(t *testing.T) {
 	if w.tooDangerous(&State{}, Source{Talk: true, Site: gather.Site}) {
 		t.Fatal("talking refused")
 	}
+	// an elite place (the outer cave of a dungeon): solo only for a warlock or hunter of the elites' level
+	elites := []dataset.NPC{{ID: 2, MinLevel: 2, MaxLevel: 2, Rank: 1, Spawns: []dataset.Point{{Map: 0, X: 410, Y: 10}, {Map: 0, X: 420, Y: 20}, {Map: 0, X: 430, Y: 30}}}}
+	w.elites = newElites(elites, "A")
+	herb := Source{Chance: 1, Site: Site{Center: dataset.Point{Map: 0, X: 415, Y: 15}, Spawns: 1}, Object: 7}
+	if !w.tooDangerous(&State{}, herb) {
+		t.Fatal("gathering among elites alone")
+	}
+	w.Opt.SoloElites = true
+	if w.tooDangerous(&State{XP: 250}, herb) {
+		t.Fatal("a level 2 hunter may gather among level 2 elites")
+	}
 }
