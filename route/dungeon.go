@@ -22,6 +22,9 @@ const (
 	groupShare = 1.4 / 5
 	// runClear: the share of the instance's trash a usual quest run kills.
 	runClear = 0.6
+	// pickupReach: a dungeon quest further than this from the last stop is left for another time (a quest across the
+	// sea or at the other end of the continent costs more than it brings to this run).
+	pickupReach = 900.0
 )
 
 // dungeons prepares the dungeons this character can reach (group routes only).
@@ -166,10 +169,10 @@ func (w *World) dungeonMacro(s0 *State, d *Dungeon) *macro {
 		var next *Quest
 		bt := math.Inf(1)
 		for _, q := range d.Quests {
-			if q.StartInside || !q.runnable() || s.Status[q.Index] != notTaken || w.CanAccept(s, q) != nil {
+			if q.StartInside || !q.runnable() || s.Status[q.Index] != notTaken || w.CanAccept(s, q) != nil || q.StartPos.Map != d.Entrance.Map {
 				continue
 			}
-			if t := w.TravelTime(s, s.Pos, q.StartPos); t < bt {
+			if t := w.TravelTime(s, s.Pos, q.StartPos); t < bt && t <= pickupReach {
 				next, bt = q, t
 			}
 		}
