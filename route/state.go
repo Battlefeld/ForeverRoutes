@@ -32,6 +32,7 @@ type State struct {
 	Dead                 map[int]dead   // site key -> mobs of that site still dead
 	Deathskips           int            // deaths taken on purpose to travel
 	Runs                 uint64         // dungeons run (bit per World.Dungeons index)
+	Switches             int            // changes between Kalimdor and the Eastern Kingdoms
 	via                  string         // how the last action travelled when not on foot (hearth, network, deathskip: <graveyard>)
 	viaAt                *dataset.Point // where to die for that deathskip
 }
@@ -96,6 +97,9 @@ func (w *World) move(s *State, to dataset.Point) error {
 		return fail("unreachable position")
 	}
 	from := s.Pos
+	if from.Map != to.Map && from.Map <= 1 && to.Map <= 1 {
+		s.Switches++
+	}
 	switch how {
 	case byHearth:
 		s.Hearth = s.Time + hearthCooldown

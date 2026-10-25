@@ -140,10 +140,24 @@ func (w *World) pick(s *State, options []macro, po PlanOptions, run int, rng *ra
 	return cands[order[0]]
 }
 
+// maxSwitches is how often a planned route may change continents by a level: one trip there and back up to level
+// 20, then one more every five levels. Players do not cross the sea for a few quests; the time model alone does not
+// see what that costs them.
+func maxSwitches(level int) int {
+	if level <= 20 {
+		return 2
+	}
+	return 2 + (level-16)/5
+}
+
 func (w *World) options(s *State, target int) []macro {
 	var out []macro
 	seen := map[int]bool{}
+	cap := maxSwitches(w.Level(s))
 	add := func(m *macro) {
+		if m != nil && m.state.Switches > s.Switches && m.state.Switches > cap {
+			return
+		}
 		if m != nil && len(m.actions) > 0 && !math.IsInf(m.score, 0) && !math.IsNaN(m.score) {
 			out = append(out, *m)
 		}
