@@ -20,8 +20,13 @@ const (
 	insideRadius = 600
 	// groupShare: a full group of five shares a kill's XP; the group bonus is 1.4 (Classic party XP), each gets 0.28.
 	groupShare = 1.4 / 5
-	// runClear: the share of the instance's trash a usual quest run kills.
-	runClear = 0.6
+	// runClear: the share of the instance's trash a usual quest run kills (what is in the way).
+	runClear = 0.4
+	// groupShares: the group members who each need their own drops of a collection quest; the run's kills bring one
+	// share, the others cost extra kills
+	groupShares = 5
+	// groupKill: one more trash kill for the group (seconds)
+	groupKill = 15.0
 	// groupSearch: finding a group for the run, before it starts (seconds)
 	groupSearch = 600.0
 	// elitesPerMinute: elites per minute of a usual run where the instance's spawns are not known (Ragefire 6.6,
@@ -98,7 +103,12 @@ func (w *World) dungeonQuest(q *dataset.Quest) (*Quest, string) {
 		return nil, "other continent"
 	}
 	for _, o := range q.Objectives {
-		ro := Objective{Kind: o.Kind, ID: o.ID, Count: o.Count, Inside: o.Inside}
+		ro := Objective{Kind: o.Kind, ID: o.ID, Count: o.Count, Inside: o.Inside, Chance: w.Opt.AssumedDrop}
+		for _, dr := range o.Drops {
+			if !dr.Unknown && dr.Chance/100 > 0 && (ro.Chance == w.Opt.AssumedDrop || dr.Chance/100 > ro.Chance) {
+				ro.Chance = math.Min(1, dr.Chance/100)
+			}
+		}
 		if !o.Inside {
 			solo, _ := w.resolve(&dataset.Quest{ID: q.ID, Start: q.Start, End: q.End, StartAt: &rq.StartPos, EndAt: &rq.EndPos, Objectives: []dataset.Objective{o}})
 			if solo != nil {
@@ -156,7 +166,28 @@ func (w *World) run(s *State, d *Dungeon) error {
 	secs := d.Minutes*60 + groupSearch
 	s.Time += secs
 	s.Combat += secs
-	s.XP += w.killXP(d, l)
+	trash := w.killXP(d, l)
+	s.XP += trash
+	// collection quests: every member needs their own drops; the run's kills bring one share, the other four cost more
+	// kills (and bring their XP). A single item (a boss's) everyone loots.
+	extra := 0.0
+	for _, q := range d.Quests {
+		if s.Status[q.Index] != active && !(q.StartInside && q.runnable() && s.Status[q.Index] == notTaken && w.CanAccept(s, q) == nil) {
+			continue
+		}
+		for i, o := range q.Objectives {
+			if o.Inside && o.Kind == "item" && o.Count > 1 && o.Chance > 0 && (s.Prog[q.Index] == nil || s.Prog[q.Index][i] < float64(o.Count)) {
+				extra += (groupShares - 1) * float64(o.Count) / o.Chance
+			}
+		}
+	}
+	if extra > 0 {
+		s.Time += extra * groupKill
+		s.Combat += extra * groupKill
+		if n := d.trashKills(); n > 0 {
+			s.XP += int(math.Round(float64(trash) / n * extra))
+		}
+	}
 	for changed := true; changed; {
 		changed = false
 		for _, q := range d.Quests {
@@ -281,4 +312,16 @@ func (w *World) StartedInside(key string) []*Quest {
 		}
 	}
 	return out
+}
+
+// trashKills is how many mobs a usual run kills (the share runClear of the instance's spawns, else the estimate).
+func (d *Dungeon) trashKills() float64 {
+	n := 0
+	for _, m := range d.Mobs {
+		n += m.N
+	}
+	if n == 0 {
+		return elitesPerMinute * d.Minutes * runClear
+	}
+	return float64(n) * runClear
 }

@@ -1,6 +1,7 @@
 package route
 
 import (
+	"math"
 	"testing"
 
 	"github.com/Battlefeld/ForeverRoutes/dataset"
@@ -66,6 +67,35 @@ func TestDungeonQuestsOnlyInGroupRoutes(t *testing.T) {
 	}
 	if err := w.Apply(s, Action{Op: "dungeon", Dungeon: "cave"}); err == nil {
 		t.Error("a dungeon is run once")
+	}
+}
+
+func TestCollectionQuestsCostTheGroupMoreKills(t *testing.T) {
+	d := tinyDungeon()
+	giver := []dataset.Ref{{Kind: "npc", ID: StartNPC["Orc"]}}
+	d.Quests = append(d.Quests, dataset.Quest{ID: 52, Name: "Hides", Level: 3, MinLevel: 1, XP: 500, Type: "dungeon", Dungeon: "cave", Start: giver, End: giver,
+		Objectives: []dataset.Objective{{Kind: "item", ID: 77, Count: 5, Inside: true, Drops: []dataset.Drop{{NPC: 900, Chance: 50}}}}})
+	w, err := NewWorld(d, Character{Race: "Orc", Class: "Warlock"}, Options{Dungeons: true})
+	if err != nil {
+		t.Fatal(err)
+	}
+	base := w.NewState()
+	base.XP = 400
+	with := base.clone()
+	if err := w.Apply(with, Action{Op: "accept", Quest: 52, At: w.ByID[52].StartPos}); err != nil {
+		t.Fatal(err)
+	}
+	t0 := with.Time
+	without := base.clone()
+	without.Time = t0
+	for _, s := range []*State{with, without} {
+		if err := w.Apply(s, Action{Op: "dungeon", Dungeon: "cave"}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	// four more shares of 5 items at 50 %: 40 kills of 15 s
+	if got := with.Time - without.Time; math.Abs(got-600) > 1 {
+		t.Errorf("collection quest: %.0f s more, want 600", got)
 	}
 }
 

@@ -37,7 +37,8 @@ type Objective struct {
 	ID      int
 	Count   int
 	Sources []Source
-	Inside  bool // a dungeon run does it (routes with dungeons)
+	Inside  bool    // a dungeon run does it (routes with dungeons)
+	Chance  float64 // an item a run collects: the drop chance per kill (the best a source gives, else the assumed one)
 }
 
 // Quest is a quest this character can do, with resolved positions.
