@@ -27,6 +27,8 @@ const (
 	groupShares = 5
 	// groupKill: one more trash kill for the group (seconds)
 	groupKill = 15.0
+	// maxExtraShare: the extra kills of collection quests take at most this share of the run's minutes
+	maxExtraShare = 0.5
 	// groupSearch: finding a group for the run, before it starts (seconds)
 	groupSearch = 600.0
 	// elitesPerMinute: elites per minute of a usual run where the instance's spawns are not known (Ragefire 6.6,
@@ -182,6 +184,8 @@ func (w *World) run(s *State, d *Dungeon) error {
 		}
 	}
 	if extra > 0 {
+		// the drops of dungeon quests are made for groups: the extra kills take at most half a run more
+		extra = math.Min(extra, d.Minutes*60*maxExtraShare/groupKill)
 		s.Time += extra * groupKill
 		s.Combat += extra * groupKill
 		if n := d.trashKills(); n > 0 {

@@ -7,6 +7,9 @@ import (
 	"github.com/Battlefeld/ForeverRoutes/dataset"
 )
 
+// doorArea: creatures of a dungeon's area whose every world place lies this close to its entrance are the instance's.
+const doorArea = 600
+
 // curatedDungeon is one dungeon of data/sources/dungeons.json.
 type curatedDungeon struct {
 	Key      string  `json:"key"`
@@ -127,8 +130,64 @@ func (b *builder) dungeons() []dataset.Dungeon {
 		}
 		return 0, false
 	}
+	// a quest of a dungeon's area the open world does not hold (its giver, or a creature, object or item of an
+	// objective is only inside) is the dungeon's even when the client does not call it a dungeon quest: Oh Brother...,
+	// Collecting Memories, Crest of Lordaeron, the later Unending Torments
+	// A creature cmangos spawns in the instance, or whose every world place lies at the entrance, counts as inside
+	// here: sources put creatures of the instance on the world map by the door (Foreman Thistlenettle, the Deadmines'
+	// undead miners).
+	soloDoable := func(q *dataset.Quest, inst map[int]float64, door dataset.Point) bool {
+		if q.Unsupported != "" {
+			return false
+		}
+		out := func(id int) bool {
+			if !npcOut(id) || inst[id] > 0 {
+				return false
+			}
+			for _, p := range npcs[id].Spawns {
+				if p.Map != door.Map || math.Hypot(p.X-door.X, p.Y-door.Y) > doorArea {
+					return true
+				}
+			}
+			return false
+		}
+		for _, o := range q.Objectives {
+			switch o.Kind {
+			case "kill", "talk":
+				if !out(o.ID) {
+					return false
+				}
+			case "object":
+				if !objOut(o.ID) {
+					return false
+				}
+			case "item":
+				src := len(o.Vendors) > 0 || len(o.Places) > 0
+				for _, d := range o.Drops {
+					src = src || (d.NPC > 0 && out(d.NPC)) || (d.Object > 0 && objOut(d.Object))
+				}
+				if !src {
+					return false
+				}
+			case "event":
+				if len(o.Places) == 0 {
+					return false
+				}
+			}
+		}
+		return true
+	}
 	for qi := range b.out {
 		q := &b.out[qi]
+		if q.Type == "" {
+			if pq := b.pdb.Quests[q.ID]; pq != nil {
+				if i, ok := byArea[pq.Zone]; ok && !soloDoable(q, b.w.inside[out[i].Instance], out[i].Entrance) {
+					q.Type = "dungeon"
+					q.Sources["type"] = "quest of a dungeon's area the open world does not hold"
+					b.stats["dungeon_quests_by_area"]++
+				}
+			}
+		}
 		if q.Type != "dungeon" {
 			continue
 		}
@@ -149,19 +208,23 @@ func (b *builder) dungeons() []dataset.Dungeon {
 		out[i].Quests = append(out[i].Quests, q.ID)
 		b.stats["dungeon_quests_tied"]++
 		inside := false
+		inInstance := b.w.inside[out[i].Instance]
 		for j := range q.Objectives {
 			o := &q.Objectives[j]
 			switch o.Kind {
 			case "kill", "talk":
-				o.Inside = !npcOut(o.ID)
+				o.Inside = !npcOut(o.ID) || inInstance[o.ID] > 0
 			case "object":
 				o.Inside = !objOut(o.ID)
 			case "item":
-				src := len(o.Vendors) > 0 || len(o.Places) > 0
+				// done in the run when nothing outside gives it, or when its creature stands in the dungeon too (a group
+				// collects it there: Red Silk Bandanas)
+				src, in := len(o.Vendors) > 0 || len(o.Places) > 0, false
 				for _, d := range o.Drops {
 					src = src || (d.NPC > 0 && npcOut(d.NPC)) || (d.Object > 0 && objOut(d.Object))
+					in = in || (d.NPC > 0 && inInstance[d.NPC] > 0)
 				}
-				o.Inside = !src
+				o.Inside = !src || in
 			case "event":
 				o.Inside = len(o.Places) == 0
 			}
