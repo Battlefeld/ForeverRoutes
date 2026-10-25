@@ -68,7 +68,9 @@ func cmdImprove(args []string) error {
 	}
 	rep := bestReply{Character: w.Char, Target: *target, Hours: map[string]float64{"guide": g0.Seconds / 3600, "guideImproved": g1.Seconds / 3600,
 		"plan": plan.Seconds / 3600, "planImproved": p1.Seconds / 3600}, SearchSecs: time.Since(t0).Seconds()}
-	if p1.Seconds < g1.Seconds*(1-*margin) {
+	// a route that does not reach the target never wins
+	reached := func(r *route.GuideResult) bool { return r != nil && r.Level >= *target }
+	if reached(p1) && (!reached(g1) || p1.Seconds < g1.Seconds*(1-*margin)) {
 		rep.Winner, rep.Events, rep.Quests, rep.Profile, rep.Assumed = "plan", pe, p1.Quests, p1.Profile, p1.Assumed
 	} else {
 		rep.Winner, rep.Events, rep.Quests, rep.Profile, rep.Assumed = "guide", ge, g1.Quests, g1.Profile, g1.Assumed

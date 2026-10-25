@@ -59,6 +59,9 @@ func (w *World) tooDangerous(s *State, src Source) bool {
 		if src.NPC.Rank == 1 {
 			return mobLevel(src.NPC) > w.Level(s) // an elite only at the character's level or below
 		}
+		if w.Opt.MaxMobAbove == 0 {
+			return src.NPC.MinLevel > lvl // nothing above the character: a group of level 1-2 suits level 1
+		}
 		return mobLevel(src.NPC) > lvl
 	}
 	return w.danger.at(src.Site.Center) > lvl

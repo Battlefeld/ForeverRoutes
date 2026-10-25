@@ -129,6 +129,9 @@ func (w *World) followFrom(s *State, events []GuideEvent, target int, horizon fl
 				miss(e.Op+": not in the log", "")
 				continue
 			}
+			if w.Opt.QuestAtLevel && w.Level(s) < q.Level && q.Level <= target {
+				grindTo(q.Level) // a melee follower works a quest from its level on
+			}
 			if !w.workLog(s, &acts, []*Quest{q}) {
 				miss(e.Op+": objective not possible", "")
 				continue

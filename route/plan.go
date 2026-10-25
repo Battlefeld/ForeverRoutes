@@ -503,6 +503,9 @@ func (w *World) grindMacro(s0 *State, target int) *macro {
 	for i := range w.Farms {
 		f := &w.Farms[i]
 		ml := mobLevel(f.NPC)
+		if w.Opt.MaxMobAbove == 0 {
+			ml = f.NPC.MinLevel // nothing above the character: a group of level 1-2 suits level 1
+		}
 		if ml > lvl+w.Opt.MaxMobAbove || ml < lvl-4 {
 			continue
 		}

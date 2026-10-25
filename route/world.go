@@ -487,8 +487,8 @@ func (w *World) farms() {
 		if n.Rank != 0 || n.HP <= 0 || n.MaxLevel < 1 || n.MaxLevel > 40 || len(n.Spawns) < 6 {
 			continue
 		}
-		if n.Hostile == "-" || (n.Hostile != "" && n.Hostile != w.Faction) {
-			continue // friendly to this faction: cannot be attacked
+		if n.Hostile != "" && n.Hostile != "-" && n.Hostile != w.Faction {
+			continue // friendly to this faction: cannot be attacked ("-" attacks nobody: a neutral beast, fair game)
 		}
 		for _, st := range w.sites(n.Spawns) {
 			if st.Spawns >= 6 {
