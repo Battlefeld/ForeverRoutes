@@ -56,7 +56,7 @@ func cmdPlan(args []string) error {
 	restarts := fs.Int("restarts", 4, "search runs")
 	seed := fs.Int64("seed", 1, "seed")
 	out := fs.String("out", "", "write the route (JSON) here")
-	group := fs.Bool("dungeons", false, "group route: dungeon runs with their quests are part of the route")
+	group := fs.Bool("dungeons", false, "route with dungeons: dungeon runs with their quests are part of the route")
 	cpu := fs.String("cpuprofile", "", "write a CPU profile here")
 	fs.Parse(args)
 	if *cpu != "" {

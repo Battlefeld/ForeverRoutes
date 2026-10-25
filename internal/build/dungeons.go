@@ -19,7 +19,7 @@ type curatedDungeon struct {
 	Quests   []int   `json:"quests"`
 }
 
-// dungeons builds the dungeons group routes may run and ties the dungeon quests to them: by the quest's client area,
+// dungeons builds the dungeons routes with dungeons may run and ties the dungeon quests to them: by the quest's client area,
 // else by the instance an objective's creature stands in. An objective with no open-world source is marked inside (a
 // run completes it); a dungeon quest whose only problem is that its objective or giver is inside the dungeon is no
 // longer unsupported (it stays a dungeon quest, out of solo routes).

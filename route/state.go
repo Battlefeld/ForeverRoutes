@@ -534,7 +534,7 @@ func (w *World) describe(a Action) string {
 		}
 	case "dungeon":
 		if d := w.dungeonOf[a.Dungeon]; d != nil {
-			return d.Name + " (group)"
+			return d.Name + " (dungeon run)"
 		}
 	}
 	return ""

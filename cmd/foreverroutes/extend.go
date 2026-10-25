@@ -20,7 +20,7 @@ func cmdExtend(args []string) error {
 	file := fs.String("route", "", "route file to continue (data/routes/<race>-<class>.json)")
 	profiles := fs.String("profiles", "data/profiles", "kill profiles (<class>.json)")
 	target := fs.Int("target", 40, "target level")
-	group := fs.Bool("dungeons", false, "group route: dungeon runs with their quests are part of the planned part")
+	group := fs.Bool("dungeons", false, "route with dungeons: dungeon runs with their quests are part of the planned part")
 	budget := fs.Duration("budget", 60*time.Second, "search time for improving the planned part")
 	restarts := fs.Int("restarts", 2, "search runs of the planner")
 	out := fs.String("out", "", "write the continued route here")
@@ -103,7 +103,7 @@ type routeFile struct {
 	Events    []route.GuideEvent `json:"events"`
 }
 
-// hasDungeons: the route runs dungeons (a group route).
+// hasDungeons: the route runs dungeons (a route with dungeons).
 func hasDungeons(events []route.GuideEvent) bool {
 	for _, e := range events {
 		if e.Op == "dungeon" {

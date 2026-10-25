@@ -37,7 +37,7 @@ type Objective struct {
 	ID      int
 	Count   int
 	Sources []Source
-	Inside  bool // a dungeon run does it (group routes)
+	Inside  bool // a dungeon run does it (routes with dungeons)
 }
 
 // Quest is a quest this character can do, with resolved positions.
@@ -51,7 +51,7 @@ type Quest struct {
 	Objectives   []Objective
 	Unlocks      []int    // quests that need this one
 	StartSources []Source // for a quest started by an item: where the item drops
-	Dungeon      *Dungeon // the dungeon a dungeon quest belongs to (group routes)
+	Dungeon      *Dungeon // the dungeon a dungeon quest belongs to (routes with dungeons)
 	StartInside  bool     // given inside the dungeon: taken during the run
 	EndInside    bool     // handed in inside the dungeon: turned in during the run
 }
@@ -80,7 +80,7 @@ type World struct {
 	deaths    *deaths
 	lifts     []dataset.Lift
 	danger    dangerMap
-	Dungeons  []*Dungeon // dungeons a group route may run (Options.Dungeons)
+	Dungeons  []*Dungeon // dungeons a route with dungeons may run (Options.Dungeons)
 	dungeonOf map[string]*Dungeon
 	landMemo  sync.Map // landKey -> landResult
 	landN     atomic.Int64
@@ -211,7 +211,7 @@ func (w *World) usable(q *dataset.Quest, race, cls int) string {
 	case q.Repeatable:
 		return "repeatable"
 	case q.Type == "dungeon" && w.Opt.Dungeons && q.Dungeon != "":
-		// a group route runs it
+		// a route with dungeons runs it
 	case q.Type != "":
 		return q.Type + " quest (not solo)"
 	case q.Unsupported != "":

@@ -127,11 +127,11 @@ type Options struct {
 	Profile      KillProfile    // nil = DefaultProfile
 	MaxMobAbove  int            // mobs more than this many levels above the character are not attacked (3; melee and shamans 0)
 	SoloElites   bool           // plain elites of the character's level or below are fought alone (warlocks and hunters: the pet tanks)
-	QuestAtLevel bool           // a quest's objectives are worked only from the quest's level on (melee and shamans)
+	QuestAtLevel bool           // a quest's objectives are worked only from the quest's level on (off by default)
 	NoClassRules bool           // keep the options as given instead of the class's rules
 	AssumedDrop  float64        // chance per kill assumed where a source names the creature but no chance (0.3); reported in the result
 	Walks        *dataset.Walks // walking costs measured on navigation maps (nil: straight lines times PathFactor)
-	Dungeons     bool           // group route: dungeon runs with their quests are part of the route
+	Dungeons     bool           // route with dungeons: dungeon runs with their quests are part of the route
 }
 
 func (o Options) withDefaults() Options {
@@ -168,8 +168,7 @@ func distance(a, b dataset.Point) float64 {
 }
 
 // classRules sets what a class does alone: warlocks and hunters fight plain elites of their level with the pet as
-// tank; melee classes and shamans fight nothing above their level and work a quest from its level on, which keeps
-// fights short and rests rare.
+// tank; melee classes and shamans fight nothing above their level, which keeps fights short and rests rare.
 func (w *World) classRules() {
 	if w.Opt.NoClassRules {
 		return
@@ -179,6 +178,5 @@ func (w *World) classRules() {
 		w.Opt.SoloElites = true
 	case "Warrior", "Rogue", "Paladin", "Shaman":
 		w.Opt.MaxMobAbove = 0
-		w.Opt.QuestAtLevel = true
 	}
 }

@@ -41,7 +41,7 @@ func cmdNext(args []string) error {
 	horizon := fs.Float64("horizon", 3600, "seconds of play to plan ahead")
 	routeFile := fs.String("route", "", "the character's best route (output of improve, or a list of guide steps): followed from the live state; empty = plan freely")
 	out := fs.String("out", "", "write the reply here instead of standard output")
-	group := fs.Bool("dungeons", false, "group route: dungeon runs with their quests may be planned (also when the route runs dungeons)")
+	group := fs.Bool("dungeons", false, "route with dungeons: dungeon runs with their quests may be planned (also when the route runs dungeons)")
 	fs.Parse(args)
 	var raw []byte
 	var err error

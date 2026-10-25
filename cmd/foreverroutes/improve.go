@@ -35,7 +35,7 @@ func cmdImprove(args []string) error {
 	budget := fs.Duration("budget", 60*time.Second, "search time per route")
 	margin := fs.Float64("margin", 0.03, "our planned route wins only when it is this much faster than the improved guide (the guide's route is what players know and the model is not calibrated yet)")
 	out := fs.String("out", "", "write the result here")
-	group := fs.Bool("dungeons", false, "group route: dungeon runs with their quests may be part of the planned route")
+	group := fs.Bool("dungeons", false, "route with dungeons: dungeon runs with their quests may be part of the planned route")
 	fs.Parse(args)
 	w, err := loadWorld(*path, *race, *class, *faction, *profile, *group)
 	if err != nil {

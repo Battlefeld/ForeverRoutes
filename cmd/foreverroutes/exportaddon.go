@@ -96,7 +96,7 @@ func cmdExportAddon(args []string) error {
 					fmt.Fprintf(&b, ", tg = %s", luaStr(n.Name))
 				}
 			case "dungeon":
-				fmt.Fprintf(&b, "op = \"d\", n = %s", luaStr(strings.TrimSuffix(st.Name, " (group)")))
+				fmt.Fprintf(&b, "op = \"d\", n = %s", luaStr(strings.TrimSuffix(st.Name, " (dungeon run)")))
 			default:
 				fmt.Fprintf(&b, "op = %s", luaStr(st.Op))
 			}

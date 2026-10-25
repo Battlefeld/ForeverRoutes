@@ -7,7 +7,7 @@ import (
 	"github.com/Battlefeld/ForeverRoutes/xp"
 )
 
-// Dungeon is a dungeon a group route may run (Options.Dungeons): its quests this character can do.
+// Dungeon is a dungeon a route with dungeons may run (Options.Dungeons): its quests this character can do.
 type Dungeon struct {
 	*dataset.Dungeon
 	Index  int
@@ -56,7 +56,7 @@ func (w *World) pickupMacros(s0 *State) []*macro {
 	return out
 }
 
-// dungeons prepares the dungeons this character can reach (group routes only).
+// dungeons prepares the dungeons this character can reach (routes with dungeons only).
 func (w *World) dungeons() {
 	if !w.Opt.Dungeons {
 		return
@@ -73,7 +73,7 @@ func (w *World) dungeons() {
 	}
 }
 
-// dungeonQuest resolves a dungeon quest for a group route: a giver or turn-in without an open-world place (or placed
+// dungeonQuest resolves a dungeon quest for a route with dungeons: a giver or turn-in without an open-world place (or placed
 // at the entrance) is inside; an objective without a solo source, or with sources only around the entrance, is done by
 // the run.
 func (w *World) dungeonQuest(q *dataset.Quest) (*Quest, string) {

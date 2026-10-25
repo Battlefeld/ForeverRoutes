@@ -84,12 +84,12 @@ no source places) are left out of every route alike.
 
 Average over the 56 combinations: RestedXP 17.66 h, the kept route 15.33 h (13.2 % faster). A planned route stays at home until the first class quests are done and crosses between Kalimdor and the Eastern Kingdoms at most twice up to level 20.
 
-## Group routes
+## Solo with dungeons
 
-`<race>-<class>-group.json`: the same, with dungeon runs (`foreverroutes improve -dungeons`). The route takes a
+`<race>-<class>-dungeons.json` ("Solo mit Dungeon"): the same, with dungeon runs (a group only for the run itself) (`foreverroutes improve -dungeons`). The route takes a
 dungeon's quests on the way (from three levels below it, within ten minutes), runs it with a group and hands the quests
-in, across the sea if need be (Ragefire's quest from Undercity). The addon shows it after `/fr gruppe`. Run times are
-estimates (`data/sources/dungeons.json`); better gear from the runs is not counted yet, so the group routes are rather
+in, across the sea if need be (Ragefire's quest from Undercity). The addon shows it after `/fr dungeon` (`/fr solo` goes back to the route without dungeons, which takes no dungeon quests). Run times are
+estimates (`data/sources/dungeons.json`); better gear from the runs is not counted yet, so the routes with dungeons are rather
 faster in game than here.
 
 Average over the 56 combinations: 13.25 h to level 20 (solo 15.33 h).

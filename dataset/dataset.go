@@ -180,7 +180,7 @@ type Dataset struct {
 	NPCs    []NPC    `json:"npcs"`
 	Objects []Object `json:"objects"`
 	Travel  Travel   `json:"travel"`
-	// Dungeons are the instances group routes may run.
+	// Dungeons are the instances routes with dungeons may run.
 	Dungeons []Dungeon      `json:"dungeons,omitempty"`
 	Stats    map[string]int `json:"stats"`
 }

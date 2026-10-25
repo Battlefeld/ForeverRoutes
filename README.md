@@ -45,11 +45,12 @@ go run ./cmd/foreverroutes audit                                              # 
 `guide` liest eine Liste von Schritten `[{"op":"accept","quest":4641},{"op":"complete","quest":4641},
 {"op":"turnin","quest":4641},{"op":"level","level":6}]`. Guide-Dateien werden nicht eingecheckt (Lizenzen der Guides).
 
-### Gruppenrouten mit Dungeons (`-dungeons`)
+### Solo mit Dungeon (`-dungeons`)
 
-Mit `-dungeons` (bei `plan`, `extend`, `next`) gehören Dungeon-Läufe zur Route. Ein Dungeon-Baustein nimmt die
-Dungeonquests an, die draußen vergeben werden und die der Lauf erledigt (nächstgelegene zuerst), läuft den Dungeon mit
-der Gruppe und gibt danach draußen ab. Im Dungeon vergebene und abgegebene Quests samt Folgequests erledigt der Lauf
+Es gibt je Volk und Klasse zwei Routen: **Solo ohne Dungeon** (`<volk>-<klasse>.json`, keine Dungeonquests) und **Solo mit Dungeon** (`<volk>-<klasse>-dungeons.json`). Mit `-dungeons` (bei `plan`, `improve`, `extend`, `next`) gehören Dungeon-Läufe zur Route. Ein Dungeon-Baustein nimmt die
+Dungeonquests an, die draußen vergeben werden und die der Lauf erledigt (nächstgelegene zuerst; unterwegs schon ab drei
+Stufen vor dem Dungeon, wenn der Geber nahe ist), läuft den Dungeon (dafür eine Gruppe) und gibt danach ab, wenn nötig
+auf dem anderen Kontinent. Im Dungeon vergebene und abgegebene Quests samt Folgequests erledigt der Lauf
 selbst. Der Planer wägt den Baustein wie jeden anderen gegen Grinden ab. Jeder Dungeon wird höchstens einmal gelaufen,
 nur innerhalb seiner Stufen.
 

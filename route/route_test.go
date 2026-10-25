@@ -86,17 +86,16 @@ func TestClassRules(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if warrior.Opt.MaxMobAbove != 0 || !warrior.Opt.QuestAtLevel || warrior.Opt.SoloElites {
+	if warrior.Opt.MaxMobAbove != 0 || warrior.Opt.QuestAtLevel || warrior.Opt.SoloElites {
 		t.Errorf("warrior: %+v", warrior.Opt)
 	}
-	// quest 2 is level 2: a warrior of level 1 works it from level 2 on
+	// the boars are level 1-2: a level 1 warrior may fight them, the level 2 elite not at all
 	s := warrior.NewState()
-	q := warrior.ByID[2]
-	if err := warrior.Apply(s, Action{Op: "accept", Quest: 2, At: q.StartPos}); err != nil {
-		t.Fatal(err)
+	if warrior.tooDangerous(s, warrior.ByID[1].Objectives[0].Sources[0]) {
+		t.Error("a group of level 1-2 suits a level 1 warrior")
 	}
-	if err := warrior.Apply(s, Action{Op: "work", Quest: 2, Obj: 0, NPC: 100, At: q.Objectives[0].Sources[0].Site.Center}); err == nil {
-		t.Error("a level 1 warrior must not work a level 2 quest")
+	if warrior.ByID[5] != nil {
+		t.Error("a warrior does not fight elites alone")
 	}
 }
 
