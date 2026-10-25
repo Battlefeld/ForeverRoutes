@@ -64,13 +64,39 @@ func TestWorldExcludesWhatTheCharacterCannotDo(t *testing.T) {
 	if w.Excluded[4] != "other race" {
 		t.Errorf("quest 4: %q", w.Excluded[4])
 	}
-	if w.Excluded[5] == "" {
-		t.Error("a quest that needs an elite kill must be excluded")
+	if w.ByID[5] == nil {
+		t.Errorf("a warlock's pet tanks a plain elite: %s", w.Excluded[5])
+	}
+	mage, err := NewWorld(tiny(), Character{Race: "Orc", Class: "Mage"}, Options{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if mage.Excluded[5] == "" {
+		t.Error("a quest that needs an elite kill must be excluded for a mage")
 	}
 	for _, id := range []int{1, 2, 3} {
 		if w.ByID[id] == nil {
 			t.Errorf("quest %d should be usable: %s", id, w.Excluded[id])
 		}
+	}
+}
+
+func TestClassRules(t *testing.T) {
+	warrior, err := NewWorld(tiny(), Character{Race: "Orc", Class: "Warrior"}, Options{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if warrior.Opt.MaxMobAbove != 0 || !warrior.Opt.QuestAtLevel || warrior.Opt.SoloElites {
+		t.Errorf("warrior: %+v", warrior.Opt)
+	}
+	// quest 2 is level 2: a warrior of level 1 works it from level 2 on
+	s := warrior.NewState()
+	q := warrior.ByID[2]
+	if err := warrior.Apply(s, Action{Op: "accept", Quest: 2, At: q.StartPos}); err != nil {
+		t.Fatal(err)
+	}
+	if err := warrior.Apply(s, Action{Op: "work", Quest: 2, Obj: 0, NPC: 100, At: q.Objectives[0].Sources[0].Site.Center}); err == nil {
+		t.Error("a level 1 warrior must not work a level 2 quest")
 	}
 }
 

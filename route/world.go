@@ -99,6 +99,7 @@ func NewWorld(d *dataset.Dataset, c Character, opt Options) (*World, error) {
 	}
 	w := &World{Data: d, Char: c, Faction: faction, Opt: opt.withDefaults(), ByID: map[int]*Quest{}, NPC: map[int]*dataset.NPC{},
 		Objects: map[int]*dataset.Object{}, Excluded: map[int]string{}}
+	w.classRules()
 	w.walkGrids = newWalks(w.Opt.Walks)
 	w.deaths = newDeaths(d.Travel, c, faction)
 	w.lifts = d.Travel.Lifts
@@ -273,7 +274,7 @@ func (w *World) resolve(q *dataset.Quest) (*Quest, string) {
 		if len(q.StartDrops) == 0 {
 			return nil, "start position unknown"
 		}
-		if rq.StartSources = usable(w.dropSources(q.StartDrops)); len(rq.StartSources) == 0 {
+		if rq.StartSources = w.soloSources(w.dropSources(q.StartDrops)); len(rq.StartSources) == 0 {
 			return nil, "start item: no reachable non-elite source"
 		}
 		rq.StartPos = rq.StartSources[0].Site.Center
@@ -321,13 +322,13 @@ func (w *World) resolve(q *dataset.Quest) (*Quest, string) {
 				}
 			}
 			ro.Sources = append(ro.Sources, w.dropSources(o.Drops)...)
-			if len(usable(ro.Sources)) == 0 && len(o.Places) > 0 {
+			if len(w.soloSources(ro.Sources)) == 0 && len(o.Places) > 0 {
 				for _, st := range w.sites(o.Places) {
 					ro.Sources = append(ro.Sources, Source{Chance: 1, Site: st, Gather: true})
 				}
 			}
 		}
-		ro.Sources = usable(ro.Sources)
+		ro.Sources = w.soloSources(ro.Sources)
 		if len(ro.Sources) == 0 {
 			return nil, fmt.Sprintf("objective %s %d: no reachable non-elite source", o.Kind, o.ID)
 		}
@@ -360,13 +361,15 @@ func (w *World) dropSources(drops []dataset.Drop) []Source {
 }
 
 // usable keeps the sources a solo character can use: placed, with a chance, not elite.
-func usable(src []Source) []Source {
+func (w *World) soloSources(src []Source) []Source {
 	var kept []Source
 	for _, s := range src {
 		if s.Site.Spawns == 0 || s.Chance <= 0 {
 			continue
 		}
-		if !s.Talk && s.NPC != nil && (s.NPC.Rank == 1 || s.NPC.Rank == 2 || s.NPC.Rank == 3) {
+		// elites are for groups; a warlock's or hunter's pet tanks a plain elite (not a rare elite or a boss) of the
+		// character's level or below (tooDangerous checks the level when it is fought)
+		if !s.Talk && s.NPC != nil && (s.NPC.Rank == 1 && !w.Opt.SoloElites || s.NPC.Rank == 2 || s.NPC.Rank == 3) {
 			continue
 		}
 		kept = append(kept, s)

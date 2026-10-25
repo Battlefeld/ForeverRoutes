@@ -342,6 +342,9 @@ func (w *World) Apply(s *State, a Action) error {
 			return fail("quest %d has no objective %d", a.Quest, a.Obj)
 		}
 		o := q.Objectives[a.Obj]
+		if w.Opt.QuestAtLevel && w.Level(s) < q.Level {
+			return fail("quest %d is level %d: worked from that level on", q.ID, q.Level)
+		}
 		// the source is the creature or object; of its spawn groups the one at the action's position
 		var src *Source
 		bd := math.Inf(1)
