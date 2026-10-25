@@ -22,6 +22,10 @@ const (
 	hearthCast     = 10.0
 	hearthCooldown = 3600.0
 	bindRadius     = 40.0
+	// continentSwitch: what changing continents costs beyond the timetable: loading screens, the walk up to the
+	// platform or the dock, a departure missed by a little. It keeps routes from going back and forth across the sea for
+	// a few quests.
+	continentSwitch = 180.0
 )
 
 // how a move is made
@@ -211,6 +215,14 @@ func (w *World) TravelTime(s *State, a, b dataset.Point) float64 {
 }
 
 func (w *World) travel(s *State, a, b dataset.Point) (float64, int) {
+	best, how := w.travelSame(s, a, b)
+	if a.Map != b.Map {
+		best += continentSwitch
+	}
+	return best, how
+}
+
+func (w *World) travelSame(s *State, a, b dataset.Point) (float64, int) {
 	best, how := w.overland(s, a, b)
 	if best > hearthCast+30 && s.Time >= s.Hearth && w.walk(s.Bind, a) > 60 {
 		if h, _ := w.overland(s, s.Bind, b); hearthCast+h < best {

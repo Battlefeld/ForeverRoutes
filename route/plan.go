@@ -174,6 +174,18 @@ func (w *World) options(s *State, target int) []macro {
 	// the XP the best grind spot here would give in that time. Grinding itself scores zero.
 	if g != nil {
 		rate := 1 / g.score
+		// Where grinding is slow (the first levels) it is a poor yardstick: a far, slow block would win only by the
+		// sheer XP it brings. The yardstick is then what the good quests here bring per second: the third best rate.
+		var rates []float64
+		for i := range out {
+			if dt := out[i].state.Time - s.Time; dt > 0 {
+				rates = append(rates, w.value(s, out[i].state)/dt)
+			}
+		}
+		sort.Sort(sort.Reverse(sort.Float64Slice(rates)))
+		if len(rates) >= 3 && rates[2] > rate {
+			rate = rates[2]
+		}
 		for i := range out {
 			m := &out[i]
 			dt := m.state.Time - s.Time

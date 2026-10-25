@@ -33,6 +33,7 @@ func cmdImprove(args []string) error {
 	target := fs.Int("target", 20, "target level")
 	file := fs.String("events", "", "guide events (JSON list), the starting point")
 	budget := fs.Duration("budget", 60*time.Second, "search time per route")
+	margin := fs.Float64("margin", 0.03, "our planned route wins only when it is this much faster than the improved guide (the guide's route is what players know and the model is not calibrated yet)")
 	out := fs.String("out", "", "write the result here")
 	fs.Parse(args)
 	w, err := loadWorld(*path, *race, *class, *faction, *profile)
@@ -66,7 +67,7 @@ func cmdImprove(args []string) error {
 	}
 	rep := bestReply{Character: w.Char, Target: *target, Hours: map[string]float64{"guide": g0.Seconds / 3600, "guideImproved": g1.Seconds / 3600,
 		"plan": plan.Seconds / 3600, "planImproved": p1.Seconds / 3600}, SearchSecs: time.Since(t0).Seconds()}
-	if p1.Seconds < g1.Seconds {
+	if p1.Seconds < g1.Seconds*(1-*margin) {
 		rep.Winner, rep.Events, rep.Quests, rep.Profile, rep.Assumed = "plan", pe, p1.Quests, p1.Profile, p1.Assumed
 	} else {
 		rep.Winner, rep.Events, rep.Quests, rep.Profile, rep.Assumed = "guide", ge, g1.Quests, g1.Profile, g1.Assumed

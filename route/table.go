@@ -7,6 +7,7 @@ import (
 	"math"
 	"sort"
 	"strings"
+	"sync"
 
 	"github.com/Battlefeld/ForeverRoutes/dataset"
 )
@@ -37,6 +38,8 @@ type TableProfile struct {
 	MeleeShare float64        `json:"-"`
 	Fallback   DefaultProfile `json:"-"`
 	byLevel    map[int]*TableLevel
+	edgeOnce   sync.Once
+	edge       [2][2]float64 // fight and rest factors of the fallback at the table's first and last level
 }
 
 // TableLevel is one character level.
@@ -86,13 +89,13 @@ func LoadTableProfile(r io.Reader) (*TableProfile, error) {
 func (p *TableProfile) Fits(c Character) bool { return strings.EqualFold(p.Class, c.Class) }
 
 func (p *TableProfile) Name() string {
-	return fmt.Sprintf("MythicSim %s %s (gear %s, talents %s; below the table: %s)", p.Class, p.Rotation, p.Gear, p.Talents, p.Fallback.Name())
+	return fmt.Sprintf("MythicSim %s %s (gear %s, talents %s; outside the table: %s scaled to the table's edge)", p.Class, p.Rotation, p.Gear, p.Talents, p.Fallback.Name())
 }
 
 func (p *TableProfile) KillSeconds(c Character, pl int, m *dataset.NPC) (float64, float64) {
 	l := p.byLevel[pl]
 	if l == nil {
-		return p.Fallback.KillSeconds(c, pl, m)
+		return p.outside(c, pl, m)
 	}
 	hp := float64(m.HP)
 	if hp <= 0 {
@@ -116,6 +119,30 @@ func (p *TableProfile) KillSeconds(c Character, pl int, m *dataset.NPC) (float64
 		rest = math.Max(rest, mana/drink)
 	}
 	return fight, rest + 4
+}
+
+// outside: a level the table does not have (the engine starts at level 10). The fallback estimate gives the shape
+// over the levels; it is scaled so that it agrees with the table at the table's nearest level, for an even-level mob of
+// typical health. Without the scaling the fallback rates grinding at low levels about twice as high as the table.
+func (p *TableProfile) outside(c Character, pl int, m *dataset.NPC) (float64, float64) {
+	lo, hi := p.LevelRange()
+	p.edgeOnce.Do(func() {
+		for i, e := range [2]int{lo, hi} {
+			ref := &dataset.NPC{MinLevel: e, MaxLevel: e}
+			tf, tr := p.KillSeconds(c, e, ref)
+			df, dr := p.Fallback.KillSeconds(c, e, ref)
+			p.edge[i] = [2]float64{1, 1}
+			if df > 0 && dr > 0 {
+				p.edge[i] = [2]float64{tf / df, tr / dr}
+			}
+		}
+	})
+	k := p.edge[0]
+	if pl > hi {
+		k = p.edge[1]
+	}
+	f, r := p.Fallback.KillSeconds(c, pl, m)
+	return f * k[0], r * k[1]
 }
 
 func (p *TableProfile) meleeShare(fight float64) float64 {

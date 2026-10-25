@@ -42,11 +42,14 @@ func TestTableProfile(t *testing.T) {
 	if want := math.Max(10*4.5/(61.0/18), 150/(151.0/18)) + 4; !near(r, want) {
 		t.Errorf("melee: %v, want %v", r, want)
 	}
-	// outside the table: the default estimate
+	// outside the table: the default estimate, scaled so that it agrees with the table at the table's first level
 	d := DefaultProfile{}
+	ref := &dataset.NPC{MinLevel: 10, MaxLevel: 10}
+	tf, tr := p.KillSeconds(c, 10, ref)
+	ef, er := d.KillSeconds(c, 10, ref)
 	f, r = p.KillSeconds(c, 5, &dataset.NPC{HP: 100, MaxLevel: 5})
-	if df, dr := d.KillSeconds(c, 5, &dataset.NPC{HP: 100, MaxLevel: 5}); f != df || r != dr {
-		t.Errorf("fallback: %v %v vs %v %v", f, r, df, dr)
+	if df, dr := d.KillSeconds(c, 5, &dataset.NPC{HP: 100, MaxLevel: 5}); !near(f, df*tf/ef) || !near(r, dr*tr/er) {
+		t.Errorf("fallback: %v %v vs %v %v scaled by %v %v", f, r, df, dr, tf/ef, tr/er)
 	}
 	if _, err := LoadTableProfile(strings.NewReader(`{"schema":"x"}`)); err == nil {
 		t.Error("wrong schema accepted")
