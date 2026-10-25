@@ -7,13 +7,13 @@
  "target": 20,
  "winner": "guide",
  "hours": {
-  "guide": 14.74,
-  "guideImproved": 12.58,
-  "plan": 14.43,
-  "planImproved": 14.2
+  "guide": 14.85,
+  "guideImproved": 12.72,
+  "plan": 13.98,
+  "planImproved": 13.76
  },
- "quests": 110,
- "killProfile": "MythicSim rogue combat_sinister_strike (gear starter weapon, talents none; below the table: default (uncalibrated))",
+ "quests": 109,
+ "killProfile": "MythicSim rogue combat_sinister_strike (gear starter weapon, talents none; outside the table: default (uncalibrated) scaled to the table's edge)",
  "assumedDropSteps": 2,
  "basis": "RestedXP Forever guides (github.com/RestedXP/RXPGuides, CC BY-NC-SA 4.0), improved by ForeverRoutes",
  "events": [
@@ -123,6 +123,10 @@
   },
   {
    "op": "accept",
+   "quest": 794
+  },
+  {
+   "op": "accept",
    "quest": 6394
   },
   {
@@ -138,6 +142,10 @@
    "quest": 6394
   },
   {
+   "op": "complete",
+   "quest": 794
+  },
+  {
    "op": "level",
    "level": 5
   },
@@ -158,12 +166,8 @@
    "quest": 4402
   },
   {
-   "op": "accept",
-   "quest": 805
-  },
-  {
-   "op": "accept",
-   "quest": 96652
+   "op": "turnin",
+   "quest": 794
   },
   {
    "op": "accept",
@@ -171,11 +175,7 @@
   },
   {
    "op": "accept",
-   "quest": 96821
-  },
-  {
-   "op": "turnin",
-   "quest": 805
+   "quest": 97225
   },
   {
    "op": "accept",
@@ -224,32 +224,12 @@
   {
    "op": "turnin",
    "quest": 786
-  },
-  {
-   "op": "complete",
-   "quest": 96821
-  },
-  {
-   "op": "complete",
-   "quest": 96821
   },
   {
    "op": "accept",
    "quest": 96876
   },
   {
-   "op": "complete",
-   "quest": 96821
-  },
-  {
-   "op": "complete",
-   "quest": 96821
-  },
-  {
-   "op": "turnin",
-   "quest": 96652
-  },
-  {
    "op": "accept",
    "quest": 96604
   },
@@ -330,10 +310,6 @@
    "level": 7
   },
   {
-   "op": "turnin",
-   "quest": 96652
-  },
-  {
    "op": "accept",
    "quest": 96604
   },
@@ -368,10 +344,6 @@
   {
    "op": "turnin",
    "quest": 830
-  },
-  {
-   "op": "turnin",
-   "quest": 96821
   },
   {
    "op": "accept",
@@ -463,6 +435,10 @@
   },
   {
    "op": "complete",
+   "quest": 97225
+  },
+  {
+   "op": "complete",
    "quest": 826
   },
   {
@@ -492,6 +468,10 @@
   {
    "op": "complete",
    "quest": 826
+  },
+  {
+   "op": "complete",
+   "quest": 97225
   },
   {
    "op": "complete",
@@ -508,6 +488,10 @@
   {
    "op": "turnin",
    "quest": 826
+  },
+  {
+   "op": "turnin",
+   "quest": 97225
   },
   {
    "op": "turnin",
@@ -835,10 +819,6 @@
   },
   {
    "op": "accept",
-   "quest": 3221
-  },
-  {
-   "op": "accept",
    "quest": 437
   },
   {
@@ -850,10 +830,6 @@
    "quest": 445
   },
   {
-   "op": "turnin",
-   "quest": 3221
-  },
-  {
    "op": "accept",
    "quest": 447
   },
@@ -866,10 +842,6 @@
    "quest": 429
   },
   {
-   "op": "turnin",
-   "quest": 3221
-  },
-  {
    "op": "accept",
    "quest": 447
   },
@@ -1040,14 +1012,6 @@
   {
    "op": "turnin",
    "quest": 481
-  },
-  {
-   "op": "accept",
-   "quest": 482
-  },
-  {
-   "op": "turnin",
-   "quest": 482
   },
   {
    "op": "accept",

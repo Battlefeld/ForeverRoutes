@@ -8,13 +8,13 @@
  "target": 20,
  "winner": "guide",
  "hours": {
-  "guide": 15.2,
-  "guideImproved": 13.13,
-  "plan": 14.16,
-  "planImproved": 14.13
+  "guide": 15.37,
+  "guideImproved": 13.3,
+  "plan": 13.72,
+  "planImproved": 14.06
  },
  "quests": 126,
- "killProfile": "MythicSim warrior dps_battle (gear starter weapon, talents none; below the table: default (uncalibrated))",
+ "killProfile": "MythicSim warrior dps_battle (gear starter weapon, talents none; outside the table: default (uncalibrated) scaled to the table's edge)",
  "assumedDropSteps": 3,
  "basis": "RestedXP Forever guides (github.com/RestedXP/RXPGuides, CC BY-NC-SA 4.0), improved by ForeverRoutes",
  "events": [
@@ -1463,16 +1463,8 @@
    "quest": 478
   },
   {
-   "op": "accept",
-   "quest": 481
-  },
-  {
    "op": "turnin",
    "quest": 424
-  },
-  {
-   "op": "turnin",
-   "quest": 481
   },
   {
    "op": "turnin",
@@ -1493,6 +1485,18 @@
   {
    "op": "accept",
    "quest": 840
+  },
+  {
+   "op": "accept",
+   "quest": 99048
+  },
+  {
+   "op": "complete",
+   "quest": 99048
+  },
+  {
+   "op": "turnin",
+   "quest": 99048
   },
   {
    "op": "accept",
