@@ -32,6 +32,9 @@ type GuideMiss struct {
 // FollowGuide walks the events of a guide in order: objectives are worked when the guide completes or turns in a
 // quest, level steps are reached by grinding at the best spot nearby, and after the last event the character grinds to
 // the target level. Quests this character or the dataset cannot do are skipped and counted.
+// guideStartItem: the longest a guide follower farms the item that starts a quest.
+const guideStartItem = 1200.0
+
 func (w *World) FollowGuide(events []GuideEvent, target int) (*GuideResult, error) {
 	return w.followFrom(w.NewState(), events, target, math.Inf(1))
 }
@@ -87,6 +90,15 @@ func (w *World) followFrom(s *State, events []GuideEvent, target int, horizon fl
 		case "accept":
 			if s.Status[q.Index] == notTaken && w.Level(s) < q.MinLevel && q.MinLevel <= target {
 				grindTo(q.MinLevel) // a follower grinds to the level the next quest needs
+			}
+			if len(q.StartSources) > 0 && s.Status[q.Index] == notTaken && w.CanAccept(s, q) == nil {
+				// started by an item: a guide means "when it drops" (a rare's drop is luck), so a follower does not farm
+				// it longer than guideStartItem
+				c := s.clone()
+				if err := w.Apply(c, Action{Op: "accept", Quest: q.ID, At: w.startAt(s, q)}); err == nil && c.Time-s.Time > guideStartItem {
+					miss("cannot accept", fmt.Sprintf("its starting item takes %.0f min to farm", (c.Time-s.Time)/60))
+					continue
+				}
 			}
 			if s.Status[q.Index] != notTaken || w.CanAccept(s, q) != nil || !w.try(s, &acts, Action{Op: "accept", Quest: q.ID, At: w.startAt(s, q)}) {
 				detail := ""
