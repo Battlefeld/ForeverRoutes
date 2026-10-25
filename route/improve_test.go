@@ -3,6 +3,8 @@ package route
 import (
 	"testing"
 	"time"
+
+	"github.com/Battlefeld/ForeverRoutes/dataset"
 )
 
 // Improve never returns a guide slower than the one it starts from, and puts in a quest the guide passes by when
@@ -49,5 +51,54 @@ func TestEventsOfKeepsGrinding(t *testing.T) {
 		if got[i] != want[i] {
 			t.Fatalf("got %v, want %v", got, want)
 		}
+	}
+}
+
+// A required class quest (the warlock's imp) goes into a route that lacks it, and an improvement keeps it.
+func TestRequiredClassQuestsGoIn(t *testing.T) {
+	d := tiny()
+	giver := []dataset.Ref{{Kind: "npc", ID: StartNPC["Orc"]}}
+	d.Quests = append(d.Quests, dataset.Quest{ID: 1470, Name: "Piercing the Veil", Level: 2, MinLevel: 1, XP: 200, Classes: 256,
+		Start: giver, End: giver, Objectives: []dataset.Objective{{Kind: "kill", ID: 100, Count: 2}}})
+	w, err := NewWorld(d, Character{Race: "Orc", Class: "Warlock"}, Options{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	chains := w.ClassChains(5)
+	if len(chains) != 1 || chains[0].Tier != "required" || chains[0].Reward != "Wichtel" {
+		t.Fatalf("chains %+v", chains)
+	}
+	guide := []GuideEvent{{Op: "accept", Quest: 1}, {Op: "complete", Quest: 1}, {Op: "turnin", Quest: 1}}
+	events, _, err := w.Improve(guide, 3, 2*time.Second)
+	if err != nil {
+		t.Fatal(err)
+	}
+	found := false
+	for _, e := range events {
+		found = found || e.Quest == 1470 && e.Op == "turnin"
+	}
+	if !found {
+		t.Error("the imp quest must be in the route")
+	}
+	rep := w.ClassReport(events, 3)
+	if len(rep) != 1 || !rep[0].InRoute {
+		t.Errorf("report %+v", rep)
+	}
+}
+
+// A prerequisite of another race is none for this character.
+func TestOtherRacesPrerequisiteIgnored(t *testing.T) {
+	d := tiny()
+	giver := []dataset.Ref{{Kind: "npc", ID: StartNPC["Orc"]}}
+	d.Quests = append(d.Quests, dataset.Quest{ID: 60, Name: "Copied", Level: 1, MinLevel: 1, XP: 100, PreAll: []int{4}, Start: giver, End: giver})
+	w, err := NewWorld(d, Character{Race: "Orc", Class: "Warlock"}, Options{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if q := w.ByID[60]; q == nil || len(q.PreAll) != 0 {
+		t.Fatalf("quest 60: %v %s", q, w.Excluded[60])
+	}
+	if len(d.Quests[len(d.Quests)-1].PreAll) != 1 {
+		t.Error("the dataset itself must stay as it is")
 	}
 }

@@ -20,6 +20,7 @@ type bestReply struct {
 	Profile    string             `json:"killProfile"`
 	Assumed    int                `json:"assumedDropSteps"`
 	SearchSecs float64            `json:"searchSeconds"`
+	Class      []route.ClassCost  `json:"classQuests"` // what each class quest chain costs the route
 }
 
 // cmdImprove: the guide improved by local edits, our planned route improved the same way; the faster wins.
@@ -86,6 +87,7 @@ func cmdImprove(args []string) error {
 	} else {
 		rep.Winner, rep.Events, rep.Quests, rep.Profile, rep.Assumed = "guide", ge, g1.Quests, g1.Profile, g1.Assumed
 	}
+	rep.Class = w.ClassReport(rep.Events, *target)
 	fmt.Fprintf(os.Stderr, "%s %s: guide %.1f h -> %.1f h, plan %.1f h -> %.1f h, winner %s (%.0f s)\n", *race, *class,
 		rep.Hours["guide"], rep.Hours["guideImproved"], rep.Hours["plan"], rep.Hours["planImproved"], rep.Winner, rep.SearchSecs)
 	if *out == "" {

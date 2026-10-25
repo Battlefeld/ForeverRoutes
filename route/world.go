@@ -29,6 +29,8 @@ type Source struct {
 	Assumed bool
 	// Gather: the items lie at the site (a guide's places, no creature or object known): picked up like using objects
 	Gather bool
+	// Class: a class quest's creature: made for one character, fought alone also when the data calls it elite
+	Class bool
 }
 
 // Objective of a quest, resolved to the places that serve it.
@@ -65,31 +67,33 @@ type Farm struct {
 
 // World is the dataset seen by one character.
 type World struct {
-	Data      *dataset.Dataset
-	Char      Character
-	Faction   string
-	Opt       Options
-	Quests    []*Quest
-	ByID      map[int]*Quest
-	NPC       map[int]*dataset.NPC
-	Objects   map[int]*dataset.Object
-	Start     dataset.Point
-	Excluded  map[int]string // quest -> why this character cannot use it
-	Farms     []Farm
-	net       *network
-	walkGrids walks
-	deaths    *deaths
-	lifts     []dataset.Lift
-	danger    dangerMap
-	elites    dangerMap  // elite places: cell -> highest elite level
-	Dungeons  []*Dungeon // dungeons a route with dungeons may run (Options.Dungeons)
-	dungeonOf map[string]*Dungeon
-	landMemo  sync.Map // landKey -> landResult
-	landN     atomic.Int64
-	inns      []dataset.Point
-	siteKeys  int
-	siteMemo  map[*dataset.Point][]Site
-	maps      map[int]bool
+	Data           *dataset.Dataset
+	Char           Character
+	Faction        string
+	Opt            Options
+	Quests         []*Quest
+	ByID           map[int]*Quest
+	NPC            map[int]*dataset.NPC
+	Objects        map[int]*dataset.Object
+	Start          dataset.Point
+	Excluded       map[int]string // quest -> why this character cannot use it
+	Farms          []Farm
+	net            *network
+	walkGrids      walks
+	deaths         *deaths
+	lifts          []dataset.Lift
+	danger         dangerMap
+	elites         dangerMap    // elite places: cell -> highest elite level
+	Dungeons       []*Dungeon   // dungeons a route with dungeons may run (Options.Dungeons)
+	required       map[int]bool // quests of the required class chains (keepClassQuest), for requiredTarget
+	requiredTarget int
+	dungeonOf      map[string]*Dungeon
+	landMemo       sync.Map // landKey -> landResult
+	landN          atomic.Int64
+	inns           []dataset.Point
+	siteKeys       int
+	siteMemo       map[*dataset.Point][]Site
+	maps           map[int]bool
 }
 
 // NewWorld prepares the dataset for one character.
@@ -130,11 +134,24 @@ func NewWorld(d *dataset.Dataset, c Character, opt Options) (*World, error) {
 	w.buildNetwork()
 	w.maps = w.reachableMaps()
 	w.dungeons()
+	// a prerequisite of another race or class is not one for this character: Forever's versions of a quest for another
+	// side keep the original's (the Dwarf's Call of Fire names the Horde's)
+	other := map[int]bool{}
+	for i := range d.Quests {
+		if why := w.usable(&d.Quests[i], race, cls); why == "other race" || why == "other class" {
+			other[d.Quests[i].ID] = true
+		}
+	}
 	for i := range d.Quests {
 		q := &d.Quests[i]
 		if why := w.usable(q, race, cls); why != "" {
 			w.Excluded[q.ID] = why
 			continue
+		}
+		if hasAny(q.PreAll, other) || hasAny(q.PreAny, other) {
+			c := *q
+			c.PreAll, c.PreAny = dropIn(q.PreAll, other), dropIn(q.PreAny, other)
+			q = &c
 		}
 		var rq *Quest
 		var why string
@@ -211,8 +228,8 @@ func (w *World) usable(q *dataset.Quest, race, cls int) string {
 		return "other race"
 	case q.Classes != 0 && q.Classes&cls == 0:
 		return "other class"
-	case q.Repeatable:
-		return "repeatable"
+	case q.Repeatable && q.Classes == 0:
+		return "repeatable" // a class quest the data marks repeatable (its item can be had again) is done once
 	case q.Type == "dungeon" && w.Opt.Dungeons && q.Dungeon != "":
 		// a route with dungeons runs it
 	case q.Type != "":
@@ -277,7 +294,7 @@ func (w *World) resolve(q *dataset.Quest) (*Quest, string) {
 		if len(q.StartDrops) == 0 {
 			return nil, "start position unknown"
 		}
-		if rq.StartSources = w.soloSources(w.dropSources(q.StartDrops)); len(rq.StartSources) == 0 {
+		if rq.StartSources = w.soloSources(w.dropSources(q.StartDrops), q.Classes != 0); len(rq.StartSources) == 0 {
 			return nil, "start item: no reachable non-elite source"
 		}
 		rq.StartPos = rq.StartSources[0].Site.Center
@@ -325,13 +342,13 @@ func (w *World) resolve(q *dataset.Quest) (*Quest, string) {
 				}
 			}
 			ro.Sources = append(ro.Sources, w.dropSources(o.Drops)...)
-			if len(w.soloSources(ro.Sources)) == 0 && len(o.Places) > 0 {
+			if len(w.soloSources(ro.Sources, q.Classes != 0)) == 0 && len(o.Places) > 0 {
 				for _, st := range w.sites(o.Places) {
 					ro.Sources = append(ro.Sources, Source{Chance: 1, Site: st, Gather: true})
 				}
 			}
 		}
-		ro.Sources = w.soloSources(ro.Sources)
+		ro.Sources = w.soloSources(ro.Sources, q.Classes != 0)
 		if len(ro.Sources) == 0 {
 			return nil, fmt.Sprintf("objective %s %d: no reachable non-elite source", o.Kind, o.ID)
 		}
@@ -364,15 +381,18 @@ func (w *World) dropSources(drops []dataset.Drop) []Source {
 }
 
 // usable keeps the sources a solo character can use: placed, with a chance, not elite.
-func (w *World) soloSources(src []Source) []Source {
+func (w *World) soloSources(src []Source, class bool) []Source {
 	var kept []Source
 	for _, s := range src {
 		if s.Site.Spawns == 0 || s.Chance <= 0 {
 			continue
 		}
 		// elites are for groups; a warlock's or hunter's pet tanks a plain elite (not a rare elite or a boss) of the
-		// character's level or below (tooDangerous checks the level when it is fought)
-		if !s.Talk && s.NPC != nil && (s.NPC.Rank == 1 && !w.Opt.SoloElites || s.NPC.Rank == 2 || s.NPC.Rank == 3) {
+		// character's level or below (tooDangerous checks the level when it is fought). A class quest's plain elite is
+		// made to be fought alone (Call of Fire's last spirit, the Voidwalker to bind).
+		if class && !s.Talk && s.NPC != nil && s.NPC.Rank == 1 {
+			s.Class = true
+		} else if !s.Talk && s.NPC != nil && (s.NPC.Rank == 1 && !w.Opt.SoloElites || s.NPC.Rank == 2 || s.NPC.Rank == 3) {
 			continue
 		}
 		kept = append(kept, s)
@@ -500,4 +520,23 @@ func (w *World) farms() {
 		}
 	}
 	sort.SliceStable(w.Farms, func(a, b int) bool { return w.Farms[a].NPC.ID < w.Farms[b].NPC.ID })
+}
+
+func hasAny(l []int, set map[int]bool) bool {
+	for _, x := range l {
+		if set[x] {
+			return true
+		}
+	}
+	return false
+}
+
+func dropIn(l []int, set map[int]bool) []int {
+	var out []int
+	for _, x := range l {
+		if !set[x] {
+			out = append(out, x)
+		}
+	}
+	return out
 }

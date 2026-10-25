@@ -20,6 +20,7 @@ type GuideResult struct {
 	Grind   float64        `json:"grindSeconds"` // grinding the guide asks for (level steps) and to the target level
 	Skipped map[string]int `json:"skipped"`      // events that could not be followed, by reason
 	Missed  []GuideMiss    `json:"missed"`       // each skipped quest event with its reason
+	levels  []int          // the character's level as each event came up (the target after the walk ended)
 }
 
 // GuideMiss is a guide event that could not be followed.
@@ -66,10 +67,15 @@ func (w *World) followFrom(s *State, events []GuideEvent, target int, horizon fl
 			s = m.state
 		}
 	}
-	for _, e := range events {
+	res.levels = make([]int, len(events))
+	for i := range res.levels {
+		res.levels[i] = target
+	}
+	for i, e := range events {
 		if w.Level(s) >= target || s.Time-s0.Time >= horizon {
 			break
 		}
+		res.levels[i] = w.Level(s)
 		if q := w.ByID[e.Quest]; q != nil && s0.Status[q.Index] == done {
 			continue // done before this walk began
 		}
@@ -148,7 +154,7 @@ func (w *World) followFrom(s *State, events []GuideEvent, target int, horizon fl
 				// the guide comes too early for this character (a melee character fights at most one level up): it
 				// levels first, as a route that reaches the area later
 				n := w.levelFor(s, q, target)
-				if n == 0 || n > w.Level(s)+guideLevelUp {
+				if n == 0 || (n > w.Level(s)+guideLevelUp && !w.keepClassQuest(q.ID, target)) { // a required class quest is always done
 					miss(e.Op+": objective not possible", "")
 					continue
 				}

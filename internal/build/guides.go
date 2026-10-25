@@ -2,6 +2,7 @@ package build
 
 import (
 	"math"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -308,4 +309,97 @@ func dedupePoints(ps []dataset.Point) []dataset.Point {
 		}
 	}
 	return thin(out, 24)
+}
+
+// breadcrumbPrereqs: a breadcrumb leads to its quest and is not needed for it, though the client's data lists some as
+// prerequisites (The New Horde for Cutting Teeth, the three capitals' rogue quests for Redridge Rendezvous, The
+// Slaughtered Lamb for Surena Caledon). cmangos names them (BreadcrumbForQuestId).
+func (b *builder) breadcrumbPrereqs() {
+	leads := map[int][]int{}
+	for _, q := range b.out {
+		if q.Breadcrumb > 0 {
+			leads[q.Breadcrumb] = append(leads[q.Breadcrumb], q.ID)
+		}
+	}
+	for i := range b.out {
+		q := &b.out[i]
+		for _, bc := range leads[q.ID] {
+			if slices.Contains(q.PreAll, bc) || slices.Contains(q.PreAny, bc) {
+				q.PreAll, q.PreAny = without(q.PreAll, bc), without(q.PreAny, bc)
+				b.stats["prereqs_breadcrumbs_dropped"]++
+			}
+		}
+	}
+}
+
+// rxpPrereqs takes out the prerequisites RestedXP's Forever guides show are not needed (trusted for levels 1-20): a
+// guide takes the quest while the prerequisite is still in its log, or no guide ever hands the prerequisite in. Class
+// quests keep theirs, also as prerequisites: the guides leave many class quests out.
+func (b *builder) rxpPrereqs() {
+	if len(b.rxpOrder) == 0 {
+		return
+	}
+	accepted, turned := map[int]bool{}, map[int]bool{}
+	for _, steps := range b.rxpOrder {
+		for _, st := range steps {
+			if st.Op == "accept" {
+				accepted[st.Quest] = true
+			} else {
+				turned[st.Quest] = true
+			}
+		}
+	}
+	class := map[int]bool{}
+	for _, q := range b.out {
+		class[q.ID] = q.Classes != 0
+	}
+	// open: a guide takes y (its first time in that guide) while x is taken and not handed in
+	open := func(y, x int) bool {
+		for _, name := range sortedFiles(b.rxpOrder) {
+			taken := false
+			for _, st := range b.rxpOrder[name] {
+				if st.Quest == x {
+					taken = st.Op == "accept"
+				} else if st.Quest == y && st.Op == "accept" {
+					if taken {
+						return true
+					}
+					break
+				}
+			}
+		}
+		return false
+	}
+	for i := range b.out {
+		q := &b.out[i]
+		if q.Classes != 0 || !accepted[q.ID] || len(q.PreAll)+len(q.PreAny) == 0 {
+			continue
+		}
+		needless := func(x int) bool { return !class[x] && (!turned[x] || open(q.ID, x)) }
+		var all, anyOf []int
+		for _, x := range q.PreAll {
+			if !needless(x) {
+				all = append(all, x)
+			}
+		}
+		for _, x := range q.PreAny {
+			if !needless(x) {
+				anyOf = append(anyOf, x)
+			}
+		}
+		if len(all) != len(q.PreAll) || len(anyOf) != len(q.PreAny) {
+			q.PreAll, q.PreAny = all, anyOf
+			q.Sources["pre"] = "RestedXP Forever guides (taken without it)"
+			b.stats["prereqs_dropped_by_rxp_order"]++
+		}
+	}
+}
+
+func sortedFiles(m map[string][]guides.OrderStep) []string {
+	out := make([]string, 0, len(m))
+	for k := range m {
+		out = append(out, k)
+	}
+	sort.Strings(out)
+	return out
 }

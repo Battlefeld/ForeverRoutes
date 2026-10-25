@@ -535,3 +535,39 @@ func RXPQuests(files map[string]string) map[int]*QuestSteps {
 	}
 	return out
 }
+
+// OrderStep is a quest step of a guide file: accept or turnin.
+type OrderStep struct {
+	Op    string
+	Quest int
+}
+
+// RXPOrder lists the accept and turnin steps of each RestedXP guide file in the guide's order (steps marked skip are
+// left out).
+func RXPOrder(files map[string]string) map[string][]OrderStep {
+	out := map[string][]OrderStep{}
+	for _, name := range sortedKeys(files) {
+		skip := false
+		for _, raw := range strings.Split(files[name], "\n") {
+			l := strings.TrimSpace(raw)
+			if m := rxpStepFilter.FindStringSubmatch(l); m != nil {
+				skip = strings.Contains(" "+m[1]+" ", " skip ")
+				continue
+			}
+			if skip {
+				continue
+			}
+			if k := strings.Index(l, " << "); k > 0 {
+				l = strings.TrimSpace(l[:k])
+			}
+			if m := rxpAccept.FindStringSubmatch(l); m != nil {
+				q, _ := strconv.Atoi(m[1])
+				out[name] = append(out[name], OrderStep{"accept", q})
+			} else if m := rxpTurnin.FindStringSubmatch(l); m != nil {
+				q, _ := strconv.Atoi(m[1])
+				out[name] = append(out[name], OrderStep{"turnin", q})
+			}
+		}
+	}
+	return out
+}

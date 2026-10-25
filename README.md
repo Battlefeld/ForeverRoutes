@@ -53,6 +53,20 @@ höchstens +1 sind (höhere Gegner kosten mehr Zeit je Kill, darum bevorzugt die
 ein Guide sie zu früh hin, levelt der Nachspieler vorher bis zu zwei Level, statt die Quest auszulassen; ob sich das
 lohnt, entscheidet das Verbessern (es kann die Quest samt Grinden weglassen).
 
+Klassenquests (`route/classquests.go`): Jede Route macht die Pflicht-Klassenquests samt Vorquests, auch wenn es länger
+dauert: Klassenbrief (Level 1–2), Wichtel und Leerwandler (Hexenmeister), Begleiter zähmen (Jäger), Bärengestalt
+(Druide), Erd- und Feuertotem (Schamane), Verteidigungshaltung (Krieger), Schlossknacken (Schurke). Von mehreren
+Versionen zählt die aus dem eigenen Startgebiet oder der eigenen Hauptstadt, sonst die nächstgelegene. Sie kommen
+innerhalb von zwei Leveln nach ihrem Mindestlevel in die Route, wo sie dem Questgeber am nächsten ist, und das Verbessern
+lässt sie nicht weg. Empfohlene (Waffen, Roben, Volkszauber der Priester) und sonstige Klassenquests sind Optionen. Die
+Routendatei nennt für jede Reihe unter `classQuests`, was sie die Route kostet (`minutes`; negativ: ihre XP machen die
+Route schneller). Klassenquest-Gegner zählen auch als Elite als solo machbar.
+
+Voraussetzungen: Ein Breadcrumb (cmangos `BreadcrumbForQuestId`) ist keine Voraussetzung, auch wenn die Client-Daten
+ihn so führen (Cutting Teeth, Redridge Rendezvous, Surena Caledon). Nimmt ein RestedXP-Forever-Guide eine Quest an,
+während die angebliche Voraussetzung noch offen ist, oder macht kein Guide sie je, entfällt sie (nicht bei
+Klassenquests). Eine Voraussetzung einer anderen Rasse zählt für den Charakter nicht.
+
 Es gibt je Volk und Klasse zwei Routen: **Solo ohne Dungeon** (`<volk>-<klasse>.json`, keine Dungeonquests) und **Solo mit Dungeon** (`<volk>-<klasse>-dungeons.json`). Mit `-dungeons` (bei `plan`, `improve`, `extend`, `next`) gehören Dungeon-Läufe zur Route. Ein Dungeon-Baustein nimmt die
 Dungeonquests an, die draußen vergeben werden und die der Lauf erledigt (nächstgelegene zuerst; unterwegs schon ab drei
 Stufen vor dem Dungeon, wenn der Geber nahe ist), läuft den Dungeon (dafür eine Gruppe) und gibt danach ab, wenn nötig

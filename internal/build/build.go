@@ -286,6 +286,7 @@ func Build(in Inputs) (*dataset.Dataset, error) {
 		b.rxpSkips = guides.RXPDeathskips(files)
 		b.rxpTargets = guides.RXPTargets(files)
 		b.rxpQuests = guides.RXPQuests(files)
+		b.rxpOrder = guides.RXPOrder(files)
 	}
 	if in.GuidesPolestar != "" {
 		files, err := guides.ReadDir(in.GuidesPolestar, ".guide")
@@ -340,6 +341,8 @@ func Build(in Inputs) (*dataset.Dataset, error) {
 		b.stats["guide_facts"] = len(facts)
 	}
 	b.quests()
+	b.breadcrumbPrereqs()
+	b.rxpPrereqs()
 	b.npcs()
 	b.objects()
 	b.guideSpawns()
@@ -451,6 +454,7 @@ type builder struct {
 	rxpSkips        []guides.Deathskip
 	rxpTargets      []guides.Sighting
 	rxpQuests       map[int]*guides.QuestSteps
+	rxpOrder        map[string][]guides.OrderStep
 	curatedDungeons []curatedDungeon
 	curatedSkips    []curatedSkip
 	gdx             *guideIndex

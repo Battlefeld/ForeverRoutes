@@ -88,6 +88,9 @@ func (w *World) dangerousAt(level int, src Source) bool {
 	if src.Talk {
 		return false
 	}
+	if src.Class {
+		return src.NPC != nil && mobLevel(src.NPC) > lvl // a class quest's creature: by its level only
+	}
 	if e := w.elites.at(src.Site.Center); e > 0 && !(w.Opt.SoloElites && e <= level) {
 		return true // among elites: not alone
 	}
