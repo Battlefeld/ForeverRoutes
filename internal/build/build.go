@@ -283,6 +283,7 @@ func Build(in Inputs) (*dataset.Dataset, error) {
 		}
 		facts = append(facts, guides.ParseRXP(files)...)
 		b.rxpSkips = guides.RXPDeathskips(files)
+		b.rxpTargets = guides.RXPTargets(files)
 	}
 	if in.GuidesPolestar != "" {
 		files, err := guides.ReadDir(in.GuidesPolestar, ".guide")
@@ -447,6 +448,7 @@ type builder struct {
 	egl             *eglink.Data
 	spf             *spf.Data
 	rxpSkips        []guides.Deathskip
+	rxpTargets      []guides.Sighting
 	curatedDungeons []curatedDungeon
 	curatedSkips    []curatedSkip
 	gdx             *guideIndex

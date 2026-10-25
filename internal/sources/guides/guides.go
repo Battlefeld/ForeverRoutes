@@ -423,3 +423,50 @@ func nearGoto(lines []string, i, dir int) (Place, bool) {
 	}
 	return Place{}, false
 }
+
+// Sighting is where a guide has the player talk to an NPC: a step's ".target Name::ID" with the step's place.
+type Sighting struct {
+	NPC   int   `json:"npc"`
+	Place Place `json:"place"`
+	File  string
+	Line  int
+}
+
+var rxpTarget = regexp.MustCompile(`^\.target\s+[^:]*::(\d+)`)
+
+// RXPTargets reads where RestedXP guides send the player to an NPC named with its id: the last ".goto" of the step
+// before the ".target" line (the place the step talks at). Steps marked skip are left out.
+func RXPTargets(files map[string]string) []Sighting {
+	var out []Sighting
+	for _, name := range sortedKeys(files) {
+		var place *Place
+		skip := false
+		for i, raw := range strings.Split(files[name], "\n") {
+			l := strings.TrimSpace(raw)
+			if m := rxpStepFilter.FindStringSubmatch(l); m != nil || l == "step" {
+				place, skip = nil, m != nil && strings.Contains(" "+m[1]+" ", " skip ")
+				continue
+			}
+			if j := strings.Index(l, " << "); j > 0 {
+				l = strings.TrimSpace(l[:j])
+			}
+			if m := rxpGoto.FindStringSubmatch(l); m != nil {
+				ui, _ := strconv.Atoi(m[1])
+				a, _ := strconv.ParseFloat(m[3], 64)
+				b, _ := strconv.ParseFloat(m[4], 64)
+				p := Place{UIMap: ui, X: a, Y: b}
+				if m[2] != "" {
+					inst, _ := strconv.Atoi(m[2])
+					p = Place{World: true, Map: inst, UIMap: ui, X: b, Y: a}
+				}
+				place = &p
+				continue
+			}
+			if m := rxpTarget.FindStringSubmatch(l); m != nil && place != nil && !skip {
+				id, _ := strconv.Atoi(m[1])
+				out = append(out, Sighting{NPC: id, Place: *place, File: name, Line: i + 1})
+			}
+		}
+	}
+	return out
+}

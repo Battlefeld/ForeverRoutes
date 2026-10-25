@@ -29,7 +29,7 @@ no source places) are left out of every route alike.
 | Dwarf | Paladin | 17.7 | 15.7 | 16.6 | 16.2 | guide |
 | Dwarf | Priest | 19.1 | 18.1 | 17.5 | 17.4 | plan |
 | Dwarf | Rogue | 16.1 | 14.8 | 15.1 | 14.8 | guide |
-| Dwarf | Shaman | 19.9 | 18.4 | 15.6 | 16.1 | plan |
+| Dwarf | Shaman | 19.2 | 17.6 | 15.7 | 15.7 | plan |
 | Dwarf | Warrior | 15.7 | 14.5 | 14.5 | 13.9 | plan |
 | Gnome | Mage | 20.0 | 18.8 | 17.1 | 16.7 | plan |
 | Gnome | Priest | 19.1 | 17.6 | 17.6 | 17.3 | guide |
@@ -100,7 +100,7 @@ Average over the 56 combinations: 13.25 h to level 20 (solo 15.33 h).
 | Dwarf | Paladin | 13.7 | plan |
 | Dwarf | Priest | 14.3 | plan |
 | Dwarf | Rogue | 12.7 | plan |
-| Dwarf | Shaman | 14.6 | plan |
+| Dwarf | Shaman | 13.9 | plan |
 | Dwarf | Warrior | 12.4 | plan |
 | Gnome | Mage | 15.2 | plan |
 | Gnome | Priest | 15.5 | plan |

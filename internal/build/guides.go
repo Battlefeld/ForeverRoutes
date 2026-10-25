@@ -4,6 +4,7 @@ import (
 	"math"
 	"sort"
 	"strconv"
+	"strings"
 
 	"github.com/Battlefeld/ForeverRoutes/dataset"
 	"github.com/Battlefeld/ForeverRoutes/internal/sources/guides"
@@ -239,12 +240,32 @@ func (b *builder) guideItem(out *dataset.Quest, o *dataset.Objective, start bool
 
 // guideSpawns: creatures and objects a quest needs that no source places get the guides' places for that objective.
 func (b *builder) guideSpawns() {
-	if b.gdx == nil {
-		return
-	}
 	npcs := map[int]*dataset.NPC{}
 	for i := range b.npcOut {
 		npcs[b.npcOut[i].ID] = &b.npcOut[i]
+	}
+	// RestedXP names the NPC a step talks to with its id: where it stands, when no source places it there (an NPC
+	// Forever put in one more start zone: the Dwarf shamans' earth spirit in Coldridge Valley)
+	for _, t := range b.rxpTargets {
+		n := npcs[t.NPC]
+		pts := b.guidePoints([]guides.Place{t.Place})
+		if n == nil || len(pts) == 0 || (pts[0].Map != 0 && pts[0].Map != 1) {
+			continue
+		}
+		near := false
+		for _, s := range n.Spawns {
+			near = near || (s.Map == pts[0].Map && math.Hypot(s.X-pts[0].X, s.Y-pts[0].Y) <= 300)
+		}
+		if !near {
+			n.Spawns = append(n.Spawns, pts[0])
+			if !strings.Contains(n.Source, "rxp_target") {
+				n.Source += "+rxp_target"
+			}
+			b.stats["npc_spawns_from_rxp_targets"]++
+		}
+	}
+	if b.gdx == nil {
+		return
 	}
 	objs := map[int]*dataset.Object{}
 	for i := range b.objOut {
