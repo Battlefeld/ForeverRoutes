@@ -22,6 +22,8 @@ const (
 	groupShare = 1.4 / 5
 	// runClear: the share of the instance's trash a usual quest run kills.
 	runClear = 0.6
+	// groupSearch: finding a group for the run, before it starts (seconds)
+	groupSearch = 600.0
 	// elitesPerMinute: elites per minute of a usual run where the instance's spawns are not known (Ragefire 6.6,
 	// Shadowfang 3.3, Wailing Caverns 3.4, Deadmines 2.7, Blackfathom 4.8 in cmangos)
 	elitesPerMinute = 3.5
@@ -151,7 +153,7 @@ func (w *World) run(s *State, d *Dungeon) error {
 		return err
 	}
 	l := w.Level(s)
-	secs := d.Minutes * 60
+	secs := d.Minutes*60 + groupSearch
 	s.Time += secs
 	s.Combat += secs
 	s.XP += w.killXP(d, l)
