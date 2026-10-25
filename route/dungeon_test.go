@@ -116,3 +116,28 @@ func TestPlanRunsAWorthwhileDungeon(t *testing.T) {
 		t.Error("3000 quest XP in 20 minutes must be worth a run")
 	}
 }
+
+func TestFollowerDoesNotGrindForADungeonQuest(t *testing.T) {
+	d := tinyDungeon()
+	for i := range d.Quests {
+		if d.Quests[i].ID == 50 {
+			d.Quests[i].MinLevel = 4
+		}
+	}
+	w, err := NewWorld(d, Character{Race: "Orc", Class: "Warlock"}, Options{Dungeons: true})
+	if err != nil {
+		t.Fatal(err)
+	}
+	r, err := w.FollowGuide([]GuideEvent{{Op: "accept", Quest: 50}, {Op: "accept", Quest: 1}}, 5)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, st := range r.Steps {
+		if st.Op == "accept" && st.Quest == 50 {
+			t.Error("a dungeon quest above the level is not taken")
+		}
+	}
+	if r.Skipped["cannot accept"] != 1 {
+		t.Errorf("skipped %v", r.Skipped)
+	}
+}

@@ -83,9 +83,13 @@ func (w *World) followFrom(s *State, events []GuideEvent, target int, horizon fl
 			if w.Level(s) < d.Min {
 				grindTo(d.Min)
 			}
+			// as the planner's dungeon block: its quests on the way, the run, the hand-ins on this continent
+			w.pickUpDungeonQuests(s, &acts, d)
 			if !w.try(s, &acts, Action{Op: "dungeon", Dungeon: d.Key, At: d.Entrance}) {
 				res.Skipped["dungeon run not possible"]++
+				continue
 			}
+			w.handInDungeonQuests(s, &acts, d)
 			continue
 		}
 		miss := func(reason, detail string) {
@@ -104,6 +108,11 @@ func (w *World) followFrom(s *State, events []GuideEvent, target int, horizon fl
 		switch e.Op {
 		case "accept":
 			if s.Status[q.Index] == notTaken && w.Level(s) < q.MinLevel && q.MinLevel <= target {
+				if q.Dungeon != nil {
+					// a dungeon quest is not worth grinding for: the dungeon block takes it on the way when its level is there
+					miss("cannot accept", fmt.Sprintf("dungeon quest from level %d", q.MinLevel))
+					continue
+				}
 				grindTo(q.MinLevel) // a follower grinds to the level the next quest needs
 			}
 			if len(q.StartSources) > 0 && s.Status[q.Index] == notTaken && w.CanAccept(s, q) == nil {

@@ -66,12 +66,22 @@ func cmdImprove(args []string) error {
 	if err != nil {
 		return err
 	}
+	if *group {
+		// with dungeons: the guide with dungeon runs put in competes with the planned route
+		if ge2, g2, err := w.Improve(w.WithDungeons(ge, *target), *target, *budget); err == nil && route.Runs(ge2) > 0 && g2.Level >= *target {
+			ge, g1 = ge2, g2
+		}
+	}
 	rep := bestReply{Character: w.Char, Target: *target, Hours: map[string]float64{"guide": g0.Seconds / 3600, "guideImproved": g1.Seconds / 3600,
 		"plan": plan.Seconds / 3600, "planImproved": p1.Seconds / 3600}, SearchSecs: time.Since(t0).Seconds()}
 	// a route that does not reach the target never wins
 	reached := func(r *route.GuideResult) bool { return r != nil && r.Level >= *target }
-	// with dungeons the planned route wins: the guide has no dungeon runs
-	if reached(p1) && (*group || !reached(g1) || p1.Seconds < g1.Seconds*(1-*margin)) {
+	// with dungeons the faster wins, as long as it runs a dungeon; without, the guide unless ours is clearly faster
+	planWins := reached(p1) && (!reached(g1) || p1.Seconds < g1.Seconds*(1-*margin))
+	if *group {
+		planWins = reached(p1) && route.Runs(pe) > 0 && (!reached(g1) || route.Runs(ge) == 0 || p1.Seconds <= g1.Seconds)
+	}
+	if planWins {
 		rep.Winner, rep.Events, rep.Quests, rep.Profile, rep.Assumed = "plan", pe, p1.Quests, p1.Profile, p1.Assumed
 	} else {
 		rep.Winner, rep.Events, rep.Quests, rep.Profile, rep.Assumed = "guide", ge, g1.Quests, g1.Profile, g1.Assumed

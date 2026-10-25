@@ -234,6 +234,17 @@ func (w *World) dungeonMacro(s0 *State, d *Dungeon) *macro {
 	}
 	s := s0.clone()
 	var acts []Action
+	w.pickUpDungeonQuests(s, &acts, d)
+	if !w.try(s, &acts, Action{Op: "dungeon", Dungeon: d.Key, At: d.Entrance}) {
+		return nil
+	}
+	w.handInDungeonQuests(s, &acts, d)
+	return w.finish(s0, s, acts, "dungeon")
+}
+
+// pickUpDungeonQuests takes the dungeon's quests that are given outside on its continent and that the run finishes,
+// nearest first, each within pickupReach of the last stop.
+func (w *World) pickUpDungeonQuests(s *State, acts *[]Action, d *Dungeon) {
 	for {
 		var next *Quest
 		bt := math.Inf(1)
@@ -245,15 +256,10 @@ func (w *World) dungeonMacro(s0 *State, d *Dungeon) *macro {
 				next, bt = q, t
 			}
 		}
-		if next == nil || !w.try(s, &acts, Action{Op: "accept", Quest: next.ID, At: next.StartPos}) {
-			break
+		if next == nil || !w.try(s, acts, Action{Op: "accept", Quest: next.ID, At: next.StartPos}) {
+			return
 		}
 	}
-	if !w.try(s, &acts, Action{Op: "dungeon", Dungeon: d.Key, At: d.Entrance}) {
-		return nil
-	}
-	w.handInDungeonQuests(s, &acts, d)
-	return w.finish(s0, s, acts, "dungeon")
 }
 
 // handInDungeonQuests turns in the finished dungeon quests on this continent, nearest first: this run's wherever they

@@ -43,7 +43,8 @@ func (w *World) Improve(events []GuideEvent, target int, budget time.Duration) (
 			}
 		}
 		for i := 0; i < len(cur) && time.Now().Before(deadline); i++ {
-			if cur[i].Op == "level" || cur[i].Op == "dungeon" {
+			if cur[i].Op == "level" || (cur[i].Op == "dungeon" && Runs(cur) > 1) {
+				// a route with dungeons keeps at least one run: whoever asks for dungeons runs the one that costs least
 				if try(append(append([]GuideEvent(nil), cur[:i]...), cur[i+1:]...)) {
 					improved = true
 					i--
@@ -78,6 +79,62 @@ func (w *World) Improve(events []GuideEvent, target int, budget time.Duration) (
 		}
 	}
 	return cur, best, nil
+}
+
+// WithDungeons puts dungeon runs into a route (a guide has none): each dungeon at the one of twenty places spread over
+// the route that brings it fastest to the target, when one does. When none does, the run that costs least goes in:
+// a route with dungeons runs at least one. A run takes the dungeon's quests on the way and hands them in after, as
+// the planner's dungeon block.
+func (w *World) WithDungeons(events []GuideEvent, target int) []GuideEvent {
+	best, err := w.FollowGuide(events, target)
+	if err != nil {
+		return events
+	}
+	cur := events
+	var least []GuideEvent
+	leastT := math.Inf(1)
+	for _, d := range w.Dungeons {
+		have := false
+		for _, e := range cur {
+			have = have || (e.Op == "dungeon" && e.Dungeon == d.Key)
+		}
+		if have || d.Min > target {
+			continue
+		}
+		var pick []GuideEvent
+		for k := 1; k <= 20; k++ {
+			i := len(cur) * k / 21
+			cand := append(append(append([]GuideEvent(nil), cur[:i]...), GuideEvent{Op: "dungeon", Dungeon: d.Key}), cur[i:]...)
+			r, err := w.FollowGuide(cand, target)
+			if err != nil || r.Level < target {
+				continue
+			}
+			if r.Seconds < best.Seconds-1 {
+				best, pick = r, cand
+			}
+			if r.Seconds < leastT {
+				least, leastT = cand, r.Seconds
+			}
+		}
+		if pick != nil {
+			cur = pick
+		}
+	}
+	if Runs(cur) == 0 && least != nil {
+		return least // no run made it faster: until then cur is the route given, least one run put into it
+	}
+	return cur
+}
+
+// Runs counts the dungeon runs of a route.
+func Runs(events []GuideEvent) int {
+	n := 0
+	for _, e := range events {
+		if e.Op == "dungeon" {
+			n++
+		}
+	}
+	return n
 }
 
 // keepClassQuest: a class quest a character takes by level 10.
@@ -156,7 +213,9 @@ func (w *World) closestStep(events []GuideEvent, p dataset.Point) (int, float64)
 	return bi, bd
 }
 
-// EventsOf turns a planned route into guide steps, so planned routes and guides are improved alike.
+// EventsOf turns a planned route into guide steps, so planned routes and guides are improved alike. The planner's
+// grinding becomes a level step (grind to the level it reached there): left out, the follower would do the next
+// quests a level lower and grind at the end.
 func EventsOf(steps []Step) []GuideEvent {
 	var out []GuideEvent
 	done := map[int]bool{}
@@ -171,6 +230,12 @@ func EventsOf(steps []Step) []GuideEvent {
 			}
 		case "dungeon":
 			out = append(out, GuideEvent{Op: "dungeon", Dungeon: s.Dungeon})
+		case "grind":
+			if n := len(out); n > 0 && out[n-1].Op == "level" {
+				out[n-1].Level = s.Level
+			} else {
+				out = append(out, GuideEvent{Op: "level", Level: s.Level})
+			}
 		}
 	}
 	return out

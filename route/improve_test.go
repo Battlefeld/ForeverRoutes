@@ -29,3 +29,25 @@ func TestImproveNeverSlower(t *testing.T) {
 		t.Error("a walked guide gives no steps back")
 	}
 }
+
+// The planner's grinding stays in the guide steps as a level step; back-to-back grinds are one step.
+func TestEventsOfKeepsGrinding(t *testing.T) {
+	steps := []Step{
+		{Action: Action{Op: "accept", Quest: 1}, Level: 3},
+		{Action: Action{Op: "grind"}, Level: 3},
+		{Action: Action{Op: "grind"}, Level: 4},
+		{Action: Action{Op: "work", Quest: 1}, Level: 4},
+		{Action: Action{Op: "work", Quest: 1}, Level: 4},
+		{Action: Action{Op: "turnin", Quest: 1}, Level: 5},
+	}
+	got := EventsOf(steps)
+	want := []GuideEvent{{Op: "accept", Quest: 1}, {Op: "level", Level: 4}, {Op: "complete", Quest: 1}, {Op: "turnin", Quest: 1}}
+	if len(got) != len(want) {
+		t.Fatalf("got %v", got)
+	}
+	for i := range want {
+		if got[i] != want[i] {
+			t.Fatalf("got %v, want %v", got, want)
+		}
+	}
+}
