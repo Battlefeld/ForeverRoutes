@@ -218,15 +218,40 @@ func (w *World) travel(s *State, a, b dataset.Point) (float64, int) {
 		}
 	}
 	if best > deathMinLeg && w.deaths != nil {
-		if d, _ := w.deathskip(s, a, b); d+deathMargin < best {
+		if d, _ := w.deathskip(s, a, b, best-deathMargin); d+deathMargin < best {
 			best, how = d, byDeath
 		}
 	}
 	return best, how
 }
 
-// overland is the fastest way without the hearthstone.
+// landKey: overland depends on the ends and the flight masters known.
+type landKey struct {
+	a, b  dataset.Point
+	known uint64
+}
+
+type landResult struct {
+	t   float64
+	how int
+}
+
+// overland is the fastest way without the hearthstone (remembered: the planner asks the same ways again and again).
 func (w *World) overland(s *State, a, b dataset.Point) (float64, int) {
+	k := landKey{a, b, s.Known}
+	if r, ok := w.landMemo.Load(k); ok {
+		return r.(landResult).t, r.(landResult).how
+	}
+	t, how := w.overlandFresh(s, a, b)
+	if w.landN.Add(1) > memoMax {
+		w.landMemo.Clear()
+		w.landN.Store(0)
+	}
+	w.landMemo.Store(k, landResult{t, how})
+	return t, how
+}
+
+func (w *World) overlandFresh(s *State, a, b dataset.Point) (float64, int) {
 	best := w.walk(a, b)
 	if w.net == nil || len(w.net.nodes) == 0 {
 		return best, byWalk

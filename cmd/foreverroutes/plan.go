@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime/pprof"
 	"time"
 
 	"github.com/Battlefeld/ForeverRoutes/dataset"
@@ -56,7 +57,17 @@ func cmdPlan(args []string) error {
 	seed := fs.Int64("seed", 1, "seed")
 	out := fs.String("out", "", "write the route (JSON) here")
 	group := fs.Bool("dungeons", false, "group route: dungeon runs with their quests are part of the route")
+	cpu := fs.String("cpuprofile", "", "write a CPU profile here")
 	fs.Parse(args)
+	if *cpu != "" {
+		f, err := os.Create(*cpu)
+		if err != nil {
+			return err
+		}
+		defer f.Close()
+		pprof.StartCPUProfile(f)
+		defer pprof.StopCPUProfile()
+	}
 	w, err := loadWorld(*path, *race, *class, *faction, *profile, *group)
 	if err != nil {
 		return err

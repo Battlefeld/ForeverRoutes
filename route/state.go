@@ -102,7 +102,7 @@ func (w *World) move(s *State, to dataset.Point) error {
 		from = s.Bind
 		s.via = "hearth"
 	case byDeath:
-		if _, g, die := w.deathskipAt(s, from, to); g >= 0 {
+		if _, g, die := w.deathskipAt(s, from, to, math.Inf(1)); g >= 0 {
 			from = w.deaths.graves[g].At
 			s.via = "deathskip: " + w.deaths.graves[g].Name
 			s.viaAt = &die

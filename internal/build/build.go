@@ -38,7 +38,7 @@ type Inputs struct {
 	WarcraftDB       string // optional overlay of Forever client quest facts
 	WCLBox           string // optional overlay of item sources from WCLBox (internal/sources/wclbox)
 	ForeverChanges   string // optional overlay of quest summaries from ForeverChanges (internal/sources/foreverchanges)
-	MaxQuestLevel    int    // quests above this level are left out (0 = 35)
+	MaxQuestLevel    int    // quests above this level are left out (0 = 45: routes to 40)
 	Polestar         string // optional folder with Polestar's forever-db tables (internal/sources/polestar)
 	PolestarRevision string
 	// optional guide folders (internal/sources/guides): RestedXP's Forever guides and Polestar's
@@ -230,7 +230,7 @@ func readMaybeGzip(path string) ([]byte, error) {
 // Build makes the dataset.
 func Build(in Inputs) (*dataset.Dataset, error) {
 	if in.MaxQuestLevel == 0 {
-		in.MaxQuestLevel = 35
+		in.MaxQuestLevel = 45
 	}
 	raw, err := readMaybeGzip(in.Merged)
 	if err != nil {
@@ -470,6 +470,10 @@ func (b *builder) levelXP() []int {
 	}
 	if len(out) < 30 {
 		return xp.ClassicLevelXP
+	}
+	// the table ends where the Forever beta's level cap did; above it the Classic values (the same up to there)
+	if len(out) < len(xp.ClassicLevelXP) {
+		out = append(out, xp.ClassicLevelXP[len(out):]...)
 	}
 	return out
 }

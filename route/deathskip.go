@@ -3,6 +3,8 @@ package route
 import (
 	"math"
 	"strings"
+	"sync"
+	"sync/atomic"
 
 	"github.com/Battlefeld/ForeverRoutes/dataset"
 )
@@ -27,7 +29,24 @@ type deaths struct {
 	grave  map[[3]int][2]int32 // map, i, j -> graveyard index + 1 for Alliance, Horde
 	graves []dataset.Node
 	known  []dataset.Deathskip // the guides' deathskips this character may use
+	memo   sync.Map            // skipKey -> skipResult: the planner asks the same ways again and again
+	memoN  atomic.Int64
 }
+
+type skipKey struct {
+	a, b  dataset.Point
+	known uint64 // flight masters known (the way on from the graveyard)
+	level int    // resurrection sickness
+}
+
+type skipResult struct {
+	t  float64
+	g  int
+	at dataset.Point
+}
+
+// memoMax bounds the memo; it is cleared when full.
+const memoMax = 1 << 21
 
 func newDeaths(t dataset.Travel, char Character, faction string) *deaths {
 	if t.Deaths == nil || len(t.Graveyards) == 0 {
@@ -55,13 +74,24 @@ func sickness(level int) float64 {
 }
 
 // deathskip is the fastest deathskip from a to b: its time and the graveyard (-1: none).
-func (w *World) deathskip(s *State, a, b dataset.Point) (float64, int) {
-	t, g, _ := w.deathskipAt(s, a, b)
+func (w *World) deathskip(s *State, a, b dataset.Point, limit float64) (float64, int) {
+	d := w.deaths
+	k := skipKey{a: a, b: b, known: s.Known, level: w.Level(s)}
+	if r, ok := d.memo.Load(k); ok {
+		return r.(skipResult).t, r.(skipResult).g
+	}
+	t, g, at := w.deathskipAt(s, a, b, math.Inf(1))
+	if d.memoN.Add(1) > memoMax {
+		d.memo.Clear()
+		d.memoN.Store(0)
+	}
+	d.memo.Store(k, skipResult{t, g, at})
 	return t, g
 }
 
-// deathskipAt is deathskip with the place to die.
-func (w *World) deathskipAt(s *State, a, b dataset.Point) (float64, int, dataset.Point) {
+// deathskipAt is deathskip with the place to die. Ways that cannot beat limit are not followed (the result is then
+// Inf or a time at or above limit).
+func (w *World) deathskipAt(s *State, a, b dataset.Point, limit float64) (float64, int, dataset.Point) {
 	d := w.deaths
 	if d == nil {
 		return math.Inf(1), -1, a
@@ -72,7 +102,7 @@ func (w *World) deathskipAt(s *State, a, b dataset.Point) (float64, int, dataset
 		side = 1
 	}
 	sick := sickness(w.Level(s))
-	best, bestG := math.Inf(1), -1
+	best, bestG := limit, -1
 	tried := map[int32]bool{}
 	ci, cj := int(math.Floor(a.X/d.cell)), int(math.Floor(a.Y/d.cell))
 	try := func(g int32, die float64, where dataset.Point) {
@@ -81,7 +111,7 @@ func (w *World) deathskipAt(s *State, a, b dataset.Point) (float64, int, dataset
 		}
 		tried[g] = true
 		gp := d.graves[g-1].At
-		if gp.Map != b.Map {
+		if gp.Map != b.Map || die+deathSecs >= best {
 			return
 		}
 		after, _ := w.overland(s, gp, b)
@@ -94,15 +124,18 @@ func (w *World) deathskipAt(s *State, a, b dataset.Point) (float64, int, dataset
 	}
 	for di := -deathReach; di <= deathReach; di++ {
 		for dj := -deathReach; dj <= deathReach; dj++ {
-			if gs, ok := d.grave[[3]int{a.Map, ci + di, cj + dj}]; ok && !tried[gs[side]] {
+			if gs, ok := d.grave[[3]int{a.Map, ci + di, cj + dj}]; ok && gs[side] > 0 && !tried[gs[side]] {
 				centre := dataset.Point{Map: a.Map, X: (float64(ci+di) + 0.5) * d.cell, Y: (float64(cj+dj) + 0.5) * d.cell}
+				if distance(a, centre)/w.Opt.RunSpeed+deathSecs >= best {
+					continue // walking there alone takes longer than the best way
+				}
 				try(gs[side], w.walk(a, centre), centre)
 			}
 		}
 	}
 	// the guides' deathskips: walk to where they die
 	for _, k := range d.known {
-		if k.At.Map != a.Map || d.graves[k.Grave].At.Map != b.Map {
+		if k.At.Map != a.Map || d.graves[k.Grave].At.Map != b.Map || distance(a, k.At)/w.Opt.RunSpeed+deathSecs >= best {
 			continue
 		}
 		die := w.walk(a, k.At)
@@ -114,6 +147,9 @@ func (w *World) deathskipAt(s *State, a, b dataset.Point) (float64, int, dataset
 		if t := die + deathSecs + after + math.Max(0, sick-after); t < best {
 			best, bestG, at = t, k.Grave, k.At
 		}
+	}
+	if bestG < 0 {
+		return math.Inf(1), -1, a
 	}
 	return best, bestG, at
 }

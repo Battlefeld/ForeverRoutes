@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"math"
 	"sort"
+	"sync"
+	"sync/atomic"
 
 	"github.com/Battlefeld/ForeverRoutes/dataset"
 )
@@ -80,6 +82,8 @@ type World struct {
 	danger    dangerMap
 	Dungeons  []*Dungeon // dungeons a group route may run (Options.Dungeons)
 	dungeonOf map[string]*Dungeon
+	landMemo  sync.Map // landKey -> landResult
+	landN     atomic.Int64
 	inns      []dataset.Point
 	siteKeys  int
 	siteMemo  map[*dataset.Point][]Site
