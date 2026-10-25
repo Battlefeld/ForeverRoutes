@@ -318,7 +318,11 @@ func (w *World) resolve(q *dataset.Quest) (*Quest, string) {
 				ro.Sources = append(ro.Sources, Source{NPC: n, Chance: 1, Site: Site{Center: nearest(n.Spawns, w.Start), Spawns: 1}, Talk: true})
 			}
 		case "kill":
-			if n := w.NPC[o.ID]; n != nil && len(n.Spawns) > 0 {
+			if n := w.NPC[o.ID]; n != nil && len(n.Spawns) > 0 && q.Classes != 0 && (n.MaxLevel == 0 || n.MaxLevel >= q.Level+10) {
+				// a class quest's creature without a level or far above the quest is a spirit spoken to (the Great Bear
+				// Spirit, Lunaclaw's spirit): the credit comes from talking
+				ro.Sources = append(ro.Sources, Source{NPC: n, Chance: 1, Site: Site{Center: nearest(n.Spawns, w.Start), Spawns: 1}, Talk: true})
+			} else if n != nil && len(n.Spawns) > 0 {
 				for _, st := range w.sites(n.Spawns) {
 					ro.Sources = append(ro.Sources, Source{NPC: n, Chance: 1, Site: st})
 				}
@@ -507,7 +511,9 @@ func siteOf(group []dataset.Point) Site {
 func (w *World) farms() {
 	for i := range w.Data.NPCs {
 		n := &w.Data.NPCs[i]
-		if n.Rank != 0 || n.HP <= 0 || n.MaxLevel < 1 || n.MaxLevel > 40 || len(n.Spawns) < 6 {
+		// a creature without health in the data (Forever's own, the Skyborne's isle) takes the typical health of its
+		// level (KillSeconds)
+		if n.Rank != 0 || n.MaxLevel < 1 || n.MaxLevel > 40 || len(n.Spawns) < 6 {
 			continue
 		}
 		if n.Hostile != "" && n.Hostile != "-" && n.Hostile != w.Faction {

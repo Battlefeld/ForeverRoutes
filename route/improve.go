@@ -210,11 +210,80 @@ const classWindow = 2
 // chain after chain in order: each after its prerequisites, within classWindow levels of when it can be taken, where
 // the route comes closest to its giver. Where the route never has the level, at its end.
 func (w *World) withClassQuests(events []GuideEvent, target int) []GuideEvent {
-	return w.withQuests(events, w.classQuests(target), target)
+	out := events
+	for _, c := range w.ClassChains(target) {
+		if c.Tier != "required" {
+			continue
+		}
+		if r, err := w.FollowGuide(out, target); err == nil && handsIn(r, c.Goal.ID) {
+			continue // the route does it already
+		}
+		// the chain's class quests taken out and put in again whole, in order (a guide may do part of it, or out of
+		// order); where that does not finish it before the target, each part at the first place it can be taken
+		class := map[int]bool{}
+		for _, q := range c.Quests {
+			class[q.ID] = q.Classes != 0
+		}
+		rest := without(out, func(e GuideEvent) bool { return class[e.Quest] })
+		cand := w.withQuestsIn(rest, c.Quests, target, classWindow)
+		if r, err := w.FollowGuide(cand, target); err != nil || !handsIn(r, c.Goal.ID) {
+			if early := w.withQuestsIn(rest, c.Quests, target, 0); early != nil {
+				if r, err := w.FollowGuide(early, target); err == nil && handsIn(r, c.Goal.ID) {
+					cand = early
+				} else {
+					// the whole chain in one piece, from the step that reaches its level backwards
+					cand = w.chainInOnePiece(rest, c, target, cand)
+				}
+			}
+		}
+		out = cand
+	}
+	return out
+}
+
+// chainInOnePiece puts a class chain into the route in one piece at the latest place, from where the route reaches the
+// chain's level backwards, that hands its last quest in; fallback when there is none.
+func (w *World) chainInOnePiece(events []GuideEvent, c ClassChain, target int, fallback []GuideEvent) []GuideEvent {
+	var block []GuideEvent
+	for _, q := range c.Quests {
+		if q.Classes != 0 {
+			block = append(block, GuideEvent{Op: "accept", Quest: q.ID}, GuideEvent{Op: "complete", Quest: q.ID}, GuideEvent{Op: "turnin", Quest: q.ID})
+		}
+	}
+	levels := w.eventLevels(events, target)
+	start := len(events)
+	for j, l := range levels {
+		if l >= target {
+			start = j
+			break
+		}
+	}
+	for p, tries := start, 0; p >= 0 && tries < 40; p, tries = p-3, tries+1 {
+		cand := append(append(append([]GuideEvent(nil), events[:p]...), block...), events[p:]...)
+		if r, err := w.FollowGuide(cand, target); err == nil && handsIn(r, c.Goal.ID) {
+			return cand
+		}
+	}
+	return fallback
+}
+
+// handsIn: the walked route hands in the quest.
+func handsIn(r *GuideResult, id int) bool {
+	for _, st := range r.Steps {
+		if st.Op == "turnin" && st.Quest == id {
+			return true
+		}
+	}
+	return false
 }
 
 // withQuests puts in the given quests the route lacks, as withClassQuests.
 func (w *World) withQuests(events []GuideEvent, quests []*Quest, target int) []GuideEvent {
+	return w.withQuestsIn(events, quests, target, classWindow)
+}
+
+// withQuestsIn: withQuests, each quest within window levels of when it can be taken.
+func (w *World) withQuestsIn(events []GuideEvent, quests []*Quest, target, window int) []GuideEvent {
 	in := map[int]bool{}
 	for _, q := range questsOf(events) {
 		in[q] = true
@@ -256,10 +325,19 @@ func (w *World) withQuests(events []GuideEvent, quests []*Quest, target int) []G
 				}
 			}
 		}
-		// within classWindow levels of when it can be taken, where the route comes closest to its giver
-		at := len(out) - 1
-		lo := -1
+		// within classWindow levels of when it can be taken, where the route comes closest to its giver; where the
+		// route reaches its level only on the way to the target (a last grinding step), before that step: the follower
+		// levels for it there
+		cut := len(out)
 		for j := after + 1; j < len(out); j++ {
+			if levels[j] >= target {
+				cut = j
+				break
+			}
+		}
+		at := max(cut-2, after) // before the step that reaches the target
+		lo := -1
+		for j := after + 1; j < cut; j++ {
 			if levels[j] >= q.MinLevel {
 				lo = j
 				break
@@ -267,7 +345,7 @@ func (w *World) withQuests(events []GuideEvent, quests []*Quest, target int) []G
 		}
 		if lo >= 0 {
 			best := math.Inf(1)
-			for j := lo; j < len(out) && levels[j] <= levels[lo]+classWindow; j++ {
+			for j := lo; j < cut && levels[j] <= levels[lo]+window; j++ {
 				eq := w.ByID[out[j].Quest]
 				if eq == nil {
 					continue
