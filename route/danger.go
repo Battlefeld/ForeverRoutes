@@ -79,19 +79,21 @@ func (d dangerMap) at(p dataset.Point) int {
 // tooDangerous tells whether the character cannot work at a source yet: a creature above its fighting range, or a place
 // among such creatures.
 func (w *World) tooDangerous(s *State, src Source) bool {
-	lvl := w.Level(s) + w.Opt.MaxMobAbove
+	return w.dangerousAt(w.Level(s), src)
+}
+
+// dangerousAt: tooDangerous for a character of the given level.
+func (w *World) dangerousAt(level int, src Source) bool {
+	lvl := level + w.Opt.MaxMobAbove
 	if src.Talk {
 		return false
 	}
-	if e := w.elites.at(src.Site.Center); e > 0 && !(w.Opt.SoloElites && e <= w.Level(s)) {
+	if e := w.elites.at(src.Site.Center); e > 0 && !(w.Opt.SoloElites && e <= level) {
 		return true // among elites: not alone
 	}
 	if src.NPC != nil {
 		if src.NPC.Rank == 1 {
-			return mobLevel(src.NPC) > w.Level(s) // an elite only at the character's level or below
-		}
-		if w.Opt.MaxMobAbove == 0 {
-			return src.NPC.MinLevel > lvl // nothing above the character: a group of level 1-2 suits level 1
+			return mobLevel(src.NPC) > level // an elite only at the character's level or below
 		}
 		return mobLevel(src.NPC) > lvl
 	}

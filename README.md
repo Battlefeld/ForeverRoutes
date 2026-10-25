@@ -47,6 +47,12 @@ go run ./cmd/foreverroutes audit                                              # 
 
 ### Solo mit Dungeon (`-dungeons`)
 
+Klassenregeln: Hexer und Jäger kämpfen einfache Elites bis zu ihrem Level allein (das Pet tankt). Krieger, Schurke,
+Paladin und Schamane kämpfen höchstens ein Level nach oben: Die Route kommt erst in ein Gebiet, wenn dessen Gegner
+höchstens +1 sind (höhere Gegner kosten mehr Zeit je Kill, darum bevorzugt die Planung gleiche oder niedrigere). Schickt
+ein Guide sie zu früh hin, levelt der Nachspieler vorher bis zu zwei Level, statt die Quest auszulassen; ob sich das
+lohnt, entscheidet das Verbessern (es kann die Quest samt Grinden weglassen).
+
 Es gibt je Volk und Klasse zwei Routen: **Solo ohne Dungeon** (`<volk>-<klasse>.json`, keine Dungeonquests) und **Solo mit Dungeon** (`<volk>-<klasse>-dungeons.json`). Mit `-dungeons` (bei `plan`, `improve`, `extend`, `next`) gehören Dungeon-Läufe zur Route. Ein Dungeon-Baustein nimmt die
 Dungeonquests an, die draußen vergeben werden und die der Lauf erledigt (nächstgelegene zuerst; unterwegs schon ab drei
 Stufen vor dem Dungeon, wenn der Geber nahe ist), läuft den Dungeon (dafür eine Gruppe) und gibt danach ab, wenn nötig

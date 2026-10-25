@@ -397,12 +397,7 @@ func (w *World) Apply(s *State, a Action) error {
 		if farm == nil || a.Kills <= 0 {
 			return fail("no farm for creature %d", a.NPC)
 		}
-		if ml := mobLevel(n); w.Opt.MaxMobAbove == 0 {
-			ml = n.MinLevel
-			if ml > w.Level(s) {
-				return fail("%s is too high level", n.Name)
-			}
-		} else if ml > w.Level(s)+w.Opt.MaxMobAbove {
+		if mobLevel(n) > w.Level(s)+w.Opt.MaxMobAbove {
 			return fail("%s is too high level", n.Name)
 		}
 		if err := w.move(s, farm.Site.Center); err != nil {

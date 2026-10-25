@@ -86,7 +86,7 @@ func TestClassRules(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if warrior.Opt.MaxMobAbove != 0 || warrior.Opt.QuestAtLevel || warrior.Opt.SoloElites {
+	if warrior.Opt.MaxMobAbove != 1 || warrior.Opt.QuestAtLevel || warrior.Opt.SoloElites {
 		t.Errorf("warrior: %+v", warrior.Opt)
 	}
 	// the boars are level 1-2: a level 1 warrior may fight them, the level 2 elite not at all
@@ -248,6 +248,34 @@ func TestFollowGuide(t *testing.T) {
 	}
 	if res.Level < 3 || res.Grind <= 0 {
 		t.Errorf("should grind to the target: level %d, grind %v", res.Level, res.Grind)
+	}
+}
+
+// A guide that sends a melee character to mobs more than one level up: it levels first, then does the quest.
+func TestFollowerLevelsBeforeMobsAbove(t *testing.T) {
+	d := tiny()
+	var wolves []dataset.Point
+	for i := 0; i < 8; i++ {
+		wolves = append(wolves, dataset.Point{Map: 1, X: -200, Y: float64(i) * 30})
+	}
+	d.NPCs = append(d.NPCs, dataset.NPC{ID: 500, Name: "Wolf", MinLevel: 3, MaxLevel: 3, HP: 80, Respawn: 300, Spawns: wolves})
+	d.Quests = append(d.Quests, dataset.Quest{ID: 8, Name: "Wolves", Level: 3, MinLevel: 1, XP: 500, Start: []dataset.Ref{{Kind: "npc", ID: StartNPC["Orc"]}},
+		End: []dataset.Ref{{Kind: "npc", ID: StartNPC["Orc"]}}, Objectives: []dataset.Objective{{Kind: "kill", ID: 500, Count: 4}}})
+	w, err := NewWorld(d, Character{Race: "Orc", Class: "Warrior"}, Options{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	res, err := w.FollowGuide([]GuideEvent{{Op: "accept", Quest: 8}, {Op: "turnin", Quest: 8}}, 4)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if res.Quests != 1 {
+		t.Fatalf("the wolves must be done after levelling: %v", res.Missed)
+	}
+	for _, st := range res.Steps {
+		if st.Op == "work" && st.Quest == 8 && st.Level < 2 {
+			t.Errorf("level 3 wolves fought at level %d", st.Level)
+		}
 	}
 }
 

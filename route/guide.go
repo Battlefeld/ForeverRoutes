@@ -36,6 +36,9 @@ type GuideMiss struct {
 // guideStartItem: the longest a guide follower farms the item that starts a quest.
 const guideStartItem = 1200.0
 
+// guideLevelUp: a follower levels up to this many levels for an objective the guide comes too early for.
+const guideLevelUp = 2
+
 func (w *World) FollowGuide(events []GuideEvent, target int) (*GuideResult, error) {
 	return w.followFrom(w.NewState(), events, target, math.Inf(1))
 }
@@ -142,8 +145,18 @@ func (w *World) followFrom(s *State, events []GuideEvent, target int, horizon fl
 				grindTo(q.Level) // a melee follower works a quest from its level on
 			}
 			if !w.workLog(s, &acts, []*Quest{q}) {
-				miss(e.Op+": objective not possible", "")
-				continue
+				// the guide comes too early for this character (a melee character fights at most one level up): it
+				// levels first, as a route that reaches the area later
+				n := w.levelFor(s, q, target)
+				if n == 0 || n > w.Level(s)+guideLevelUp {
+					miss(e.Op+": objective not possible", "")
+					continue
+				}
+				grindTo(n)
+				if !w.workLog(s, &acts, []*Quest{q}) {
+					miss(e.Op+": objective not possible", "")
+					continue
+				}
 			}
 			if e.Op == "turnin" {
 				if w.try(s, &acts, Action{Op: "turnin", Quest: q.ID, At: q.EndPos}) {
@@ -168,4 +181,29 @@ func (w *World) followFrom(s *State, events []GuideEvent, target int, horizon fl
 	}
 	res.Result = r
 	return res, nil
+}
+
+// levelFor is the lowest level up to the target at which every open objective of an active quest has a source the
+// character may work, 0 when there is none.
+func (w *World) levelFor(s *State, q *Quest, target int) int {
+	for n := w.Level(s) + 1; n <= target; n++ {
+		ok := true
+		for oi, o := range q.Objectives {
+			if s.Prog[q.Index][oi] >= float64(o.Count) {
+				continue
+			}
+			found := false
+			for _, src := range o.Sources {
+				found = found || !w.dangerousAt(n, src)
+			}
+			if !found {
+				ok = false
+				break
+			}
+		}
+		if ok {
+			return n
+		}
+	}
+	return 0
 }

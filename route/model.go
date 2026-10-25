@@ -125,7 +125,7 @@ type Options struct {
 	QuestLogCap  int            // 20 in Classic
 	InteractSecs float64        // talking to an NPC (accept / turn in)
 	Profile      KillProfile    // nil = DefaultProfile
-	MaxMobAbove  int            // mobs more than this many levels above the character are not attacked (3; melee and shamans 0)
+	MaxMobAbove  int            // mobs more than this many levels above the character are not attacked (3; melee and shamans 1)
 	SoloElites   bool           // plain elites of the character's level or below are fought alone (warlocks and hunters: the pet tanks)
 	QuestAtLevel bool           // a quest's objectives are worked only from the quest's level on (off by default)
 	NoClassRules bool           // keep the options as given instead of the class's rules
@@ -172,7 +172,9 @@ func distance(a, b dataset.Point) float64 {
 }
 
 // classRules sets what a class does alone: warlocks and hunters fight plain elites of their level with the pet as
-// tank; melee classes and shamans fight nothing above their level, which keeps fights short and rests rare. The
+// tank; melee classes and shamans fight at most one level up, so their route reaches an area when its mobs are at
+// their level (kills of higher mobs take longer, so the planner prefers even or lower ones), which keeps fights short
+// and rests rare. The
 // classes that can tank or heal find a group for a dungeon almost at once.
 func (w *World) classRules() {
 	if w.Opt.NoClassRules {
@@ -182,7 +184,7 @@ func (w *World) classRules() {
 	case "Warlock", "Hunter":
 		w.Opt.SoloElites = true
 	case "Warrior", "Rogue", "Paladin", "Shaman":
-		w.Opt.MaxMobAbove = 0
+		w.Opt.MaxMobAbove = 1
 	}
 	switch w.Char.Class {
 	case "Warrior", "Paladin", "Shaman", "Priest", "Druid":
