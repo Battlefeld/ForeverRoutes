@@ -284,6 +284,11 @@ func (w *World) resolve(q *dataset.Quest) (*Quest, string) {
 	if !w.maps[rq.StartPos.Map] || !w.maps[rq.EndPos.Map] {
 		return nil, "other continent"
 	}
+	if q.Classes != 0 && q.MinLevel < 10 && rq.StartPos.Map != rq.EndPos.Map && rq.StartPos.Map <= 1 && rq.EndPos.Map <= 1 {
+		// a first class quest that would cross the sea: its NPC's spawn in this start zone is not in the data (the
+		// Forever Dwarf shamans' earth spirit)
+		return nil, "class quest: its NPC stands only across the sea in the data"
+	}
 	for _, o := range q.Objectives {
 		ro := Objective{Kind: o.Kind, ID: o.ID, Count: o.Count}
 		switch o.Kind {
