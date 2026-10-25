@@ -27,11 +27,12 @@ type State struct {
 	Bind                 dataset.Point     // where the hearthstone leads
 	Hearth               float64           // time from which the hearthstone can be used again
 	Travel, Combat, Talk float64
-	Wait                 float64      // part of Combat spent waiting for respawns
-	Assumed              int          // steps that rely on an assumed drop chance
-	Dead                 map[int]dead // site key -> mobs of that site still dead
-	Deathskips           int          // deaths taken on purpose to travel
-	via                  string       // how the last action travelled when not on foot (hearth, network, deathskip: <graveyard>)
+	Wait                 float64        // part of Combat spent waiting for respawns
+	Assumed              int            // steps that rely on an assumed drop chance
+	Dead                 map[int]dead   // site key -> mobs of that site still dead
+	Deathskips           int            // deaths taken on purpose to travel
+	via                  string         // how the last action travelled when not on foot (hearth, network, deathskip: <graveyard>)
+	viaAt                *dataset.Point // where to die for that deathskip
 }
 
 // dead counts the mobs of one creature killed at its site, as of a time. They come back over the respawn time.
@@ -98,9 +99,10 @@ func (w *World) move(s *State, to dataset.Point) error {
 		from = s.Bind
 		s.via = "hearth"
 	case byDeath:
-		if _, g := w.deathskip(s, from, to); g >= 0 {
+		if _, g, die := w.deathskipAt(s, from, to); g >= 0 {
 			from = w.deaths.graves[g].At
 			s.via = "deathskip: " + w.deaths.graves[g].Name
+			s.viaAt = &die
 		}
 		s.Deathskips++
 		w.discoverAlong(s, from, to)
@@ -428,11 +430,12 @@ func (w *World) startAt(s *State, q *Quest) dataset.Point {
 // Step is one replayed action with the character after it.
 type Step struct {
 	Action
-	Via   string  `json:"via,omitempty"` // how the step travelled when not on foot: hearth, network, deathskip: <graveyard>
-	Name  string  `json:"name"`
-	Time  float64 `json:"time"`
-	Level int     `json:"level"`
-	XP    int     `json:"xp"`
+	Via   string         `json:"via,omitempty"`   // how the step travelled when not on foot: hearth, network, deathskip: <graveyard>
+	ViaAt *dataset.Point `json:"viaAt,omitempty"` // where to die for a deathskip
+	Name  string         `json:"name"`
+	Time  float64        `json:"time"`
+	Level int            `json:"level"`
+	XP    int            `json:"xp"`
 }
 
 // Result of a replay.
@@ -463,11 +466,11 @@ func (w *World) replayFrom(s0 *State, actions []Action) (*Result, error) {
 	res := &Result{Character: w.Char, Profile: w.Opt.Profile.Name()}
 	d0 := s.Deathskips
 	for i, a := range actions {
-		s.via = ""
+		s.via, s.viaAt = "", nil
 		if err := w.Apply(s, a); err != nil {
 			return nil, fmt.Errorf("step %d (%s %d): %w", i+1, a.Op, a.Quest, err)
 		}
-		res.Steps = append(res.Steps, Step{Action: a, Via: s.via, Name: w.describe(a), Time: round1(s.Time - t0), Level: w.Level(s), XP: s.XP})
+		res.Steps = append(res.Steps, Step{Action: a, Via: s.via, ViaAt: s.viaAt, Name: w.describe(a), Time: round1(s.Time - t0), Level: w.Level(s), XP: s.XP})
 	}
 	res.Deaths = s.Deathskips - d0
 	res.Seconds, res.Travel, res.Combat, res.Talk = round1(s.Time-t0), round1(s.Travel-tr0), round1(s.Combat-c0), round1(s.Talk-tk0)

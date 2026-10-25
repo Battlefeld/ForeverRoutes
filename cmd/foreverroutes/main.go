@@ -32,6 +32,10 @@ func main() {
 		err = cmdNext(os.Args[2:])
 	case "guide":
 		err = cmdGuide(os.Args[2:])
+	case "bundle":
+		err = cmdBundle(os.Args[2:])
+	case "export-addon":
+		err = cmdExportAddon(os.Args[2:])
 	case "check-routes":
 		err = cmdCheckRoutes(os.Args[2:])
 	default:
@@ -55,6 +59,8 @@ func usage() {
   replay       check a planned route step by step
   improve      a guide and our planned route, each improved by local edits; the faster wins
   next         the next stretch of route from the character's live state (-live state.json -horizon 3600)
+  bundle       pack dataset, walk grid, routes, profiles (and the Windows planner) for ForeverCore's update
+  export-addon write the routes as Lua data for the in-game addon
   check-routes replay every route file and report long steps, quests no guide does, assumed drops, deathskips
   guide        walk a quest guide (list of accept/complete/turnin/level events) with the same model`)
 }

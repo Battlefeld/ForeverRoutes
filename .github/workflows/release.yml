@@ -1,0 +1,45 @@
+name: release
+
+# A push to main that changes the planner, the routes, the walk grid or the kill profiles publishes a new bundle, so
+# ForeverCore picks it up the next time it starts. (Data updates publish from the update workflow.)
+on:
+  push:
+    branches: [main]
+    paths:
+      - "cmd/**"
+      - "route/**"
+      - "dataset/**"
+      - "xp/**"
+      - "data/routes/**"
+      - "data/profiles/**"
+      - "data/walks.json.gz"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: data-update
+  cancel-in-progress: false
+
+jobs:
+  release:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - name: checks
+        run: |
+          test -z "$(gofmt -l .)"
+          go vet ./...
+          go test -timeout 30m ./...
+      - name: publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          git log -1 --format=%B > /tmp/notes.md
+          tools/release.sh /tmp/notes.md

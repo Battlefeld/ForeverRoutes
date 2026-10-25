@@ -56,10 +56,17 @@ func sickness(level int) float64 {
 
 // deathskip is the fastest deathskip from a to b: its time and the graveyard (-1: none).
 func (w *World) deathskip(s *State, a, b dataset.Point) (float64, int) {
+	t, g, _ := w.deathskipAt(s, a, b)
+	return t, g
+}
+
+// deathskipAt is deathskip with the place to die.
+func (w *World) deathskipAt(s *State, a, b dataset.Point) (float64, int, dataset.Point) {
 	d := w.deaths
 	if d == nil {
-		return math.Inf(1), -1
+		return math.Inf(1), -1, a
 	}
+	at := a
 	side := 0
 	if w.Faction == "H" {
 		side = 1
@@ -68,28 +75,28 @@ func (w *World) deathskip(s *State, a, b dataset.Point) (float64, int) {
 	best, bestG := math.Inf(1), -1
 	tried := map[int32]bool{}
 	ci, cj := int(math.Floor(a.X/d.cell)), int(math.Floor(a.Y/d.cell))
-	try := func(g int32, die float64) {
+	try := func(g int32, die float64, where dataset.Point) {
 		if g <= 0 || tried[g] {
 			return
 		}
 		tried[g] = true
-		at := d.graves[g-1].At
-		if at.Map != b.Map {
+		gp := d.graves[g-1].At
+		if gp.Map != b.Map {
 			return
 		}
-		after, _ := w.overland(s, at, b)
+		after, _ := w.overland(s, gp, b)
 		if t := die + deathSecs + after + math.Max(0, sick-after); t < best {
-			best, bestG = t, int(g-1)
+			best, bestG, at = t, int(g-1), where
 		}
 	}
 	if gs, ok := d.grave[[3]int{a.Map, ci, cj}]; ok {
-		try(gs[side], 0)
+		try(gs[side], 0, a)
 	}
 	for di := -deathReach; di <= deathReach; di++ {
 		for dj := -deathReach; dj <= deathReach; dj++ {
 			if gs, ok := d.grave[[3]int{a.Map, ci + di, cj + dj}]; ok && !tried[gs[side]] {
 				centre := dataset.Point{Map: a.Map, X: (float64(ci+di) + 0.5) * d.cell, Y: (float64(cj+dj) + 0.5) * d.cell}
-				try(gs[side], w.walk(a, centre))
+				try(gs[side], w.walk(a, centre), centre)
 			}
 		}
 	}
@@ -105,10 +112,10 @@ func (w *World) deathskip(s *State, a, b dataset.Point) (float64, int) {
 		g := d.graves[k.Grave].At
 		after, _ := w.overland(s, g, b)
 		if t := die + deathSecs + after + math.Max(0, sick-after); t < best {
-			best, bestG = t, k.Grave
+			best, bestG, at = t, k.Grave, k.At
 		}
 	}
-	return best, bestG
+	return best, bestG, at
 }
 
 // filterFits reads a guide step's filter: alternatives split by "/", each a list of words that must all fit (a race,

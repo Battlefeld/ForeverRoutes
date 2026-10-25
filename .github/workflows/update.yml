@@ -1,7 +1,8 @@
 name: update
 
 # Checks every data source for a new state. When the dataset changes and every check passes, the new data is pushed
-# to main and published as a release (dataset + SHA-256) that ForeverCore downloads. A failed check changes nothing
+# to main and published as a release (the bundle ForeverCore updates from: dataset, walk grid, routes, kill profiles,
+# the Windows planner, with SHA-256s) that ForeverCore downloads. A failed check changes nothing
 # and is reported in an issue. ForeverCore starts this workflow when WoW starts; the schedule is the fallback.
 on:
   workflow_dispatch:
@@ -68,10 +69,7 @@ jobs:
           { echo "Data update $stamp"; echo; cat /tmp/report.md; } > /tmp/message.txt
           git commit -q -F /tmp/message.txt
           git push origin HEAD:main
-          cp data/routes-data.json.gz /tmp/routes-data.json.gz
-          (cd /tmp && sha256sum routes-data.json.gz > routes-data.json.gz.sha256)
-          gh release create "data-$stamp" /tmp/routes-data.json.gz /tmp/routes-data.json.gz.sha256 \
-            --title "Data $stamp" --notes-file /tmp/report.md --latest
+          tools/release.sh /tmp/report.md
 
       - name: report a failure
         if: failure()
