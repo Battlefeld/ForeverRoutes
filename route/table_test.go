@@ -68,7 +68,7 @@ func TestShippedProfiles(t *testing.T) {
 		if err != nil {
 			t.Fatalf("%s: %v", f, err)
 		}
-		if lo, hi := p.LevelRange(); lo != 10 || hi != 30 {
+		if lo, hi := p.LevelRange(); lo != 10 || hi != 40 {
 			t.Errorf("%s: levels %d-%d", f, lo, hi)
 		}
 		fight, rest := p.KillSeconds(Character{Class: p.Class}, 20, &dataset.NPC{HP: 600, MaxLevel: 20, Dmg: 25})
