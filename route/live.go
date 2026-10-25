@@ -84,6 +84,19 @@ func (w *World) StateFrom(l Live) (*State, []string, error) {
 		}
 	}
 	w.discover(s)
+	// a dungeon counts as run when a quest done inside it is done (the game does not tell runs apart)
+	for _, d := range w.Dungeons {
+		for _, q := range d.Quests {
+			inside := q.StartInside || q.EndInside
+			for _, o := range q.Objectives {
+				inside = inside || o.Inside
+			}
+			if inside && s.Status[q.Index] == done {
+				s.Runs |= 1 << d.Index
+				break
+			}
+		}
+	}
 	return s, notes, nil
 }
 

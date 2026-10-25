@@ -41,6 +41,7 @@ func cmdNext(args []string) error {
 	horizon := fs.Float64("horizon", 3600, "seconds of play to plan ahead")
 	routeFile := fs.String("route", "", "the character's best route (output of improve, or a list of guide steps): followed from the live state; empty = plan freely")
 	out := fs.String("out", "", "write the reply here instead of standard output")
+	group := fs.Bool("dungeons", false, "group route: dungeon runs with their quests may be planned (also when the route runs dungeons)")
 	fs.Parse(args)
 	var raw []byte
 	var err error
@@ -57,7 +58,13 @@ func cmdNext(args []string) error {
 		return fmt.Errorf("live state: %w", err)
 	}
 	t0 := time.Now()
-	w, err := loadWorld(*path, req.Race, req.Class, req.Faction, *profile)
+	var events []route.GuideEvent
+	if *routeFile != "" {
+		if events, err = readEvents(*routeFile); err != nil {
+			return err
+		}
+	}
+	w, err := loadWorld(*path, req.Race, req.Class, req.Faction, *profile, *group || hasDungeons(events))
 	if err != nil {
 		return err
 	}
@@ -67,11 +74,7 @@ func cmdNext(args []string) error {
 	}
 	var res *route.Result
 	mode := "plan"
-	if *routeFile != "" {
-		events, err := readEvents(*routeFile)
-		if err != nil {
-			return err
-		}
+	if len(events) > 0 {
 		// the best route known for this character; when nothing of it is left, plan freely
 		if g, err := w.FollowGuideFrom(s, events, 60, *horizon); err == nil {
 			res, mode = g.Result, "route"
