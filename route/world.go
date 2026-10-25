@@ -233,6 +233,11 @@ func (w *World) refPos(refs []dataset.Ref, given *dataset.Point) (dataset.Point,
 				if given == nil {
 					return nearest(n.Spawns, w.Start), npcID, true
 				}
+				// an NPC that stands in several start zones (the class spirits): the one nearest to this character's
+				// start, though a source gave another one's place
+				if p := nearest(n.Spawns, w.Start); distance(p, w.Start) < distance(*given, w.Start)-1000 {
+					return p, npcID, true
+				}
 				break
 			}
 		}

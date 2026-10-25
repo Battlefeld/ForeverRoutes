@@ -150,12 +150,38 @@ func maxSwitches(level int) int {
 	return 2 + (level-16)/5
 }
 
+// classQuestValue is what finishing one of the first class quests is worth beyond its XP.
+const classQuestValue = 1500
+
+// startArea: class quests given this close to where the character starts belong to its start (the start zone and its
+// first town); other start zones have their own copies.
+const startArea = 3000
+
+// classQuestsLeft: the character is below level 6, or a class quest of its start (given by level 6, near the start)
+// can be taken now or is in the log. The route stays at home until then: these quests teach the class its first
+// abilities.
+func (w *World) classQuestsLeft(s *State) bool {
+	if w.Level(s) < 6 {
+		return true
+	}
+	for _, q := range w.Quests {
+		if q.Classes == 0 || q.MinLevel > 6 || distance(q.StartPos, w.Start) > startArea {
+			continue
+		}
+		if st := s.Status[q.Index]; st == active || (st == notTaken && w.CanAccept(s, q) == nil) {
+			return true
+		}
+	}
+	return false
+}
+
 func (w *World) options(s *State, target int) []macro {
 	var out []macro
 	seen := map[int]bool{}
 	cap := maxSwitches(w.Level(s))
+	early := w.classQuestsLeft(s)
 	add := func(m *macro) {
-		if m != nil && m.state.Switches > s.Switches && m.state.Switches > cap {
+		if m != nil && m.state.Switches > s.Switches && (m.state.Switches > cap || early) {
 			return
 		}
 		if m != nil && len(m.actions) > 0 && !math.IsInf(m.score, 0) && !math.IsNaN(m.score) {
@@ -214,6 +240,9 @@ func (w *World) value(before, after *State) float64 {
 	v := float64(after.XP - before.XP)
 	for _, q := range w.Quests {
 		if before.Status[q.Index] != done && after.Status[q.Index] == done {
+			if q.Classes != 0 && q.MinLevel <= 10 && distance(q.StartPos, w.Start) <= startArea {
+				v += classQuestValue // the first class quests teach abilities (totems, forms, pets): worth more than their XP
+			}
 			for _, u := range q.Unlocks {
 				if uq := w.ByID[u]; uq != nil {
 					v += 0.25 * float64(uq.XP)
