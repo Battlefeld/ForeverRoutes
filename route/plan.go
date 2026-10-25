@@ -181,7 +181,8 @@ func (w *World) options(s *State, target int) []macro {
 	cap := maxSwitches(w.Level(s))
 	early := w.classQuestsLeft(s)
 	add := func(m *macro) {
-		if m != nil && m.state.Switches > s.Switches && (m.state.Switches > cap || early) {
+		// a dungeon run may cross the sea to hand in its quests right after (a short trip to Undercity after Ragefire)
+		if m != nil && m.kind != "dungeon" && m.state.Switches > s.Switches && (m.state.Switches > cap || early) {
 			return
 		}
 		if m != nil && len(m.actions) > 0 && !math.IsInf(m.score, 0) && !math.IsNaN(m.score) {
@@ -206,6 +207,9 @@ func (w *World) options(s *State, target int) []macro {
 	}
 	for _, d := range w.Dungeons {
 		add(w.dungeonMacro(s, d))
+	}
+	for _, m := range w.pickupMacros(s) {
+		add(m)
 	}
 	g := w.grindMacro(s, target)
 	add(g)
@@ -239,6 +243,9 @@ func (w *World) options(s *State, target int) []macro {
 func (w *World) value(before, after *State) float64 {
 	v := float64(after.XP - before.XP)
 	for _, q := range w.Quests {
+		if q.Dungeon != nil && before.Status[q.Index] == notTaken && after.Status[q.Index] == active {
+			v += pickupShare * float64(q.XP) // paid by the run to come
+		}
 		if before.Status[q.Index] != done && after.Status[q.Index] == done {
 			if q.Classes != 0 && q.MinLevel <= 10 && distance(q.StartPos, w.Start) <= startArea {
 				v += classQuestValue // the first class quests teach abilities (totems, forms, pets): worth more than their XP

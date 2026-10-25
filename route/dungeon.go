@@ -25,7 +25,36 @@ const (
 	// pickupReach: a dungeon quest further than this from the last stop is left for another time (a quest across the
 	// sea or at the other end of the continent costs more than it brings to this run).
 	pickupReach = 900.0
+	// pickupNear: a dungeon quest whose giver is this close (travel seconds) is taken on the way, long before the run.
+	pickupNear = 600.0
+	// pickupShare: what taking a dungeon quest early is worth to the planner, as a share of its XP (the run pays it).
+	pickupShare = 0.5
 )
+
+// pickupMacros: taking a dungeon quest early, for a dungeon still to run (from three levels below it), when its giver
+// is within pickupNear: on the way through a town, so the run later needs no detour for it. One block per quest; the planner weighs
+// the detour.
+func (w *World) pickupMacros(s0 *State) []*macro {
+	var out []*macro
+	l := w.Level(s0)
+	for _, d := range w.Dungeons {
+		if s0.Runs&(1<<d.Index) != 0 || l > d.Max || l < d.Min-3 {
+			continue
+		}
+		for _, q := range d.Quests {
+			if q.StartInside || !q.runnable() || s0.Status[q.Index] != notTaken || w.CanAccept(s0, q) != nil ||
+				w.TravelTime(s0, s0.Pos, q.StartPos) > pickupNear {
+				continue
+			}
+			s := s0.clone()
+			var acts []Action
+			if w.try(s, &acts, Action{Op: "accept", Quest: q.ID, At: q.StartPos}) {
+				out = append(out, w.finish(s0, s, acts, "pickup"))
+			}
+		}
+	}
+	return out
+}
 
 // dungeons prepares the dungeons this character can reach (group routes only).
 func (w *World) dungeons() {
