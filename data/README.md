@@ -9,7 +9,8 @@
 | `sources/wclbox-items.json` | woher ein Gegenstand kommt (Gegner und Gebiet), gelesen von den Gegenstandsseiten der WCLBox; die Seite nennt keine Dropchance |
 | `sources/foreverchanges-quests.json` | Zusammenfassung je offener Quest von ForeverChanges: Questart (normal, Elite, Dungeon) und der Gegner aus dem Zielsatz |
 | `sources/manual-facts.json` | einzeln belegte Werte (XP, Level, wiederholbar, Questziele mit Mengen) von WarcraftDB, OctoWow, ClassicDB, Wowhead Forever und Beobachtungen aus ForeverDB, jeweils mit Link; übernommen aus dem früheren Python-Werkzeug und dem früheren Addon ForeverQuests |
-| `archive/dungeon-journal/` | Dungeon-Daten des früheren Addons ForeverQuests (Bosse, Beute, Dungeonquests) mit Quellenliste; vom Planer noch nicht gelesen |
+| `sources/dungeons.json` | Dungeons der Gruppenrouten: Stufen (Forever-Beta laut Dungeon-Journal, sonst Classic), übliche Laufzeit (Schätzung), Seite, Gebiets-IDs der Dungeonquests |
+| `archive/dungeon-journal/` | Dungeon-Daten des früheren Addons ForeverQuests (Bosse, Beute, Dungeonquests) mit Quellenliste; die Stufen sind in `sources/dungeons.json` übernommen |
 
 QuestieDB, EverythingQuests und cmangos werden beim Bau in den festgeschriebenen Commits geladen und nicht eingecheckt.
 

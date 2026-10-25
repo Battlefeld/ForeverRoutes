@@ -45,6 +45,21 @@ go run ./cmd/foreverroutes audit                                              # 
 `guide` liest eine Liste von Schritten `[{"op":"accept","quest":4641},{"op":"complete","quest":4641},
 {"op":"turnin","quest":4641},{"op":"level","level":6}]`. Guide-Dateien werden nicht eingecheckt (Lizenzen der Guides).
 
+### Gruppenrouten mit Dungeons (`-dungeons`)
+
+Mit `-dungeons` (bei `plan`, `extend`, `next`) gehören Dungeon-Läufe zur Route. Ein Dungeon-Baustein nimmt die
+Dungeonquests an, die draußen vergeben werden und die der Lauf erledigt (nächstgelegene zuerst), läuft den Dungeon mit
+der Gruppe und gibt danach draußen ab. Im Dungeon vergebene und abgegebene Quests samt Folgequests erledigt der Lauf
+selbst. Der Planer wägt den Baustein wie jeden anderen gegen Grinden ab. Jeder Dungeon wird höchstens einmal gelaufen,
+nur innerhalb seiner Stufen.
+
+- Dungeons: `data/sources/dungeons.json` (Stufen, übliche Laufzeit als Schätzung, Seite). Der Eingang kommt von Polestar,
+  der Trash aus den cmangos-Spawns der Instanz (5er-Gruppe mit Classic-Gruppenbonus 1,4; ein Questlauf tötet 60 %).
+- `extend -route data/routes/orc-warrior.json -target 40 [-dungeons]` setzt eine Route fort: Er spielt sie bis zu
+  ihrem Ende nach, plant ab dem erreichten Stand und verbessert das Ganze wie `improve`.
+- Ein Lauf, der sich nicht lohnt, fällt beim Verbessern heraus wie eine Quest. Laufzeiten werden nach dem Release im
+  Spiel kalibriert.
+
 ### Planen beim Spielen (`next`)
 
 `next` plant ab dem Stand, den das Addon im Spiel liest, die nächste Stunde (`-horizon` in Sekunden). Mitgegeben
