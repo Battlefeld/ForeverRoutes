@@ -110,16 +110,9 @@ func rxpStep(file string, lines []string) []Fact {
 	accepts, turnins := map[int]bool{}, map[int]bool{}
 	for _, l := range lines {
 		switch {
-		case rxpGoto.MatchString(l):
-			m := rxpGoto.FindStringSubmatch(l)
-			ui, _ := strconv.Atoi(m[1])
-			a, _ := strconv.ParseFloat(m[3], 64)
-			b, _ := strconv.ParseFloat(m[4], 64)
-			if m[2] != "" {
-				inst, _ := strconv.Atoi(m[2])
-				places = append(places, Place{World: true, Map: inst, UIMap: ui, X: b, Y: a})
-			} else {
-				places = append(places, Place{UIMap: ui, X: a, Y: b})
+		case strings.HasPrefix(l, ".goto "):
+			if p, ok := parseGoto(l); ok {
+				places = append(places, p)
 			}
 		case rxpComplete.MatchString(l):
 			m := rxpComplete.FindStringSubmatch(l)
@@ -408,10 +401,18 @@ func nearGoto(lines []string, i, dir int) (Place, bool) {
 		if j := strings.Index(l, " << "); j > 0 {
 			l = strings.TrimSpace(l[:j])
 		}
-		m := rxpGoto.FindStringSubmatch(l)
-		if m == nil {
-			continue
+		if p, ok := parseGoto(l); ok {
+			return p, true
 		}
+	}
+	return Place{}, false
+}
+
+var rxpGotoZone = regexp.MustCompile(`^\.goto\s+([A-Za-z][A-Za-z' ]*?),\s*(-?[\d.]+),\s*(-?[\d.]+)`)
+
+// parseGoto reads a ".goto" line: "UIMAP/INSTANCE,y,x" in world yards, "UIMAP,x,y" or "Zone Name,x,y" in map percent.
+func parseGoto(l string) (Place, bool) {
+	if m := rxpGoto.FindStringSubmatch(l); m != nil {
 		ui, _ := strconv.Atoi(m[1])
 		a, _ := strconv.ParseFloat(m[3], 64)
 		b, _ := strconv.ParseFloat(m[4], 64)
@@ -420,6 +421,11 @@ func nearGoto(lines []string, i, dir int) (Place, bool) {
 			return Place{World: true, Map: inst, UIMap: ui, X: b, Y: a}, true
 		}
 		return Place{UIMap: ui, X: a, Y: b}, true
+	}
+	if m := rxpGotoZone.FindStringSubmatch(l); m != nil {
+		a, _ := strconv.ParseFloat(m[2], 64)
+		b, _ := strconv.ParseFloat(m[3], 64)
+		return Place{Zone: strings.TrimSpace(m[1]), X: a, Y: b}, true
 	}
 	return Place{}, false
 }
@@ -450,21 +456,80 @@ func RXPTargets(files map[string]string) []Sighting {
 			if j := strings.Index(l, " << "); j > 0 {
 				l = strings.TrimSpace(l[:j])
 			}
-			if m := rxpGoto.FindStringSubmatch(l); m != nil {
-				ui, _ := strconv.Atoi(m[1])
-				a, _ := strconv.ParseFloat(m[3], 64)
-				b, _ := strconv.ParseFloat(m[4], 64)
-				p := Place{UIMap: ui, X: a, Y: b}
-				if m[2] != "" {
-					inst, _ := strconv.Atoi(m[2])
-					p = Place{World: true, Map: inst, UIMap: ui, X: b, Y: a}
-				}
+			if p, ok := parseGoto(l); ok {
 				place = &p
 				continue
 			}
 			if m := rxpTarget.FindStringSubmatch(l); m != nil && place != nil && !skip {
 				id, _ := strconv.Atoi(m[1])
 				out = append(out, Sighting{NPC: id, Place: *place, File: name, Line: i + 1})
+			}
+		}
+	}
+	return out
+}
+
+// QuestSteps is what RestedXP's guides do with a quest: whether a step takes it, hands it in or works an objective
+// (".complete" or ".collect" for it), and where a step takes it by using an item (".use" in the accepting step, without
+// a creature to kill: the item is at hand there).
+type QuestSteps struct {
+	Accept, Turnin, Work bool
+	UseAt                []Place
+}
+
+// RXPQuests reads the quest steps of RestedXP guide files (steps marked skip are left out).
+func RXPQuests(files map[string]string) map[int]*QuestSteps {
+	out := map[int]*QuestSteps{}
+	get := func(q int) *QuestSteps {
+		if out[q] == nil {
+			out[q] = &QuestSteps{}
+		}
+		return out[q]
+	}
+	for _, name := range sortedKeys(files) {
+		lines := strings.Split(files[name], "\n")
+		for i := 0; i < len(lines); i++ {
+			m := rxpStepFilter.FindStringSubmatch(strings.TrimSpace(lines[i]))
+			if m == nil || strings.Contains(" "+m[1]+" ", " skip ") {
+				continue
+			}
+			var places []Place
+			accepted, use, mob := 0, false, false
+			for j := i + 1; j < len(lines); j++ {
+				l := strings.TrimSpace(lines[j])
+				if rxpStepFilter.MatchString(l) || strings.HasPrefix(l, "]]") {
+					break
+				}
+				if k := strings.Index(l, " << "); k > 0 {
+					l = strings.TrimSpace(l[:k])
+				}
+				switch {
+				case strings.HasPrefix(l, ".goto "):
+					if p, ok := parseGoto(l); ok {
+						places = append(places, p)
+					}
+				case rxpAccept.MatchString(l):
+					accepted, _ = strconv.Atoi(rxpAccept.FindStringSubmatch(l)[1])
+					get(accepted).Accept = true
+				case rxpTurnin.MatchString(l):
+					q, _ := strconv.Atoi(rxpTurnin.FindStringSubmatch(l)[1])
+					get(q).Turnin = true
+				case rxpComplete.MatchString(l):
+					q, _ := strconv.Atoi(rxpComplete.FindStringSubmatch(l)[1])
+					get(q).Work = true
+				case rxpCollect.MatchString(l):
+					if c := rxpCollect.FindStringSubmatch(l); c[2] != "" {
+						q, _ := strconv.Atoi(c[2])
+						get(q).Work = true
+					}
+				case rxpUse.MatchString(l):
+					use = true
+				case strings.HasPrefix(l, ".mob ") || strings.HasPrefix(l, ".unitscan "):
+					mob = true
+				}
+			}
+			if accepted != 0 && use && !mob && len(places) > 0 {
+				get(accepted).UseAt = append(get(accepted).UseAt, places[len(places)-1])
 			}
 		}
 	}

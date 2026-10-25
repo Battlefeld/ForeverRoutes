@@ -284,6 +284,7 @@ func Build(in Inputs) (*dataset.Dataset, error) {
 		facts = append(facts, guides.ParseRXP(files)...)
 		b.rxpSkips = guides.RXPDeathskips(files)
 		b.rxpTargets = guides.RXPTargets(files)
+		b.rxpQuests = guides.RXPQuests(files)
 	}
 	if in.GuidesPolestar != "" {
 		files, err := guides.ReadDir(in.GuidesPolestar, ".guide")
@@ -449,6 +450,7 @@ type builder struct {
 	spf             *spf.Data
 	rxpSkips        []guides.Deathskip
 	rxpTargets      []guides.Sighting
+	rxpQuests       map[int]*guides.QuestSteps
 	curatedDungeons []curatedDungeon
 	curatedSkips    []curatedSkip
 	gdx             *guideIndex
@@ -1165,6 +1167,15 @@ func (b *builder) startItem(out *dataset.Quest) {
 	}
 	if len(o.Drops) > 12 {
 		o.Drops = o.Drops[:12]
+	}
+	if st := b.rxpQuests[out.ID]; len(o.Drops) == 0 && st != nil && len(st.UseAt) > 0 {
+		// RestedXP has the player use the item at a place, no creature to kill: it is at hand there (a book a trainer
+		// hands over, an item from the quest before)
+		if pts := b.guidePoints(st.UseAt[:1]); len(pts) > 0 {
+			out.StartAt, out.Sources["start"], out.Sources["startAt"] = &pts[0], "item used where RestedXP has it", "rxp"
+			b.stats["quests_started_by_rxp_use"]++
+			return
+		}
 	}
 	if len(o.Drops) == 0 {
 		if out.Unsupported == "" {

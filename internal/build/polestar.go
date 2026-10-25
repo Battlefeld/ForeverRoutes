@@ -278,6 +278,19 @@ func (b *builder) eventObjective(out *dataset.Quest, n int) {
 			}
 		}
 	}
+	// RestedXP takes and hands in the quest but never works it: the event happens on the way to the turn-in or at it
+	// (an escort that ends there, a talk, a skill learned beside the trainer)
+	if st := b.rxpQuests[out.ID]; len(pts) == 0 && !done && st != nil && st.Accept && st.Turnin && !st.Work {
+		for _, r := range out.End {
+			if r.Kind == "npc" {
+				if p, ok := b.npcPoint(r.ID); ok {
+					pts = append(pts, p)
+					b.stats["event_objectives_at_rxp_turnin"]++
+					break
+				}
+			}
+		}
+	}
 	if len(pts) == 0 {
 		b.unsupported(out, "event objective without a place")
 		b.stats["event_objectives_without_place"]++
@@ -605,6 +618,10 @@ func (b *builder) instantQuests() {
 					same = true
 				}
 			}
+		}
+		if st := b.rxpQuests[q.ID]; st != nil && st.Accept && st.Turnin && !st.Work {
+			b.stats["quests_instant_by_rxp"]++ // RestedXP takes and hands it in on the spot: a talk quest
+			continue
 		}
 		if same {
 			q.Unsupported = "no objective known, and taken and handed in at the same NPC"
