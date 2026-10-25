@@ -55,7 +55,7 @@ selbst. Der Planer wägt den Baustein wie jeden anderen gegen Grinden ab. Jeder 
 nur innerhalb seiner Stufen.
 
 - Dungeons: `data/sources/dungeons.json` (Stufen, übliche Laufzeit als Schätzung, Seite). Der Eingang kommt von Polestar,
-  der Trash aus den cmangos-Spawns der Instanz (5er-Gruppe mit Classic-Gruppenbonus 1,4; ein Questlauf tötet 40 %, was im Weg steht). Vor jedem Lauf 10 Minuten Gruppensuche. Sammelquests im Dungeon: jedes Gruppenmitglied braucht eigene Drops, die vier weiteren Anteile kosten zusätzliche Kills (15 s je Kill); einzelne Bossgegenstände nicht.
+  der Trash aus den cmangos-Spawns der Instanz (5er-Gruppe mit Classic-Gruppenbonus 1,4; ein Questlauf tötet 40 %, was im Weg steht). Vor jedem Lauf 10 Minuten Gruppensuche; Klassen, die tanken oder heilen können (Krieger, Paladin, Schamane, Priester, Druide), finden fast sofort eine Gruppe (1 Minute). Sammelquests im Dungeon: jedes Gruppenmitglied braucht eigene Drops, die vier weiteren Anteile kosten zusätzliche Kills (15 s je Kill); einzelne Bossgegenstände nicht.
 - `extend -route data/routes/orc-warrior.json -target 40 [-dungeons]` setzt eine Route fort: Er spielt sie bis zu
   ihrem Ende nach, plant ab dem erreichten Stand und verbessert das Ganze wie `improve`.
 - Ein Lauf, der sich nicht lohnt, fällt beim Verbessern heraus wie eine Quest. Laufzeiten werden nach dem Release im

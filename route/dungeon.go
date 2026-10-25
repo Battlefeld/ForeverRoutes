@@ -29,8 +29,10 @@ const (
 	groupKill = 15.0
 	// maxExtraShare: the extra kills of collection quests take at most this share of the run's minutes
 	maxExtraShare = 0.5
-	// groupSearch: finding a group for the run, before it starts (seconds)
-	groupSearch = 600.0
+	// groupSearch: finding a group for the run, before it starts (seconds); groupSearchRole: for a class that can tank
+	// or heal (warrior, paladin, shaman, priest, druid), whom groups look for: almost at once
+	groupSearch     = 600.0
+	groupSearchRole = 60.0
 	// elitesPerMinute: elites per minute of a usual run where the instance's spawns are not known (Ragefire 6.6,
 	// Shadowfang 3.3, Wailing Caverns 3.4, Deadmines 2.7, Blackfathom 4.8 in cmangos)
 	elitesPerMinute = 3.5
@@ -165,7 +167,7 @@ func (w *World) run(s *State, d *Dungeon) error {
 		return err
 	}
 	l := w.Level(s)
-	secs := d.Minutes*60 + groupSearch
+	secs := d.Minutes*60 + w.Opt.GroupSearch
 	s.Time += secs
 	s.Combat += secs
 	trash := w.killXP(d, l)

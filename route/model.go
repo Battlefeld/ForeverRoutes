@@ -132,6 +132,7 @@ type Options struct {
 	AssumedDrop  float64        // chance per kill assumed where a source names the creature but no chance (0.3); reported in the result
 	Walks        *dataset.Walks // walking costs measured on navigation maps (nil: straight lines times PathFactor)
 	Dungeons     bool           // route with dungeons: dungeon runs with their quests are part of the route
+	GroupSearch  float64        // seconds to find a group for a dungeon run (600; tanks and healers 60)
 }
 
 func (o Options) withDefaults() Options {
@@ -156,6 +157,9 @@ func (o Options) withDefaults() Options {
 	if o.AssumedDrop == 0 {
 		o.AssumedDrop = 0.3
 	}
+	if o.GroupSearch == 0 {
+		o.GroupSearch = groupSearch
+	}
 	return o
 }
 
@@ -168,7 +172,8 @@ func distance(a, b dataset.Point) float64 {
 }
 
 // classRules sets what a class does alone: warlocks and hunters fight plain elites of their level with the pet as
-// tank; melee classes and shamans fight nothing above their level, which keeps fights short and rests rare.
+// tank; melee classes and shamans fight nothing above their level, which keeps fights short and rests rare. The
+// classes that can tank or heal find a group for a dungeon almost at once.
 func (w *World) classRules() {
 	if w.Opt.NoClassRules {
 		return
@@ -178,5 +183,9 @@ func (w *World) classRules() {
 		w.Opt.SoloElites = true
 	case "Warrior", "Rogue", "Paladin", "Shaman":
 		w.Opt.MaxMobAbove = 0
+	}
+	switch w.Char.Class {
+	case "Warrior", "Paladin", "Shaman", "Priest", "Druid":
+		w.Opt.GroupSearch = groupSearchRole
 	}
 }

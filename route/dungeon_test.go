@@ -141,3 +141,25 @@ func TestFollowerDoesNotGrindForADungeonQuest(t *testing.T) {
 		t.Errorf("skipped %v", r.Skipped)
 	}
 }
+
+func TestTanksAndHealersFindAGroupAtOnce(t *testing.T) {
+	took := map[string]float64{}
+	for _, class := range []string{"Warlock", "Warrior", "Priest"} {
+		w, err := NewWorld(tinyDungeon(), Character{Race: "Orc", Class: class}, Options{Dungeons: true})
+		if err != nil {
+			t.Fatal(err)
+		}
+		s := w.NewState()
+		s.XP = 400
+		if err := w.Apply(s, Action{Op: "dungeon", Dungeon: "cave"}); err != nil {
+			t.Fatal(err)
+		}
+		took[class] = s.Time
+	}
+	if d := took["Warlock"] - took["Warrior"]; math.Abs(d-(groupSearch-groupSearchRole)) > 1 {
+		t.Errorf("a warrior finds a group %.0f s sooner, want %.0f", d, groupSearch-groupSearchRole)
+	}
+	if took["Priest"] != took["Warrior"] {
+		t.Errorf("a priest heals: %.0f s, warrior %.0f s", took["Priest"], took["Warrior"])
+	}
+}
