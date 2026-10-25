@@ -22,10 +22,22 @@ func (w *World) Improve(events []GuideEvent, target int, budget time.Duration) (
 	}
 	cur := append([]GuideEvent(nil), events...)
 	deadline := time.Now().Add(budget)
+	// the required class chains the route finishes stay finished: an edit that loses one is no improvement
+	var goals []int
+	for _, c := range w.ClassChains(target) {
+		if c.Tier == "required" && handsIn(best, c.Goal.ID) {
+			goals = append(goals, c.Goal.ID)
+		}
+	}
 	try := func(cand []GuideEvent) bool {
 		r, err := w.FollowGuide(cand, target)
 		if err != nil || r.Level < target || r.Seconds >= best.Seconds-1 {
 			return false
+		}
+		for _, g := range goals {
+			if !handsIn(r, g) {
+				return false
+			}
 		}
 		cur, best = cand, r
 		return true
