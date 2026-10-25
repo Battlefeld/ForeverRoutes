@@ -7,15 +7,74 @@
  "target": 20,
  "winner": "guide",
  "hours": {
-  "guide": 19.14,
-  "guideImproved": 18.05,
+  "guide": 22.31,
+  "guideImproved": 17.57,
   "plan": 18.6,
-  "planImproved": 18.37
+  "planImproved": 18.42
  },
- "quests": 113,
+ "quests": 116,
  "killProfile": "MythicSim priest smite_lowrank (gear starter weapon, talents none; outside the table: default (uncalibrated) scaled to the table's edge)",
- "assumedDropSteps": 9,
+ "assumedDropSteps": 8,
  "basis": "RestedXP Forever guides (github.com/RestedXP/RXPGuides, CC BY-NC-SA 4.0), improved by ForeverRoutes",
+ "classQuests": [
+  {
+   "reward": "Klassenbrief",
+   "tier": "required",
+   "quest": 3110,
+   "name": "Hallowed Rune",
+   "minLevel": 1,
+   "quests": [
+    179,
+    3110
+   ],
+   "inRoute": true,
+   "minutes": -14.6,
+   "possible": true,
+   "level": 5
+  },
+  {
+   "reward": "Brustteil",
+   "tier": "recommended",
+   "quest": 5625,
+   "name": "Garments of the Light",
+   "minLevel": 5,
+   "quests": [
+    5625
+   ],
+   "inRoute": true,
+   "minutes": -19.6,
+   "possible": true,
+   "level": 5
+  },
+  {
+   "reward": "",
+   "tier": "optional",
+   "quest": 5626,
+   "name": "In Favor of the Light",
+   "minLevel": 5,
+   "quests": [
+    5626
+   ],
+   "inRoute": false,
+   "minutes": 4.5,
+   "possible": true,
+   "level": 5
+  },
+  {
+   "reward": "Volkszauber",
+   "tier": "recommended",
+   "quest": 5635,
+   "name": "Desperate Prayer",
+   "minLevel": 10,
+   "quests": [
+    5635
+   ],
+   "inRoute": false,
+   "minutes": 17.4,
+   "possible": true,
+   "level": 10
+  }
+ ],
  "events": [
   {
    "op": "accept",
@@ -35,6 +94,18 @@
   },
   {
    "op": "accept",
+   "quest": 170
+  },
+  {
+   "op": "complete",
+   "quest": 170
+  },
+  {
+   "op": "turnin",
+   "quest": 170
+  },
+  {
+   "op": "accept",
    "quest": 233
   },
   {
@@ -144,18 +215,6 @@
   {
    "op": "turnin",
    "quest": 3110
-  },
-  {
-   "op": "accept",
-   "quest": 97277
-  },
-  {
-   "op": "complete",
-   "quest": 97277
-  },
-  {
-   "op": "complete",
-   "quest": 97277
   },
   {
    "op": "turnin",
@@ -175,14 +234,6 @@
   },
   {
    "op": "turnin",
-   "quest": 97277
-  },
-  {
-   "op": "accept",
-   "quest": 5626
-  },
-  {
-   "op": "turnin",
    "quest": 282
   },
   {
@@ -192,6 +243,10 @@
   {
    "op": "accept",
    "quest": 96628
+  },
+  {
+   "op": "accept",
+   "quest": 2160
   },
   {
    "op": "level",
@@ -234,6 +289,10 @@
    "quest": 384
   },
   {
+   "op": "turnin",
+   "quest": 2160
+  },
+  {
    "op": "accept",
    "quest": 5625
   },
@@ -255,7 +314,15 @@
   },
   {
    "op": "accept",
-   "quest": 400
+   "quest": 412
+  },
+  {
+   "op": "complete",
+   "quest": 412
+  },
+  {
+   "op": "turnin",
+   "quest": 412
   },
   {
    "op": "accept",
@@ -263,27 +330,11 @@
   },
   {
    "op": "accept",
-   "quest": 317
-  },
-  {
-   "op": "accept",
    "quest": 313
-  },
-  {
-   "op": "turnin",
-   "quest": 400
   },
   {
    "op": "accept",
    "quest": 5541
-  },
-  {
-   "op": "complete",
-   "quest": 317
-  },
-  {
-   "op": "complete",
-   "quest": 317
   },
   {
    "op": "turnin",
@@ -326,20 +377,8 @@
    "quest": 98321
   },
   {
-   "op": "complete",
-   "quest": 317
-  },
-  {
-   "op": "complete",
-   "quest": 317
-  },
-  {
    "op": "turnin",
    "quest": 313
-  },
-  {
-   "op": "turnin",
-   "quest": 317
   },
   {
    "op": "accept",
@@ -360,10 +399,6 @@
   {
    "op": "turnin",
    "quest": 98319
-  },
-  {
-   "op": "accept",
-   "quest": 98323
   },
   {
    "op": "turnin",
@@ -435,10 +470,6 @@
   },
   {
    "op": "turnin",
-   "quest": 98323
-  },
-  {
-   "op": "turnin",
    "quest": 287
   },
   {
@@ -496,10 +527,6 @@
   {
    "op": "level",
    "level": 9
-  },
-  {
-   "op": "accept",
-   "quest": 291
   },
   {
    "op": "turnin",
@@ -727,10 +754,6 @@
   },
   {
    "op": "turnin",
-   "quest": 291
-  },
-  {
-   "op": "turnin",
    "quest": 6388
   },
   {
@@ -772,6 +795,18 @@
   {
    "op": "turnin",
    "quest": 40
+  },
+  {
+   "op": "accept",
+   "quest": 95998
+  },
+  {
+   "op": "complete",
+   "quest": 95998
+  },
+  {
+   "op": "turnin",
+   "quest": 95998
   },
   {
    "op": "accept",
@@ -934,8 +969,20 @@
    "quest": 36
   },
   {
+   "op": "accept",
+   "quest": 9
+  },
+  {
    "op": "turnin",
    "quest": 36
+  },
+  {
+   "op": "accept",
+   "quest": 22
+  },
+  {
+   "op": "turnin",
+   "quest": 22
   },
   {
    "op": "turnin",
@@ -956,18 +1003,6 @@
   {
    "op": "turnin",
    "quest": 6392
-  },
-  {
-   "op": "accept",
-   "quest": 86667
-  },
-  {
-   "op": "complete",
-   "quest": 86667
-  },
-  {
-   "op": "turnin",
-   "quest": 86667
   },
   {
    "op": "complete",
@@ -1055,11 +1090,19 @@
   },
   {
    "op": "accept",
+   "quest": 9
+  },
+  {
+   "op": "accept",
    "quest": 109
   },
   {
    "op": "turnin",
    "quest": 36
+  },
+  {
+   "op": "accept",
+   "quest": 22
   },
   {
    "op": "turnin",
@@ -1096,6 +1139,10 @@
   {
    "op": "complete",
    "quest": 153
+  },
+  {
+   "op": "complete",
+   "quest": 9
   },
   {
    "op": "complete",
@@ -1142,6 +1189,18 @@
    "quest": 151
   },
   {
+   "op": "turnin",
+   "quest": 9
+  },
+  {
+   "op": "turnin",
+   "quest": 22
+  },
+  {
+   "op": "turnin",
+   "quest": 22
+  },
+  {
    "op": "accept",
    "quest": 92909
   },
@@ -1150,12 +1209,32 @@
    "quest": 92909
   },
   {
+   "op": "complete",
+   "quest": 9
+  },
+  {
+   "op": "complete",
+   "quest": 9
+  },
+  {
+   "op": "turnin",
+   "quest": 9
+  },
+  {
    "op": "accept",
    "quest": 92909
   },
   {
    "op": "turnin",
    "quest": 92909
+  },
+  {
+   "op": "turnin",
+   "quest": 9
+  },
+  {
+   "op": "turnin",
+   "quest": 22
   },
   {
    "op": "accept",
@@ -1231,6 +1310,30 @@
   },
   {
    "op": "accept",
+   "quest": 1138
+  },
+  {
+   "op": "accept",
+   "quest": 1141
+  },
+  {
+   "op": "turnin",
+   "quest": 1141
+  },
+  {
+   "op": "accept",
+   "quest": 1141
+  },
+  {
+   "op": "turnin",
+   "quest": 1141
+  },
+  {
+   "op": "accept",
+   "quest": 1138
+  },
+  {
+   "op": "accept",
    "quest": 3524
   },
   {
@@ -1258,6 +1361,10 @@
    "quest": 983
   },
   {
+   "op": "accept",
+   "quest": 1001
+  },
+  {
    "op": "turnin",
    "quest": 3524
   },
@@ -1271,7 +1378,15 @@
   },
   {
    "op": "complete",
+   "quest": 1001
+  },
+  {
+   "op": "complete",
    "quest": 4681
+  },
+  {
+   "op": "accept",
+   "quest": 1138
   },
   {
    "op": "turnin",
@@ -1351,6 +1466,10 @@
   },
   {
    "op": "complete",
+   "quest": 1001
+  },
+  {
+   "op": "complete",
    "quest": 982
   },
   {
@@ -1358,12 +1477,12 @@
    "quest": 982
   },
   {
-   "op": "accept",
-   "quest": 4723
+   "op": "complete",
+   "quest": 1001
   },
   {
-   "op": "accept",
-   "quest": 4723
+   "op": "turnin",
+   "quest": 1001
   },
   {
    "op": "accept",
@@ -1470,6 +1589,10 @@
    "quest": 2138
   },
   {
+   "op": "accept",
+   "quest": 4722
+  },
+  {
    "op": "complete",
    "quest": 985
   },
@@ -1483,7 +1606,11 @@
   },
   {
    "op": "turnin",
-   "quest": 4723
+   "quest": 4722
+  },
+  {
+   "op": "accept",
+   "quest": 1138
   },
   {
    "op": "turnin",
@@ -1554,10 +1681,6 @@
    "quest": 982
   },
   {
-   "op": "accept",
-   "quest": 4723
-  },
-  {
    "op": "complete",
    "quest": 1002
   },
@@ -1578,16 +1701,16 @@
    "quest": 2138
   },
   {
-   "op": "accept",
-   "quest": 4723
-  },
-  {
    "op": "complete",
    "quest": 1002
   },
   {
    "op": "accept",
    "quest": 4725
+  },
+  {
+   "op": "complete",
+   "quest": 1138
   },
   {
    "op": "complete",
@@ -1683,7 +1806,7 @@
   },
   {
    "op": "turnin",
-   "quest": 4723
+   "quest": 1138
   },
   {
    "op": "turnin",
@@ -1794,6 +1917,10 @@
    "quest": 951
   },
   {
+   "op": "complete",
+   "quest": 1138
+  },
+  {
    "op": "accept",
    "quest": 4731
   },
@@ -1824,6 +1951,10 @@
   {
    "op": "turnin",
    "quest": 4731
+  },
+  {
+   "op": "turnin",
+   "quest": 1138
   },
   {
    "op": "turnin",
@@ -1902,8 +2033,32 @@
    "quest": 951
   },
   {
+   "op": "accept",
+   "quest": 2098
+  },
+  {
+   "op": "complete",
+   "quest": 2098
+  },
+  {
+   "op": "complete",
+   "quest": 2098
+  },
+  {
+   "op": "complete",
+   "quest": 2098
+  },
+  {
+   "op": "complete",
+   "quest": 2098
+  },
+  {
    "op": "complete",
    "quest": 986
+  },
+  {
+   "op": "turnin",
+   "quest": 2098
   },
   {
    "op": "accept",
@@ -1944,6 +2099,10 @@
   {
    "op": "turnin",
    "quest": 4727
+  },
+  {
+   "op": "turnin",
+   "quest": 1138
   },
   {
    "op": "accept",
@@ -2015,10 +2174,6 @@
   },
   {
    "op": "accept",
-   "quest": 20
-  },
-  {
-   "op": "accept",
    "quest": 98387
   },
   {
@@ -2087,10 +2242,6 @@
   },
   {
    "op": "complete",
-   "quest": 20
-  },
-  {
-   "op": "complete",
    "quest": 98387
   },
   {
@@ -2100,10 +2251,6 @@
   {
    "op": "level",
    "level": 20
-  },
-  {
-   "op": "turnin",
-   "quest": 20
   },
   {
    "op": "turnin",

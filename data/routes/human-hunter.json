@@ -7,15 +7,34 @@
  "target": 20,
  "winner": "plan",
  "hours": {
-  "guide": 21.74,
-  "guideImproved": 16.93,
+  "guide": 22.22,
+  "guideImproved": 17.08,
   "plan": 16.25,
-  "planImproved": 15.96
+  "planImproved": 15.89
  },
- "quests": 115,
+ "quests": 114,
  "killProfile": "MythicSim hunter mm (gear starter weapon, talents none; outside the table: default (uncalibrated) scaled to the table's edge)",
  "assumedDropSteps": 9,
  "basis": "ForeverRoutes planner, improved by local edits",
+ "classQuests": [
+  {
+   "reward": "Begleiter z\u00e4hmen",
+   "tier": "required",
+   "quest": 94793,
+   "name": "Training the Beast",
+   "minLevel": 10,
+   "quests": [
+    94792,
+    94863,
+    94864,
+    94793
+   ],
+   "inRoute": true,
+   "minutes": -42,
+   "possible": true,
+   "level": 10
+  }
+ ],
  "events": [
   {
    "op": "accept",
@@ -75,15 +94,11 @@
   },
   {
    "op": "accept",
-   "quest": 99127
-  },
-  {
-   "op": "complete",
-   "quest": 99127
+   "quest": 2158
   },
   {
    "op": "turnin",
-   "quest": 99127
+   "quest": 2158
   },
   {
    "op": "accept",
@@ -106,10 +121,6 @@
    "quest": 91745
   },
   {
-   "op": "accept",
-   "quest": 92479
-  },
-  {
    "op": "complete",
    "quest": 15
   },
@@ -120,10 +131,6 @@
   {
    "op": "complete",
    "quest": 3904
-  },
-  {
-   "op": "turnin",
-   "quest": 92479
   },
   {
    "op": "turnin",
@@ -154,20 +161,12 @@
    "quest": 21
   },
   {
-   "op": "accept",
-   "quest": 3905
-  },
-  {
    "op": "complete",
    "quest": 21
   },
   {
    "op": "complete",
    "quest": 6
-  },
-  {
-   "op": "turnin",
-   "quest": 3905
   },
   {
    "op": "turnin",
@@ -295,6 +294,10 @@
   },
   {
    "op": "accept",
+   "quest": 61
+  },
+  {
+   "op": "accept",
    "quest": 76
   },
   {
@@ -304,6 +307,18 @@
   {
    "op": "accept",
    "quest": 99128
+  },
+  {
+   "op": "accept",
+   "quest": 99127
+  },
+  {
+   "op": "complete",
+   "quest": 99127
+  },
+  {
+   "op": "turnin",
+   "quest": 99127
   },
   {
    "op": "accept",
@@ -342,6 +357,10 @@
    "quest": 76
   },
   {
+   "op": "turnin",
+   "quest": 61
+  },
+  {
    "op": "accept",
    "quest": 91723
   },
@@ -352,10 +371,6 @@
   {
    "op": "turnin",
    "quest": 91723
-  },
-  {
-   "op": "accept",
-   "quest": 54
   },
   {
    "op": "accept",
@@ -364,10 +379,6 @@
   {
    "op": "turnin",
    "quest": 96627
-  },
-  {
-   "op": "turnin",
-   "quest": 54
   },
   {
    "op": "accept",
@@ -432,6 +443,14 @@
   {
    "op": "turnin",
    "quest": 94863
+  },
+  {
+   "op": "accept",
+   "quest": 99129
+  },
+  {
+   "op": "turnin",
+   "quest": 99129
   },
   {
    "op": "accept",
@@ -739,11 +758,11 @@
   },
   {
    "op": "turnin",
-   "quest": 4723
+   "quest": 4725
   },
   {
    "op": "turnin",
-   "quest": 4725
+   "quest": 4723
   },
   {
    "op": "accept",
@@ -767,19 +786,19 @@
   },
   {
    "op": "turnin",
-   "quest": 4731
-  },
-  {
-   "op": "turnin",
-   "quest": 4730
-  },
-  {
-   "op": "turnin",
    "quest": 4732
   },
   {
    "op": "turnin",
    "quest": 4733
+  },
+  {
+   "op": "turnin",
+   "quest": 4731
+  },
+  {
+   "op": "turnin",
+   "quest": 4730
   },
   {
    "op": "turnin",
@@ -1098,8 +1117,28 @@
    "quest": 91740
   },
   {
+   "op": "level",
+   "level": 17
+  },
+  {
    "op": "accept",
    "quest": 103
+  },
+  {
+   "op": "accept",
+   "quest": 104
+  },
+  {
+   "op": "complete",
+   "quest": 104
+  },
+  {
+   "op": "turnin",
+   "quest": 104
+  },
+  {
+   "op": "level",
+   "level": 17
   },
   {
    "op": "accept",
@@ -1210,6 +1249,10 @@
    "quest": 20
   },
   {
+   "op": "level",
+   "level": 19
+  },
+  {
    "op": "accept",
    "quest": 219
   },
@@ -1220,6 +1263,10 @@
   {
    "op": "turnin",
    "quest": 219
+  },
+  {
+   "op": "level",
+   "level": 20
   }
  ]
 }

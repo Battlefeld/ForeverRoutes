@@ -7,8 +7,8 @@
  "target": 20,
  "winner": "plan",
  "hours": {
-  "guide": 20.03,
-  "guideImproved": 18.49,
+  "guide": 22.95,
+  "guideImproved": 19.13,
   "plan": 18.12,
   "planImproved": 17.57
  },
@@ -16,6 +16,50 @@
  "killProfile": "MythicSim mage fire (gear starter weapon, talents none; outside the table: default (uncalibrated) scaled to the table's edge)",
  "assumedDropSteps": 6,
  "basis": "ForeverRoutes planner, improved by local edits",
+ "classQuests": [
+  {
+   "reward": "",
+   "tier": "optional",
+   "quest": 1879,
+   "name": "Speak with Bink",
+   "minLevel": 10,
+   "quests": [
+    1879
+   ],
+   "inRoute": false,
+   "minutes": 0,
+   "possible": false
+  },
+  {
+   "reward": "Stab",
+   "tier": "recommended",
+   "quest": 1880,
+   "name": "Mage-tastic Gizmonitor",
+   "minLevel": 10,
+   "quests": [
+    1880
+   ],
+   "inRoute": false,
+   "minutes": 18.5,
+   "possible": true,
+   "level": 11
+  },
+  {
+   "reward": "Klassenbrief",
+   "tier": "required",
+   "quest": 3114,
+   "name": "Glyphic Memorandum",
+   "minLevel": 1,
+   "quests": [
+    179,
+    3114
+   ],
+   "inRoute": true,
+   "minutes": -41.1,
+   "possible": true,
+   "level": 3
+  }
+ ],
  "events": [
   {
    "op": "accept",
@@ -779,10 +823,6 @@
   },
   {
    "op": "turnin",
-   "quest": 4732
-  },
-  {
-   "op": "turnin",
    "quest": 4730
   },
   {
@@ -790,6 +830,10 @@
    "quest": 4731
   },
   {
+   "op": "turnin",
+   "quest": 4732
+  },
+  {
    "op": "accept",
    "quest": 982
   },
@@ -1134,6 +1178,10 @@
    "quest": 124
   },
   {
+   "op": "level",
+   "level": 16
+  },
+  {
    "op": "accept",
    "quest": 178
   },
@@ -1186,6 +1234,10 @@
    "quest": 104
   },
   {
+   "op": "level",
+   "level": 17
+  },
+  {
    "op": "accept",
    "quest": 140
   },
@@ -1218,6 +1270,10 @@
    "quest": 20
   },
   {
+   "op": "level",
+   "level": 19
+  },
+  {
    "op": "accept",
    "quest": 219
   },
@@ -1228,6 +1284,10 @@
   {
    "op": "turnin",
    "quest": 219
+  },
+  {
+   "op": "level",
+   "level": 20
   }
  ]
 }
