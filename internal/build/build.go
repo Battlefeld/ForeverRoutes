@@ -346,9 +346,8 @@ func Build(in Inputs) (*dataset.Dataset, error) {
 	b.instantQuests()
 	b.aegisQuests()
 	b.egChances()
-	if b.pdb != nil {
-		b.dungeonOutside()
-	}
+	// dungeon quests stay dungeon quests, also where their objectives lie before the portal: the mobs there are
+	// elites in Forever (the outer caves and mines); the route with dungeons does them on its run
 	dungeons := b.dungeons()
 	travel := b.travel()
 	build, _ := merged["build"].(string)

@@ -2,9 +2,7 @@ package build
 
 import (
 	"fmt"
-	"math"
 	"sort"
-	"strconv"
 	"strings"
 
 	"github.com/Battlefeld/ForeverRoutes/dataset"
@@ -519,86 +517,6 @@ func (b *builder) polestarTravel(t *dataset.Travel) {
 		add(e.to, e.name+" (landing)", e.faction, to)
 		t.Links = append(t.Links, dataset.Link{From: e.from, To: e.to, Seconds: e.seconds, Name: e.name})
 		b.stats["skyborne_exits"]++
-	}
-}
-
-// entranceRadius: objective sources this close to a dungeon entrance, in the open world, are in the caves and halls
-// before the instance portal (the Wailing Caverns' outer cave, Blackfathom's grotto).
-const entranceRadius = 450
-
-// dungeonOutside opens a dungeon quest to solo routes when all its objectives can be done before the instance portal:
-// every objective keeps the sources that stand in the open world near a dungeon entrance and are not elite. Sources
-// elsewhere are dropped from such a quest (its objective is the dungeon's, not another place's). A quest with an
-// objective only inside keeps its type and stays out of solo routes.
-func (b *builder) dungeonOutside() {
-	var doors []dataset.Point
-	for _, e := range b.pdb.Entrances {
-		if p, ok := b.uiToWorld(e.UIMap, e.X, e.Y); ok {
-			doors = append(doors, p)
-		} else if t, ok := b.uiT[strconv.Itoa(e.UIMap)]; ok {
-			doors = append(doors, t.apply(e.X, e.Y))
-		}
-	}
-	if len(doors) == 0 {
-		return
-	}
-	npcs := map[int]*dataset.NPC{}
-	for i := range b.npcOut {
-		npcs[b.npcOut[i].ID] = &b.npcOut[i]
-	}
-	objs := map[int]*dataset.Object{}
-	for i := range b.objOut {
-		objs[b.objOut[i].ID] = &b.objOut[i]
-	}
-	near := func(ps []dataset.Point) bool {
-		for _, p := range ps {
-			if p.Map != 0 && p.Map != 1 {
-				continue
-			}
-			for _, d := range doors {
-				if d.Map == p.Map && math.Hypot(d.X-p.X, d.Y-p.Y) <= entranceRadius {
-					return true
-				}
-			}
-		}
-		return false
-	}
-	okNPC := func(id int) bool {
-		n := npcs[id]
-		return n != nil && (n.Rank == 0 || n.Rank == 4) && near(n.Spawns)
-	}
-	okObj := func(id int) bool { o := objs[id]; return o != nil && near(o.Spawns) }
-	for i := range b.out {
-		q := &b.out[i]
-		if q.Type != "dungeon" || q.Unsupported != "" || len(q.Objectives) == 0 {
-			continue
-		}
-		objectives := make([]dataset.Objective, len(q.Objectives))
-		copy(objectives, q.Objectives)
-		outside := true
-		for j := range objectives {
-			o := &objectives[j]
-			switch o.Kind {
-			case "kill", "talk":
-				outside = outside && okNPC(o.ID)
-			case "object":
-				outside = outside && okObj(o.ID)
-			case "item":
-				var keep []dataset.Drop
-				for _, d := range o.Drops {
-					if (d.NPC > 0 && okNPC(d.NPC)) || (d.Object > 0 && okObj(d.Object)) {
-						keep = append(keep, d)
-					}
-				}
-				o.Drops = keep
-				outside = outside && len(keep) > 0
-			}
-		}
-		if outside {
-			q.Objectives, q.Type = objectives, ""
-			q.Sources["type"] = "dungeon quest done before the instance portal"
-			b.stats["dungeon_quests_outside"]++
-		}
 	}
 }
 
