@@ -155,7 +155,7 @@ const classQuestValue = 1500
 
 // startArea: class quests given this close to where the character starts belong to its start (the start zone and its
 // first town); other start zones have their own copies.
-const startArea = 3000
+const startArea = 1500
 
 // classQuestsLeft: the character is below level 6, or a class quest of its start (given by level 6, near the start)
 // can be taken now or is in the log. The route stays at home until then: these quests teach the class its first

@@ -13,6 +13,7 @@ import (
 // and turned in where the guide comes closest to its giver). So the result is never slower than the guide it starts
 // from. The budget bounds the time spent searching.
 func (w *World) Improve(events []GuideEvent, target int, budget time.Duration) ([]GuideEvent, *GuideResult, error) {
+	events = w.withClassQuests(events)
 	best, err := w.FollowGuide(events, target)
 	if err != nil {
 		return nil, nil, err
@@ -33,6 +34,9 @@ func (w *World) Improve(events []GuideEvent, target int, budget time.Duration) (
 		for _, q := range questsOf(cur) {
 			if time.Now().After(deadline) {
 				break
+			}
+			if w.keepClassQuest(q) {
+				continue // the first class quests teach abilities: never left out for time
 			}
 			if try(without(cur, func(e GuideEvent) bool { return e.Quest == q })) {
 				improved = true
@@ -74,6 +78,40 @@ func (w *World) Improve(events []GuideEvent, target int, budget time.Duration) (
 		}
 	}
 	return cur, best, nil
+}
+
+// keepClassQuest: a class quest a character takes by level 10.
+func (w *World) keepClassQuest(id int) bool {
+	q := w.ByID[id]
+	return q != nil && q.Classes != 0 && q.MinLevel <= 10
+}
+
+// withClassQuests puts in the class quests of the start (given by level 6 near the start) the route lacks, each at the
+// step whose place is closest to its giver, chain after chain in order.
+func (w *World) withClassQuests(events []GuideEvent) []GuideEvent {
+	in := map[int]bool{}
+	for _, q := range questsOf(events) {
+		in[q] = true
+	}
+	out := append([]GuideEvent(nil), events...)
+	for _, q := range w.Quests {
+		if in[q.ID] || q.Classes == 0 || q.MinLevel > 6 || distance(q.StartPos, w.Start) > startArea {
+			continue
+		}
+		i, _ := w.closestStep(out, q.StartPos)
+		// a follow-up goes after its prerequisite's turn-in
+		for _, p := range append(append([]int(nil), q.PreAll...), q.PreAny...) {
+			for j, e := range out {
+				if e.Quest == p && e.Op == "turnin" && j > i {
+					i = j
+				}
+			}
+		}
+		block := []GuideEvent{{Op: "accept", Quest: q.ID}, {Op: "complete", Quest: q.ID}, {Op: "turnin", Quest: q.ID}}
+		out = append(append(append([]GuideEvent(nil), out[:i+1]...), block...), out[i+1:]...)
+		in[q.ID] = true
+	}
+	return out
 }
 
 // questsOf lists the quests a guide names, in first-seen order.
