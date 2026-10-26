@@ -99,8 +99,12 @@ func cmdImprove(args []string) error {
 		best := cand{rep.Winner, rep.Events, map[bool]*route.GuideResult{true: p1, false: g1}[rep.Winner == "plan"]}
 		var grouped *cand
 		try := func(winner string, events []route.GuideEvent) {
-			if e, r, err := w.Improve(w.WithDungeons(events, *target), *target, *budget); err == nil && route.Runs(e) > 0 && reached(r) &&
-				(grouped == nil || r.Seconds < grouped.res.Seconds) {
+			e, r, err := w.Improve(w.WithDungeons(events, *target), *target, *budget)
+			if err != nil {
+				return
+			}
+			fmt.Fprintf(os.Stderr, "with dungeons from %s: %.2f h, %s\n", winner, r.Seconds/3600, strings.Join(route.RunKeys(e), " "))
+			if route.Runs(e) > 0 && reached(r) && (grouped == nil || r.Seconds < grouped.res.Seconds) {
 				grouped = &cand{winner, e, r}
 			}
 		}
@@ -138,7 +142,7 @@ func cmdImprove(args []string) error {
 			} else if sr, err := w.FollowGuide(events, *target); err == nil && reached(sr) && sr.Seconds < best.res.Seconds {
 				best = cand{sw.Winner, events, sr} // the solo route, made without dungeons: kept when no run pays
 			}
-			try(sw.Winner, events)
+			try(path, events)
 		}
 		if *splice != "" {
 			// another race's route from a level on, dungeons put in: walked once, the fastest improved

@@ -244,6 +244,17 @@ func (w *World) dungeonPrereqs(d *Dungeon, events []GuideEvent) []*Quest {
 const dungeonWindow = 6
 
 // Runs counts the dungeon runs of a route.
+// RunKeys: the dungeons a route runs, in order.
+func RunKeys(events []GuideEvent) []string {
+	var out []string
+	for _, e := range events {
+		if e.Op == "dungeon" {
+			out = append(out, e.Dungeon)
+		}
+	}
+	return out
+}
+
 func Runs(events []GuideEvent) int {
 	n := 0
 	for _, e := range events {
