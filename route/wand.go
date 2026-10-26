@@ -37,6 +37,9 @@ const defaultWandDetour = 420.0
 // SetWandDetour sets the detour for the wands a route was made with (0: defaultWandDetour).
 func (w *World) SetWandDetour(d float64) { w.wandDetour = d }
 
+// WandDetour is the detour for the wands the route is walked with.
+func (w *World) WandDetour() float64 { return w.wandDetour }
+
 // ChooseWandDetour sets the detour for the wands (WandDetours) under which the guide reaches the target soonest.
 func (w *World) ChooseWandDetour(events []GuideEvent, target int) float64 {
 	if !wandClasses[w.Char.Class] {

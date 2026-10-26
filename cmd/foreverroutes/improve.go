@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"slices"
 	"sort"
 	"strings"
 	"time"
@@ -44,6 +45,9 @@ func cmdImprove(args []string) error {
 	splice := fs.String("splice", "", "with -dungeons: routes of the side's other races (comma-separated) this route may switch to at a level (-splice-levels), with dungeons put in")
 	spliceLevels := fs.String("splice-levels", "6,8,10,12,14", "the levels a route may switch at")
 	spliceKeep := fs.Int("splice-keep", 4, "the switched routes improved: the fastest by a first walk with dungeons")
+	optimize := fs.Duration("optimize", 0, "then search the route as a timeline (route.Optimize) this long, on -workers cores with their own seeds")
+	workers := fs.Int("workers", 4, "with -optimize: searches in parallel")
+	keep := fs.String("keep", "", "with -optimize: quests the route must hand in (comma-separated): an option switched on")
 	fs.Parse(args)
 	w, err := loadWorld(*path, *race, *class, *faction, *profile, *group)
 	if err != nil {
@@ -196,7 +200,62 @@ func cmdImprove(args []string) error {
 		}
 		set(best)
 	}
-	rep.Events = w.WithoutExtraOptions(rep.Events, *target) // an option's chain is the addon's to switch on
+	var keepIDs []int
+	for _, k := range strings.Split(*keep, ",") {
+		var id int
+		if _, err := fmt.Sscan(k, &id); err == nil {
+			keepIDs = append(keepIDs, id)
+		}
+	}
+	if len(keepIDs) > 0 {
+		// an option switched on: its chain woven in first, then searched with the route
+		for _, c := range w.ClassChains(*target) {
+			if slices.Contains(keepIDs, c.Goal.ID) {
+				rep.Events = w.WeaveIn(rep.Events, c, *target)
+			}
+		}
+	}
+	if *optimize > 0 {
+		type found struct {
+			events []route.GuideEvent
+			res    *route.GuideResult
+			wand   float64
+		}
+		out := make(chan found, *workers)
+		for k := 0; k < *workers; k++ {
+			go func(seed int64) {
+				ww, err := loadWorld(*path, *race, *class, *faction, *profile, *group)
+				if err != nil {
+					out <- found{}
+					return
+				}
+				ww.SetWandDetour(wand)
+				e, r, err := ww.Optimize(rep.Events, route.OptimizeOptions{Target: *target, Budget: *optimize, Seed: seed, Keep: keepIDs})
+				if err != nil {
+					out <- found{}
+					return
+				}
+				out <- found{e, r, ww.WandDetour()}
+			}(int64(k + 1))
+		}
+		before, _ := w.FollowGuide(rep.Events, *target)
+		var top *found
+		for k := 0; k < *workers; k++ {
+			f := <-out
+			if f.res != nil && (top == nil || f.res.Seconds < top.res.Seconds) {
+				top = &f
+			}
+		}
+		if top != nil && before != nil && top.res.Seconds < before.Seconds {
+			fmt.Fprintf(os.Stderr, "optimized: %.2f h -> %.2f h, %s\n", before.Seconds/3600, top.res.Seconds/3600, strings.Join(route.RunKeys(top.events), " "))
+			rep.Events, rep.Quests, rep.Profile, rep.Assumed, rep.WandDetour = top.events, top.res.Quests, top.res.Profile, top.res.Assumed, top.wand
+			w.SetWandDetour(top.wand)
+			rep.Hours["optimized"] = top.res.Seconds / 3600
+		}
+	}
+	if len(keepIDs) == 0 {
+		rep.Events = w.WithoutExtraOptions(rep.Events, *target) // an option's chain is the addon's to switch on
+	}
 	rep.Class = w.ClassReport(rep.Events, *target)
 	fmt.Fprintf(os.Stderr, "%s %s: guide %.1f h -> %.1f h, plan %.1f h -> %.1f h, winner %s (%.0f s)\n", *race, *class,
 		rep.Hours["guide"], rep.Hours["guideImproved"], rep.Hours["plan"], rep.Hours["planImproved"], rep.Winner, rep.SearchSecs)

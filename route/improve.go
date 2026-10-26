@@ -652,6 +652,11 @@ var optionWindows = []int{2, 4, 6, 20}
 
 // weaveIn puts an option's chain into a route place by place (weaveLegs): of the windows that finish the chain before
 // the target, the fastest route.
+// WeaveIn puts an option's chain into a route where it costs least (weaveIn).
+func (w *World) WeaveIn(events []GuideEvent, c ClassChain, target int) []GuideEvent {
+	return w.weaveIn(events, c, target)
+}
+
 func (w *World) weaveIn(events []GuideEvent, c ClassChain, target int) []GuideEvent {
 	var best []GuideEvent
 	bt := math.Inf(1)
