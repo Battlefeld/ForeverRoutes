@@ -54,9 +54,7 @@ func (w *World) StateFrom(l Live) (*State, []string, error) {
 		s.Bind = *l.Bind
 	}
 	s.Hearth = max(0, l.HearthIn)
-	if wandClasses[w.Char.Class] && l.Level >= lesserWandLevel {
-		s.Wand = 2 // a caster playing has its wand by then
-	}
+	s.Wand = wandClasses[w.Char.Class] && l.Level >= lesserWandLevel // a caster playing has its wand by then
 	var notes []string
 	for _, id := range l.Completed {
 		if q := w.ByID[id]; q != nil {

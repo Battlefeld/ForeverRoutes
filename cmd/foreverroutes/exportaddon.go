@@ -113,11 +113,8 @@ func writeStep(b *strings.Builder, w *route.World, res *route.GuideResult, st ro
 			fmt.Fprintf(b, ", tg = %s", luaStr(n.Name))
 		}
 	case "wand":
-		// a capital's Enchanting trainer and supplier: wt 1 the Novice's Practice Wand, 2 the Lesser Magic Wand (it)
-		fmt.Fprintf(b, "op = \"z\", wt = %d", st.Wand)
-		if st.Wand == 2 {
-			fmt.Fprintf(b, ", it = %d", route.LesserWandItem)
-		}
+		// a capital's Enchanting trainer and supplier: the Novice's Practice Wand and the Lesser Magic Wand (it)
+		fmt.Fprintf(b, "op = \"z\", it = %d", route.LesserWandItem)
 	case "dungeon":
 		fmt.Fprintf(b, "op = \"d\", n = %s", luaStr(strings.TrimSuffix(st.Name, " (dungeon run)")))
 		for _, d := range w.Dungeons {

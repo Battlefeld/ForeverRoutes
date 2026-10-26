@@ -163,9 +163,9 @@ entsteht.
   Kills zählen für alle Quests im Log, Respawns werden abgewartet, geleerte Gruppen erholen sich über die Respawnzeit.
 - Reisen: Laufen (7 Yards/s, Wegfaktor 1,2), Flugmeister ab Entdeckung (im Vorbeigehen innerhalb 60 Yards), Zeppeline und
   Schiffe mit Zeiten aus der cmangos-Transporttabelle, Ruhestein (10 s, 1 h Abklingzeit, gebunden am letzten Gasthaus).
-- Zauberstab: Magier, Priester und Hexenmeister holen sich in der nächsten Hauptstadt (Verzauberkunst-Lehrer und
-  -Händler) den Novice's Practice Wand (vor Stufe 4) und ab Stufe 5 den Geringen Zauberstab (Essenz aus dem
-  Auktionshaus) und erledigen Gegner damit ohne Mana; Quest- und Dungeon-Zauberstäbe ersetzen ihn, wenn sie besser sind.
+- Zauberstab: Magier, Priester und Hexenmeister bauen sich bei einem Besuch in der nächsten Hauptstadt
+  (Verzauberkunst-Lehrer, -Händler, Auktionshaus) den Novice's Practice Wand (getragen bis Stufe 5) und den Geringen
+  Zauberstab (ab Stufe 5) und erledigen Gegner damit ohne Mana; Quest- und Dungeon-Zauberstäbe ersetzen ihn, wenn sie besser sind.
 - Laufgitter: Ein Punkt auf einer abgeschnittenen Gitter-Insel (Dammkrone, Felsvorsprung) wird über die nächste
   verbundene Zelle erreicht statt mit dem Notwert (sechsfache Luftlinie).
 - Optionen: Klassenreihen, die nicht Pflicht sind, und Forever-Ziele wie der Gemütliche Schlafsack (ab Level 14) werden

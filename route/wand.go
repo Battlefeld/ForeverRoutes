@@ -10,21 +10,27 @@ import (
 // crafted with Enchanting, whose trainers and suppliers stand in the capitals (cmangos): the Novice's Practice Wand
 // (new in Forever, Enchanting 1, Simple Wood and a Mote of Magic from the supplier; 5-8 arcane, speed 1.5) from level
 // 1, the Lesser Magic Wand (Enchanting 10, reached with practice wands; Simple Wood and a Lesser Magic Essence from the
-// auction house; 12-22 arcane, speed 1.5; foreverchanges.pro/item/11287) from level 5. A route goes for them when the
-// capital is close enough (wandDetour); later a quest's wand may be better (cmangos quest rewards: the wands of quests
-// up to level 22, damage per second).
+// auction house; 12-22 arcane, speed 1.5; foreverchanges.pro/item/11287), worn from level 5. One visit crafts both:
+// the practice wand until level 5, the Lesser Magic Wand from then on. A route goes for them when a capital is close
+// enough (wandDetour); later a quest's wand may be better (cmangos quest rewards: the wands of quests up to level 22,
+// damage per second).
 const (
 	practiceWandDPS = 4.3
 	lesserWandLevel = 5
 	lesserWandDPS   = 11.3
-	// time at the trainer, supplier and auction house: learning Enchanting and crafting the practice wand; the
-	// Lesser Magic Wand with the practice wands for the skill to 10 on top
-	practiceWandCraft = 120.0
-	lesserWandCraft   = 300.0
+	// wandCraft: time at the trainer, supplier and auction house: learning Enchanting, practice wands for the skill to
+	// 10, the Lesser Magic Wand
+	wandCraft = 300.0
 )
 
-// wandDetour: the longest way, one way, a route goes to a capital for a wand (the way back is the next step's).
-var wandDetour = map[int]float64{1: 180, 2: 600}
+// wandDetour: the longest way, one way, a route goes to a capital for its wands (the way back is the next step's):
+// before level 4 they are worth less (a practice wand for the first levels).
+func wandDetour(level int) float64 {
+	if level < lesserWandLevel-1 {
+		return 180
+	}
+	return 600
+}
 
 // wandSites: the Enchanting trainer and supplier of each capital (cmangos spawns), by side; their capitals have an
 // auction house.
@@ -70,11 +76,11 @@ func (w *World) wandDPS(s *State) float64 {
 		return 0
 	}
 	best := 0.0
-	switch s.Wand {
-	case 1:
-		best = practiceWandDPS
-	case 2:
+	switch {
+	case s.Wand && w.Level(s) >= lesserWandLevel:
 		best = lesserWandDPS
+	case s.Wand:
+		best = practiceWandDPS
 	}
 	for id, dps := range wandQuests {
 		if q := w.ByID[id]; q != nil && dps > best && s.Status[q.Index] == done {
@@ -84,28 +90,13 @@ func (w *World) wandDPS(s *State) float64 {
 	return best
 }
 
-// wandTier: the wand a caster can craft at its level (1 practice, 2 lesser), 0 for none.
-func (w *World) wandTier(s *State) int {
-	if !wandClasses[w.Char.Class] {
-		return 0
-	}
-	switch l := w.Level(s); {
-	case l >= lesserWandLevel:
-		return 2
-	case l < lesserWandLevel-1:
-		return 1
-	}
-	return 0 // a level before the Lesser Magic Wand: not worth a practice wand of its own
-}
-
-// wandAction: the visit to a capital for a better wand when one is in reach (wandDetour), else nil.
+// wandAction: the visit to a capital for the wands when one is in reach (wandDetour), else nil.
 func (w *World) wandAction(s *State) *Action {
-	tier := w.wandTier(s)
-	if tier <= s.Wand {
+	if s.Wand || !wandClasses[w.Char.Class] {
 		return nil
 	}
 	var best *dataset.Point
-	bt := wandDetour[tier]
+	bt := wandDetour(w.Level(s))
 	for i, p := range wandSites[w.Faction] {
 		if p.Map != s.Pos.Map || distance(p, s.Pos) > 7*bt*1.5 {
 			continue // too far on foot or flight alike (a cheap filter before the travel time)
@@ -117,7 +108,7 @@ func (w *World) wandAction(s *State) *Action {
 	if best == nil {
 		return nil
 	}
-	return &Action{Op: "wand", At: *best, Wand: tier}
+	return &Action{Op: "wand", At: *best}
 }
 
 // KillSecondsWand: the fastest way to kill the mob with the wand at hand, rest included: spells only, or spells for a

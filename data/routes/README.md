@@ -28,9 +28,9 @@ is done at its level, so the XP of an option shortens the grinding by itself).
 
 Wands: mages, priests and warlocks finish their mobs with a wand from when they have one (`route/wand.go`; no mana,
 fewer rests). Enchanting trainers and suppliers stand in the capitals: the route goes there when a capital is close
-enough, for the Novice's Practice Wand (new in Forever: Enchanting 1, Simple Wood and a Mote of Magic from the supplier)
-before level 4, for the Lesser Magic Wand from level 5 (Enchanting 10 with practice wands, a Lesser Magic Essence from
-the auction house). A better wand from a quest on the way takes their place.
+enough (3 minutes away before level 4, 10 from then on). One visit crafts both: the Novice's Practice Wand (new in
+Forever: Enchanting 1, Simple Wood and a Mote of Magic from the supplier), worn until level 5, and the Lesser Magic
+Wand (Enchanting 10 with practice wands, a Lesser Magic Essence from the auction house), worn from level 5. A better wand from a quest on the way takes their place.
 The addon shows the crafting as a step of its own.
 
 **Credits.** Routes whose `winner` is `guide` are adapted from the RestedXP Forever guides
