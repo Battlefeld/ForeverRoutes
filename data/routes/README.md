@@ -27,8 +27,10 @@ Kingdoms steps when it is there), and finished before level 20. The addon shows 
 is done at its level, so the XP of an option shortens the grinding by itself).
 
 Wands: mages, priests and warlocks finish their mobs with a wand from when they have one (`route/wand.go`; no mana,
-fewer rests). Enchanting trainers and suppliers stand in the capitals: the route goes there when a capital is close
-enough (3 minutes away before level 4, 10 from then on). One visit crafts both: the Novice's Practice Wand (new in
+fewer rests). Enchanting trainers and suppliers stand in the capitals: from level 4 (the money for the essence) the
+route goes there where it adds least to its way, either when a capital lies on its way (leaving the start area) or
+back and forth with the hearthstone home, whichever reaches level 20 sooner (`wandDetour` in the route file: the most
+the visit may add). One visit crafts both: the Novice's Practice Wand (new in
 Forever: Enchanting 1, Simple Wood and a Mote of Magic from the supplier), worn until level 5, and the Lesser Magic
 Wand (Enchanting 10 with practice wands, a Lesser Magic Essence from the auction house), worn from level 5. A better wand from a quest on the way takes their place.
 The addon shows the crafting as a step of its own.

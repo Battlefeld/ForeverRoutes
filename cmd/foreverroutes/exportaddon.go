@@ -51,6 +51,7 @@ func cmdExportAddon(args []string) error {
 			Hours     map[string]float64 `json:"hours"`
 			Events    []route.GuideEvent `json:"events"`
 			Options   []route.ClassCost  `json:"classQuests"`
+			Wand      float64            `json:"wandDetour"`
 		}
 		if err := json.Unmarshal(raw, &r); err != nil || len(r.Events) == 0 {
 			continue
@@ -63,6 +64,7 @@ func cmdExportAddon(args []string) error {
 		if err != nil {
 			return fmt.Errorf("%s: %w", f, err)
 		}
+		w.SetWandDetour(r.Wand)
 		ds = w.Data
 		key := strings.TrimSuffix(filepath.Base(f), ".json")
 		res, err := w.FollowGuide(r.Events, r.Target)

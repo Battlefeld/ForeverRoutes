@@ -23,13 +23,34 @@ const (
 	wandCraft = 300.0
 )
 
-// wandDetour: the longest way, one way, a route goes to a capital for its wands (the way back is the next step's):
-// before level 4 they are worth less (a practice wand for the first levels).
-func wandDetour(level int) float64 {
-	if level < lesserWandLevel-1 {
-		return 180
+// WandDetours: the most time, in seconds, a visit to a capital for the wands may add to the way to the route's next
+// step, tried in turn by ChooseWandDetour: only where a capital is on the way (on leaving the start area), up to a
+// way back and forth (the hearthstone home).
+var WandDetours = []float64{60, 180, 420, 900}
+
+// wandVisitLevel: the first level a caster goes for its wands (before it, it has not the money for the essence).
+const wandVisitLevel = lesserWandLevel - 1
+
+// defaultWandDetour: the detour when none is chosen.
+const defaultWandDetour = 420.0
+
+// SetWandDetour sets the detour for the wands a route was made with (0: defaultWandDetour).
+func (w *World) SetWandDetour(d float64) { w.wandDetour = d }
+
+// ChooseWandDetour sets the detour for the wands (WandDetours) under which the guide reaches the target soonest.
+func (w *World) ChooseWandDetour(events []GuideEvent, target int) float64 {
+	if !wandClasses[w.Char.Class] {
+		return 0
 	}
-	return 600
+	best, bt := defaultWandDetour, math.Inf(1)
+	for _, d := range WandDetours {
+		w.wandDetour = d
+		if r, err := w.FollowGuide(events, target); err == nil && r.Seconds < bt {
+			best, bt = d, r.Seconds
+		}
+	}
+	w.wandDetour = best
+	return best
 }
 
 // wandSites: the Enchanting trainer and supplier of each capital (cmangos spawns), by side; their capitals have an
@@ -90,19 +111,26 @@ func (w *World) wandDPS(s *State) float64 {
 	return best
 }
 
-// wandAction: the visit to a capital for the wands when one is in reach (wandDetour), else nil.
-func (w *World) wandAction(s *State) *Action {
-	if s.Wand || !wandClasses[w.Char.Class] {
+// wandAction: the visit to a capital for the wands on the way to next (the route's next step) when it adds at most
+// the detour chosen (ChooseWandDetour), else nil.
+func (w *World) wandAction(s *State, next dataset.Point) *Action {
+	if s.Wand || !wandClasses[w.Char.Class] || w.Level(s) < wandVisitLevel {
 		return nil
 	}
+	direct, _ := w.travel(s, s.Pos, next)
 	var best *dataset.Point
-	bt := wandDetour(w.Level(s))
+	bt := w.wandDetour
+	if bt == 0 {
+		bt = defaultWandDetour
+	}
 	for i, p := range wandSites[w.Faction] {
-		if p.Map != s.Pos.Map || distance(p, s.Pos) > 7*bt*1.5 {
-			continue // too far on foot or flight alike (a cheap filter before the travel time)
+		if p.Map != s.Pos.Map && p.Map != next.Map {
+			continue
 		}
-		if t, _ := w.travel(s, s.Pos, p); t <= bt {
-			best, bt = &wandSites[w.Faction][i], t
+		there, _ := w.travel(s, s.Pos, p)
+		on, _ := w.travel(s, p, next)
+		if extra := there + on - direct; extra <= bt {
+			best, bt = &wandSites[w.Faction][i], extra
 		}
 	}
 	if best == nil {

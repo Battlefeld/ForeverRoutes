@@ -88,7 +88,9 @@ type World struct {
 	required  map[int]bool // quests of the required class chains (keepClassQuest), for requiredTarget
 	tank      map[int]bool // quests that give the tank form or stance (tankGoals)
 	// classOverride turns a class chain (by its goal) off ("off": not required) or on ("on": required) for a measure
-	classOverride  map[int]string
+	classOverride map[int]string
+	// wandDetour: the most a visit to a capital for the wands may add to the way (seconds; 0: defaultWandDetour)
+	wandDetour     float64
 	requiredTarget int
 	dungeonOf      map[string]*Dungeon
 	landMemo       sync.Map // landKey -> landResult

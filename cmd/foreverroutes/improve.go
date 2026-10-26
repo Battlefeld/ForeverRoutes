@@ -20,7 +20,8 @@ type bestReply struct {
 	Profile    string             `json:"killProfile"`
 	Assumed    int                `json:"assumedDropSteps"`
 	SearchSecs float64            `json:"searchSeconds"`
-	Class      []route.ClassCost  `json:"classQuests"` // what each class quest chain costs the route
+	Class      []route.ClassCost  `json:"classQuests"`          // what each class quest chain costs the route
+	WandDetour float64            `json:"wandDetour,omitempty"` // a caster: the most a visit for its wands adds to the way (s)
 }
 
 // cmdImprove: the guide improved by local edits, our planned route improved the same way; the faster wins.
@@ -51,6 +52,7 @@ func cmdImprove(args []string) error {
 		return err
 	}
 	t0 := time.Now()
+	wand := w.ChooseWandDetour(guide, *target) // a caster: how far it goes for its wands
 	g0, err := w.FollowGuide(guide, *target)
 	if err != nil {
 		return err
@@ -75,7 +77,7 @@ func cmdImprove(args []string) error {
 		}
 	}
 	rep := bestReply{Character: w.Char, Target: *target, Hours: map[string]float64{"guide": g0.Seconds / 3600, "guideImproved": g1.Seconds / 3600,
-		"plan": plan.Seconds / 3600, "planImproved": p1.Seconds / 3600}, SearchSecs: time.Since(t0).Seconds()}
+		"plan": plan.Seconds / 3600, "planImproved": p1.Seconds / 3600}, SearchSecs: time.Since(t0).Seconds(), WandDetour: wand}
 	// a route that does not reach the target never wins
 	reached := func(r *route.GuideResult) bool { return r != nil && r.Level >= *target }
 	// with dungeons the faster wins, as long as it runs a dungeon; without, the guide unless ours is clearly faster

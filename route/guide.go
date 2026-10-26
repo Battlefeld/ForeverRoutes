@@ -75,8 +75,10 @@ func (w *World) followFrom(s *State, events []GuideEvent, target int, horizon fl
 		if w.Level(s) >= target || s.Time-s0.Time >= horizon {
 			break
 		}
-		if a := w.wandAction(s); a != nil {
-			w.try(s, &acts, *a) // a caster near a capital fetches its wand (wand.go)
+		if p, ok := w.eventPos(e); ok {
+			if a := w.wandAction(s, p); a != nil {
+				w.try(s, &acts, *a) // a caster fetches its wands where a capital is on its way (wand.go)
+			}
 		}
 		res.levels[i] = w.Level(s)
 		if q := w.ByID[e.Quest]; q != nil && s0.Status[q.Index] == done {
