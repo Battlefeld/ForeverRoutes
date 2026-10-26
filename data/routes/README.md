@@ -115,7 +115,7 @@ in, across the sea if need be (Ragefire's quest from Undercity). The addon shows
 estimates (`data/sources/dungeons.json`); better gear from the runs is not counted yet, so the routes with dungeons are rather
 faster in game than here.
 
-Average over the 56 combinations: 13.31 h to level 20 (without dungeons 14.91 h). Where the dungeons do not pay (Skyborne Horde druid: its bear form before the first run costs more than the runs bring), the route with dungeons is the one without.
+Average over the 56 combinations: 13.31 h to level 20 (without dungeons 14.91 h). Where the dungeons do not pay (Skyborne Horde druid: Ragefire, the only run on its way, costs more than it brings), the route with dungeons is the one without.
 
 | Race | Class | Hours | Kept |
 |---|---|---|---|
