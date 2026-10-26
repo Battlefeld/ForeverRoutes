@@ -52,11 +52,22 @@ func (w *World) FollowGuideFrom(s *State, events []GuideEvent, target int, horiz
 }
 
 func (w *World) followFrom(s *State, events []GuideEvent, target int, horizon float64) (*GuideResult, error) {
+	return w.follow(s, events, target, horizon, false)
+}
+
+// walkFast walks a guide as FollowGuide does without replaying it for the time line: the result has the time, the
+// level, the levels per event and the steps' actions only (enough to weigh a route, as Optimize does).
+// It stops once the walk takes longer than limit (then the level is below the target).
+func (w *World) walkFast(events []GuideEvent, target int, limit float64) (*GuideResult, error) {
+	return w.follow(w.NewState(), events, target, limit, true)
+}
+
+func (w *World) follow(s *State, events []GuideEvent, target int, horizon float64, fast bool) (*GuideResult, error) {
 	s0 := s.clone()
 	var acts []Action
 	res := &GuideResult{Skipped: map[string]int{}}
 	grindTo := func(level int) {
-		for w.Level(s) < level {
+		for w.Level(s) < level && s.Time-s0.Time < horizon {
 			m := w.grindMacro(s, target)
 			if m == nil {
 				res.Skipped["no grind spot"]++
@@ -190,6 +201,14 @@ func (w *World) followFrom(s *State, events []GuideEvent, target int, horizon fl
 	}
 	if len(acts) == 0 {
 		return nil, fmt.Errorf("nothing left to do in this guide")
+	}
+	if fast {
+		r := &Result{Character: w.Char, Seconds: round1(s.Time - s0.Time), Level: w.Level(s), XP: s.XP, Steps: make([]Step, len(acts))}
+		for i, a := range acts {
+			r.Steps[i].Action = a
+		}
+		res.Result = r
+		return res, nil
 	}
 	r, err := w.replayFrom(s0, acts)
 	if err != nil {

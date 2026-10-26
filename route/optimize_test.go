@@ -35,7 +35,7 @@ func TestEditKeepsSteps(t *testing.T) {
 		{Op: "complete", Quest: 2}, {Op: "turnin", Quest: 2}, {Op: "level", Level: 3}}
 	rng := rand.New(rand.NewSource(7))
 	for k := 0; k < 2000; k++ {
-		e := w.edit(cur, rng, nil, 3, false)
+		e, _ := w.edit(cur, rng, nil, 3, false)
 		if e == nil {
 			continue
 		}

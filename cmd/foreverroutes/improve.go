@@ -47,6 +47,7 @@ func cmdImprove(args []string) error {
 	spliceKeep := fs.Int("splice-keep", 4, "the switched routes improved: the fastest by a first walk with dungeons")
 	optimize := fs.Duration("optimize", 0, "then search the route as a timeline (route.Optimize) this long, on -workers cores with their own seeds")
 	workers := fs.Int("workers", 4, "with -optimize: searches in parallel")
+	rounds := fs.Int("rounds", 4, "with -optimize: rounds, each from the best route of the one before")
 	keep := fs.String("keep", "", "with -optimize: quests the route must hand in (comma-separated): an option switched on")
 	fs.Parse(args)
 	w, err := loadWorld(*path, *race, *class, *faction, *profile, *group)
@@ -221,29 +222,40 @@ func cmdImprove(args []string) error {
 			res    *route.GuideResult
 			wand   float64
 		}
-		out := make(chan found, *workers)
-		for k := 0; k < *workers; k++ {
-			go func(seed int64) {
-				ww, err := loadWorld(*path, *race, *class, *faction, *profile, *group)
-				if err != nil {
-					out <- found{}
-					return
-				}
-				ww.SetWandDetour(wand)
-				e, r, err := ww.Optimize(rep.Events, route.OptimizeOptions{Target: *target, Budget: *optimize, Seed: seed, Keep: keepIDs})
-				if err != nil {
-					out <- found{}
-					return
-				}
-				out <- found{e, r, ww.WandDetour()}
-			}(int64(k + 1))
-		}
 		before, _ := w.FollowGuide(rep.Events, *target)
+		worlds := make([]*route.World, *workers)
+		for k := range worlds {
+			ww, err := loadWorld(*path, *race, *class, *faction, *profile, *group)
+			if err != nil {
+				return err
+			}
+			worlds[k] = ww
+		}
+		// rounds: the workers search from the best route so far, each with its own seed
 		var top *found
-		for k := 0; k < *workers; k++ {
-			f := <-out
-			if f.res != nil && (top == nil || f.res.Seconds < top.res.Seconds) {
-				top = &f
+		events, wd := rep.Events, wand
+		for round := 0; round < *rounds; round++ {
+			out := make(chan found, *workers)
+			for k, ww := range worlds {
+				go func(ww *route.World, seed int64) {
+					ww.SetWandDetour(wd)
+					e, r, err := ww.Optimize(events, route.OptimizeOptions{Target: *target, Budget: *optimize / time.Duration(*rounds), Seed: seed, Keep: keepIDs})
+					if err != nil {
+						out <- found{}
+						return
+					}
+					out <- found{e, r, ww.WandDetour()}
+				}(ww, int64(round**workers+k+1))
+			}
+			for range worlds {
+				f := <-out
+				if f.res != nil && (top == nil || f.res.Seconds < top.res.Seconds) {
+					top = &f
+				}
+			}
+			if top != nil {
+				events, wd = top.events, top.wand
+				fmt.Fprintf(os.Stderr, "optimize round %d: %.2f h\n", round+1, top.res.Seconds/3600)
 			}
 		}
 		if top != nil && before != nil && top.res.Seconds < before.Seconds {
