@@ -94,11 +94,11 @@ Average over the 56 combinations: RestedXP 17.81 h, the kept route 15.26 h (14.3
 
 `<race>-<class>-dungeons.json` ("Solo mit Dungeon"): the same, with dungeon runs (a group only for the run itself) (`foreverroutes improve -dungeons`). The route takes a
 dungeon's quests on the way (from three levels below it, within ten minutes), runs it with a group and hands the quests
-in, across the sea if need be (Ragefire's quest from Undercity). The addon shows it after `/fr dungeon` (`/fr solo` goes back to the route without dungeons, which takes no dungeon quests). Run times are
+in, across the sea if need be (Ragefire's quest from Undercity). The addon shows it after `/fr dungeon` (`/fr solo` goes back to the route without dungeons, which takes no dungeon quests). A druid or warrior gets its bear form or defensive stance before the first run (it finds a group as a tank). Run times are
 estimates (`data/sources/dungeons.json`); better gear from the runs is not counted yet, so the routes with dungeons are rather
 faster in game than here.
 
-Average over the 56 combinations: 13.53 h to level 20 (without dungeons 15.26 h).
+Average over the 56 combinations: 13.51 h to level 20 (without dungeons 15.26 h).
 
 | Race | Class | Hours | Kept |
 |---|---|---|---|
@@ -107,12 +107,12 @@ Average over the 56 combinations: 13.53 h to level 20 (without dungeons 15.26 h)
 | Dwarf | Priest | 14.7 | plan |
 | Dwarf | Rogue | 12.4 | plan |
 | Dwarf | Shaman | 15.5 | guide |
-| Dwarf | Warrior | 13.0 | guide |
+| Dwarf | Warrior | 12.8 | plan |
 | Gnome | Mage | 15.3 | plan |
 | Gnome | Priest | 14.0 | plan |
 | Gnome | Rogue | 12.4 | plan |
 | Gnome | Warlock | 14.2 | plan |
-| Gnome | Warrior | 13.0 | guide |
+| Gnome | Warrior | 12.8 | plan |
 | Human | Hunter | 13.9 | plan |
 | Human | Mage | 15.1 | plan |
 | Human | Paladin | 12.0 | plan |
@@ -120,31 +120,31 @@ Average over the 56 combinations: 13.53 h to level 20 (without dungeons 15.26 h)
 | Human | Rogue | 11.4 | plan |
 | Human | Warlock | 13.2 | plan |
 | Human | Warrior | 11.0 | plan |
-| NightElf | Druid | 15.8 | guide |
+| NightElf | Druid | 15.3 | plan |
 | NightElf | Hunter | 14.2 | guide |
 | NightElf | Priest | 14.4 | plan |
 | NightElf | Rogue | 13.0 | plan |
-| NightElf | Warrior | 12.5 | plan |
+| NightElf | Warrior | 13.1 | guide |
 | Orc | Hunter | 13.1 | plan |
 | Orc | Mage | 13.8 | guide |
 | Orc | Rogue | 12.8 | guide |
 | Orc | Shaman | 14.8 | plan |
 | Orc | Warlock | 13.0 | guide |
 | Orc | Warrior | 11.3 | guide |
-| SkyborneA | Druid | 15.3 | plan |
+| SkyborneA | Druid | 15.5 | plan |
 | SkyborneA | Hunter | 15.6 | guide |
 | SkyborneA | Mage | 15.6 | plan |
 | SkyborneA | Rogue | 13.1 | plan |
-| SkyborneA | Warrior | 12.8 | plan |
+| SkyborneA | Warrior | 13.3 | plan |
 | SkyborneH | Druid | 16.0 | guide |
 | SkyborneH | Hunter | 14.7 | guide |
 | SkyborneH | Rogue | 12.9 | plan |
 | SkyborneH | Shaman | 14.5 | guide |
-| SkyborneH | Warrior | 12.7 | guide |
-| Tauren | Druid | 15.6 | plan |
+| SkyborneH | Warrior | 11.7 | plan |
+| Tauren | Druid | 15.8 | guide |
 | Tauren | Hunter | 13.7 | plan |
 | Tauren | Shaman | 13.4 | plan |
-| Tauren | Warrior | 11.0 | plan |
+| Tauren | Warrior | 10.8 | plan |
 | Troll | Hunter | 13.1 | plan |
 | Troll | Mage | 13.7 | plan |
 | Troll | Priest | 13.1 | plan |

@@ -163,3 +163,38 @@ func TestTanksAndHealersFindAGroupAtOnce(t *testing.T) {
 		t.Errorf("a priest heals: %.0f s, warrior %.0f s", took["Priest"], took["Warrior"])
 	}
 }
+
+// A warrior finds a group as a tank only with defensive stance; a route with dungeons gets it before the first run.
+func TestTankStanceBeforeTheFirstRun(t *testing.T) {
+	d := tinyDungeon()
+	giver := []dataset.Ref{{Kind: "npc", ID: StartNPC["Orc"]}}
+	d.Quests = append(d.Quests, dataset.Quest{ID: 1498, Name: "Path of Defense", Level: 2, MinLevel: 1, XP: 300, Classes: 1,
+		Start: giver, End: giver, Objectives: []dataset.Objective{{Kind: "kill", ID: 100, Count: 2}}})
+	w, err := NewWorld(d, Character{Race: "Orc", Class: "Warrior"}, Options{Dungeons: true})
+	if err != nil {
+		t.Fatal(err)
+	}
+	took := func(stance bool) float64 {
+		s := w.NewState()
+		s.XP = 400
+		if stance {
+			s.Status[w.ByID[1498].Index] = done
+		}
+		if err := w.Apply(s, Action{Op: "dungeon", Dungeon: "cave"}); err != nil {
+			t.Fatal(err)
+		}
+		return s.Time
+	}
+	if d := took(false) - took(true); math.Abs(d-(groupSearch-groupSearchRole)) > 1 {
+		t.Errorf("without the stance the group takes %.0f s longer, want %.0f", d, groupSearch-groupSearchRole)
+	}
+	guide := []GuideEvent{{Op: "accept", Quest: 1}, {Op: "dungeon", Dungeon: "cave"}, {Op: "complete", Quest: 1}, {Op: "turnin", Quest: 1}}
+	events := w.withClassQuests(guide, 5)
+	r, err := w.FollowGuide(events, 5)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !w.tankFirst(r) || !handsIn(r, 1498) {
+		t.Errorf("the stance must come before the run: %v", events)
+	}
+}

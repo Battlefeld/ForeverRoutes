@@ -167,7 +167,11 @@ func (w *World) run(s *State, d *Dungeon) error {
 		return err
 	}
 	l := w.Level(s)
-	secs := d.Minutes*60 + w.Opt.GroupSearch
+	search := w.Opt.GroupSearch
+	if !w.canTank(s) {
+		search = groupSearch // a druid without bear form, a warrior without defensive stance: queued as damage
+	}
+	secs := d.Minutes*60 + search
 	s.Time += secs
 	s.Combat += secs
 	trash := w.killXP(d, l)

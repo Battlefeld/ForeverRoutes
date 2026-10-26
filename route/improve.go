@@ -29,6 +29,7 @@ func (w *World) Improve(events []GuideEvent, target int, budget time.Duration) (
 			goals = append(goals, c.Goal.ID)
 		}
 	}
+	tankFirst := w.tankFirst(best)
 	try := func(cand []GuideEvent) bool {
 		r, err := w.FollowGuide(cand, target)
 		if err != nil || r.Level < target || r.Seconds >= best.Seconds-1 {
@@ -38,6 +39,9 @@ func (w *World) Improve(events []GuideEvent, target int, budget time.Duration) (
 			if !handsIn(r, g) {
 				return false
 			}
+		}
+		if tankFirst && !w.tankFirst(r) {
+			return false
 		}
 		cur, best = cand, r
 		return true
@@ -120,8 +124,8 @@ func (w *World) WithDungeons(events []GuideEvent, target int) []GuideEvent {
 			i := len(cur) * k / 21
 			cand := append(append(append([]GuideEvent(nil), cur[:i]...), GuideEvent{Op: "dungeon", Dungeon: d.Key}), cur[i:]...)
 			r, err := w.FollowGuide(cand, target)
-			if err != nil || r.Level < target {
-				continue
+			if err != nil || r.Level < target || !w.tankFirst(r) {
+				continue // a tank class runs its first dungeon with its tank form or stance
 			}
 			if r.Seconds < best.Seconds-1 {
 				best, pick = r, cand
@@ -227,8 +231,9 @@ func (w *World) withClassQuests(events []GuideEvent, target int) []GuideEvent {
 		if c.Tier != "required" {
 			continue
 		}
-		if r, err := w.FollowGuide(out, target); err == nil && handsIn(r, c.Goal.ID) {
-			continue // the route does it already
+		tank := w.tankGoals()[c.Goal.ID]
+		if r, err := w.FollowGuide(out, target); err == nil && handsIn(r, c.Goal.ID) && (!tank || w.tankFirst(r)) {
+			continue // the route does it already (a tank form or stance before the first dungeon)
 		}
 		// the chain's class quests taken out and put in again whole, in order (a guide may do part of it, or out of
 		// order); where that does not finish it before the target, each part at the first place it can be taken
@@ -237,6 +242,17 @@ func (w *World) withClassQuests(events []GuideEvent, target int) []GuideEvent {
 			class[q.ID] = q.Classes != 0
 		}
 		rest := without(out, func(e GuideEvent) bool { return class[e.Quest] })
+		if tank {
+			// the tank form or stance before the first dungeon: the chain is put in without the runs, then each run
+			// that came before its turn-in goes right after it
+			bare := without(rest, func(e GuideEvent) bool { return e.Op == "dungeon" })
+			cand := w.withQuestsIn(bare, c.Quests, target, classWindow)
+			if r, err := w.FollowGuide(cand, target); err != nil || !handsIn(r, c.Goal.ID) {
+				cand = w.chainInOnePiece(bare, c, target, cand)
+			}
+			out = w.runsAfter(rest, cand, c.Goal.ID)
+			continue
+		}
 		cand := w.withQuestsIn(rest, c.Quests, target, classWindow)
 		if r, err := w.FollowGuide(cand, target); err != nil || !handsIn(r, c.Goal.ID) {
 			if early := w.withQuestsIn(rest, c.Quests, target, 0); early != nil {
@@ -277,6 +293,43 @@ func (w *World) chainInOnePiece(events []GuideEvent, c ClassChain, target int, f
 		}
 	}
 	return fallback
+}
+
+// runsAfter puts the dungeon runs of the route before (orig) into the route with a chain put in (chain, no runs): each
+// after the quest it followed, a run before the goal's turn-in right after that turn-in.
+func (w *World) runsAfter(orig, chain []GuideEvent, goal int) []GuideEvent {
+	// the event each run followed in the original
+	after := map[int][]GuideEvent{} // index in chain -> runs
+	pos := map[GuideEvent]int{}
+	for i, e := range chain {
+		if _, seen := pos[e]; !seen {
+			pos[e] = i
+		}
+	}
+	gi := -1
+	for i, e := range chain {
+		if e.Quest == goal && e.Op == "turnin" {
+			gi = i
+		}
+	}
+	prev := -1
+	for _, e := range orig {
+		if e.Op != "dungeon" {
+			if i, ok := pos[e]; ok {
+				prev = i
+			}
+			continue
+		}
+		at := max(prev, gi)
+		after[at] = append(after[at], e)
+	}
+	var out []GuideEvent
+	out = append(out, after[-1]...)
+	for i, e := range chain {
+		out = append(out, e)
+		out = append(out, after[i]...)
+	}
+	return out
 }
 
 // handsIn: the walked route hands in the quest.

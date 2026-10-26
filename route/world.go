@@ -86,6 +86,7 @@ type World struct {
 	elites         dangerMap    // elite places: cell -> highest elite level
 	Dungeons       []*Dungeon   // dungeons a route with dungeons may run (Options.Dungeons)
 	required       map[int]bool // quests of the required class chains (keepClassQuest), for requiredTarget
+	tank           map[int]bool // quests that give the tank form or stance (tankGoals)
 	requiredTarget int
 	dungeonOf      map[string]*Dungeon
 	landMemo       sync.Map // landKey -> landResult

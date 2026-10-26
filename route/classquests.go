@@ -182,3 +182,54 @@ func (w *World) ClassChains(target int) []ClassChain {
 	sort.SliceStable(out, func(i, j int) bool { return out[i].Goal.Index < out[j].Goal.Index })
 	return out
 }
+
+// tankReward: the class quest reward a class needs to tank a dungeon (the quickest way into a group).
+var tankReward = map[string]string{"Druid": "Bärengestalt", "Warrior": "Verteidigungshaltung"}
+
+// tankGoals are the quests that give this character its tank form or stance, nil when it needs none.
+func (w *World) tankGoals() map[int]bool {
+	r, ok := tankReward[w.Char.Class]
+	if !ok {
+		return nil
+	}
+	if w.tank == nil {
+		w.tank = map[int]bool{}
+		for id, rw := range classRequired {
+			if rw == r && w.ByID[id] != nil {
+				w.tank[id] = true
+			}
+		}
+	}
+	return w.tank
+}
+
+// canTank: the character has its tank form or stance (or needs none).
+func (w *World) canTank(s *State) bool {
+	g := w.tankGoals()
+	if len(g) == 0 {
+		return true // no quest for it in the data: taken as known
+	}
+	for id := range g {
+		if s.Status[w.ByID[id].Index] == done {
+			return true
+		}
+	}
+	return false
+}
+
+// tankFirst: a walked route with dungeons gets the tank form or stance before its first run.
+func (w *World) tankFirst(r *GuideResult) bool {
+	g := w.tankGoals()
+	if len(g) == 0 {
+		return true
+	}
+	for _, st := range r.Steps {
+		if st.Op == "turnin" && g[st.Quest] {
+			return true
+		}
+		if st.Op == "dungeon" {
+			return false
+		}
+	}
+	return true
+}
