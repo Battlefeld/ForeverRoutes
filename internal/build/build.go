@@ -21,6 +21,7 @@ import (
 	"github.com/Battlefeld/ForeverRoutes/internal/sources/eglink"
 	"github.com/Battlefeld/ForeverRoutes/internal/sources/foreverchanges"
 	"github.com/Battlefeld/ForeverRoutes/internal/sources/guides"
+	"github.com/Battlefeld/ForeverRoutes/internal/sources/norgannon"
 	"github.com/Battlefeld/ForeverRoutes/internal/sources/polestar"
 	"github.com/Battlefeld/ForeverRoutes/internal/sources/spf"
 	"github.com/Battlefeld/ForeverRoutes/internal/sources/wclbox"
@@ -54,6 +55,8 @@ type Inputs struct {
 	EGLinkRevision    string
 	Aegis             string // optional: AEGIS Pathfinder's data/merged.json (internal/sources/aegis)
 	AegisRevision     string
+	Norgannon         string // optional: NorgannonDB's data/items.lua (internal/sources/norgannon)
+	NorgannonRevision string
 }
 
 type obj = map[string]any
@@ -249,7 +252,7 @@ func Build(in Inputs) (*dataset.Dataset, error) {
 	if err != nil {
 		return nil, err
 	}
-	b := &builder{in: in, merged: merged, w: w, stats: map[string]int{}, npcWanted: map[int]bool{}, objWanted: map[int]bool{}, itemWhy: map[int]string{}}
+	b := &builder{in: in, merged: merged, w: w, stats: map[string]int{}, npcWanted: map[int]bool{}, objWanted: map[int]bool{}, itemWhy: map[int]string{}, instantOK: map[int]bool{}}
 	if in.WarcraftDB != "" {
 		if b.wdb, err = warcraftdb.Load(in.WarcraftDB); err != nil {
 			return nil, fmt.Errorf("warcraftdb overlay: %w", err)
@@ -342,6 +345,11 @@ func Build(in Inputs) (*dataset.Dataset, error) {
 			return nil, err
 		}
 	}
+	if in.Norgannon != "" {
+		if b.ngn, err = norgannon.Load(in.Norgannon, in.NorgannonRevision); err != nil {
+			return nil, err
+		}
+	}
 	if len(facts) > 0 {
 		b.loadGuides(facts)
 		b.stats["guide_facts"] = len(facts)
@@ -354,6 +362,7 @@ func Build(in Inputs) (*dataset.Dataset, error) {
 	b.objects()
 	b.guideSpawns()
 	b.capitalNPCs()
+	b.skillQuests()
 	b.instantQuests()
 	b.aegisQuests()
 	b.egChances()
@@ -373,6 +382,10 @@ func Build(in Inputs) (*dataset.Dataset, error) {
 	if b.egl != nil {
 		d.Sources = append(d.Sources, dataset.Source{Name: "EG Link output (Efficient Games)", URL: "https://github.com/" + eglink.Repository, Revision: in.EGLinkRevision, License: "CC BY 4.0",
 			Note: eglink.Credit + ". Players' recordings over the Forever beta builds: drops with the chance per kill while on the quest, where objective counts went up. Combined over the builds by ForeverRoutes."})
+	}
+	if b.ngn != nil {
+		d.Sources = append(d.Sources, dataset.Source{Name: "NorgannonDB", URL: "https://github.com/" + norgannon.Repository, Revision: in.NorgannonRevision, License: "GPL-3.0",
+			Note: "open, crowd-sourced WoW Forever database (from QuestieDB, pfQuest, Forever's game tables and players' data): where an item drops (creatures, objects, with the chance where known) and the quests that reward it"})
 	}
 	if b.aeg != nil {
 		d.Sources = append(d.Sources, dataset.Source{Name: "AEGIS: Pathfinder (Forever)", URL: "https://github.com/" + aegis.Repository, Revision: in.AegisRevision, License: "MIT",
@@ -451,12 +464,14 @@ type builder struct {
 	objOut          []dataset.Object
 	npcWanted       map[int]bool
 	objWanted       map[int]bool
+	instantOK       map[int]bool // quests a fix confirms as talk quests (fixes.go)
 	wdb             *warcraftdb.Overlay
 	wcl             *wclbox.Overlay
 	fch             *foreverchanges.Overlay
 	pdb             *polestar.DB
 	aeg             *aegis.Data
 	egl             *eglink.Data
+	ngn             *norgannon.Data
 	spf             *spf.Data
 	rxpSkips        []guides.Deathskip
 	rxpTargets      []guides.Sighting
@@ -1174,7 +1189,7 @@ func (b *builder) startItem(out *dataset.Quest) {
 		b.stats["quests_started_by_guide_places"]++
 		return
 	}
-	if len(o.Drops) == 0 {
+	if len(o.Drops) == 0 && !b.fromTraces(&o) && !b.fromNorgannon(out, &o) {
 		b.moreItemSources(out, &o)
 	}
 	if len(o.Drops) > 12 {
@@ -1526,8 +1541,8 @@ func (b *builder) moreItemSources(out *dataset.Quest, o *dataset.Objective) (kee
 			}
 		}
 	}
-	if b.fromEGLink(o) || b.fromWCLBoxQuest(out, o) || b.guideItem(out, o, false) || b.fromWCLBox(o) || b.fromAegis(out, o) || b.fromEGLinkPlaces(out, o) || b.fromQuestText(out.ID, o) {
-		return true, true
+	if b.fromEGLink(o) || b.fromWCLBoxQuest(out, o) || b.guideItem(out, o, false) || b.fromTraces(o) || b.fromNorgannon(out, o) || b.fromWCLBox(o) || b.fromAegis(out, o) || b.fromEGLinkPlaces(out, o) || b.fromQuestText(out.ID, o) {
+		return o.Count > 0, true // count 0: the quest before rewards it (fromNorgannon)
 	}
 	if b.wcl == nil || b.wcl.Items[o.ID].ID == 0 {
 		out.NeedItems = appendUnique(out.NeedItems, o.ID)
@@ -1542,6 +1557,70 @@ func appendUnique(l []int, v int) []int {
 		}
 	}
 	return append(l, v)
+}
+
+// fromTraces takes the creatures and objects players' traces saw an item drop from (QuestieDB's Forever traces, in
+// the merged item's sources), with an unknown chance.
+func (b *builder) fromTraces(o *dataset.Objective) bool {
+	rec, _ := get(b.merged, "items", strconv.Itoa(o.ID)).(map[string]any)
+	if rec == nil || rec["drop_source"] != "questie_traces" && len(ints(rec["npc_sources"]))+len(ints(rec["object_sources"])) == 0 {
+		return false
+	}
+	for _, n := range ints(rec["npc_sources"]) {
+		if b.npcRecord(n) != nil && len(o.Drops) < 12 {
+			o.Drops = append(o.Drops, dataset.Drop{NPC: n, Unknown: true})
+			b.npcWanted[n] = true
+		}
+	}
+	for _, ob := range ints(rec["object_sources"]) {
+		if len(o.Drops) < 12 {
+			o.Drops = append(o.Drops, dataset.Drop{Object: ob, Unknown: true})
+			b.objWanted[ob] = true
+		}
+	}
+	if len(o.Drops) == 0 {
+		return false
+	}
+	o.Source += "+questie_sources"
+	b.stats["items_sources_from_questie"]++
+	return true
+}
+
+// fromNorgannon takes NorgannonDB's sources of an item: the creatures and objects it drops from (an unknown chance
+// where NorgannonDB has none), else the one quest that rewards it, which becomes a prerequisite (the item is the
+// reward of the quest before: the objective is dropped).
+func (b *builder) fromNorgannon(out *dataset.Quest, o *dataset.Objective) bool {
+	if b.ngn == nil {
+		return false
+	}
+	it := b.ngn.Items[o.ID]
+	if it == nil {
+		return false
+	}
+	for _, d := range it.NPCs {
+		if b.npcRecord(d.ID) != nil && len(o.Drops) < 12 {
+			o.Drops = append(o.Drops, dataset.Drop{NPC: d.ID, Chance: round1(d.Chance), Unknown: d.Chance <= 0})
+			b.npcWanted[d.ID] = true
+		}
+	}
+	for _, d := range it.Objects {
+		if len(o.Drops) < 12 {
+			o.Drops = append(o.Drops, dataset.Drop{Object: d.ID, Chance: round1(d.Chance), Unknown: d.Chance <= 0})
+			b.objWanted[d.ID] = true
+		}
+	}
+	if len(o.Drops) > 0 {
+		o.Source += "+norgannon"
+		b.stats["items_sources_from_norgannon"]++
+		return true
+	}
+	if len(it.RewardOf) == 1 && it.RewardOf[0] != out.ID && o.Count <= 1 {
+		out.PreAll = appendUnique(out.PreAll, it.RewardOf[0])
+		o.Count = 0 // the quest before hands it over: nothing to collect (dropped by the caller's keep)
+		b.stats["items_from_quest_rewards_norgannon"]++
+		return true
+	}
+	return false
 }
 
 // fromWCLBox turns WCLBox's source line into drops with an unknown chance. It records why an item stays without one.

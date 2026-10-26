@@ -31,6 +31,8 @@ type Source struct {
 	Gather bool
 	// Class: a class quest's creature: made for one character, fought alone also when the data calls it elite
 	Class bool
+	// Skill: a profession at its skill, shown at its trainer (route/camp.go: from campLevel with the professions)
+	Skill bool
 }
 
 // Objective of a quest, resolved to the places that serve it.
@@ -358,6 +360,11 @@ func (w *World) resolve(q *dataset.Quest) (*Quest, string) {
 				for _, st := range w.sites(ob.Spawns) {
 					ro.Sources = append(ro.Sources, Source{Object: o.ID, Chance: 1, Site: st})
 				}
+			}
+		case "skill":
+			// a profession at a skill, shown at its trainer: the route has it from campLevel (camp.go)
+			for _, st := range w.sites(o.Places) {
+				ro.Sources = append(ro.Sources, Source{Chance: 1, Site: st, Talk: true, Skill: true})
 			}
 		case "event":
 			// explore, escort, use something: done at the place, like gathering one thing there

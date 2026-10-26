@@ -41,7 +41,7 @@ type Drop struct {
 
 // Objective is one requirement of a quest.
 type Objective struct {
-	Kind    string  `json:"k"` // kill | item | object
+	Kind    string  `json:"k"` // kill | item | object | talk | event | skill (ID a profession, Count its skill)
 	ID      int     `json:"id"`
 	Count   int     `json:"n"`
 	Source  string  `json:"src"`
@@ -50,6 +50,12 @@ type Objective struct {
 	Places  []Point `json:"places,omitempty"`  // where the items lie, from guides, when no creature or object is known
 	Inside  bool    `json:"inside,omitempty"`  // done inside the quest's dungeon (no open-world source): a group run completes it
 }
+
+// Professions of a "skill" objective.
+const (
+	SkillSkinning       = 1
+	SkillLeatherworking = 2
+)
 
 // Quest is one quest with everything the route engine needs.
 type Quest struct {

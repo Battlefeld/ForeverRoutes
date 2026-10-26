@@ -3,12 +3,13 @@
 | Datei | Inhalt |
 |---|---|
 | `routes-data.json.gz` | Datensatz des Planers (`foreverroutes.dataset.v1`), gebaut von `foreverroutes update` / `build-data` |
-| `sources/lock.json` | festgeschriebene Stände: QuestieDB-, EverythingQuests- und cmangos-Commit, ForeverDB-Build und Prüfsumme |
+| `sources/lock.json` | festgeschriebene Stände: Commits von QuestieDB, EverythingQuests, cmangos, Polestar, RestedXP, AEGIS, EG Link, Shortest Path Forever und NorgannonDB, ForeverDB-Build und Prüfsumme |
 | `sources/foreverdb-snapshot.json.gz` | ForeverDB-Questliste Level 1–30 mit Spielmetadaten (Data from ForeverDB.net) |
 | `sources/warcraftdb-forever.json` | Questangaben von WarcraftDB Forever, die den anderen Quellen fehlen |
 | `sources/wclbox-items.json` | woher ein Gegenstand kommt (Gegner und Gebiet), gelesen von den Gegenstandsseiten der WCLBox; die Seite nennt keine Dropchance |
 | `sources/foreverchanges-quests.json` | Zusammenfassung je offener Quest von ForeverChanges: Questart (normal, Elite, Dungeon) und der Gegner aus dem Zielsatz |
 | `sources/manual-facts.json` | einzeln belegte Werte (XP, Level, wiederholbar, Questziele mit Mengen) von WarcraftDB, OctoWow, ClassicDB, Wowhead Forever und Beobachtungen aus ForeverDB, jeweils mit Link; übernommen aus dem früheren Python-Werkzeug und dem früheren Addon ForeverQuests |
+| `sources/quest-fixes.json` | einzeln belegte Korrekturen (Voraussetzungen, Startobjekte, Orte, reine Gesprächsquests), jeweils mit Link |
 | `sources/dungeons.json` | Dungeons der Gruppenrouten: Stufen (Forever-Beta laut Dungeon-Journal, sonst Classic), übliche Laufzeit (Schätzung), Seite, Gebiets-IDs der Dungeonquests |
 | `archive/dungeon-journal/` | Dungeon-Daten des früheren Addons ForeverQuests (Bosse, Beute, Dungeonquests) mit Quellenliste; die Stufen sind in `sources/dungeons.json` übernommen |
 
@@ -19,7 +20,13 @@ QuestieDB, EverythingQuests und cmangos werden beim Bau in den festgeschriebenen
 - **ForeverDB** — Data from [ForeverDB.net](https://foreverdb.net). Wo ForeverDB-Daten angezeigt werden, muss dieser
   Hinweis mit Link sichtbar sein. ForeverDB ist nicht mit Blizzard Entertainment verbunden.
 - **QuestieDB** (https://github.com/Questie/QuestieDB) — Forever-Quests, NPCs, Objekte, Gegenstände; Classic-XP und
-  Beutechancen als Classic-Referenz gekennzeichnet.
+  Beutechancen als Classic-Referenz gekennzeichnet. Dazu die Forever-Traces (`src/corrections/Forever/traces`, aus den
+  Aufzeichnungen der Spieler mit QuestieTrace): von welchen Gegnern und Objekten ein Gegenstand droppt, Questgeber und
+  Abgaben, Spawns von Gegnern und Objekten, die den Datendateien fehlen (Gegner mit unbekannter Chance).
+- **NorgannonDB** (https://github.com/zmarotrix/NorgannonDB, GPL-3.0, Datei `data/items.lua`) — offene, gesammelte
+  Forever-Datenbank (aus QuestieDB, pfQuest, Forevers Spieltabellen und Spielerdaten): wo ein Gegenstand droppt (Gegner,
+  Objekte, mit Chance wo bekannt) und welche Quest ihn als Belohnung gibt (die wird dann Voraussetzung). Nur für
+  Gegenstände ohne andere Quelle.
 - **EverythingQuests** (https://github.com/wheelbarrel00/EverythingQuests, MIT) — Forever-Questgeber, Abgaben, Ziele,
   Voraussetzungen (teils aus AllTheThings).
 - **WarcraftDB Forever** (https://forever.warcraftdb.com) — Spielclient-Questdaten (Ziele mit Mengen, XP, Level,

@@ -210,7 +210,7 @@ func (w *World) levelFor(s *State, q *Quest, target int) int {
 			}
 			found := false
 			for _, src := range o.Sources {
-				found = found || !w.dangerousAt(n, src)
+				found = found || (!w.dangerousAt(n, src) && (!src.Skill || n >= campLevel))
 			}
 			if !found {
 				ok = false

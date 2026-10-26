@@ -526,7 +526,7 @@ func (b *builder) polestarTravel(t *dataset.Travel) {
 func (b *builder) instantQuests() {
 	for i := range b.out {
 		q := &b.out[i]
-		if q.Unsupported != "" || len(q.Objectives) > 0 || len(q.PreAll) > 0 || len(q.PreAny) > 0 || q.Repeatable {
+		if q.Unsupported != "" || len(q.Objectives) > 0 || len(q.PreAll) > 0 || len(q.PreAny) > 0 || q.Repeatable || b.instantOK[q.ID] {
 			continue
 		}
 		same := false

@@ -28,6 +28,7 @@ import (
 	"github.com/Battlefeld/ForeverRoutes/internal/sources/everythingquests"
 	"github.com/Battlefeld/ForeverRoutes/internal/sources/foreverchanges"
 	"github.com/Battlefeld/ForeverRoutes/internal/sources/foreverdb"
+	"github.com/Battlefeld/ForeverRoutes/internal/sources/norgannon"
 	"github.com/Battlefeld/ForeverRoutes/internal/sources/polestar"
 	"github.com/Battlefeld/ForeverRoutes/internal/sources/questie"
 	"github.com/Battlefeld/ForeverRoutes/internal/sources/wclbox"
@@ -58,6 +59,7 @@ var repos = map[string][2]string{
 	"aegis":            {"https://github.com/Torchlite-bit/Aegis_Pathfinder_Forever", "main"},
 	"eglink":           {"https://github.com/JIVESCORP/eg-link-output-wowf", "main"},
 	"spf":              {"https://github.com/cjber/shortest-path-forever", "main"},
+	"norgannon":        {"https://github.com/zmarotrix/NorgannonDB", "main"},
 }
 
 // Lock pins the state of every source a dataset was built from.
@@ -66,11 +68,12 @@ type Lock struct {
 	Questie          string `json:"questie"`
 	EverythingQuests string `json:"everythingquests"`
 	CMangos          string `json:"cmangos"`
-	Polestar         string `json:"polestar,omitempty"` // forever-db (Polestar), empty: not used
-	RXP              string `json:"rxp,omitempty"`      // RestedXP's guides, empty: not used
-	Aegis            string `json:"aegis,omitempty"`    // AEGIS Pathfinder's player data, empty: not used
-	EGLink           string `json:"eglink,omitempty"`   // EG Link output (Efficient Games), empty: not used
-	SPF              string `json:"spf,omitempty"`      // Shortest Path Forever's travel data, empty: not used
+	Polestar         string `json:"polestar,omitempty"`  // forever-db (Polestar), empty: not used
+	RXP              string `json:"rxp,omitempty"`       // RestedXP's guides, empty: not used
+	Aegis            string `json:"aegis,omitempty"`     // AEGIS Pathfinder's player data, empty: not used
+	EGLink           string `json:"eglink,omitempty"`    // EG Link output (Efficient Games), empty: not used
+	SPF              string `json:"spf,omitempty"`       // Shortest Path Forever's travel data, empty: not used
+	Norgannon        string `json:"norgannon,omitempty"` // NorgannonDB's item table, empty: not used
 	ForeverDBBuild   string `json:"foreverdbBuild"`
 	ForeverDBHash    string `json:"foreverdbHash"`    // of the stored snapshot
 	ForeverDBFetched string `json:"foreverdbFetched"` // when the API was last asked (RFC 3339)
@@ -229,7 +232,7 @@ func sparseCheckout(ctx context.Context, cache, name, repo, rev string, paths ..
 		{"-C", dir, "checkout", "-q", "FETCH_HEAD"},
 	}
 	for _, p := range paths {
-		if strings.HasSuffix(p, ".json") {
+		if strings.HasSuffix(p, ".json") || strings.HasSuffix(p, ".lua") {
 			steps[2] = append(steps[2], "/"+p) // a file pattern
 		} else {
 			steps[2] = append(steps[2], "/"+p+"/")
@@ -411,6 +414,13 @@ func Rebuild(ctx context.Context, o Options, l *Lock, in Inputs) (*dataset.Datas
 		}
 		bin.SPF, bin.SPFRevision = filepath.Join(dir, "Data"), l.SPF
 	}
+	if l.Norgannon != "" {
+		dir, err := sparseCheckout(ctx, o.Cache, "norgannon", repos["norgannon"][0], l.Norgannon, norgannon.ItemsFile)
+		if err != nil {
+			return nil, nil, err
+		}
+		bin.Norgannon, bin.NorgannonRevision = filepath.Join(dir, norgannon.ItemsFile), l.Norgannon
+	}
 	d, err := build.Build(bin)
 	if err != nil {
 		return nil, nil, err
@@ -432,7 +442,7 @@ func Run(ctx context.Context, o Options) (*Report, error) {
 		if err != nil {
 			return nil, err
 		}
-		cur := map[string]*string{"questie": &next.Questie, "everythingquests": &next.EverythingQuests, "cmangos": &next.CMangos, "polestar": &next.Polestar, "rxp": &next.RXP, "aegis": &next.Aegis, "eglink": &next.EGLink, "spf": &next.SPF}[name]
+		cur := map[string]*string{"questie": &next.Questie, "everythingquests": &next.EverythingQuests, "cmangos": &next.CMangos, "polestar": &next.Polestar, "rxp": &next.RXP, "aegis": &next.Aegis, "eglink": &next.EGLink, "spf": &next.SPF, "norgannon": &next.Norgannon}[name]
 		if h != *cur {
 			rep.Sources = append(rep.Sources, fmt.Sprintf("%s %s → %s", name, short(*cur), short(h)))
 			*cur = h

@@ -398,7 +398,7 @@ func (w *World) Apply(s *State, a Action) error {
 		bd := math.Inf(1)
 		for i := range o.Sources {
 			if (a.NPC != 0 && o.Sources[i].NPC != nil && o.Sources[i].NPC.ID == a.NPC) || (a.Object != 0 && o.Sources[i].Object == a.Object) ||
-				(a.NPC == 0 && a.Object == 0 && o.Sources[i].Gather) {
+				(a.NPC == 0 && a.Object == 0 && (o.Sources[i].Gather || o.Sources[i].Skill)) {
 				if d := distance(o.Sources[i].Site.Center, a.At); d < bd {
 					src, bd = &o.Sources[i], d
 				}
@@ -413,6 +413,9 @@ func (w *World) Apply(s *State, a Action) error {
 		left := float64(o.Count) - s.Prog[q.Index][a.Obj]
 		if src.Assumed {
 			s.Assumed++
+		}
+		if src.Skill && !(s.Prof && w.Level(s) >= campLevel) {
+			return fail("quest %d: the profession is not at its skill yet", q.ID)
 		}
 		if src.Talk {
 			if err := w.move(s, src.Site.Center); err != nil {

@@ -2,7 +2,8 @@
 
 > **Datengrundlage:** ForeverRoutes nutzt Daten von **[ForeverDB.net](https://foreverdb.net)** (Data from ForeverDB.net),
 > QuestieDB Forever, EverythingQuests Forever, [WarcraftDB Forever](https://forever.warcraftdb.com), der Forever-Datenbank
-> von [Polestar](https://github.com/fitzforge/polestar) (forever-db) und der Weltdatenbank von
+> von [Polestar](https://github.com/fitzforge/polestar) (forever-db), den Spieler-Traces von QuestieDB,
+> [NorgannonDB](https://github.com/zmarotrix/NorgannonDB) und der Weltdatenbank von
 > [cmangos classic-db](https://github.com/cmangos/classic-db). Herkunft und Revision jeder Quelle stehen
 > im Datensatz selbst (`sources`). ForeverDB ist nicht mit Blizzard Entertainment verbunden.
 
@@ -182,4 +183,4 @@ entsteht.
 ## Lizenz
 
 Code: MIT (siehe `LICENSE`). Daten: siehe [`data/README.md`](data/README.md); der Datensatz enthält aus cmangos
-classic-db und Polestars forever-db abgeleitete Werte (GPL-3.0).
+classic-db, Polestars forever-db und NorgannonDB abgeleitete Werte (GPL-3.0).

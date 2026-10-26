@@ -31,6 +31,11 @@ var Files = map[string]string{
 	"objects":         "data/Forever/foreverObjectDB.lua",
 	"quest_xp":        "support/Forever/QuestXP/xpDB-classic.lua",
 	"item_drop_rates": "support/Forever/DropTables/classicItemDrops.lua",
+	// players' traces of the Forever beta (QuestieTrace): drops, spawns, quest givers and enders the data files lack
+	"trace_items":   "src/corrections/Forever/traces/foreverItemTraces.lua",
+	"trace_quests":  "src/corrections/Forever/traces/foreverQuestTraces.lua",
+	"trace_npcs":    "src/corrections/Forever/traces/foreverNpcTraces.lua",
+	"trace_objects": "src/corrections/Forever/traces/foreverObjectTraces.lua",
 }
 
 var sha = regexp.MustCompile(`^[0-9a-f]{40}$`)
@@ -65,7 +70,9 @@ func Fetch(ctx context.Context, client *http.Client, revision, cache string) (ma
 		if err != nil {
 			return nil, err
 		}
-		if resp.StatusCode != http.StatusOK || len(b) < 1000 {
+		if resp.StatusCode == http.StatusNotFound && strings.HasPrefix(kind, "trace_") {
+			b = []byte("-- not in this revision") // older commits have no traces
+		} else if resp.StatusCode != http.StatusOK || len(b) < 1000 {
 			return nil, fmt.Errorf("questie: %s: HTTP %d, %d bytes", url, resp.StatusCode, len(b))
 		}
 		if err := os.WriteFile(file, b, 0o644); err != nil {
@@ -394,14 +401,211 @@ func Build(raw map[string]string, revision string, opt Options) (*Catalog, error
 		add(vendors, it.Vendors)
 		c.Items[id] = it
 	}
+	if err := c.applyTraces(raw, rows, wantNPC, wantObj, wantItem); err != nil {
+		return nil, err
+	}
 	for id := range wantObj {
 		row, ok := rows["objects"][id]
-		if !ok {
+		if !ok || c.Objects[id] != nil {
 			continue
 		}
 		c.Objects[id] = &Object{ID: id, Name: lua.At(row, 0), Spawns: spawns(lua.At(row, 3)), SpawnSrc: "questiedb_forever_raw"}
 	}
 	return c, nil
+}
+
+var traceKey = regexp.MustCompile(`\[\w+Keys\.(\w+)\]`)
+
+// traces reads a QuestieTrace corrections file: the table its Load returns, by id, with the field names as keys.
+func traces(raw string) (Table, error) {
+	i := strings.Index(raw, "return {")
+	if i < 0 {
+		return Table{}, nil // a revision without traces
+	}
+	body := raw[i+len("return "):]
+	if j := strings.LastIndex(body, "}"); j >= 0 {
+		body = body[:j+1]
+	}
+	if j := strings.LastIndex(body[:len(body)-1], "}"); j >= 0 && strings.TrimSpace(body[j+1:len(body)-1]) == "" {
+		body = body[:j+1] // the function's end after the table
+	}
+	var lines []string
+	for _, l := range strings.Split(body, "\n") {
+		lines = append(lines, stripComment(l))
+	}
+	v, err := lua.Parse(traceKey.ReplaceAllString(strings.Join(lines, "\n"), `["$1"]`))
+	if err != nil {
+		return nil, err
+	}
+	t, _ := v.(lua.Table)
+	return Table(t), nil
+}
+
+// stripComment cuts a line's "--" comment, outside strings.
+func stripComment(l string) string {
+	quote := byte(0)
+	for i := 0; i < len(l); i++ {
+		c := l[i]
+		switch {
+		case quote != 0 && c == '\\':
+			i++
+		case quote != 0 && c == quote:
+			quote = 0
+		case quote == 0 && (c == '"' || c == '\''):
+			quote = c
+		case quote == 0 && c == '-' && i+1 < len(l) && l[i+1] == '-':
+			return l[:i]
+		}
+	}
+	return l
+}
+
+// Table is a parsed traces table.
+type Table = lua.Table
+
+// applyTraces adds what players' traces found: an item's drops (creatures, objects), a quest's givers and enders and,
+// where QuestieDB has none, its objectives; creatures and objects with their spawns where the data lacks them.
+func (c *Catalog) applyTraces(raw map[string]string, rows map[string]map[int][]any, wantNPC, wantObj, wantItem map[int]bool) error {
+	read := map[string]Table{}
+	for _, k := range []string{"trace_items", "trace_quests", "trace_npcs", "trace_objects"} {
+		t, err := traces(raw[k])
+		if err != nil {
+			return fmt.Errorf("questie %s: %w", k, err)
+		}
+		read[k] = t
+	}
+	field := func(t any, name string) any {
+		if m, ok := t.(lua.Table); ok {
+			return m[name]
+		}
+		return nil
+	}
+	merge := func(l, add []int) []int {
+		for _, a := range add {
+			found := false
+			for _, x := range l {
+				found = found || x == a
+			}
+			if !found {
+				l = append(l, a)
+			}
+		}
+		return l
+	}
+	for k, v := range read["trace_items"] {
+		id, ok := k.(int)
+		if !ok {
+			continue
+		}
+		it := c.Items[id]
+		if it == nil {
+			it = &Item{ID: id, Name: field(v, "name"), ChanceByID: map[string]Drop{}, DropSource: "questie_traces"}
+			c.Items[id] = it
+		}
+		it.NPCs = merge(it.NPCs, lua.IDs(field(v, "npcDrops_add")))
+		it.Objects = merge(it.Objects, lua.IDs(field(v, "objectDrops_add")))
+		for _, n := range it.NPCs {
+			wantNPC[n] = true
+		}
+		for _, o := range it.Objects {
+			wantObj[o] = true
+		}
+	}
+	for k, v := range read["trace_quests"] {
+		id, ok := k.(int)
+		q := c.Quests[id]
+		if !ok || q == nil {
+			continue // a quest QuestieDB does not have: its required level is unknown
+		}
+		refs := func(r *Refs, add any) {
+			l := list(add)
+			r.NPC = merge(r.NPC, ids(lua.At(l, 0)))
+			r.Object = merge(r.Object, ids(lua.At(l, 1)))
+		}
+		refs(&q.StartedBy, field(v, "startedBy_add"))
+		refs(&q.FinishedBy, field(v, "finishedBy_add"))
+		for _, r := range []Refs{q.StartedBy, q.FinishedBy} {
+			for _, n := range r.NPC {
+				wantNPC[n] = true
+			}
+			for _, o := range r.Object {
+				wantObj[o] = true
+			}
+		}
+		if len(q.Objectives) == 0 {
+			for i, targets := range list(field(v, "objectives")) {
+				if i >= len(objectiveKinds) {
+					break
+				}
+				kind := objectiveKinds[i]
+				for _, entry := range list(targets) {
+					var got []int
+					if e, ok := entry.([]any); ok && len(e) > 0 {
+						got = ids(e[0])
+					} else {
+						got = ids(entry)
+					}
+					if len(got) > 0 {
+						q.Objectives = append(q.Objectives, Objective{Kind: kind, IDs: got, CountSource: "unresolved"})
+						switch kind {
+						case "npc", "kill_credit":
+							for _, n := range got {
+								wantNPC[n] = true
+							}
+						case "object":
+							for _, o := range got {
+								wantObj[o] = true
+							}
+						case "item":
+							for _, it := range got {
+								wantItem[it] = true
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+	for k, v := range read["trace_npcs"] {
+		id, ok := k.(int)
+		if !ok {
+			continue
+		}
+		sp := spawns(field(v, "spawns"))
+		n := c.NPCs[id]
+		if n == nil {
+			if len(sp) == 0 || !wantNPC[id] {
+				continue
+			}
+			lo, _ := field(v, "minLevel").(int)
+			hi, _ := field(v, "maxLevel").(int)
+			n = &NPC{ID: id, Name: field(v, "name"), MinLevel: lo, MaxLevel: hi, Rank: 0, HPSource: "unknown", Spawns: sp,
+				SpawnSrc: "questie_traces", Friendly: field(v, "friendlyToFaction"), KillXP: "cmangos_classic_solo_level_formula", Critter: "unverified"}
+			c.NPCs[id] = n
+			continue
+		}
+		if len(n.Spawns) == 0 && len(sp) > 0 {
+			n.Spawns, n.SpawnSrc = sp, "questie_traces"
+		}
+	}
+	for k, v := range read["trace_objects"] {
+		id, ok := k.(int)
+		if !ok || !wantObj[id] {
+			continue
+		}
+		sp := spawns(field(v, "spawns"))
+		if o := c.Objects[id]; o != nil || len(sp) == 0 {
+			if o != nil && len(o.Spawns) == 0 {
+				o.Spawns, o.SpawnSrc = sp, "questie_traces"
+			}
+			continue
+		}
+		if row, ok := rows["objects"][id]; ok && len(spawns(lua.At(row, 3))) > 0 {
+			continue // the data file has it with spawns
+		}
+		c.Objects[id] = &Object{ID: id, Name: field(v, "name"), Spawns: sp, SpawnSrc: "questie_traces"}
+	}
+	return nil
 }
 
 func ids(v any) []int {
