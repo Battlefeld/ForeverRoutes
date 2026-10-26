@@ -135,6 +135,11 @@ func (g *walkGrid) walkTime(a, b dataset.Point, straight float64) (float64, bool
 	}
 	cost := g.costs(ca)[cb]
 	if math.IsInf(float64(cost), 1) {
+		// a point on a pocket of cells the grid does not join to the rest (the top of a dam, a ledge): from or to the
+		// nearest cell around it that is joined, the rest a straight line
+		if y, ok := g.viaPocket(a, b, ca, cb); ok {
+			return math.Min(y, straight*walkMax), true
+		}
 		return straight * walkMax, true
 	}
 	ax, ay := g.point(ca)
@@ -146,6 +151,47 @@ func (g *walkGrid) walkTime(a, b dataset.Point, straight float64) (float64, bool
 	f := math.Max(1, math.Min(walkMax, float64(cost)/base))
 	return straight * f * navFactor, true
 }
+
+// pocketReach: cells around a point on a pocket searched for a joined one.
+const pocketReach = 3
+
+// viaPocket prices a walk whose ends the grid does not join: the cheapest pair of cells around them (a's own first)
+// that are joined, with straight lines (times pocketFactor) to and from them, in yards.
+func (g *walkGrid) viaPocket(a, b dataset.Point, ca, cb int32) (float64, bool) {
+	around := func(p dataset.Point, c int32) []int32 {
+		out := []int32{c}
+		i := int(math.Floor((p.X - g.m.X0) / g.m.Cell))
+		j := int(math.Floor((p.Y - g.m.Y0) / g.m.Cell))
+		for di := -pocketReach; di <= pocketReach; di++ {
+			for dj := -pocketReach; dj <= pocketReach; dj++ {
+				if n := g.at(i+di, j+dj); n >= 0 && n != c {
+					out = append(out, n)
+				}
+			}
+		}
+		return out
+	}
+	off := func(p dataset.Point, c int32) float64 {
+		x, y := g.point(c)
+		return math.Hypot(x-p.X, y-p.Y) * pocketFactor
+	}
+	best := math.Inf(1)
+	for k, sa := range around(a, ca) {
+		if k > 0 && !math.IsInf(best, 1) {
+			break // a's own cell reaches one around b: no need to leave it
+		}
+		cs := g.costs(sa)
+		for _, sb := range around(b, cb) {
+			if c := cs[sb]; !math.IsInf(float64(c), 1) {
+				best = math.Min(best, off(a, sa)+float64(c)*navFactor+off(b, sb))
+			}
+		}
+	}
+	return best, !math.IsInf(best, 1)
+}
+
+// pocketFactor: the straight line to or from a pocket, as PathFactor.
+const pocketFactor = 1.2
 
 // walks are the walk grids by map.
 type walks map[int]*walkGrid

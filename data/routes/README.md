@@ -19,14 +19,18 @@ a chain costs the route: for one in the route the time it adds (negative: its XP
 the time it adds when put in; `level` is the level the route hands it in at.
 
 Options: besides the class chains, Forever goals worth a detour are options too (`extraOptions`): the Cozy Sleeping Bag
-chain from level 14. An option's `events` are the route with it, each step woven in where the route comes closest to it
-within a few levels after it can be taken (Barrens steps while the route is in the Barrens, Eastern Kingdoms steps
-when it is there), and finished before level 20. The addon shows them with `/fr optionen` and switches one on with
+chain from level 14. An option's `events` are the route with it, woven in place by place (a turn-in and the next quest
+taken there are one visit), each visit where it costs the route least within a few levels after it can be taken,
+measured with the rest of the chain straight after it (Barrens steps while the route is in the Barrens, Eastern
+Kingdoms steps when it is there), and finished before level 20. The addon shows them with `/fr optionen` and switches one on with
 `/fr option <number>`: its steps go into the route after the step they follow, the rest stays as it is (a grind step
 is done at its level, so the XP of an option shortens the grinding by itself).
 
-Wands: mages, priests and warlocks craft the Lesser Magic Wand with Enchanting at level 5 (`route/wand.go`, 10 minutes)
-and finish their mobs with it from then on (no mana, fewer rests); a better wand from a quest on the way takes its place.
+Wands: mages, priests and warlocks finish their mobs with a wand from when they have one (`route/wand.go`; no mana,
+fewer rests). Enchanting trainers and suppliers stand in the capitals: the route goes there when a capital is close
+enough, for the Novice's Practice Wand (new in Forever: Enchanting 1, Simple Wood and a Mote of Magic from the supplier)
+before level 4, for the Lesser Magic Wand from level 5 (Enchanting 10 with practice wands, a Lesser Magic Essence from
+the auction house). A better wand from a quest on the way takes their place.
 The addon shows the crafting as a step of its own.
 
 **Credits.** Routes whose `winner` is `guide` are adapted from the RestedXP Forever guides

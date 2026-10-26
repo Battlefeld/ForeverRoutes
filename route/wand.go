@@ -6,27 +6,40 @@ import (
 	"github.com/Battlefeld/ForeverRoutes/dataset"
 )
 
-// Wands. Mages, priests and warlocks finish their mobs with a wand, which costs no mana: fewer rests. From level 5
-// they craft the Lesser Magic Wand with Enchanting (12-22 arcane, speed 1.5; foreverchanges.pro/item/11287); later a
-// quest's wand may be better (cmangos quest rewards: the wands of quests up to level 22, damage per second).
+// Wands. Mages, priests and warlocks finish their mobs with a wand, which costs no mana: fewer rests. The wands are
+// crafted with Enchanting, whose trainers and suppliers stand in the capitals (cmangos): the Novice's Practice Wand
+// (new in Forever, Enchanting 1, Simple Wood and a Mote of Magic from the supplier; 5-8 arcane, speed 1.5) from level
+// 1, the Lesser Magic Wand (Enchanting 10, reached with practice wands; Simple Wood and a Lesser Magic Essence from the
+// auction house; 12-22 arcane, speed 1.5; foreverchanges.pro/item/11287) from level 5. A route goes for them when the
+// capital is close enough (wandDetour); later a quest's wand may be better (cmangos quest rewards: the wands of quests
+// up to level 22, damage per second).
 const (
+	practiceWandDPS = 4.3
 	lesserWandLevel = 5
 	lesserWandDPS   = 11.3
-	// wandCraft: learning Enchanting and crafting the Lesser Magic Wand (Simple Wood, Lesser Magic Essence from the
-	// enchanting vendor), once at level 5 (an estimate; done where the character is)
-	wandCraft = 600.0
+	// time at the trainer, supplier and auction house: learning Enchanting and crafting the practice wand; the
+	// Lesser Magic Wand with the practice wands for the skill to 10 on top
+	practiceWandCraft = 120.0
+	lesserWandCraft   = 300.0
 )
+
+// wandDetour: the longest way, one way, a route goes to a capital for a wand (the way back is the next step's).
+var wandDetour = map[int]float64{1: 180, 2: 600}
+
+// wandSites: the Enchanting trainer and supplier of each capital (cmangos spawns), by side; their capitals have an
+// auction house.
+var wandSites = map[string][]dataset.Point{
+	"A": {{Map: 0, X: -8857, Y: 805}, {Map: 0, X: -4805, Y: -1191}, {Map: 1, X: 10140, Y: 2319}}, // Stormwind, Ironforge, Darnassus
+	"H": {{Map: 1, X: 1915, Y: -4436}, {Map: 1, X: -1115, Y: 48}, {Map: 0, X: 1485, Y: 275}},    // Orgrimmar, Thunder Bluff, Undercity
+}
 
 var wandClasses = map[string]bool{"Mage": true, "Priest": true, "Warlock": true}
 
 // WandClass: whether the class finishes its mobs with a wand.
 func WandClass(class string) bool { return wandClasses[class] }
 
-// LesserWandLevel is the level the route crafts the Lesser Magic Wand at; LesserWandItem its item.
-const (
-	LesserWandLevel = lesserWandLevel
-	LesserWandItem  = 11287
-)
+// LesserWandItem is the Lesser Magic Wand's item.
+const LesserWandItem = 11287
 
 var wandQuests = map[int]float64{
 	14:   12.8, // The People's Militia: Spark of the People's Militia
@@ -53,10 +66,16 @@ type WandProfile interface {
 
 // wandDPS is the best wand this character has in s, 0 for none.
 func (w *World) wandDPS(s *State) float64 {
-	if !wandClasses[w.Char.Class] || w.Level(s) < lesserWandLevel {
+	if !wandClasses[w.Char.Class] {
 		return 0
 	}
-	best := lesserWandDPS
+	best := 0.0
+	switch s.Wand {
+	case 1:
+		best = practiceWandDPS
+	case 2:
+		best = lesserWandDPS
+	}
 	for id, dps := range wandQuests {
 		if q := w.ByID[id]; q != nil && dps > best && s.Status[q.Index] == done {
 			best = dps
@@ -65,14 +84,40 @@ func (w *World) wandDPS(s *State) float64 {
 	return best
 }
 
-// craftWand: a caster crafts the Lesser Magic Wand before its first fight from level 5.
-func (w *World) craftWand(s *State) {
-	if s.Wand || !wandClasses[w.Char.Class] || w.Level(s) < lesserWandLevel {
-		return
+// wandTier: the wand a caster can craft at its level (1 practice, 2 lesser), 0 for none.
+func (w *World) wandTier(s *State) int {
+	if !wandClasses[w.Char.Class] {
+		return 0
 	}
-	s.Wand = true
-	s.Time += wandCraft
-	s.Talk += wandCraft
+	switch l := w.Level(s); {
+	case l >= lesserWandLevel:
+		return 2
+	case l < lesserWandLevel-1:
+		return 1
+	}
+	return 0 // a level before the Lesser Magic Wand: not worth a practice wand of its own
+}
+
+// wandAction: the visit to a capital for a better wand when one is in reach (wandDetour), else nil.
+func (w *World) wandAction(s *State) *Action {
+	tier := w.wandTier(s)
+	if tier <= s.Wand {
+		return nil
+	}
+	var best *dataset.Point
+	bt := wandDetour[tier]
+	for i, p := range wandSites[w.Faction] {
+		if p.Map != s.Pos.Map || distance(p, s.Pos) > 7*bt*1.5 {
+			continue // too far on foot or flight alike (a cheap filter before the travel time)
+		}
+		if t, _ := w.travel(s, s.Pos, p); t <= bt {
+			best, bt = &wandSites[w.Faction][i], t
+		}
+	}
+	if best == nil {
+		return nil
+	}
+	return &Action{Op: "wand", At: *best, Wand: tier}
 }
 
 // KillSecondsWand: the fastest way to kill the mob with the wand at hand, rest included: spells only, or spells for a

@@ -3,6 +3,7 @@ package route
 import (
 	"math"
 	"slices"
+	"sort"
 	"time"
 
 	"github.com/Battlefeld/ForeverRoutes/dataset"
@@ -539,13 +540,13 @@ type ClassCost struct {
 // optionWindows: how many levels after an option's step can be taken it may go in, tried in turn (weaveIn).
 var optionWindows = []int{2, 4, 6, 20}
 
-// weaveIn puts an option's chain into a route step by step, each where the route comes closest to it within a window
-// of levels after it can be taken: of the windows that finish the chain before the target, the fastest route.
+// weaveIn puts an option's chain into a route place by place (weaveLegs): of the windows that finish the chain before
+// the target, the fastest route.
 func (w *World) weaveIn(events []GuideEvent, c ClassChain, target int) []GuideEvent {
 	var best []GuideEvent
 	bt := math.Inf(1)
 	for _, win := range optionWindows {
-		cand := w.withQuestsIn(events, c.Quests, target, win)
+		cand := w.weaveLegs(events, c, target, win)
 		if r, err := w.FollowGuide(cand, target); err == nil && handsIn(r, c.Goal.ID) && r.Seconds < bt {
 			best, bt = cand, r.Seconds
 		}
@@ -554,6 +555,122 @@ func (w *World) weaveIn(events []GuideEvent, c ClassChain, target int) []GuideEv
 		return w.chainInOnePiece(events, c, target, w.withQuestsIn(events, c.Quests, target, 2))
 	}
 	return best
+}
+
+// legRadius: chain steps this close together are done in one visit.
+const legRadius = 150.0
+
+// legTries: the places of a route nearest a leg that weaveLegs measures it at (besides right after the leg before).
+const legTries = 8
+
+// leg is one visit of a chain: its steps at one place, from a level on.
+type leg struct {
+	events   []GuideEvent
+	at       dataset.Point
+	minLevel int
+}
+
+// chainLegs: the steps of a chain the route lacks, in order, grouped by place: a turn-in and the next quest taken where
+// it was handed in are one visit (accept and complete together: the follower works the objectives right after).
+func (w *World) chainLegs(events []GuideEvent, c ClassChain) []leg {
+	in := map[int]bool{}
+	for _, q := range questsOf(events) {
+		in[q] = true
+	}
+	var legs []leg
+	add := func(e GuideEvent, p dataset.Point, min int) {
+		if n := len(legs); n > 0 && legs[n-1].at.Map == p.Map && distance(legs[n-1].at, p) <= legRadius {
+			legs[n-1].events = append(legs[n-1].events, e)
+			legs[n-1].minLevel = max(legs[n-1].minLevel, min)
+			return
+		}
+		legs = append(legs, leg{events: []GuideEvent{e}, at: p, minLevel: min})
+	}
+	for _, q := range c.Quests {
+		if in[q.ID] {
+			continue
+		}
+		add(GuideEvent{Op: "accept", Quest: q.ID}, q.StartPos, q.MinLevel)
+		add(GuideEvent{Op: "complete", Quest: q.ID}, q.StartPos, q.MinLevel)
+		add(GuideEvent{Op: "turnin", Quest: q.ID}, q.EndPos, 0)
+	}
+	return legs
+}
+
+// eventPos: where a route's event takes place (accept at the giver, else at the ender); false for a level or a run.
+func (w *World) eventPos(e GuideEvent) (dataset.Point, bool) {
+	q := w.ByID[e.Quest]
+	if q == nil {
+		return dataset.Point{}, false
+	}
+	if e.Op == "turnin" {
+		return q.EndPos, true
+	}
+	return q.StartPos, true
+}
+
+// weaveLegs puts a chain's legs into a route in order, each at the place within window levels after it can be taken
+// that costs the route least (measured: the legTries places the route comes closest to it, and right after the leg
+// before), so a leg is done when the route is there anyway (the Barrens steps in the Barrens) or goes straight on.
+func (w *World) weaveLegs(events []GuideEvent, c ClassChain, target, window int) []GuideEvent {
+	out := append([]GuideEvent(nil), events...)
+	after := -1 // the last event of the leg before
+	legs := w.chainLegs(events, c)
+	for i, l := range legs {
+		levels := w.eventLevels(out, target)
+		cut := len(out)
+		for j := after + 1; j < len(out); j++ {
+			if levels[j] >= target {
+				cut = j
+				break
+			}
+		}
+		lo := -1
+		for j := after + 1; j < cut; j++ {
+			if levels[j] >= l.minLevel {
+				lo = j
+				break
+			}
+		}
+		if lo < 0 {
+			lo = max(cut-2, after+1) // the route reaches its level only on the way to the target: the follower levels for it
+		}
+		type cand struct {
+			j int
+			d float64
+		}
+		var cs []cand
+		for j := lo; j < cut && levels[j] <= levels[lo]+window; j++ {
+			if p, ok := w.eventPos(out[j]); ok && p.Map == l.at.Map {
+				cs = append(cs, cand{j, distance(p, l.at)})
+			}
+		}
+		sort.Slice(cs, func(a, b int) bool { return cs[a].d < cs[b].d })
+		tries := []int{max(lo-1, after)}
+		for k := 0; k < len(cs) && k < legTries; k++ {
+			tries = append(tries, cs[k].j)
+		}
+		insert := func(j int, rest bool) []GuideEvent {
+			block := append([]GuideEvent(nil), l.events...)
+			if rest {
+				for _, m := range legs[i+1:] {
+					block = append(block, m.events...)
+				}
+			}
+			return append(append(append([]GuideEvent(nil), out[:j+1]...), block...), out[j+1:]...)
+		}
+		// measured with the legs after it straight on: what comes after the target costs nothing, so a leg measured
+		// alone would go as late as it can and the chain not be finished
+		best, bt := tries[0], math.Inf(1)
+		for _, j := range tries {
+			if r, err := w.FollowGuide(insert(j, true), target); err == nil && handsIn(r, c.Goal.ID) && r.Seconds < bt {
+				best, bt = j, r.Seconds
+			}
+		}
+		out = insert(best, false)
+		after = best + len(l.events)
+	}
+	return out
 }
 
 // reportBudget: how long ClassReport improves each side of a measure.

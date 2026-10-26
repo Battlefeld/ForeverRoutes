@@ -67,6 +67,7 @@ func cmdImprove(args []string) error {
 	if err != nil {
 		return err
 	}
+	soloEvents, solo := ge, g1 // the guide improved without runs
 	if *group {
 		// with dungeons: the guide with dungeon runs put in competes with the planned route
 		if ge2, g2, err := w.Improve(w.WithDungeons(ge, *target), *target, *budget); err == nil && route.Runs(ge2) > 0 && g2.Level >= *target {
@@ -86,6 +87,12 @@ func cmdImprove(args []string) error {
 		rep.Winner, rep.Events, rep.Quests, rep.Profile, rep.Assumed = "plan", pe, p1.Quests, p1.Profile, p1.Assumed
 	} else {
 		rep.Winner, rep.Events, rep.Quests, rep.Profile, rep.Assumed = "guide", ge, g1.Quests, g1.Profile, g1.Assumed
+	}
+	if win := map[bool]*route.GuideResult{true: p1, false: g1}[planWins]; *group && reached(solo) && solo.Seconds < win.Seconds {
+		// no run pays on the way to the target (the runs cost more than they bring): the route with dungeons is the
+		// one without
+		rep.Winner, rep.Events, rep.Quests, rep.Profile, rep.Assumed = "guide", soloEvents, solo.Quests, solo.Profile, solo.Assumed
+		rep.Hours["guideImproved"] = solo.Seconds / 3600
 	}
 	rep.Class = w.ClassReport(rep.Events, *target)
 	fmt.Fprintf(os.Stderr, "%s %s: guide %.1f h -> %.1f h, plan %.1f h -> %.1f h, winner %s (%.0f s)\n", *race, *class,

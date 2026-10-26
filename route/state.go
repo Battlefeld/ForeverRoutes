@@ -33,7 +33,7 @@ type State struct {
 	Deathskips           int            // deaths taken on purpose to travel
 	Runs                 uint64         // dungeons run (bit per World.Dungeons index)
 	Switches             int            // changes between Kalimdor and the Eastern Kingdoms
-	Wand                 bool           // a caster has crafted its Lesser Magic Wand (wand.go)
+	Wand                 int            // the wand a caster has crafted: 1 practice, 2 lesser (wand.go)
 	via                  string         // how the last action travelled when not on foot (hearth, teleport, network, deathskip: <graveyard>)
 	viaAt                *dataset.Point // where to die for that deathskip
 }
@@ -81,8 +81,10 @@ type Action struct {
 	Object int    `json:"object,omitempty"`
 	Kills  int    `json:"kills,omitempty"`
 	// Dungeon: the dungeon a "dungeon" step runs with the group (key of Dataset.Dungeons)
-	Dungeon string        `json:"dungeon,omitempty"`
-	At      dataset.Point `json:"at"`
+	Dungeon string `json:"dungeon,omitempty"`
+	// Wand: the wand a "wand" step crafts (1 the practice wand, 2 the Lesser Magic Wand)
+	Wand int           `json:"wand,omitempty"`
+	At   dataset.Point `json:"at"`
 }
 
 // RouteError explains why an action is not possible in a state.
@@ -288,10 +290,22 @@ func (w *World) kill(s *State, n *dataset.NPC, obj int, site Site, k float64) {
 
 // Apply performs one action; the state is changed only when the action is possible.
 func (w *World) Apply(s *State, a Action) error {
-	if a.Op == "work" || a.Op == "grind" {
-		w.craftWand(s)
-	}
 	switch a.Op {
+	case "wand":
+		// to a capital's Enchanting trainer and supplier for a better wand
+		if a.Wand <= s.Wand || a.Wand > w.wandTier(s) {
+			return fail("no better wand to craft")
+		}
+		if err := w.move(s, a.At); err != nil {
+			return err
+		}
+		t := practiceWandCraft
+		if a.Wand == 2 {
+			t = lesserWandCraft
+		}
+		s.Time += t
+		s.Talk += t
+		s.Wand = a.Wand
 	case "accept":
 		q := w.ByID[a.Quest]
 		if q == nil {
@@ -544,6 +558,11 @@ func (w *World) describe(a Action) string {
 		if d := w.dungeonOf[a.Dungeon]; d != nil {
 			return d.Name + " (dungeon run)"
 		}
+	case "wand":
+		if a.Wand == 2 {
+			return "Lesser Magic Wand (Enchanting)"
+		}
+		return "Novice's Practice Wand (Enchanting)"
 	}
 	return ""
 }

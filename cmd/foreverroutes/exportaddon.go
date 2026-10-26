@@ -73,20 +73,13 @@ func cmdExportAddon(args []string) error {
 		}
 		fmt.Fprintf(&b, "ForeverRoutesData.routes[%s] = {race = %s, class = %s, faction = %s, target = %d, hours = %.1f, basis = %s, s = {\n",
 			luaStr(key), luaStr(r.Character.Race), luaStr(r.Character.Class), luaStr(r.Character.Faction), r.Target, res.Seconds/3600, luaStr(r.Winner))
-		wand, wandAt := !route.WandClass(r.Character.Class), -1
-		for i, st := range res.Steps {
-			if !wand && st.Level >= route.LesserWandLevel {
-				wandAt = i
-				// the model has a caster craft its wand at level 5, before its next fight: a step of its own here
-				fmt.Fprintf(&b, " {op = \"z\", it = %d, m = %d, x = %.1f, y = %.1f, l = %d},\n", route.LesserWandItem, st.At.Map, st.At.X, st.At.Y, st.Level)
-				wand = true
-			}
+		for _, st := range res.Steps {
 			b.WriteString(" {")
 			writeStep(&b, w, res, st)
 			b.WriteString("},\n")
 		}
 		b.WriteString("}")
-		writeOptions(&b, w, res, r.Options, r.Target, wandAt)
+		writeOptions(&b, w, res, r.Options, r.Target)
 		b.WriteString("}\n")
 		fmt.Fprintf(os.Stderr, "%s: %d steps, %.1f h\n", key, len(res.Steps), res.Seconds/3600)
 	}
@@ -118,6 +111,12 @@ func writeStep(b *strings.Builder, w *route.World, res *route.GuideResult, st ro
 		fmt.Fprintf(b, "op = \"g\", c = %d", st.Kills)
 		if n := w.NPC[st.NPC]; n != nil {
 			fmt.Fprintf(b, ", tg = %s", luaStr(n.Name))
+		}
+	case "wand":
+		// a capital's Enchanting trainer and supplier: wt 1 the Novice's Practice Wand, 2 the Lesser Magic Wand (it)
+		fmt.Fprintf(b, "op = \"z\", wt = %d", st.Wand)
+		if st.Wand == 2 {
+			fmt.Fprintf(b, ", it = %d", route.LesserWandItem)
 		}
 	case "dungeon":
 		fmt.Fprintf(b, "op = \"d\", n = %s", luaStr(strings.TrimSuffix(st.Name, " (dungeon run)")))
@@ -162,8 +161,7 @@ func writeStep(b *strings.Builder, w *route.World, res *route.GuideResult, st ro
 // with it) and for each the step of the route it comes after (af, 0 before the first). Off, the route is as it is; on,
 // its steps go in after theirs, and the route's grind steps are done earlier by themselves (a grind step is done at
 // its level).
-// wandAt: the step the wand step went in before (-1: none), which moves the steps from there on by one.
-func writeOptions(b *strings.Builder, w *route.World, res *route.GuideResult, opts []route.ClassCost, target, wandAt int) {
+func writeOptions(b *strings.Builder, w *route.World, res *route.GuideResult, opts []route.ClassCost, target int) {
 	key := func(st route.Step) string {
 		switch st.Op {
 		case "accept", "turnin", "work":
@@ -178,9 +176,6 @@ func writeOptions(b *strings.Builder, w *route.World, res *route.GuideResult, op
 		if k := key(st); k != "" {
 			if _, seen := base[k]; !seen {
 				base[k] = i + 1
-				if wandAt >= 0 && i >= wandAt {
-					base[k]++
-				}
 			}
 		}
 	}
