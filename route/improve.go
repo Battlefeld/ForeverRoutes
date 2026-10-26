@@ -111,31 +111,43 @@ func (w *World) WithDungeons(events []GuideEvent, target int) []GuideEvent {
 	cur := events
 	var least []GuideEvent
 	leastT := math.Inf(1)
-	for _, d := range w.Dungeons {
-		have := false
-		for _, e := range cur {
-			have = have || (e.Op == "dungeon" && e.Dungeon == d.Key)
-		}
-		if have || d.Min > target {
-			continue
-		}
-		var pick []GuideEvent
-		for k := 1; k <= 20; k++ {
-			i := len(cur) * k / 21
-			cand := append(append(append([]GuideEvent(nil), cur[:i]...), GuideEvent{Op: "dungeon", Dungeon: d.Key}), cur[i:]...)
-			r, err := w.FollowGuide(cand, target)
-			if err != nil || r.Level < target || !w.tankFirst(r) {
-				continue // a tank class runs its first dungeon with its tank form or stance
+	// dungeon after dungeon, again while one more pays: each tried at every step of the route that has its level
+	// (up to dungeonWindow levels above its lowest), where it costs least
+	for changed := true; changed; {
+		changed = false
+		for _, d := range w.Dungeons {
+			have := false
+			for _, e := range cur {
+				have = have || (e.Op == "dungeon" && e.Dungeon == d.Key)
 			}
-			if r.Seconds < best.Seconds-1 {
-				best, pick = r, cand
+			if have || d.Min > target {
+				continue
 			}
-			if r.Seconds < leastT {
-				least, leastT = cand, r.Seconds
+			levels := best.levels
+			var pick []GuideEvent
+			for i := 0; i <= len(cur); i++ {
+				l := target
+				if i < len(levels) {
+					l = levels[i]
+				}
+				if l < d.Min || l > d.Min+dungeonWindow {
+					continue
+				}
+				cand := append(append(append([]GuideEvent(nil), cur[:i]...), GuideEvent{Op: "dungeon", Dungeon: d.Key}), cur[i:]...)
+				r, err := w.FollowGuide(cand, target)
+				if err != nil || r.Level < target || !w.tankFirst(r) {
+					continue // a tank class runs its first dungeon with its tank form or stance
+				}
+				if r.Seconds < best.Seconds-1 {
+					best, pick = r, cand
+				}
+				if r.Seconds < leastT {
+					least, leastT = cand, r.Seconds
+				}
 			}
-		}
-		if pick != nil {
-			cur = pick
+			if pick != nil {
+				cur, changed = pick, true
+			}
 		}
 	}
 	if Runs(cur) == 0 && least != nil {
@@ -143,6 +155,9 @@ func (w *World) WithDungeons(events []GuideEvent, target int) []GuideEvent {
 	}
 	return cur
 }
+
+// dungeonWindow: how many levels above its lowest a dungeon is tried in a route.
+const dungeonWindow = 6
 
 // Runs counts the dungeon runs of a route.
 func Runs(events []GuideEvent) int {
