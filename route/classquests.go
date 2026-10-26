@@ -41,6 +41,11 @@ var (
 	}
 )
 
+// extraOptions: quest chains for every class a route offers as options (the quest named gives the reward).
+var extraOptions = map[int]string{
+	79976: "Gemütlicher Schlafsack", // Cozy Sleeping Bag, from 14: a 12-slot bag, 10,950 XP over the chain, +3 % XP resting
+}
+
 // ClassChain is a class quest with the quests before it, as a route does them.
 type ClassChain struct {
 	Goal   *Quest
@@ -65,7 +70,8 @@ func (w *World) ClassChains(target int) []ClassChain {
 	}
 	ok := func(q *Quest) bool {
 		onMap := q.StartPos.Map == 0 || q.StartPos.Map == 1 || q.StartPos.Map == w.Start.Map
-		return q.Classes != 0 && q.MinLevel < target && q.Dungeon == nil && onMap
+		_, extra := extraOptions[q.ID]
+		return (q.Classes != 0 || extra) && q.MinLevel < target && q.Dungeon == nil && onMap
 	}
 	foreign := func(q *Quest) bool { h := w.home(q.StartPos); return len(h) > 0 && !h[race] }
 	// chain: the goal and what it needs, a prerequisite of several the one not in another race's home, nearest
@@ -128,12 +134,24 @@ func (w *World) ClassChains(target int) []ClassChain {
 			continue
 		}
 		tier, reward := "optional", ""
-		if r, in := classRequired[q.ID]; in {
+		if q.Classes == 0 {
+			if r, in := extraOptions[q.ID]; in {
+				tier, reward = "recommended", r
+			} else {
+				continue // an ordinary quest is only a step of an extra option
+			}
+		} else if r, in := classRequired[q.ID]; in {
 			tier, reward = "required", r
 		} else if r, in := classRecommended[q.ID]; in {
 			tier, reward = "recommended", r
 		} else if classLetter(q) {
 			tier, reward = "required", "Klassenbrief"
+		}
+		switch w.classOverride[q.ID] {
+		case "off":
+			tier = "optional"
+		case "on":
+			tier = "required"
 		}
 		qs, good := chain(q, map[int]bool{})
 		if !good {

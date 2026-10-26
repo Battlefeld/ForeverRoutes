@@ -47,6 +47,7 @@ type Inputs struct {
 	GuidesPolestar    string
 	Deathskips        string // optional: curated deathskips (data/sources/deathskips.json)
 	Dungeons          string // optional: curated dungeons (data/sources/dungeons.json)
+	QuestFixes        string // optional: curated quest facts (data/sources/quest-fixes.json)
 	SPF               string // optional: Shortest Path Forever's Data folder (internal/sources/spf)
 	SPFRevision       string
 	EGLink            string // optional: EG Link output's data/wow_classic_beta (internal/sources/eglink)
@@ -308,6 +309,11 @@ func Build(in Inputs) (*dataset.Dataset, error) {
 		}
 		b.curatedSkips = f.Skips
 	}
+	if in.QuestFixes != "" {
+		if b.questFixes, err = readQuestFixes(in.QuestFixes); err != nil {
+			return nil, err
+		}
+	}
 	if in.Dungeons != "" {
 		raw, err := os.ReadFile(in.Dungeons)
 		if err != nil {
@@ -343,6 +349,7 @@ func Build(in Inputs) (*dataset.Dataset, error) {
 	b.quests()
 	b.breadcrumbPrereqs()
 	b.rxpPrereqs()
+	b.applyQuestFixes()
 	b.npcs()
 	b.objects()
 	b.guideSpawns()
@@ -455,6 +462,7 @@ type builder struct {
 	rxpTargets      []guides.Sighting
 	rxpQuests       map[int]*guides.QuestSteps
 	rxpOrder        map[string][]guides.OrderStep
+	questFixes      []questFix
 	curatedDungeons []curatedDungeon
 	curatedSkips    []curatedSkip
 	gdx             *guideIndex

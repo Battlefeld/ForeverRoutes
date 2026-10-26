@@ -78,3 +78,26 @@ func TestShippedProfiles(t *testing.T) {
 		t.Logf("%s: level 20 mob (600 HP) %.1f s fight, %.1f s rest", f, fight, rest)
 	}
 }
+
+// With a wand a mage spends less on a kill (fight and rest together) than with spells only, at the table's levels and
+// below it.
+func TestWandShortensKills(t *testing.T) {
+	f, err := os.Open("../data/profiles/mage.json")
+	if err != nil {
+		t.Skip("no mage profile")
+	}
+	defer f.Close()
+	p, err := LoadTableProfile(f)
+	if err != nil {
+		t.Fatal(err)
+	}
+	c := Character{Race: "Human", Class: "Mage"}
+	for _, l := range []int{6, 12, 18} {
+		mob := &dataset.NPC{MinLevel: l, MaxLevel: l}
+		sf, sr := p.KillSeconds(c, l, mob)
+		wf, wr := p.KillSecondsWand(c, l, mob, lesserWandDPS)
+		if wf+wr >= sf+sr {
+			t.Errorf("level %d: wand %.0f+%.0f s, spells %.0f+%.0f s", l, wf, wr, sf, sr)
+		}
+	}
+}

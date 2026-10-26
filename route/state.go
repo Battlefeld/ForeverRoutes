@@ -33,6 +33,7 @@ type State struct {
 	Deathskips           int            // deaths taken on purpose to travel
 	Runs                 uint64         // dungeons run (bit per World.Dungeons index)
 	Switches             int            // changes between Kalimdor and the Eastern Kingdoms
+	Wand                 bool           // a caster has crafted its Lesser Magic Wand (wand.go)
 	via                  string         // how the last action travelled when not on foot (hearth, teleport, network, deathskip: <graveyard>)
 	viaAt                *dataset.Point // where to die for that deathskip
 }
@@ -197,6 +198,11 @@ func (w *World) complete(s *State, q *Quest) bool {
 // mobTime is the time per kill at a site: fight, rest, walk to the next mob.
 func (w *World) mobTime(s *State, n *dataset.NPC, site Site) float64 {
 	f, r := w.Opt.Profile.KillSeconds(w.Char, w.Level(s), n)
+	if dps := w.wandDPS(s); dps > 0 {
+		if wp, ok := w.Opt.Profile.(WandProfile); ok {
+			f, r = wp.KillSecondsWand(w.Char, w.Level(s), n, dps)
+		}
+	}
 	return f + r + site.Spacing*w.Opt.PathFactor/w.Opt.RunSpeed
 }
 
@@ -282,6 +288,9 @@ func (w *World) kill(s *State, n *dataset.NPC, obj int, site Site, k float64) {
 
 // Apply performs one action; the state is changed only when the action is possible.
 func (w *World) Apply(s *State, a Action) error {
+	if a.Op == "work" || a.Op == "grind" {
+		w.craftWand(s)
+	}
 	switch a.Op {
 	case "accept":
 		q := w.ByID[a.Quest]

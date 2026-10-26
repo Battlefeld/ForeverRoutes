@@ -3,7 +3,6 @@ package route
 import (
 	"math"
 	"slices"
-	"sort"
 	"time"
 
 	"github.com/Battlefeld/ForeverRoutes/dataset"
@@ -238,8 +237,9 @@ func (w *World) withClassQuests(events []GuideEvent, target int) []GuideEvent {
 		// the chain's class quests taken out and put in again whole, in order (a guide may do part of it, or out of
 		// order); where that does not finish it before the target, each part at the first place it can be taken
 		class := map[int]bool{}
+		_, extra := extraOptions[c.Goal.ID]
 		for _, q := range c.Quests {
-			class[q.ID] = q.Classes != 0
+			class[q.ID] = q.Classes != 0 || extra // an extra option's steps are all its own
 		}
 		rest := without(out, func(e GuideEvent) bool { return class[e.Quest] })
 		if tank {
@@ -273,8 +273,9 @@ func (w *World) withClassQuests(events []GuideEvent, target int) []GuideEvent {
 // chain's level backwards, that hands its last quest in; fallback when there is none.
 func (w *World) chainInOnePiece(events []GuideEvent, c ClassChain, target int, fallback []GuideEvent) []GuideEvent {
 	var block []GuideEvent
+	_, extra := extraOptions[c.Goal.ID]
 	for _, q := range c.Quests {
-		if q.Classes != 0 {
+		if q.Classes != 0 || extra {
 			block = append(block, GuideEvent{Op: "accept", Quest: q.ID}, GuideEvent{Op: "complete", Quest: q.ID}, GuideEvent{Op: "turnin", Quest: q.ID})
 		}
 	}
@@ -359,7 +360,7 @@ func (w *World) withQuestsIn(events []GuideEvent, quests []*Quest, target, windo
 			missing = append(missing, q)
 		}
 	}
-	sort.Slice(missing, func(i, j int) bool { return missing[i].Index < missing[j].Index })
+	// in the order given: a chain's quests come in their order, a follow-up after its prerequisite
 	out := append([]GuideEvent(nil), events...)
 	for len(missing) > 0 {
 		// the next quest whose class prerequisites are in the route already
@@ -531,6 +532,44 @@ type ClassCost struct {
 	Minutes  float64 `json:"minutes"`         // time it adds to the route (negative: it saves time)
 	Possible bool    `json:"possible"`        // put in, it is handed in
 	Level    int     `json:"level,omitempty"` // the level the route hands it in at
+	// Events: for an option, the route with it (each step where the route comes closest to it), improved
+	Events []GuideEvent `json:"events,omitempty"`
+}
+
+// optionWindows: how many levels after an option's step can be taken it may go in, tried in turn (weaveIn).
+var optionWindows = []int{2, 4, 6, 20}
+
+// weaveIn puts an option's chain into a route step by step, each where the route comes closest to it within a window
+// of levels after it can be taken: of the windows that finish the chain before the target, the fastest route.
+func (w *World) weaveIn(events []GuideEvent, c ClassChain, target int) []GuideEvent {
+	var best []GuideEvent
+	bt := math.Inf(1)
+	for _, win := range optionWindows {
+		cand := w.withQuestsIn(events, c.Quests, target, win)
+		if r, err := w.FollowGuide(cand, target); err == nil && handsIn(r, c.Goal.ID) && r.Seconds < bt {
+			best, bt = cand, r.Seconds
+		}
+	}
+	if best == nil {
+		return w.chainInOnePiece(events, c, target, w.withQuestsIn(events, c.Quests, target, 2))
+	}
+	return best
+}
+
+// reportBudget: how long ClassReport improves each side of a measure.
+const reportBudget = 8 * time.Second
+
+// setClassOverride turns a chain off or on for a measure ("" back to its tier).
+func (w *World) setClassOverride(goal int, v string) {
+	if w.classOverride == nil {
+		w.classOverride = map[int]string{}
+	}
+	if v == "" {
+		delete(w.classOverride, goal)
+	} else {
+		w.classOverride[goal] = v
+	}
+	w.required = nil // keepClassQuest's cache
 }
 
 // ClassReport measures every class quest chain of this character (ClassChains) against a route.
@@ -547,23 +586,47 @@ func (w *World) ClassReport(events []GuideEvent, target int) []ClassCost {
 		}
 		return 0
 	}
+	// the route itself improved as briefly, so both sides of every measure had the same search
+	ref := base
+	if _, r, err := w.Improve(events, target, reportBudget); err == nil {
+		ref = r
+	}
 	var out []ClassCost
 	for _, c := range w.ClassChains(target) {
 		cc := ClassCost{Reward: c.Reward, Tier: c.Tier, Quest: c.Goal.ID, Name: c.Goal.Name, MinLevel: c.Goal.MinLevel}
 		ids := map[int]bool{}
+		_, extra := extraOptions[c.Goal.ID]
 		for _, q := range c.Quests {
 			cc.Quests = append(cc.Quests, q.ID)
-			ids[q.ID] = q.Classes != 0 // the class quests only: an ordinary quest before them stays in the route
+			ids[q.ID] = q.Classes != 0 || extra // a class chain's class quests: an ordinary quest before them stays
+		}
+		// each side improved briefly before they are compared: taken out or put in without re-planning, a chain moves
+		// the levels the route reaches its runs and quests at, and that alone can look like hours
+		measure := func(evs []GuideEvent, override string) ([]GuideEvent, *GuideResult) {
+			w.setClassOverride(c.Goal.ID, override)
+			defer w.setClassOverride(c.Goal.ID, "")
+			if e, r, err := w.Improve(evs, target, reportBudget); err == nil {
+				return e, r
+			}
+			return nil, nil
 		}
 		if l := turnedIn(base, c.Goal.ID); l > 0 {
 			cc.InRoute, cc.Possible, cc.Level = true, true, l
-			if r, err := w.FollowGuide(without(events, func(e GuideEvent) bool { return ids[e.Quest] }), target); err == nil {
-				cc.Minutes = math.Round((base.Seconds-r.Seconds)/6) / 10
+			if _, r := measure(without(events, func(e GuideEvent) bool { return ids[e.Quest] }), "off"); r != nil {
+				cc.Minutes = math.Round((ref.Seconds-r.Seconds)/6) / 10
 			}
-		} else if r, err := w.FollowGuide(w.withQuests(events, c.Quests, target), target); err == nil {
-			cc.Minutes = math.Round((r.Seconds-base.Seconds)/6) / 10
-			cc.Level = turnedIn(r, c.Goal.ID)
-			cc.Possible = cc.Level > 0
+		} else {
+			// an option: each step woven in where the route comes closest to it, once its level is there
+			rest := without(events, func(e GuideEvent) bool { return ids[e.Quest] }) // a guide's part of it, out of place
+			e, r := measure(w.weaveIn(rest, c, target), "on")
+			if r != nil {
+				cc.Minutes = math.Round((r.Seconds-ref.Seconds)/6) / 10
+				cc.Level = turnedIn(r, c.Goal.ID)
+				cc.Possible = cc.Level > 0
+				if cc.Possible {
+					cc.Events = e
+				}
+			}
 		}
 		out = append(out, cc)
 	}

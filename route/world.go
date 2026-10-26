@@ -67,26 +67,28 @@ type Farm struct {
 
 // World is the dataset seen by one character.
 type World struct {
-	Data           *dataset.Dataset
-	Char           Character
-	Faction        string
-	Opt            Options
-	Quests         []*Quest
-	ByID           map[int]*Quest
-	NPC            map[int]*dataset.NPC
-	Objects        map[int]*dataset.Object
-	Start          dataset.Point
-	Excluded       map[int]string // quest -> why this character cannot use it
-	Farms          []Farm
-	net            *network
-	walkGrids      walks
-	deaths         *deaths
-	lifts          []dataset.Lift
-	danger         dangerMap
-	elites         dangerMap    // elite places: cell -> highest elite level
-	Dungeons       []*Dungeon   // dungeons a route with dungeons may run (Options.Dungeons)
-	required       map[int]bool // quests of the required class chains (keepClassQuest), for requiredTarget
-	tank           map[int]bool // quests that give the tank form or stance (tankGoals)
+	Data      *dataset.Dataset
+	Char      Character
+	Faction   string
+	Opt       Options
+	Quests    []*Quest
+	ByID      map[int]*Quest
+	NPC       map[int]*dataset.NPC
+	Objects   map[int]*dataset.Object
+	Start     dataset.Point
+	Excluded  map[int]string // quest -> why this character cannot use it
+	Farms     []Farm
+	net       *network
+	walkGrids walks
+	deaths    *deaths
+	lifts     []dataset.Lift
+	danger    dangerMap
+	elites    dangerMap    // elite places: cell -> highest elite level
+	Dungeons  []*Dungeon   // dungeons a route with dungeons may run (Options.Dungeons)
+	required  map[int]bool // quests of the required class chains (keepClassQuest), for requiredTarget
+	tank      map[int]bool // quests that give the tank form or stance (tankGoals)
+	// classOverride turns a class chain (by its goal) off ("off": not required) or on ("on": required) for a measure
+	classOverride  map[int]string
 	requiredTarget int
 	dungeonOf      map[string]*Dungeon
 	landMemo       sync.Map // landKey -> landResult
@@ -168,6 +170,19 @@ func NewWorld(d *dataset.Dataset, c Character, opt Options) (*World, error) {
 		rq.Index = len(w.Quests)
 		w.Quests = append(w.Quests, rq)
 		w.ByID[q.ID] = rq
+	}
+	// a quest begun at an object where a prerequisite of this character ends is taken there (Stepping Stones: at the
+	// Nailed Plank in Westfall for the Horde, at the remains in the Barrens for the Alliance)
+	for _, q := range w.Quests {
+		if len(q.Start) < 2 {
+			continue
+		}
+		for _, p := range append(append([]int(nil), q.PreAll...), q.PreAny...) {
+			if pq := w.ByID[p]; pq != nil && sharesObject(q.Start, pq.End) {
+				q.StartPos = pq.EndPos
+				break
+			}
+		}
 	}
 	// a quest whose prerequisites can never be done cannot be done either
 	for changed := true; changed; {
@@ -546,4 +561,16 @@ func dropIn(l []int, set map[int]bool) []int {
 		}
 	}
 	return out
+}
+
+// sharesObject: two lists of quest givers name the same object.
+func sharesObject(a, b []dataset.Ref) bool {
+	for _, x := range a {
+		for _, y := range b {
+			if x.Kind == "object" && y.Kind == "object" && x.ID == y.ID {
+				return true
+			}
+		}
+	}
+	return false
 }
