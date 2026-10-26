@@ -364,6 +364,7 @@ func Build(in Inputs) (*dataset.Dataset, error) {
 	b.capitalNPCs()
 	b.skillQuests()
 	b.instantQuests()
+	b.notLeveling()
 	b.aegisQuests()
 	b.egChances()
 	// dungeon quests stay dungeon quests, also where their objectives lie before the portal: the mobs there are

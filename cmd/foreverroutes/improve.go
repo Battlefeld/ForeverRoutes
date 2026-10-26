@@ -38,6 +38,7 @@ func cmdImprove(args []string) error {
 	margin := fs.Float64("margin", 0.03, "our planned route wins only when it is this much faster than the improved guide (the guide's route is what players know and the model is not calibrated yet)")
 	out := fs.String("out", "", "write the result here")
 	group := fs.Bool("dungeons", false, "route with dungeons: dungeon runs with their quests may be part of the planned route")
+	seed := fs.String("seed", "", "with -dungeons: the solo route (an improve result) to put runs into too, and the route to keep when no run pays")
 	fs.Parse(args)
 	w, err := loadWorld(*path, *race, *class, *faction, *profile, *group)
 	if err != nil {
@@ -69,32 +70,60 @@ func cmdImprove(args []string) error {
 	if err != nil {
 		return err
 	}
-	soloEvents, solo := ge, g1 // the guide improved without runs
-	if *group {
-		// with dungeons: the guide with dungeon runs put in competes with the planned route
-		if ge2, g2, err := w.Improve(w.WithDungeons(ge, *target), *target, *budget); err == nil && route.Runs(ge2) > 0 && g2.Level >= *target {
-			ge, g1 = ge2, g2
-		}
-	}
 	rep := bestReply{Character: w.Char, Target: *target, Hours: map[string]float64{"guide": g0.Seconds / 3600, "guideImproved": g1.Seconds / 3600,
 		"plan": plan.Seconds / 3600, "planImproved": p1.Seconds / 3600}, SearchSecs: time.Since(t0).Seconds(), WandDetour: wand}
 	// a route that does not reach the target never wins
 	reached := func(r *route.GuideResult) bool { return r != nil && r.Level >= *target }
-	// with dungeons the faster wins, as long as it runs a dungeon; without, the guide unless ours is clearly faster
-	planWins := reached(p1) && (!reached(g1) || p1.Seconds < g1.Seconds*(1-*margin))
-	if *group {
-		planWins = reached(p1) && route.Runs(pe) > 0 && (!reached(g1) || route.Runs(ge) == 0 || p1.Seconds <= g1.Seconds)
+	type cand struct {
+		winner string
+		events []route.GuideEvent
+		res    *route.GuideResult
 	}
-	if planWins {
-		rep.Winner, rep.Events, rep.Quests, rep.Profile, rep.Assumed = "plan", pe, p1.Quests, p1.Profile, p1.Assumed
+	set := func(c cand) {
+		rep.Winner, rep.Events, rep.Quests, rep.Profile, rep.Assumed = c.winner, c.events, c.res.Quests, c.res.Profile, c.res.Assumed
+	}
+	// without dungeons: the guide unless ours is clearly faster
+	if reached(p1) && (!reached(g1) || p1.Seconds < g1.Seconds*(1-*margin)) {
+		set(cand{"plan", pe, p1})
 	} else {
-		rep.Winner, rep.Events, rep.Quests, rep.Profile, rep.Assumed = "guide", ge, g1.Quests, g1.Profile, g1.Assumed
+		set(cand{"guide", ge, g1})
 	}
-	if win := map[bool]*route.GuideResult{true: p1, false: g1}[planWins]; *group && reached(solo) && solo.Seconds < win.Seconds {
-		// no run pays on the way to the target (the runs cost more than they bring): the route with dungeons is the
-		// one without
-		rep.Winner, rep.Events, rep.Quests, rep.Profile, rep.Assumed = "guide", soloEvents, solo.Quests, solo.Profile, solo.Assumed
-		rep.Hours["guideImproved"] = solo.Seconds / 3600
+	if *group {
+		// with dungeons: runs put into both routes (the improved guide and ours) and both improved again; the fastest
+		// that runs a dungeon wins, unless no run pays on the way to the target (then the route without them)
+		best := cand{rep.Winner, rep.Events, map[bool]*route.GuideResult{true: p1, false: g1}[rep.Winner == "plan"]}
+		var grouped *cand
+		try := func(winner string, events []route.GuideEvent) {
+			if e, r, err := w.Improve(w.WithDungeons(events, *target), *target, *budget); err == nil && route.Runs(e) > 0 && reached(r) &&
+				(grouped == nil || r.Seconds < grouped.res.Seconds) {
+				grouped = &cand{winner, e, r}
+			}
+		}
+		try("guide", ge)
+		try("plan", pe)
+		if *seed != "" {
+			// the solo route, made without dungeons: often a better start than this world's plan
+			f, err := readRoute(*seed)
+			if err != nil {
+				return err
+			}
+			var sw struct {
+				Winner string `json:"winner"`
+			}
+			raw, _ := os.ReadFile(*seed)
+			json.Unmarshal(raw, &sw)
+			if sr, err := w.FollowGuide(f.Events, *target); err == nil && reached(sr) && sr.Seconds < best.res.Seconds {
+				best = cand{sw.Winner, f.Events, sr}
+			}
+			try(sw.Winner, f.Events)
+		}
+		if grouped != nil {
+			rep.Hours[map[string]string{"guide": "guideImproved", "plan": "planImproved"}[grouped.winner]] = grouped.res.Seconds / 3600
+			if grouped.res.Seconds < best.res.Seconds {
+				best = *grouped
+			}
+		}
+		set(best)
 	}
 	rep.Events = w.WithoutExtraOptions(rep.Events, *target) // an option's chain is the addon's to switch on
 	rep.Class = w.ClassReport(rep.Events, *target)

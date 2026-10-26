@@ -4,7 +4,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"regexp"
 	"slices"
+	"strings"
 
 	"github.com/Battlefeld/ForeverRoutes/dataset"
 )
@@ -99,5 +101,49 @@ func (b *builder) skillQuests() {
 		q.Objectives = []dataset.Objective{{Kind: "skill", ID: skill, Count: 20, Source: "warcraft.wiki.gg", Places: at[:1]}}
 		q.Unsupported = ""
 		b.stats["skill_quests"]++
+	}
+}
+
+// NotLeveling is the reason of a quest no leveling route does: a holiday's, a battleground's or a world event's, or a
+// placeholder ("REUSE"). Such quests are left out and not counted as gaps in the data.
+const NotLeveling = "not a leveling quest (holiday, battleground or event)"
+
+// OtherProfession is the reason of a profession's tutorial quest the routes do not take: the routes learn Skinning,
+// Cooking and Leatherworking (route/camp.go).
+const OtherProfession = "a profession's quest (the routes learn Skinning, Cooking and Leatherworking)"
+
+var campingOther = regexp.MustCompile(`^Camping 101: (Alchemy|Blacksmithing|Enchanting|Engineering|First Aid|Fishing|Herbalism|Mining|Tailoring)$`)
+
+// notLevelingName: names of quests that belong to holidays, battlegrounds, world events and placeholders.
+var notLevelingName = regexp.MustCompile(`(?i)^(REUSE|Tip the Scales|Past (Victories|Efforts) in|Five Signets for War Supplies|` +
+	`Mark of Honor|Talismans of Merit|Warsong (Runner|Scout) Update|(Battle|Fight) for Warsong Gulch|Battle of Warsong Gulch|` +
+	`(Gnomes|Goblins) Win!|Wabbit Pelts|Zombie Cleansing|What Is Love\?|Love Hurts|A (Carefully Wrapped|Gently Shaken|Gaily Wrapped) Present|` +
+	`A (Gently Shaken|Festive) Gift|.*Gulch|.*Arathi Basin|.*Alterac Valley)`)
+
+// notLevelingZones: ForeverDB's zones of quests outside leveling.
+var notLevelingZones = map[string]bool{"Seasonal": true, "Battlegrounds": true, "Darkmoon Faire": true, "Lunar Festival": true,
+	"Midsummer": true, "Brewfest": true, "Noblegarden": true, "Love is in the Air": true, "Hallow's End": true,
+	"Winter Veil": true, "Children's Week": true, "Warsong Gulch": true, "Arathi Basin": true, "Alterac Valley": true}
+
+// notLeveling marks the quests no leveling route does (NotLeveling).
+func (b *builder) notLeveling() {
+	for i := range b.out {
+		q := &b.out[i]
+		zone, _ := get(b.merged, "quests", fmt.Sprint(q.ID), "fields", "zone", "value", "name").(string)
+		if campingOther.MatchString(q.Name) {
+			if q.Unsupported == "" {
+				b.stats["quests_unsupported"]++
+			}
+			q.Unsupported = OtherProfession
+			b.stats["quests_other_profession"]++
+			continue
+		}
+		if notLevelingName.MatchString(strings.TrimSpace(q.Name)) || notLevelingZones[zone] {
+			if q.Unsupported == "" {
+				b.stats["quests_unsupported"]++
+			}
+			q.Unsupported = NotLeveling
+			b.stats["quests_not_leveling"]++
+		}
 	}
 }

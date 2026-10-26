@@ -14,14 +14,16 @@ import (
 // Bonus, spell 1229487, an hour's cooldown aura 1229451; kovarel.com/wow-forever/features/camping). It costs the camp
 // (fire, tent, a minute's rest) each hour and skinning on every kill.
 const (
-	campLevel    = 10    // Leatherworking 20 from the leather skinned by then (an estimate)
-	campSecs     = 90.0  // fire, tent, a minute's rest
-	campCooldown = 3600. // all camp objects share an hour's cooldown
-	tentShare    = 0.05  // rested experience per tent, of the level's XP
-	campEmpty    = 0.01  // a camp is made once the rested experience is below this share of the level (used up)
-	profSecs     = 240.0 // at the trainers: Skinning, Cooking, Leatherworking; the leather kits for Leatherworking 20
-	skinSecs     = 1.0   // skinning, per kill on average (about half the kills are beasts, two seconds each)
-	profDetour   = 180.0 // the most the trainers may add to the way to the next step
+	campLevel      = 10    // Leatherworking 20 from the leather skinned by then (an estimate)
+	campSecs       = 90.0  // fire, tent, a minute's rest
+	campCooldown   = 3600. // all camp objects share an hour's cooldown
+	tentShare      = 0.05  // rested experience per tent, of the level's XP
+	campEmpty      = 0.01  // a camp is made once the rested experience is below this share of the level (used up)
+	profSecs       = 240.0 // at the trainers: Skinning, Cooking, Leatherworking; the leather kits for Leatherworking 20
+	skinSecs       = 1.0   // skinning, per kill on average (about half the kills are beasts, two seconds each)
+	profDetour     = 180.0 // the most the trainers may add to the way to the next step at first
+	profLate       = 8     // from this level on, without the professions yet, a longer way (profDetourLate)
+	profDetourLate = 600.0
 )
 
 // CampLevel is the level the hourly camps start at.
@@ -34,7 +36,8 @@ var profSites = map[string][]dataset.Point{
 	"H": {{Map: 1, X: -2255, Y: -287}, {Map: 1, X: 1861, Y: -4562}, {Map: 1, X: -1150, Y: 80}, {Map: 0, X: 1510, Y: 200}},
 }
 
-// profAction: the visit to the trainers on the way to next when it adds at most profDetour, else nil.
+// profAction: the visit to the trainers on the way to next when it adds at most profDetour (from profLate on, without
+// them yet, profDetourLate: the camps from campLevel need them), else nil.
 func (w *World) profAction(s *State, next dataset.Point) *Action {
 	if s.Prof {
 		return nil
@@ -42,6 +45,9 @@ func (w *World) profAction(s *State, next dataset.Point) *Action {
 	direct, _ := w.travel(s, s.Pos, next)
 	var best *dataset.Point
 	bt := profDetour
+	if w.Level(s) >= profLate {
+		bt = profDetourLate
+	}
 	for i, p := range profSites[w.Faction] {
 		if p.Map != s.Pos.Map && p.Map != next.Map {
 			continue
