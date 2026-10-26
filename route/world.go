@@ -304,6 +304,9 @@ func nearest(ps []dataset.Point, to dataset.Point) dataset.Point {
 	return best
 }
 
+// zephrasMap: Zephras Isle, the Skyborne start zone.
+const zephrasMap = 2991
+
 func (w *World) resolve(q *dataset.Quest) (*Quest, string) {
 	rq := &Quest{Quest: q}
 	var ok bool
@@ -322,6 +325,11 @@ func (w *World) resolve(q *dataset.Quest) (*Quest, string) {
 	}
 	if !w.maps[rq.StartPos.Map] || !w.maps[rq.EndPos.Map] {
 		return nil, "other continent"
+	}
+	if rq.StartPos.Map == zephrasMap && w.Start.Map != zephrasMap {
+		// the Skyborne start zone: its quests carry no race in the data, but only the Skyborne do them (no other
+		// race's guide goes there, though an airship does)
+		return nil, "Zephras Isle: the Skyborne start zone"
 	}
 	if q.Classes != 0 && q.MinLevel < 10 && rq.StartPos.Map != rq.EndPos.Map && rq.StartPos.Map <= 1 && rq.EndPos.Map <= 1 {
 		// a first class quest that would cross the sea: its NPC's spawn in this start zone is not in the data (the

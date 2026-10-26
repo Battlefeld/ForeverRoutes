@@ -102,3 +102,19 @@ func TestOtherRacesPrerequisiteIgnored(t *testing.T) {
 		t.Error("the dataset itself must stay as it is")
 	}
 }
+
+func TestZephrasQuestsOnlyForSkyborne(t *testing.T) {
+	d, err := dataset.Load("../data/routes-data.json.gz")
+	if err != nil {
+		t.Skip("dataset not available:", err)
+	}
+	w, err := NewWorld(d, Character{Race: "Tauren", Class: "Shaman"}, Options{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, q := range w.Quests {
+		if q.StartPos.Map == zephrasMap {
+			t.Errorf("a tauren takes %d %s on Zephras Isle", q.ID, q.Name)
+		}
+	}
+}
