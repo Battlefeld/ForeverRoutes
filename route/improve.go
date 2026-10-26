@@ -179,7 +179,7 @@ func (w *World) WithDungeons(events []GuideEvent, target int) []GuideEvent {
 	if Runs(cur) == 0 && least != nil {
 		return least // no run made it faster: until then cur is the route given, least one run put into it
 	}
-	return cur
+	return w.MergeTrips(cur, target)
 }
 
 // dungeonPrereqs: the quests before a dungeon's quests (taken outside, on its continent) that the route does not do,
@@ -881,4 +881,56 @@ func (w *World) ClassReport(events []GuideEvent, target int) []ClassCost {
 		out = append(out, cc)
 	}
 	return out
+}
+
+// MergeTrips joins a route's stays on one continent that a short trip to the other splits (Silverpine, two levels in
+// the Barrens, back to Lordaeron for the Ruins, the Barrens again): the stay after the trip is moved before it, so
+// the sea is crossed once. A run counts as its entrance's continent. Each join only when the route gets faster; again
+// while one does.
+func (w *World) MergeTrips(events []GuideEvent, target int) []GuideEvent {
+	best, err := w.FollowGuide(events, target)
+	if err != nil {
+		return events
+	}
+	mapOf := func(e GuideEvent) int {
+		if e.Op == "dungeon" {
+			if d := w.dungeonOf[e.Dungeon]; d != nil {
+				return d.Entrance.Map
+			}
+			return -1
+		}
+		if p, ok := w.eventPos(e); ok {
+			return p.Map
+		}
+		return -1
+	}
+	for changed := true; changed; {
+		changed = false
+		// blocks: [start, end) of events on one continent; events without a place stay with the block before
+		var starts []int
+		var maps []int
+		for i, e := range events {
+			m := mapOf(e)
+			if m < 0 || len(maps) > 0 && maps[len(maps)-1] == m {
+				continue
+			}
+			starts, maps = append(starts, i), append(maps, m)
+		}
+		if len(starts) > 0 {
+			starts[0] = 0
+		}
+		starts = append(starts, len(events))
+		for k := 1; k+1 < len(maps); k++ {
+			if maps[k-1] != maps[k+1] {
+				continue
+			}
+			y, a := events[starts[k]:starts[k+1]], events[starts[k+1]:starts[k+2]]
+			cand := slices.Concat(events[:starts[k]], a, y, events[starts[k+2]:])
+			if r, err := w.FollowGuide(cand, target); err == nil && r.Level >= target && r.Seconds < best.Seconds-1 {
+				best, events, changed = r, cand, true
+				break
+			}
+		}
+	}
+	return events
 }

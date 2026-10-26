@@ -103,6 +103,11 @@ func cmdImprove(args []string) error {
 			if err != nil {
 				return
 			}
+			if m := w.MergeTrips(e, *target); len(m) > 0 {
+				if mr, err := w.FollowGuide(m, *target); err == nil && mr.Seconds < r.Seconds {
+					e, r = m, mr
+				}
+			}
 			fmt.Fprintf(os.Stderr, "with dungeons from %s: %.2f h, %s\n", winner, r.Seconds/3600, strings.Join(route.RunKeys(e), " "))
 			if route.Runs(e) > 0 && reached(r) && (grouped == nil || r.Seconds < grouped.res.Seconds) {
 				grouped = &cand{winner, e, r}
