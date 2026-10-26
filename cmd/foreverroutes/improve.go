@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"sort"
 	"strings"
 	"time"
 
@@ -40,6 +41,9 @@ func cmdImprove(args []string) error {
 	out := fs.String("out", "", "write the result here")
 	group := fs.Bool("dungeons", false, "route with dungeons: dungeon runs with their quests may be part of the planned route")
 	seed := fs.String("seed", "", "with -dungeons: routes (improve results, comma-separated) to start from too: the solo route (kept when no run pays), the routes with dungeons of the race's other classes")
+	splice := fs.String("splice", "", "with -dungeons: routes of the side's other races (comma-separated) this route may switch to at a level (-splice-levels), with dungeons put in")
+	spliceLevels := fs.String("splice-levels", "6,8,10,12,14", "the levels a route may switch at")
+	spliceKeep := fs.Int("splice-keep", 4, "the switched routes improved: the fastest by a first walk with dungeons")
 	fs.Parse(args)
 	w, err := loadWorld(*path, *race, *class, *faction, *profile, *group)
 	if err != nil {
@@ -135,6 +139,45 @@ func cmdImprove(args []string) error {
 				best = cand{sw.Winner, events, sr} // the solo route, made without dungeons: kept when no run pays
 			}
 			try(sw.Winner, events)
+		}
+		if *splice != "" {
+			// another race's route from a level on, dungeons put in: walked once, the fastest improved
+			type sc struct {
+				name   string
+				events []route.GuideEvent
+				secs   float64
+			}
+			var cs []sc
+			for _, path := range strings.Split(*splice, ",") {
+				f, err := readRoute(path)
+				if err != nil {
+					continue
+				}
+				for _, l := range strings.Split(*spliceLevels, ",") {
+					var lvl int
+					fmt.Sscan(l, &lvl)
+					s, err := w.Splice(best.events, f.Events, lvl, *target)
+					if err != nil {
+						continue
+					}
+					s = w.WithDungeons(s, *target)
+					if r, err := w.FollowGuide(s, *target); err == nil && reached(r) {
+						cs = append(cs, sc{fmt.Sprintf("%s@%d", path, lvl), s, r.Seconds})
+					}
+				}
+			}
+			sort.Slice(cs, func(i, j int) bool { return cs[i].secs < cs[j].secs })
+			for i, c := range cs {
+				if i >= *spliceKeep {
+					break
+				}
+				if e, r, err := w.Improve(c.events, *target, *budget/2); err == nil && route.Runs(e) > 0 && reached(r) {
+					fmt.Fprintf(os.Stderr, "splice %s: %.2f h -> %.2f h\n", c.name, c.secs/3600, r.Seconds/3600)
+					if grouped == nil || r.Seconds < grouped.res.Seconds {
+						grouped = &cand{"plan", e, r}
+					}
+				}
+			}
 		}
 		if grouped != nil {
 			rep.Hours[map[string]string{"guide": "guideImproved", "plan": "planImproved"}[grouped.winner]] = grouped.res.Seconds / 3600
