@@ -341,3 +341,23 @@ func TestUnknownDropChanceIsAssumedAndReported(t *testing.T) {
 		t.Errorf("assumed steps %d, quests %d", res.Assumed, res.Quests)
 	}
 }
+
+// A druid from level 10 teleports to Moonglade instead of walking there.
+func TestDruidTeleportsToMoonglade(t *testing.T) {
+	d := tiny()
+	d.LevelXP = []int{400, 900, 1400, 2100, 2800, 3600, 4500, 5400, 6500, 7600, 8800, 10100}
+	d.NPCs = append(d.NPCs, dataset.NPC{ID: 501, Name: "Spirit", Spawns: []dataset.Point{{Map: 1, X: moonglade.X + 50, Y: moonglade.Y}}})
+	w, err := NewWorld(d, Character{Race: "Orc", Class: "Druid"}, Options{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	s := w.NewState()
+	far := dataset.Point{Map: 1, X: moonglade.X + 50, Y: moonglade.Y}
+	if _, how := w.travel(s, s.Pos, far); how == byTeleport {
+		t.Error("no teleport before level 10")
+	}
+	s.XP = 100000
+	if tt, how := w.travel(s, s.Pos, far); how != byTeleport || tt > teleportCast+60 {
+		t.Errorf("teleport: how %d, %.0f s", how, tt)
+	}
+}

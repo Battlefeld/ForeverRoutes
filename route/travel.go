@@ -34,6 +34,16 @@ const (
 	byNetwork
 	byHearth
 	byDeath
+	byTeleport
+)
+
+// moonglade: where a druid's Teleport: Moonglade (learned at level 10) arrives, Nighthaven; teleportCast is its cast
+// and loading screen. Back the druid takes the hearthstone.
+var moonglade = dataset.Point{Map: 1, X: 7991.0, Y: -2491.0}
+
+const (
+	teleportCast  = 20.0
+	teleportLevel = 10
 )
 
 type network struct {
@@ -227,6 +237,11 @@ func (w *World) travelSame(s *State, a, b dataset.Point) (float64, int) {
 	if best > hearthCast+30 && s.Time >= s.Hearth && w.walk(s.Bind, a) > 60 {
 		if h, _ := w.overland(s, s.Bind, b); hearthCast+h < best {
 			best, how = hearthCast+h, byHearth
+		}
+	}
+	if w.Char.Class == "Druid" && w.Level(s) >= teleportLevel && best > teleportCast+30 {
+		if t, _ := w.overland(s, moonglade, b); teleportCast+t < best {
+			best, how = teleportCast+t, byTeleport
 		}
 	}
 	if best > deathMinLeg && w.deaths != nil {

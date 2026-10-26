@@ -49,7 +49,7 @@ no source places) are left out of every route alike.
 | Human | Rogue | 15.8 | 14.0 | 13.2 | 13.3 | plan |
 | Human | Warlock | 22.2 | 16.1 | 15.3 | 15.8 | guide |
 | Human | Warrior | 15.2 | 13.6 | 13.8 | 13.8 | guide |
-| NightElf | Druid | 22.9 | 19.5 | 17.9 | 19.0 | guide |
+| NightElf | Druid | 21.1 | 18.6 | 19.0 | 18.7 | guide |
 | NightElf | Hunter | 19.2 | 16.8 | 17.3 | 19.0 | guide |
 | NightElf | Priest | 20.8 | 18.6 | 17.6 | 17.5 | plan |
 | NightElf | Rogue | 16.0 | 14.6 | 14.0 | 13.6 | plan |
@@ -60,17 +60,17 @@ no source places) are left out of every route alike.
 | Orc | Shaman | 17.4 | 17.2 | 15.3 | 15.9 | plan |
 | Orc | Warlock | 14.9 | 13.9 | 14.6 | 14.7 | guide |
 | Orc | Warrior | 12.9 | 11.9 | 12.8 | 13.4 | guide |
-| SkyborneA | Druid | 22.8 | 19.5 | 18.4 | 18.4 | plan |
+| SkyborneA | Druid | 22.7 | 19.7 | 18.4 | 18.4 | plan |
 | SkyborneA | Hunter | 21.2 | 17.9 | 17.2 | 17.9 | guide |
 | SkyborneA | Mage | 23.6 | 20.4 | 18.7 | 18.5 | plan |
 | SkyborneA | Rogue | 17.5 | 16.2 | 12.8 | 13.3 | plan |
 | SkyborneA | Warrior | 16.9 | 15.3 | 14.8 | 14.6 | plan |
-| SkyborneH | Druid | 22.0 | 15.5 | 18.5 | 18.9 | guide |
+| SkyborneH | Druid | 20.9 | 15.5 | 18.5 | 18.9 | guide |
 | SkyborneH | Hunter | 19.8 | 16.5 | 18.4 | 19.6 | guide |
 | SkyborneH | Rogue | 14.8 | 13.5 | 13.0 | 14.6 | guide |
 | SkyborneH | Shaman | 18.2 | 16.2 | 17.2 | 18.1 | guide |
 | SkyborneH | Warrior | 14.7 | 12.8 | 13.1 | 13.5 | guide |
-| Tauren | Druid | 20.9 | 19.4 | 15.4 | 18.1 | plan |
+| Tauren | Druid | 19.8 | 17.9 | 15.6 | 18.0 | guide |
 | Tauren | Hunter | 18.8 | 15.4 | 16.3 | 17.0 | guide |
 | Tauren | Shaman | 18.6 | 16.7 | 16.2 | 17.4 | guide |
 | Tauren | Warrior | 16.1 | 14.1 | 12.9 | 13.2 | plan |
@@ -88,7 +88,7 @@ no source places) are left out of every route alike.
 | Undead | Warlock | 15.2 | 15.6 | 15.6 | 16.6 | guide |
 | Undead | Warrior | 12.6 | 11.9 | 12.0 | 12.1 | guide |
 
-Average over the 56 combinations: RestedXP 17.88 h, the kept route 15.28 h (14.5 % faster). A planned route stays at home until the first class quests are done and crosses between Kalimdor and the Eastern Kingdoms at most twice up to level 20.
+Average over the 56 combinations: RestedXP 17.81 h, the kept route 15.26 h (14.3 % faster). A planned route stays at home until the first class quests are done and crosses between Kalimdor and the Eastern Kingdoms at most twice up to level 20.
 
 ## Solo with dungeons
 
@@ -98,7 +98,7 @@ in, across the sea if need be (Ragefire's quest from Undercity). The addon shows
 estimates (`data/sources/dungeons.json`); better gear from the runs is not counted yet, so the routes with dungeons are rather
 faster in game than here.
 
-Average over the 56 combinations: 13.50 h to level 20 (without dungeons 15.28 h).
+Average over the 56 combinations: 13.53 h to level 20 (without dungeons 15.26 h).
 
 | Race | Class | Hours | Kept |
 |---|---|---|---|
@@ -120,7 +120,7 @@ Average over the 56 combinations: 13.50 h to level 20 (without dungeons 15.28 h)
 | Human | Rogue | 11.4 | plan |
 | Human | Warlock | 13.2 | plan |
 | Human | Warrior | 11.0 | plan |
-| NightElf | Druid | 16.2 | guide |
+| NightElf | Druid | 15.8 | guide |
 | NightElf | Hunter | 14.2 | guide |
 | NightElf | Priest | 14.4 | plan |
 | NightElf | Rogue | 13.0 | plan |
@@ -136,12 +136,12 @@ Average over the 56 combinations: 13.50 h to level 20 (without dungeons 15.28 h)
 | SkyborneA | Mage | 15.6 | plan |
 | SkyborneA | Rogue | 13.1 | plan |
 | SkyborneA | Warrior | 12.8 | plan |
-| SkyborneH | Druid | 13.7 | plan |
+| SkyborneH | Druid | 16.0 | guide |
 | SkyborneH | Hunter | 14.7 | guide |
 | SkyborneH | Rogue | 12.9 | plan |
 | SkyborneH | Shaman | 14.5 | guide |
 | SkyborneH | Warrior | 12.7 | guide |
-| Tauren | Druid | 15.9 | guide |
+| Tauren | Druid | 15.6 | plan |
 | Tauren | Hunter | 13.7 | plan |
 | Tauren | Shaman | 13.4 | plan |
 | Tauren | Warrior | 11.0 | plan |

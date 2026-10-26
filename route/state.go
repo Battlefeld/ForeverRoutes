@@ -33,7 +33,7 @@ type State struct {
 	Deathskips           int            // deaths taken on purpose to travel
 	Runs                 uint64         // dungeons run (bit per World.Dungeons index)
 	Switches             int            // changes between Kalimdor and the Eastern Kingdoms
-	via                  string         // how the last action travelled when not on foot (hearth, network, deathskip: <graveyard>)
+	via                  string         // how the last action travelled when not on foot (hearth, teleport, network, deathskip: <graveyard>)
 	viaAt                *dataset.Point // where to die for that deathskip
 }
 
@@ -105,6 +105,10 @@ func (w *World) move(s *State, to dataset.Point) error {
 		s.Hearth = s.Time + hearthCooldown
 		from = s.Bind
 		s.via = "hearth"
+	case byTeleport:
+		from = moonglade
+		s.via = "teleport"
+		w.discoverAlong(s, from, to)
 	case byDeath:
 		if _, g, die := w.deathskipAt(s, from, to, math.Inf(1)); g >= 0 {
 			from = w.deaths.graves[g].At
@@ -452,7 +456,7 @@ func (w *World) startAt(s *State, q *Quest) dataset.Point {
 // Step is one replayed action with the character after it.
 type Step struct {
 	Action
-	Via   string         `json:"via,omitempty"`   // how the step travelled when not on foot: hearth, network, deathskip: <graveyard>
+	Via   string         `json:"via,omitempty"`   // how the step travelled when not on foot: hearth, teleport (a druid's to Moonglade), network, deathskip: <graveyard>
 	ViaAt *dataset.Point `json:"viaAt,omitempty"` // where to die for a deathskip
 	Name  string         `json:"name"`
 	Time  float64        `json:"time"`

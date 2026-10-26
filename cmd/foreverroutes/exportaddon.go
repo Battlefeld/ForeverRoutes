@@ -129,6 +129,8 @@ func cmdExportAddon(args []string) error {
 				}
 			case st.Via == "hearth":
 				b.WriteString(`, v = "h"`)
+			case st.Via == "teleport":
+				b.WriteString(`, v = "t"`)
 			}
 			b.WriteString("},\n")
 		}
