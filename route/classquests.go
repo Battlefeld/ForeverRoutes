@@ -191,8 +191,8 @@ func (w *World) ClassChains(target int) []ClassChain {
 		if !c.foreign {
 			own[c.Reward] = true
 		}
-		if c.Tier == "optional" && (len(c.Goal.Unlocks) > 0 || c.foreign) {
-			continue // a step of a longer chain (offered with its end), or another race's version
+		if c.Tier == "optional" && (len(c.Goal.Unlocks) > 0 || c.foreign) || c.Reward == "Klassenbrief" && c.foreign {
+			continue // a step of a longer chain (offered with its end), or another race's version (its letter included)
 		}
 		seen[k] = true
 		for _, q := range c.Quests {

@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/Battlefeld/ForeverRoutes/route"
@@ -38,7 +39,7 @@ func cmdImprove(args []string) error {
 	margin := fs.Float64("margin", 0.03, "our planned route wins only when it is this much faster than the improved guide (the guide's route is what players know and the model is not calibrated yet)")
 	out := fs.String("out", "", "write the result here")
 	group := fs.Bool("dungeons", false, "route with dungeons: dungeon runs with their quests may be part of the planned route")
-	seed := fs.String("seed", "", "with -dungeons: the solo route (an improve result) to put runs into too, and the route to keep when no run pays")
+	seed := fs.String("seed", "", "with -dungeons: routes (improve results, comma-separated) to start from too: the solo route (kept when no run pays), the routes with dungeons of the race's other classes")
 	fs.Parse(args)
 	w, err := loadWorld(*path, *race, *class, *faction, *profile, *group)
 	if err != nil {
@@ -101,21 +102,39 @@ func cmdImprove(args []string) error {
 		}
 		try("guide", ge)
 		try("plan", pe)
-		if *seed != "" {
-			// the solo route, made without dungeons: often a better start than this world's plan
-			f, err := readRoute(*seed)
+		for i, path := range strings.Split(*seed, ",") {
+			if path == "" {
+				continue
+			}
+			f, err := readRoute(path)
 			if err != nil {
-				return err
+				if i == 0 {
+					return err
+				}
+				continue // another class's route not there yet
 			}
 			var sw struct {
-				Winner string `json:"winner"`
+				Winner    string          `json:"winner"`
+				Character route.Character `json:"character"`
 			}
-			raw, _ := os.ReadFile(*seed)
+			raw, _ := os.ReadFile(path)
 			json.Unmarshal(raw, &sw)
-			if sr, err := w.FollowGuide(f.Events, *target); err == nil && reached(sr) && sr.Seconds < best.res.Seconds {
-				best = cand{sw.Winner, f.Events, sr}
+			events := f.Events
+			if sw.Character.Class != w.Char.Class {
+				// another class's route: this class's own class quests put in, the other's left out by the follower
+				e, _, err := w.Improve(events, *target, *budget/2)
+				if err != nil {
+					continue
+				}
+				events = e
+				if r, err := w.FollowGuide(events, *target); err == nil && route.Runs(events) > 0 && reached(r) &&
+					(grouped == nil || r.Seconds < grouped.res.Seconds) {
+					grouped = &cand{sw.Winner, events, r}
+				}
+			} else if sr, err := w.FollowGuide(events, *target); err == nil && reached(sr) && sr.Seconds < best.res.Seconds {
+				best = cand{sw.Winner, events, sr} // the solo route, made without dungeons: kept when no run pays
 			}
-			try(sw.Winner, f.Events)
+			try(sw.Winner, events)
 		}
 		if grouped != nil {
 			rep.Hours[map[string]string{"guide": "guideImproved", "plan": "planImproved"}[grouped.winner]] = grouped.res.Seconds / 3600

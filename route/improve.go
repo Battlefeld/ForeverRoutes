@@ -123,9 +123,20 @@ func (w *World) WithDungeons(events []GuideEvent, target int) []GuideEvent {
 			if have || d.Min > target {
 				continue
 			}
+			// the dungeon's quest chains, so its quests can be taken on the way: a run is worth its quests far more than
+			// its trash (the Deadmines' Defias Brotherhood after the Westfall chain before it)
+			with := cur
 			levels := best.levels
+			if pre := w.dungeonPrereqs(d, cur); len(pre) > 0 {
+				with = w.withQuestsIn(cur, pre, target, dungeonWindow)
+				r, err := w.FollowGuide(with, target)
+				if err != nil {
+					continue
+				}
+				levels = r.levels
+			}
 			var pick []GuideEvent
-			for i := 0; i <= len(cur); i++ {
+			for i := 0; i <= len(with); i++ {
 				l := target
 				if i < len(levels) {
 					l = levels[i]
@@ -133,7 +144,7 @@ func (w *World) WithDungeons(events []GuideEvent, target int) []GuideEvent {
 				if l < d.Min || l > d.Min+dungeonWindow {
 					continue
 				}
-				cand := append(append(append([]GuideEvent(nil), cur[:i]...), GuideEvent{Op: "dungeon", Dungeon: d.Key}), cur[i:]...)
+				cand := append(append(append([]GuideEvent(nil), with[:i]...), GuideEvent{Op: "dungeon", Dungeon: d.Key}), with[i:]...)
 				r, err := w.FollowGuide(cand, target)
 				if err != nil || r.Level < target || !w.tankFirst(r) {
 					continue // a tank class runs its first dungeon with its tank form or stance
@@ -154,6 +165,64 @@ func (w *World) WithDungeons(events []GuideEvent, target int) []GuideEvent {
 		return least // no run made it faster: until then cur is the route given, least one run put into it
 	}
 	return cur
+}
+
+// dungeonPrereqs: the quests before a dungeon's quests (taken outside, on its continent) that the route does not do,
+// prerequisites first: the chains that open them.
+func (w *World) dungeonPrereqs(d *Dungeon, events []GuideEvent) []*Quest {
+	in := map[int]bool{}
+	for _, q := range questsOf(events) {
+		in[q] = true
+	}
+	var out []*Quest
+	seen := map[int]bool{}
+	var add func(id int)
+	add = func(id int) {
+		q := w.ByID[id]
+		if q == nil || seen[id] {
+			return
+		}
+		seen[id] = true
+		for _, p := range q.PreAll {
+			add(p)
+		}
+		if len(q.PreAny) > 0 {
+			pick := 0
+			for _, p := range q.PreAny {
+				if in[p] {
+					pick = -1 // the route does one already
+					break
+				}
+				if pick == 0 && w.ByID[p] != nil {
+					pick = p
+				}
+			}
+			if pick > 0 {
+				add(pick)
+			}
+		}
+		if !in[id] && q.Dungeon == nil {
+			out = append(out, q)
+		}
+	}
+	for _, q := range d.Quests {
+		if q.StartInside || q.StartPos.Map != d.Entrance.Map {
+			continue
+		}
+		for _, p := range q.PreAll {
+			add(p)
+		}
+		for _, p := range q.PreAny {
+			if in[p] {
+				break
+			}
+			if w.ByID[p] != nil {
+				add(p)
+				break
+			}
+		}
+	}
+	return out
 }
 
 // dungeonWindow: how many levels above its lowest a dungeon is tried in a route.

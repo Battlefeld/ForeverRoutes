@@ -258,7 +258,9 @@ func (w *World) pickUpDungeonQuests(s *State, acts *[]Action, d *Dungeon) {
 			if q.StartInside || !q.runnable() || s.Status[q.Index] != notTaken || w.CanAccept(s, q) != nil || q.StartPos.Map != d.Entrance.Map {
 				continue
 			}
-			if t := w.TravelTime(s, s.Pos, q.StartPos); t < bt && t <= pickupReach {
+			// near where the character is, or near the dungeon it is on its way to (its quests next to the portal)
+			t := w.TravelTime(s, s.Pos, q.StartPos)
+			if t < bt && (t <= pickupReach || w.TravelTime(s, d.Entrance, q.StartPos) <= pickupReach) {
 				next, bt = q, t
 			}
 		}
