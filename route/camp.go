@@ -18,6 +18,7 @@ const (
 	campSecs     = 90.0  // fire, tent, a minute's rest
 	campCooldown = 3600. // all camp objects share an hour's cooldown
 	tentShare    = 0.05  // rested experience per tent, of the level's XP
+	campEmpty    = 0.01  // a camp is made once the rested experience is below this share of the level (used up)
 	profSecs     = 240.0 // at the trainers: Skinning, Cooking, Leatherworking; the leather kits for Leatherworking 20
 	skinSecs     = 1.0   // skinning, per kill on average (about half the kills are beasts, two seconds each)
 	profDetour   = 180.0 // the most the trainers may add to the way to the next step
@@ -57,13 +58,14 @@ func (w *World) profAction(s *State, next dataset.Point) *Action {
 	return &Action{Op: "prof", At: *best}
 }
 
-// camp: once an hour from campLevel, a camp before the next fight: the tent's rested experience.
+// camp: from campLevel, a camp before the next fight once the hour is over and the rested experience is used up
+// (with rested experience left the tent raises nothing).
 func (w *World) camp(s *State) {
 	if !s.Prof || w.Level(s) < campLevel || s.Time < s.Camp {
 		return
 	}
 	l := w.Level(s)
-	if l-1 >= len(w.Data.LevelXP) {
+	if l-1 >= len(w.Data.LevelXP) || s.Rested >= campEmpty*float64(w.Data.LevelXP[l-1]) {
 		return
 	}
 	s.Time += campSecs

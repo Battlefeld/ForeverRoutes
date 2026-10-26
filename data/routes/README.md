@@ -37,12 +37,13 @@ The addon shows the crafting as a step of its own.
 
 Camping (`route/camp.go`): every character learns Skinning, Cooking and Leatherworking on the way (casters at the
 capital they fetch their wands in: Enchanting for the wands, then unlearned for Leatherworking). Skinning the beasts
-it kills brings Leatherworking to 20 for the Camp Tent: from level 10, once an hour, a camp (fire, tent, a minute's
-rest) raises rested experience to 5 % of a level (when it is lower; the Leatherworking camp buff is "Well Rested
+it kills brings Leatherworking to 20 for the Camp Tent: from level 10, once the hour's cooldown is over and the rested experience is
+used up (with some left the tent raises nothing), a camp (fire, tent, a minute's rest) raises rested experience to 5 % of a level (when it is lower; the Leatherworking camp buff is "Well Rested
 Shelter"), which doubles kill XP until used up. Up to level 20 this costs
 about 10 minutes on average (skinning, trainers, camps); it pays from level 20 on, where a level takes hours: over
-20–60 an estimated 5 to 12 hours (Classic XP table, 80–110 hours of guided leveling). The addon reminds of the camp
-every hour (`/fr lager` marks one).
+20–60 an estimated 5 to 12 hours (Classic XP table, 80–110 hours of guided leveling). The addon follows the camp
+buff: 10 minutes before it ends it asks for leather for the next tent, 5 minutes before it says what the camp lacks,
+then it says to make camp, all only once the rested experience is (nearly) used up (`/fr lager` marks a camp).
 
 **Credits.** Routes whose `winner` is `guide` are adapted from the RestedXP Forever guides
 (https://github.com/RestedXP/RXPGuides, © RestedXP, CC BY-NC-SA 4.0): their quest order, improved here. These files
