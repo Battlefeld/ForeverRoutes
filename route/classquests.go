@@ -46,6 +46,9 @@ var extraOptions = map[int]string{
 	79976: "Gemütlicher Schlafsack", // Cozy Sleeping Bag, from 14: a 12-slot bag, 10,950 XP over the chain, +3 % XP resting
 }
 
+// OptionNotes: what the addon says with an option.
+var OptionNotes = map[int]string{79976: "lohnt sich, wenn du über 20 weiterlevelst (Bonus erst danach)"}
+
 // ClassChain is a class quest with the quests before it, as a route does them.
 type ClassChain struct {
 	Goal   *Quest

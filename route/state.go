@@ -34,6 +34,10 @@ type State struct {
 	Runs                 uint64         // dungeons run (bit per World.Dungeons index)
 	Switches             int            // changes between Kalimdor and the Eastern Kingdoms
 	Wand                 bool           // a caster has crafted its wands: the practice wand, the Lesser Magic Wand from level 5 (wand.go)
+	Prof                 bool           // Skinning, Cooking and Leatherworking learned (camp.go)
+	Rested               float64        // rested experience left: doubles kill XP
+	Camp                 float64        // time from which the next camp gives rested experience
+	Camps                int            // camps made
 	via                  string         // how the last action travelled when not on foot (hearth, teleport, network, deathskip: <graveyard>)
 	viaAt                *dataset.Point // where to die for that deathskip
 }
@@ -255,6 +259,9 @@ func (w *World) kill(s *State, n *dataset.NPC, obj int, site Site, k float64) {
 	if n != nil && site.Spawns > 0 {
 		s.Dead[site.Key] = dead{N: after, At: s.Time + t}
 	}
+	if n != nil && s.Prof {
+		t += skinSecs * k
+	}
 	s.Time += t
 	s.Combat += t
 	if n != nil {
@@ -264,7 +271,7 @@ func (w *World) kill(s *State, n *dataset.NPC, obj int, site Site, k float64) {
 			if float64(i) >= k-1 { // the last, partial kill counts in part (expected value)
 				gain = int(math.Round(float64(gain) * (k - float64(i))))
 			}
-			s.XP += gain
+			s.XP += gain + restedGain(s, gain)
 		}
 	}
 	// credit for the log
@@ -288,7 +295,21 @@ func (w *World) kill(s *State, n *dataset.NPC, obj int, site Site, k float64) {
 
 // Apply performs one action; the state is changed only when the action is possible.
 func (w *World) Apply(s *State, a Action) error {
+	if a.Op == "work" || a.Op == "grind" {
+		w.camp(s) // the hourly camp before a fight (camp.go)
+	}
 	switch a.Op {
+	case "prof":
+		// to the trainers: Skinning, Cooking, Leatherworking
+		if s.Prof {
+			return fail("professions learned already")
+		}
+		if err := w.move(s, a.At); err != nil {
+			return err
+		}
+		s.Time += profSecs
+		s.Talk += profSecs
+		s.Prof = true
 	case "wand":
 		// to a capital's Enchanting trainer and supplier for the wands
 		if s.Wand || !wandClasses[w.Char.Class] {
@@ -300,6 +321,12 @@ func (w *World) Apply(s *State, a Action) error {
 		s.Time += wandCraft
 		s.Talk += wandCraft
 		s.Wand = true
+		if !s.Prof {
+			// Enchanting unlearned again for Leatherworking, at the same capital
+			s.Time += profSecs
+			s.Talk += profSecs
+			s.Prof = true
+		}
 	case "accept":
 		q := w.ByID[a.Quest]
 		if q == nil {
@@ -554,6 +581,8 @@ func (w *World) describe(a Action) string {
 		}
 	case "wand":
 		return "Novice's Practice Wand and Lesser Magic Wand (Enchanting)"
+	case "prof":
+		return "Skinning, Cooking and Leatherworking (trainers)"
 	}
 	return ""
 }

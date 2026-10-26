@@ -114,9 +114,12 @@ func writeStep(b *strings.Builder, w *route.World, res *route.GuideResult, st ro
 		if n := w.NPC[st.NPC]; n != nil {
 			fmt.Fprintf(b, ", tg = %s", luaStr(n.Name))
 		}
+	case "prof":
+		// trainers: Skinning, Cooking, Leatherworking (the Camp Tent at Leatherworking 20, cl the level the camps start)
+		fmt.Fprintf(b, "op = \"p\", cl = %d", route.CampLevel)
 	case "wand":
 		// a capital's Enchanting trainer and supplier: the Novice's Practice Wand and the Lesser Magic Wand (it)
-		fmt.Fprintf(b, "op = \"z\", it = %d", route.LesserWandItem)
+		fmt.Fprintf(b, "op = \"z\", it = %d, cl = %d", route.LesserWandItem, route.CampLevel)
 	case "dungeon":
 		fmt.Fprintf(b, "op = \"d\", n = %s", luaStr(strings.TrimSuffix(st.Name, " (dungeon run)")))
 		for _, d := range w.Dungeons {
@@ -219,7 +222,11 @@ func writeOptions(b *strings.Builder, w *route.World, res *route.GuideResult, op
 		if name == "" {
 			name = c.Name
 		}
-		fmt.Fprintf(b, "{id = %d, n = %s, tier = %s, min = %.0f, l = %d, s = {\n%s}},\n", c.Quest, luaStr(name), luaStr(c.Tier), c.Minutes, c.Level, strings.Join(steps, ""))
+		note := ""
+		if n, ok := route.OptionNotes[c.Quest]; ok {
+			note = ", nt = " + luaStr(n)
+		}
+		fmt.Fprintf(b, "{id = %d, n = %s, tier = %s, min = %.0f, l = %d%s, s = {\n%s}},\n", c.Quest, luaStr(name), luaStr(c.Tier), c.Minutes, c.Level, note, strings.Join(steps, ""))
 	}
 	if !first {
 		b.WriteString("}")

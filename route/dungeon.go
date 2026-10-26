@@ -175,7 +175,7 @@ func (w *World) run(s *State, d *Dungeon) error {
 	s.Time += secs
 	s.Combat += secs
 	trash := w.killXP(d, l)
-	s.XP += trash
+	s.XP += trash + restedGain(s, trash) // rested experience doubles the run's kills too
 	// collection quests: every member needs their own drops; the run's kills bring one share, the other four cost more
 	// kills (and bring their XP). A single item (a boss's) everyone loots.
 	extra := 0.0

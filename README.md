@@ -166,6 +166,10 @@ entsteht.
 - Zauberstab: Magier, Priester und Hexenmeister bauen sich bei einem Besuch in der nächsten Hauptstadt
   (Verzauberkunst-Lehrer, -Händler, Auktionshaus) den Novice's Practice Wand (getragen bis Stufe 5) und den Geringen
   Zauberstab (ab Stufe 5) und erledigen Gegner damit ohne Mana; Quest- und Dungeon-Zauberstäbe ersetzen ihn, wenn sie besser sind.
+- Lager: Alle lernen unterwegs Kürschnern, Kochkunst und Lederverarbeitung (Caster in der Hauptstadt ihrer
+  Zauberstäbe: Verzauberkunst für die Stäbe, danach verlernt). Ab Stufe 10 einmal pro Stunde Lager mit Lagerzelt:
+  erholte XP über 5 % einer Stufe, die Kill-XP verdoppeln. Bis 20 kostet das etwa 10 Minuten, ab 20 bringt es viel
+  (20–60 geschätzt 5 bis 12 Stunden).
 - Laufgitter: Ein Punkt auf einer abgeschnittenen Gitter-Insel (Dammkrone, Felsvorsprung) wird über die nächste
   verbundene Zelle erreicht statt mit dem Notwert (sechsfache Luftlinie).
 - Optionen: Klassenreihen, die nicht Pflicht sind, und Forever-Ziele wie der Gemütliche Schlafsack (ab Level 14) werden

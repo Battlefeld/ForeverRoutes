@@ -79,6 +79,11 @@ func (w *World) followFrom(s *State, events []GuideEvent, target int, horizon fl
 			if a := w.wandAction(s, p); a != nil {
 				w.try(s, &acts, *a) // a caster fetches its wands where a capital is on its way (wand.go)
 			}
+			if !wandClasses[w.Char.Class] {
+				if a := w.profAction(s, p); a != nil {
+					w.try(s, &acts, *a) // the trainers for Skinning, Cooking, Leatherworking on the way (camp.go)
+				}
+			}
 		}
 		res.levels[i] = w.Level(s)
 		if q := w.ByID[e.Quest]; q != nil && s0.Status[q.Index] == done {
