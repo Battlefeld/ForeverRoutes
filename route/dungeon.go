@@ -2,6 +2,8 @@ package route
 
 import (
 	"math"
+	"slices"
+	"sort"
 
 	"github.com/Battlefeld/ForeverRoutes/dataset"
 	"github.com/Battlefeld/ForeverRoutes/xp"
@@ -342,4 +344,73 @@ func (d *Dungeon) trashKills() float64 {
 		return elitesPerMinute * d.Minutes * runClear
 	}
 	return float64(n) * runClear
+}
+
+// pickupTries: the places a dungeon quest's accept or turn-in is tried at: where the route comes closest to its giver.
+const pickupTries = 4
+
+// withDungeonPickups puts the accepts of a dungeon's quests given outside into the route before its run, each where
+// the route comes closest to the giver once the quest can be taken (Ragefire's quests in Undercity at 10 before the
+// zeppelin, Thunder Bluff's when the Barrens bring the character there), and the turn-ins of those handed in on
+// another continent after it, where the route is next close to the ender; each only when it makes the route faster.
+func (w *World) withDungeonPickups(events []GuideEvent, d *Dungeon, target int, best *GuideResult) ([]GuideEvent, *GuideResult) {
+	run := slices.IndexFunc(events, func(e GuideEvent) bool { return e.Op == "dungeon" && e.Dungeon == d.Key })
+	if run < 0 {
+		return events, best
+	}
+	in := map[int]bool{}
+	for _, e := range events {
+		if e.Op == "accept" {
+			in[e.Quest] = true
+		}
+	}
+	// near: the tries places in [lo, hi) the route comes closest to p, with their level at least min
+	near := func(evs []GuideEvent, levels []int, lo, hi int, p dataset.Point, min int) []int {
+		type at struct {
+			i int
+			d float64
+		}
+		var c []at
+		for j := lo; j < hi; j++ {
+			if j < len(levels) && levels[j] < min {
+				continue
+			}
+			if ep, ok := w.eventPos(evs[j]); ok && ep.Map == p.Map {
+				c = append(c, at{j, distance(ep, p)})
+			}
+		}
+		sort.Slice(c, func(a, b int) bool { return c[a].d < c[b].d })
+		var out []int
+		for k := 0; k < len(c) && k < pickupTries; k++ {
+			out = append(out, c[k].i)
+		}
+		return out
+	}
+	for _, q := range d.Quests {
+		if q.StartInside || !q.runnable() || in[q.ID] {
+			continue
+		}
+		far := !q.EndInside && q.EndPos.Map != d.Entrance.Map // handed in across the sea: the turn-in is placed too
+		var pick []GuideEvent
+		for _, a := range near(events, best.levels, 0, run, q.StartPos, q.MinLevel) {
+			cand := slices.Insert(slices.Clone(events), a+1, GuideEvent{Op: "accept", Quest: q.ID})
+			tries := [][]GuideEvent{cand}
+			if far {
+				tries = nil
+				for _, t := range near(cand, best.levels, run+2, len(cand), q.EndPos, 0) {
+					tries = append(tries, slices.Insert(slices.Clone(cand), t+1, GuideEvent{Op: "turnin", Quest: q.ID}))
+				}
+			}
+			for _, c := range tries {
+				if r, err := w.FollowGuide(c, target); err == nil && r.Level >= target && r.Seconds < best.Seconds-1 {
+					best, pick = r, c
+				}
+			}
+		}
+		if pick != nil {
+			events = pick
+			run = slices.IndexFunc(events, func(e GuideEvent) bool { return e.Op == "dungeon" && e.Dungeon == d.Key })
+		}
+	}
+	return events, best
 }

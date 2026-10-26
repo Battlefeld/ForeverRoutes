@@ -103,6 +103,9 @@ func (w *World) Improve(events []GuideEvent, target int, budget time.Duration) (
 // the route that brings it fastest to the target, when one does. When none does, the run that costs least goes in:
 // a route with dungeons runs at least one. A run takes the dungeon's quests on the way and hands them in after, as
 // the planner's dungeon block.
+// runPlaces: the cheapest places of a run whose quests are then put where the route passes their givers.
+const runPlaces = 3
+
 func (w *World) WithDungeons(events []GuideEvent, target int) []GuideEvent {
 	best, err := w.FollowGuide(events, target)
 	if err != nil {
@@ -136,6 +139,11 @@ func (w *World) WithDungeons(events []GuideEvent, target int) []GuideEvent {
 				levels = r.levels
 			}
 			var pick []GuideEvent
+			type place struct {
+				events []GuideEvent
+				r      *GuideResult
+			}
+			var places []place // the run's cheapest places, its quests then taken where the route passes their givers
 			for i := 0; i <= len(with); i++ {
 				l := target
 				if i < len(levels) {
@@ -154,6 +162,13 @@ func (w *World) WithDungeons(events []GuideEvent, target int) []GuideEvent {
 				}
 				if r.Seconds < leastT {
 					least, leastT = cand, r.Seconds
+				}
+				places = append(places, place{cand, r})
+			}
+			sort.Slice(places, func(a, b int) bool { return places[a].r.Seconds < places[b].r.Seconds })
+			for k := 0; k < len(places) && k < runPlaces; k++ {
+				if e, r := w.withDungeonPickups(places[k].events, d, target, places[k].r); r.Seconds < best.Seconds-1 && w.tankFirst(r) {
+					best, pick = r, e
 				}
 			}
 			if pick != nil {
