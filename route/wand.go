@@ -30,7 +30,7 @@ var wandDetour = map[int]float64{1: 180, 2: 600}
 // auction house.
 var wandSites = map[string][]dataset.Point{
 	"A": {{Map: 0, X: -8857, Y: 805}, {Map: 0, X: -4805, Y: -1191}, {Map: 1, X: 10140, Y: 2319}}, // Stormwind, Ironforge, Darnassus
-	"H": {{Map: 1, X: 1915, Y: -4436}, {Map: 1, X: -1115, Y: 48}, {Map: 0, X: 1485, Y: 275}},    // Orgrimmar, Thunder Bluff, Undercity
+	"H": {{Map: 1, X: 1915, Y: -4436}, {Map: 1, X: -1115, Y: 48}, {Map: 0, X: 1485, Y: 275}},     // Orgrimmar, Thunder Bluff, Undercity
 }
 
 var wandClasses = map[string]bool{"Mage": true, "Priest": true, "Warlock": true}
