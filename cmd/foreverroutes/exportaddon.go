@@ -50,6 +50,7 @@ func cmdExportAddon(args []string) error {
 			Winner    string             `json:"winner"`
 			Hours     map[string]float64 `json:"hours"`
 			Events    []route.GuideEvent `json:"events"`
+			Options   []route.ClassCost  `json:"classQuests"`
 		}
 		if err := json.Unmarshal(raw, &r); err != nil || len(r.Events) == 0 {
 			continue
@@ -72,75 +73,163 @@ func cmdExportAddon(args []string) error {
 		}
 		fmt.Fprintf(&b, "ForeverRoutesData.routes[%s] = {race = %s, class = %s, faction = %s, target = %d, hours = %.1f, basis = %s, s = {\n",
 			luaStr(key), luaStr(r.Character.Race), luaStr(r.Character.Class), luaStr(r.Character.Faction), r.Target, res.Seconds/3600, luaStr(r.Winner))
-		for _, st := range res.Steps {
+		wand, wandAt := !route.WandClass(r.Character.Class), -1
+		for i, st := range res.Steps {
+			if !wand && st.Level >= route.LesserWandLevel {
+				wandAt = i
+				// the model has a caster craft its wand at level 5, before its next fight: a step of its own here
+				fmt.Fprintf(&b, " {op = \"z\", it = %d, m = %d, x = %.1f, y = %.1f, l = %d},\n", route.LesserWandItem, st.At.Map, st.At.X, st.At.Y, st.Level)
+				wand = true
+			}
 			b.WriteString(" {")
-			q := w.ByID[st.Quest]
-			switch st.Op {
-			case "accept", "turnin":
-				fmt.Fprintf(&b, "op = %s, q = %d", luaStr(st.Op[:1]), st.Quest)
-				if q != nil {
-					fmt.Fprintf(&b, ", n = %s", luaStr(q.Name))
-				}
-			case "work":
-				fmt.Fprintf(&b, "op = \"w\", q = %d", st.Quest)
-				if q != nil && st.Obj < len(q.Objectives) {
-					o := q.Objectives[st.Obj]
-					fmt.Fprintf(&b, ", n = %s, o = %d, k = %s, c = %d", luaStr(q.Name), st.Obj+1, luaStr(o.Kind), o.Count)
-				}
-				if tg := targetName(w, st.Action); tg != "" {
-					fmt.Fprintf(&b, ", tg = %s", luaStr(tg))
-				}
-			case "grind":
-				fmt.Fprintf(&b, "op = \"g\", c = %d", st.Kills)
-				if n := w.NPC[st.NPC]; n != nil {
-					fmt.Fprintf(&b, ", tg = %s", luaStr(n.Name))
-				}
-			case "dungeon":
-				fmt.Fprintf(&b, "op = \"d\", n = %s", luaStr(strings.TrimSuffix(st.Name, " (dungeon run)")))
-				for _, d := range w.Dungeons {
-					if d.Key == st.Dungeon {
-						fmt.Fprintf(&b, ", ii = %d", d.Instance) // the instance's map id: the run is done in this dungeon only
-					}
-				}
-				// quests taken inside that the route counts on: handed in later or inside
-				var inside []string
-				for _, q := range w.StartedInside(st.Dungeon) {
-					used := q.EndInside
-					for _, later := range res.Steps {
-						used = used || (later.Op == "turnin" && later.Quest == q.ID)
-					}
-					if used {
-						inside = append(inside, luaStr(q.Name))
-					}
-				}
-				if len(inside) > 0 {
-					fmt.Fprintf(&b, ", qi = {%s}", strings.Join(inside, ", "))
-				}
-			default:
-				fmt.Fprintf(&b, "op = %s", luaStr(st.Op))
-			}
-			fmt.Fprintf(&b, ", m = %d, x = %.1f, y = %.1f, l = %d", st.At.Map, st.At.X, st.At.Y, st.Level)
-			switch {
-			case strings.HasPrefix(st.Via, "deathskip"):
-				b.WriteString(`, v = "d"`)
-				fmt.Fprintf(&b, ", gy = %s", luaStr(strings.TrimPrefix(st.Via, "deathskip: ")))
-				if st.ViaAt != nil {
-					fmt.Fprintf(&b, ", dm = %d, dx = %.1f, dy = %.1f", st.ViaAt.Map, st.ViaAt.X, st.ViaAt.Y)
-				}
-			case st.Via == "hearth":
-				b.WriteString(`, v = "h"`)
-			case st.Via == "teleport":
-				b.WriteString(`, v = "t"`)
-			}
+			writeStep(&b, w, res, st)
 			b.WriteString("},\n")
 		}
-		b.WriteString("}}\n")
+		b.WriteString("}")
+		writeOptions(&b, w, res, r.Options, r.Target, wandAt)
+		b.WriteString("}\n")
 		fmt.Fprintf(os.Stderr, "%s: %d steps, %.1f h\n", key, len(res.Steps), res.Seconds/3600)
 	}
 	if ds != nil {
 		fmt.Fprintf(&b, "ForeverRoutesData.build = %s\n", luaStr(ds.Build))
 	}
 	return os.WriteFile(*out, []byte(b.String()), 0o644)
+}
+
+// writeStep writes a step's fields: what to do, where, the level by then, how to get there.
+func writeStep(b *strings.Builder, w *route.World, res *route.GuideResult, st route.Step) {
+	q := w.ByID[st.Quest]
+	switch st.Op {
+	case "accept", "turnin":
+		fmt.Fprintf(b, "op = %s, q = %d", luaStr(st.Op[:1]), st.Quest)
+		if q != nil {
+			fmt.Fprintf(b, ", n = %s", luaStr(q.Name))
+		}
+	case "work":
+		fmt.Fprintf(b, "op = \"w\", q = %d", st.Quest)
+		if q != nil && st.Obj < len(q.Objectives) {
+			o := q.Objectives[st.Obj]
+			fmt.Fprintf(b, ", n = %s, o = %d, k = %s, c = %d", luaStr(q.Name), st.Obj+1, luaStr(o.Kind), o.Count)
+		}
+		if tg := targetName(w, st.Action); tg != "" {
+			fmt.Fprintf(b, ", tg = %s", luaStr(tg))
+		}
+	case "grind":
+		fmt.Fprintf(b, "op = \"g\", c = %d", st.Kills)
+		if n := w.NPC[st.NPC]; n != nil {
+			fmt.Fprintf(b, ", tg = %s", luaStr(n.Name))
+		}
+	case "dungeon":
+		fmt.Fprintf(b, "op = \"d\", n = %s", luaStr(strings.TrimSuffix(st.Name, " (dungeon run)")))
+		for _, d := range w.Dungeons {
+			if d.Key == st.Dungeon {
+				fmt.Fprintf(b, ", ii = %d", d.Instance) // the instance's map id: the run is done in this dungeon only
+			}
+		}
+		// quests taken inside that the route counts on: handed in later or inside
+		var inside []string
+		for _, q := range w.StartedInside(st.Dungeon) {
+			used := q.EndInside
+			for _, later := range res.Steps {
+				used = used || (later.Op == "turnin" && later.Quest == q.ID)
+			}
+			if used {
+				inside = append(inside, luaStr(q.Name))
+			}
+		}
+		if len(inside) > 0 {
+			fmt.Fprintf(b, ", qi = {%s}", strings.Join(inside, ", "))
+		}
+	default:
+		fmt.Fprintf(b, "op = %s", luaStr(st.Op))
+	}
+	fmt.Fprintf(b, ", m = %d, x = %.1f, y = %.1f, l = %d", st.At.Map, st.At.X, st.At.Y, st.Level)
+	switch {
+	case strings.HasPrefix(st.Via, "deathskip"):
+		b.WriteString(`, v = "d"`)
+		fmt.Fprintf(b, ", gy = %s", luaStr(strings.TrimPrefix(st.Via, "deathskip: ")))
+		if st.ViaAt != nil {
+			fmt.Fprintf(b, ", dm = %d, dx = %.1f, dy = %.1f", st.ViaAt.Map, st.ViaAt.X, st.ViaAt.Y)
+		}
+	case st.Via == "hearth":
+		b.WriteString(`, v = "h"`)
+	case st.Via == "teleport":
+		b.WriteString(`, v = "t"`)
+	}
+}
+
+// writeOptions writes the route's options (o): each option the addon can switch on, with its steps (from the route
+// with it) and for each the step of the route it comes after (af, 0 before the first). Off, the route is as it is; on,
+// its steps go in after theirs, and the route's grind steps are done earlier by themselves (a grind step is done at
+// its level).
+// wandAt: the step the wand step went in before (-1: none), which moves the steps from there on by one.
+func writeOptions(b *strings.Builder, w *route.World, res *route.GuideResult, opts []route.ClassCost, target, wandAt int) {
+	key := func(st route.Step) string {
+		switch st.Op {
+		case "accept", "turnin", "work":
+			return fmt.Sprintf("%s:%d:%d", st.Op, st.Quest, st.Obj)
+		case "dungeon":
+			return "dungeon:" + st.Dungeon
+		}
+		return ""
+	}
+	base := map[string]int{}
+	for i, st := range res.Steps {
+		if k := key(st); k != "" {
+			if _, seen := base[k]; !seen {
+				base[k] = i + 1
+				if wandAt >= 0 && i >= wandAt {
+					base[k]++
+				}
+			}
+		}
+	}
+	first := true
+	for _, c := range opts {
+		if c.InRoute || !c.Possible || c.Tier == "required" || len(c.Events) == 0 {
+			continue
+		}
+		with, err := w.FollowGuide(c.Events, target)
+		if err != nil {
+			continue
+		}
+		mine := map[int]bool{}
+		for _, q := range c.Quests {
+			mine[q] = true
+		}
+		var steps []string
+		af := 0
+		for _, st := range with.Steps {
+			k := key(st)
+			if i, in := base[k]; in {
+				af = i
+				continue
+			}
+			if !mine[st.Quest] || k == "" {
+				continue // the route with it differs elsewhere too: only the option's own steps go in
+			}
+			var s strings.Builder
+			fmt.Fprintf(&s, " {af = %d, ", af)
+			writeStep(&s, w, with, st)
+			s.WriteString("},\n")
+			steps = append(steps, s.String())
+		}
+		if len(steps) == 0 {
+			continue
+		}
+		if first {
+			b.WriteString(", o = {\n")
+			first = false
+		}
+		name := c.Reward
+		if name == "" {
+			name = c.Name
+		}
+		fmt.Fprintf(b, "{id = %d, n = %s, tier = %s, min = %.0f, l = %d, s = {\n%s}},\n", c.Quest, luaStr(name), luaStr(c.Tier), c.Minutes, c.Level, strings.Join(steps, ""))
+	}
+	if !first {
+		b.WriteString("}")
+	}
 }
 
 // targetName is who or what a work step is done at: the creature, the object, else nothing (a place).

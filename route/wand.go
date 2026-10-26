@@ -19,6 +19,15 @@ const (
 
 var wandClasses = map[string]bool{"Mage": true, "Priest": true, "Warlock": true}
 
+// WandClass: whether the class finishes its mobs with a wand.
+func WandClass(class string) bool { return wandClasses[class] }
+
+// LesserWandLevel is the level the route crafts the Lesser Magic Wand at; LesserWandItem its item.
+const (
+	LesserWandLevel = lesserWandLevel
+	LesserWandItem  = 11287
+)
+
 var wandQuests = map[int]float64{
 	14:   12.8, // The People's Militia: Spark of the People's Militia
 	99:   11.8, // Arugal's Folly: Cinder Wand

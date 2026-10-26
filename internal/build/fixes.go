@@ -11,11 +11,13 @@ import (
 
 // questFix is one entry of data/sources/quest-fixes.json: a fact the sources get wrong or leave out, with its page.
 type questFix struct {
-	Quest           int    `json:"quest"`
-	PreAll          []int  `json:"preAll,omitempty"`
-	AddStartObjects []int  `json:"addStartObjects,omitempty"`
-	Source          string `json:"source"`
-	Note            string `json:"note"`
+	Quest           int   `json:"quest"`
+	PreAll          []int `json:"preAll,omitempty"`
+	AddStartObjects []int `json:"addStartObjects,omitempty"`
+	// PlacesFromObjects: the start and end places a source gives are wrong, they follow from the objects
+	PlacesFromObjects bool   `json:"placesFromObjects,omitempty"`
+	Source            string `json:"source"`
+	Note              string `json:"note"`
 }
 
 func readQuestFixes(path string) ([]questFix, error) {
@@ -51,6 +53,15 @@ func (b *builder) applyQuestFixes() {
 				}
 				b.objWanted[o] = true
 				q.Sources["start"] = f.Source
+			}
+			if f.PlacesFromObjects {
+				q.StartAt, q.EndAt = nil, nil
+				for _, r := range append(append([]dataset.Ref(nil), q.Start...), q.End...) {
+					if r.Kind == "object" {
+						b.objWanted[r.ID] = true
+					}
+				}
+				q.Sources["startAt"], q.Sources["endAt"] = f.Source, f.Source
 			}
 			b.stats["quest_fixes_applied"]++
 		}
