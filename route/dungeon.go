@@ -392,18 +392,29 @@ func (w *World) withDungeonPickups(events []GuideEvent, d *Dungeon, target int, 
 		}
 		far := !q.EndInside && q.EndPos.Map != d.Entrance.Map // handed in across the sea: the turn-in is placed too
 		var pick []GuideEvent
-		for _, a := range near(events, best.levels, 0, run, q.StartPos, q.MinLevel) {
-			cand := slices.Insert(slices.Clone(events), a+1, GuideEvent{Op: "accept", Quest: q.ID})
-			tries := [][]GuideEvent{cand}
-			if far {
-				tries = nil
-				for _, t := range near(cand, best.levels, run+2, len(cand), q.EndPos, 0) {
-					tries = append(tries, slices.Insert(slices.Clone(cand), t+1, GuideEvent{Op: "turnin", Quest: q.ID}))
+		for _, base := range w.delayedVisits(events, best.levels, run, q) {
+			levels := best.levels
+			if len(base) != len(events) || !slices.Equal(base, events) {
+				r, err := w.FollowGuide(base, target)
+				if err != nil {
+					continue
 				}
+				levels = r.levels
 			}
-			for _, c := range tries {
-				if r, err := w.FollowGuide(c, target); err == nil && r.Level >= target && r.Seconds < best.Seconds-1 {
-					best, pick = r, c
+			brun := slices.IndexFunc(base, func(e GuideEvent) bool { return e.Op == "dungeon" && e.Dungeon == d.Key })
+			for _, a := range near(base, levels, 0, brun, q.StartPos, q.MinLevel) {
+				cand := slices.Insert(slices.Clone(base), a+1, GuideEvent{Op: "accept", Quest: q.ID})
+				tries := [][]GuideEvent{cand}
+				if far {
+					tries = nil
+					for _, t := range near(cand, levels, brun+2, len(cand), q.EndPos, 0) {
+						tries = append(tries, slices.Insert(slices.Clone(cand), t+1, GuideEvent{Op: "turnin", Quest: q.ID}))
+					}
+				}
+				for _, c := range tries {
+					if r, err := w.FollowGuide(c, target); err == nil && r.Level >= target && r.Seconds < best.Seconds-1 {
+						best, pick = r, c
+					}
 				}
 			}
 		}
@@ -413,4 +424,66 @@ func (w *World) withDungeonPickups(events []GuideEvent, d *Dungeon, target int, 
 		}
 	}
 	return events, best
+}
+
+// visitRadius: events this close to a quest giver are a visit to it (the same town).
+const visitRadius = 250.0
+
+// delayedVisits: the route as it is, and the route with its visits to a dungeon quest's giver that come before the
+// quest can be taken moved to where it can (the Barrens' mushroom turn-in in Thunder Bluff at 9 waits for the dungeon
+// quest there at 11, other quests done in between), there or to the route's next visit after: one trip for both. Only
+// visits before the run; the turn-ins alone, or with the accepts there.
+func (w *World) delayedVisits(events []GuideEvent, levels []int, run int, q *Quest) [][]GuideEvent {
+	out := [][]GuideEvent{events}
+	first := -1
+	for j := 0; j < run && j < len(levels); j++ {
+		if levels[j] >= q.MinLevel {
+			first = j
+			break
+		}
+	}
+	if first <= 0 {
+		return out
+	}
+	at := func(j int) bool {
+		p, ok := w.eventPos(events[j])
+		return ok && distance(p, q.StartPos) <= visitRadius
+	}
+	next := -1 // the route's next visit once the quest can be taken
+	for j := first; j < run; j++ {
+		if at(j) {
+			next = j
+			break
+		}
+	}
+	for _, turninsOnly := range []bool{true, false} {
+		moved := map[int]bool{}
+		for j := 0; j < first; j++ {
+			if at(j) && (events[j].Op == "turnin" || !turninsOnly && events[j].Op == "accept") {
+				moved[j] = true
+			}
+		}
+		if len(moved) == 0 {
+			continue
+		}
+		for _, to := range []int{first, next} {
+			if to < 0 {
+				continue
+			}
+			var block, rest []GuideEvent
+			ins := 0
+			for j, e := range events {
+				if j == to {
+					ins = len(rest)
+				}
+				if moved[j] {
+					block = append(block, e)
+				} else {
+					rest = append(rest, e)
+				}
+			}
+			out = append(out, slices.Insert(rest, ins, block...))
+		}
+	}
+	return out
 }
