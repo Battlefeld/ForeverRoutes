@@ -223,3 +223,40 @@ func (w *World) levelFor(s *State, q *Quest, target int) int {
 	}
 	return 0
 }
+
+// WithOptions puts options into a route: of each option's route (its events, the route with it) the steps of its own
+// quests, each after the step of the route it follows there (before the first when none), in the option's order.
+func WithOptions(base []GuideEvent, options [][]GuideEvent, quests []map[int]bool) []GuideEvent {
+	out := append([]GuideEvent(nil), base...)
+	for k, opt := range options {
+		pos := map[GuideEvent]int{}
+		for i, e := range out {
+			if _, seen := pos[e]; !seen {
+				pos[e] = i
+			}
+		}
+		at := -1
+		var ins []struct {
+			after int
+			e     GuideEvent
+		}
+		for _, e := range opt {
+			if quests[k][e.Quest] {
+				ins = append(ins, struct {
+					after int
+					e     GuideEvent
+				}{at, e})
+				continue
+			}
+			if i, ok := pos[e]; ok {
+				at = i
+			}
+		}
+		// from the back, so the indexes before stay valid; equal anchors keep their order
+		for i := len(ins) - 1; i >= 0; i-- {
+			j := ins[i].after + 1
+			out = append(out[:j], append([]GuideEvent{ins[i].e}, out[j:]...)...)
+		}
+	}
+	return out
+}

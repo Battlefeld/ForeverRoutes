@@ -96,6 +96,7 @@ func cmdImprove(args []string) error {
 		rep.Winner, rep.Events, rep.Quests, rep.Profile, rep.Assumed = "guide", soloEvents, solo.Quests, solo.Profile, solo.Assumed
 		rep.Hours["guideImproved"] = solo.Seconds / 3600
 	}
+	rep.Events = w.WithoutExtraOptions(rep.Events, *target) // an option's chain is the addon's to switch on
 	rep.Class = w.ClassReport(rep.Events, *target)
 	fmt.Fprintf(os.Stderr, "%s %s: guide %.1f h -> %.1f h, plan %.1f h -> %.1f h, winner %s (%.0f s)\n", *race, *class,
 		rep.Hours["guide"], rep.Hours["guideImproved"], rep.Hours["plan"], rep.Hours["planImproved"], rep.Winner, rep.SearchSecs)

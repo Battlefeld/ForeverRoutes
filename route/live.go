@@ -20,6 +20,10 @@ type Live struct {
 	Bind          *dataset.Point `json:"bind,omitempty"`          // where the hearthstone leads; unknown: here
 	HearthIn      float64        `json:"hearthIn,omitempty"`      // seconds until the hearthstone is ready
 	FlightMasters []int          `json:"flightMasters,omitempty"` // NPC ids of the flight masters the character knows
+	// Wand and Prof: whether the character has its Lesser Magic Wand and Skinning and Leatherworking; nil: unknown
+	// (then from its level: the wand from 5, the professions from campLevel)
+	Wand *bool `json:"wand,omitempty"`
+	Prof *bool `json:"prof,omitempty"`
 }
 
 // LiveQuest is a quest in the log.
@@ -56,6 +60,12 @@ func (w *World) StateFrom(l Live) (*State, []string, error) {
 	s.Hearth = max(0, l.HearthIn)
 	s.Wand = wandClasses[w.Char.Class] && l.Level >= lesserWandLevel // a caster playing has its wand by then
 	s.Prof = l.Level >= campLevel                                    // and its professions
+	if l.Wand != nil {
+		s.Wand = wandClasses[w.Char.Class] && *l.Wand
+	}
+	if l.Prof != nil {
+		s.Prof = *l.Prof
+	}
 	var notes []string
 	for _, id := range l.Completed {
 		if q := w.ByID[id]; q != nil {

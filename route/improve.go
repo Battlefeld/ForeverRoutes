@@ -673,6 +673,28 @@ func (w *World) weaveLegs(events []GuideEvent, c ClassChain, target, window int)
 	return out
 }
 
+// WithoutExtraOptions leaves out the steps of the extra options' chains (extraOptions) a route does not finish: a
+// guide picks up their first quest on the way; the addon switches the whole chain on as an option.
+func (w *World) WithoutExtraOptions(events []GuideEvent, target int) []GuideEvent {
+	var drop map[int]bool
+	r, err := w.FollowGuide(events, target)
+	for _, c := range w.ClassChains(target) {
+		if _, extra := extraOptions[c.Goal.ID]; !extra || (err == nil && handsIn(r, c.Goal.ID)) {
+			continue
+		}
+		if drop == nil {
+			drop = map[int]bool{}
+		}
+		for _, q := range c.Quests {
+			drop[q.ID] = true
+		}
+	}
+	if drop == nil {
+		return events
+	}
+	return without(events, func(e GuideEvent) bool { return drop[e.Quest] })
+}
+
 // reportBudget: how long ClassReport improves each side of a measure.
 const reportBudget = 8 * time.Second
 
@@ -733,15 +755,16 @@ func (w *World) ClassReport(events []GuideEvent, target int) []ClassCost {
 				cc.Minutes = math.Round((ref.Seconds-r.Seconds)/6) / 10
 			}
 		} else {
-			// an option: each step woven in where the route comes closest to it, once its level is there
+			// an option: woven into the route as it is, visit by visit (weaveIn), not re-planned around it: the addon and
+			// the live plan put its steps into this route, so what it costs is measured on this route
 			rest := without(events, func(e GuideEvent) bool { return ids[e.Quest] }) // a guide's part of it, out of place
-			e, r := measure(w.weaveIn(rest, c, target), "on")
-			if r != nil {
-				cc.Minutes = math.Round((r.Seconds-ref.Seconds)/6) / 10
+			woven := w.weaveIn(rest, c, target)
+			if r, err := w.FollowGuide(woven, target); err == nil {
+				cc.Minutes = math.Round((r.Seconds-base.Seconds)/6) / 10
 				cc.Level = turnedIn(r, c.Goal.ID)
 				cc.Possible = cc.Level > 0
 				if cc.Possible {
-					cc.Events = e
+					cc.Events = woven
 				}
 			}
 		}

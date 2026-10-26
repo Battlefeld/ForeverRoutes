@@ -16,6 +16,7 @@ type liveRequest struct {
 	Class   string     `json:"class"`
 	Faction string     `json:"faction,omitempty"` // A or H (Alliance, Horde): needed for the Skyborne
 	Live    route.Live `json:"live"`
+	Options []int      `json:"options,omitempty"` // the route's options switched on in the addon (their goal quests)
 }
 
 // nextReply is the next stretch of route.
@@ -59,14 +60,34 @@ func cmdNext(args []string) error {
 	}
 	t0 := time.Now()
 	var events []route.GuideEvent
+	var file routeFileData
 	if *routeFile != "" {
-		if events, err = readEvents(*routeFile); err != nil {
+		if file, err = readRoute(*routeFile); err != nil {
 			return err
 		}
+		events = file.Events
 	}
 	w, err := loadWorld(*path, req.Race, req.Class, req.Faction, *profile, *group || hasDungeons(events))
 	if err != nil {
 		return err
+	}
+	w.SetWandDetour(file.WandDetour) // as the route was made
+	if len(req.Options) > 0 && len(events) > 0 {
+		// the options switched on, put in as the addon shows them
+		var opts [][]route.GuideEvent
+		var qs []map[int]bool
+		for _, id := range req.Options {
+			for _, c := range file.Options {
+				if c.Quest == id && len(c.Events) > 0 {
+					set := map[int]bool{}
+					for _, q := range c.Quests {
+						set[q] = true
+					}
+					opts, qs = append(opts, c.Events), append(qs, set)
+				}
+			}
+		}
+		events = route.WithOptions(events, opts, qs)
 	}
 	s, notes, err := w.StateFrom(req.Live)
 	if err != nil {
@@ -94,21 +115,26 @@ func cmdNext(args []string) error {
 	return os.WriteFile(*out, b, 0o644)
 }
 
-// readEvents reads guide steps: a plain list, or the events of an improve result.
-func readEvents(path string) ([]route.GuideEvent, error) {
+// routeFileData is what next takes from a route file: its events, its options and its wand detour.
+type routeFileData struct {
+	Events     []route.GuideEvent `json:"events"`
+	Options    []route.ClassCost  `json:"classQuests"`
+	WandDetour float64            `json:"wandDetour"`
+}
+
+// readRoute reads guide steps: a plain list, or a route file (the output of improve).
+func readRoute(path string) (routeFileData, error) {
 	raw, err := os.ReadFile(path)
 	if err != nil {
-		return nil, err
+		return routeFileData{}, err
 	}
 	var events []route.GuideEvent
 	if json.Unmarshal(raw, &events) == nil {
-		return events, nil
+		return routeFileData{Events: events}, nil
 	}
-	var best struct {
-		Events []route.GuideEvent `json:"events"`
+	var f routeFileData
+	if err := json.Unmarshal(raw, &f); err != nil || len(f.Events) == 0 {
+		return routeFileData{}, fmt.Errorf("%s: not a route", path)
 	}
-	if err := json.Unmarshal(raw, &best); err != nil || len(best.Events) == 0 {
-		return nil, fmt.Errorf("%s: not a route", path)
-	}
-	return best.Events, nil
+	return f, nil
 }
