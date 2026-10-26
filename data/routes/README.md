@@ -18,6 +18,17 @@ every route; `recommended` (green weapons and robes, priest racials) and `option
 a chain costs the route: for one in the route the time it adds (negative: its XP make the route faster), for an option
 the time it adds when put in; `level` is the level the route hands it in at.
 
+Options: besides the class chains, Forever goals worth a detour are options too (`extraOptions`): the Cozy Sleeping Bag
+chain from level 14. An option's `events` are the route with it, each step woven in where the route comes closest to it
+within a few levels after it can be taken (Barrens steps while the route is in the Barrens, Eastern Kingdoms steps
+when it is there), and finished before level 20. The addon shows them with `/fr optionen` and switches one on with
+`/fr option <number>`: its steps go into the route after the step they follow, the rest stays as it is (a grind step
+is done at its level, so the XP of an option shortens the grinding by itself).
+
+Wands: mages, priests and warlocks craft the Lesser Magic Wand with Enchanting at level 5 (`route/wand.go`, 10 minutes)
+and finish their mobs with it from then on (no mana, fewer rests); a better wand from a quest on the way takes its place.
+The addon shows the crafting as a step of its own.
+
 **Credits.** Routes whose `winner` is `guide` are adapted from the RestedXP Forever guides
 (https://github.com/RestedXP/RXPGuides, © RestedXP, CC BY-NC-SA 4.0): their quest order, improved here. These files
 are shared under the same licence, CC BY-NC-SA 4.0 (https://creativecommons.org/licenses/by-nc-sa/4.0/), non-commercial,

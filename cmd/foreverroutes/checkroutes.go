@@ -55,7 +55,7 @@ func cmdCheckRoutes(args []string) error {
 	if len(guided) > 0 {
 		fmt.Fprintf(&b, ", %d quests known from the guides", len(guided))
 	}
-	b.WriteString(".\n\n| Route | Hours | Long steps | Not in a guide | Assumed drops | Deathskips (sick) | Skipped |\n|---|---|---|---|---|---|---|\n")
+	b.WriteString(".\n\n| Route | Hours | Long steps | Not in a guide | Assumed drops | Deathskips (sick) | Skipped | Options (not finished) |\n|---|---|---|---|---|---|---|---|\n")
 	var details strings.Builder
 	for _, f := range files {
 		raw, err := os.ReadFile(f)
@@ -66,6 +66,7 @@ func cmdCheckRoutes(args []string) error {
 			Character route.Character    `json:"character"`
 			Target    int                `json:"target"`
 			Events    []route.GuideEvent `json:"events"`
+			Options   []route.ClassCost  `json:"classQuests"`
 		}
 		if err := json.Unmarshal(raw, &r); err != nil || len(r.Events) == 0 {
 			continue
@@ -99,14 +100,32 @@ func cmdCheckRoutes(args []string) error {
 				sick = append(sick, fmt.Sprintf("L%d %s", st.Level, strings.TrimPrefix(st.Via, "deathskip: ")))
 			}
 		}
+		// every option switched on: its last quest handed in before the target
+		var options, unfinished []string
+		for _, c := range r.Options {
+			if len(c.Events) == 0 {
+				continue
+			}
+			options = append(options, c.Name)
+			with, err := w.FollowGuide(c.Events, r.Target)
+			handed := false
+			if err == nil {
+				for _, st := range with.Steps {
+					handed = handed || (st.Op == "turnin" && st.Quest == c.Quest)
+				}
+			}
+			if err != nil || !handed {
+				unfinished = append(unfinished, fmt.Sprintf("%d %s", c.Quest, c.Name))
+			}
+		}
 		skipped := 0
 		for _, n := range res.Skipped {
 			skipped += n
 		}
-		fmt.Fprintf(&b, "| %s | %.1f | %d | %d | %d | %d (%d) | %d |\n", name, res.Seconds/3600, len(longSteps), len(unguided), res.Assumed, res.Deaths, len(sick), skipped)
-		if len(longSteps)+len(unguided)+len(sick)+len(res.Missed) > 0 {
+		fmt.Fprintf(&b, "| %s | %.1f | %d | %d | %d | %d (%d) | %d | %d (%d) |\n", name, res.Seconds/3600, len(longSteps), len(unguided), res.Assumed, res.Deaths, len(sick), skipped, len(options), len(unfinished))
+		if len(longSteps)+len(unguided)+len(sick)+len(res.Missed)+len(unfinished) > 0 {
 			fmt.Fprintf(&details, "\n## %s\n", name)
-			for _, l := range [][2]any{{"Long steps", longSteps}, {"Not in a guide", unguided}, {"Deathskips with sickness", sick}} {
+			for _, l := range [][2]any{{"Long steps", longSteps}, {"Not in a guide", unguided}, {"Deathskips with sickness", sick}, {"Options not finished", unfinished}} {
 				if items := l[1].([]string); len(items) > 0 {
 					fmt.Fprintf(&details, "\n%s:\n", l[0])
 					for _, it := range items {
