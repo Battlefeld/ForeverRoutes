@@ -38,7 +38,8 @@ The addon shows the crafting as a step of its own.
 Camping (`route/camp.go`): every character learns Skinning, Cooking and Leatherworking on the way (casters at the
 capital they fetch their wands in: Enchanting for the wands, then unlearned for Leatherworking). Skinning the beasts
 it kills brings Leatherworking to 20 for the Camp Tent: from level 10, once an hour, a camp (fire, tent, a minute's
-rest) gives rested experience worth 5 % of a level, which doubles kill XP until used up. Up to level 20 this costs
+rest) raises rested experience to 5 % of a level (when it is lower; the Leatherworking camp buff is "Well Rested
+Shelter"), which doubles kill XP until used up. Up to level 20 this costs
 about 10 minutes on average (skinning, trainers, camps); it pays from level 20 on, where a level takes hours: over
 20–60 an estimated 5 to 12 hours (Classic XP table, 80–110 hours of guided leveling). The addon reminds of the camp
 every hour (`/fr lager` marks one).

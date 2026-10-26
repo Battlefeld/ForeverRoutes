@@ -10,7 +10,9 @@ import (
 // their wands in: Enchanting for the wands, unlearned again for Leatherworking). Skinning the beasts it kills brings
 // Leatherworking to 20, for the Camp Tent: once an hour at a campfire (Cooking 1) the tent gives rested experience,
 // 5 % of a level (conquestcapped.com/guides/wow-forever/wow-forever-camping/), which doubles kill XP until it is used
-// up. It costs the camp (fire, tent, a minute's rest) each hour and skinning on every kill.
+// up: resting 30 seconds by the tent raises the rested experience to that much when it is lower (Field Seated Rest
+// Bonus, spell 1229487, an hour's cooldown aura 1229451; kovarel.com/wow-forever/features/camping). It costs the camp
+// (fire, tent, a minute's rest) each hour and skinning on every kill.
 const (
 	campLevel    = 10    // Leatherworking 20 from the leather skinned by then (an estimate)
 	campSecs     = 90.0  // fire, tent, a minute's rest
@@ -66,7 +68,7 @@ func (w *World) camp(s *State) {
 	}
 	s.Time += campSecs
 	s.Talk += campSecs
-	s.Rested += tentShare * float64(w.Data.LevelXP[l-1])
+	s.Rested = math.Max(s.Rested, tentShare*float64(w.Data.LevelXP[l-1])) // raised to 5 % of the level, not added
 	s.Camp = s.Time + campCooldown
 	s.Camps++
 }
