@@ -32,6 +32,7 @@ type State struct {
 	Dead                 map[int]dead   // site key -> mobs of that site still dead
 	Deathskips           int            // deaths taken on purpose to travel
 	Runs                 uint64         // dungeons run (bit per World.Dungeons index)
+	RunEnd               float64        // when the last run ended: the search for the next group overlaps the questing since
 	Switches             int            // changes between Kalimdor and the Eastern Kingdoms
 	Wand                 bool           // a caster has crafted its wands: the practice wand, the Lesser Magic Wand from level 5 (wand.go)
 	Prof                 bool           // Skinning, Cooking and Leatherworking learned (camp.go)

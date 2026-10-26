@@ -31,8 +31,9 @@ const (
 	groupKill = 15.0
 	// maxExtraShare: the extra kills of collection quests take at most this share of the run's minutes
 	maxExtraShare = 0.5
-	// groupSearch: finding a group for the run, before it starts (seconds); groupSearchRole: for a class that can tank
-	// or heal (warrior, paladin, shaman, priest, druid), whom groups look for: almost at once
+	// groupSearch: finding a group for the run (seconds), searched while questing on since the last run (run);
+	// groupSearchRole: for a class that can tank or heal (warrior, paladin, shaman, priest, druid), whom groups look
+	// for: almost at once
 	groupSearch     = 600.0
 	groupSearchRole = 60.0
 	// elitesPerMinute: elites per minute of a usual run where the instance's spawns are not known (Ragefire 6.6,
@@ -165,6 +166,7 @@ func (w *World) run(s *State, d *Dungeon) error {
 	if l := w.Level(s); l < d.Min {
 		return fail("%s needs level %d", d.Name, d.Min)
 	}
+	queued := s.Time - s.RunEnd // the group is searched while the character quests on, from the last run's end
 	if err := w.move(s, d.Entrance); err != nil {
 		return err
 	}
@@ -173,7 +175,7 @@ func (w *World) run(s *State, d *Dungeon) error {
 	if !w.canTank(s) {
 		search = groupSearch // a druid without bear form, a warrior without defensive stance: queued as damage
 	}
-	secs := d.Minutes*60 + search
+	secs := d.Minutes*60 + math.Max(0, search-queued) // waited only for what the questing before did not cover
 	s.Time += secs
 	s.Combat += secs
 	trash := w.killXP(d, l)
@@ -231,6 +233,7 @@ func (w *World) run(s *State, d *Dungeon) error {
 		}
 	}
 	s.Runs |= 1 << d.Index
+	s.RunEnd = s.Time
 	return nil
 }
 
