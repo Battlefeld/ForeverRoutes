@@ -71,3 +71,7 @@ FR_BENCH_SCENARIO=dungeon_wand FR_BENCH_OUTPUT=/tmp/quest-audit-runs GOMAXPROCS=
 ```
 
 Je Startseed 30 Sekunden Verbesserung, dann 180 Sekunden Timelinesuche mit Seed 20261027. Ein Zeitbudget kann je Rechner zu anderen besten Routen führen. Die Ergebnisdatei enthält den SHA-256 des verwendeten Datensatzes.
+
+## Direkter Vergleich ohne HDW
+
+[Ergebnisse und Reproduktion für RF + RoL mit oder ohne HDW](without-wailing-caverns.md). Beide Seiten wurden zusätzlich mit gleichem Zeitbudget optimiert.
