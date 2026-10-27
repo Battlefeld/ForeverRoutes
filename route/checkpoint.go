@@ -15,7 +15,7 @@ import (
 )
 
 // Bump this when simulation semantics change. Data, walks, full combat profiles, constraints and feedback are hashed too.
-const TimelineModelRevision = "foreverroutes.timeline-model.v2.1"
+const TimelineModelRevision = "foreverroutes.timeline-model.v2.2"
 const timelineModelRevision = TimelineModelRevision
 
 type OptimizationCheckpoint struct {

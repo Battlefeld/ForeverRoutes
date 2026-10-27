@@ -54,6 +54,12 @@ func cmdTimeline(args []string) error {
 			return err
 		}
 		var s route.OptimizationSeed
+		var identity struct {
+			Character route.Character `json:"character"`
+		}
+		if json.Unmarshal(raw, &identity) == nil && identity.Character.Race != "" && !route.SameCharacter(identity.Character, w.Char) {
+			return fmt.Errorf("seed %s belongs to another character", path)
+		}
 		if err = json.Unmarshal(raw, &s); err != nil {
 			if err = json.Unmarshal(raw, &s.Events); err != nil {
 				return fmt.Errorf("seed %s: %w", path, err)

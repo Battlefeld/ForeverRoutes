@@ -29,6 +29,7 @@ func cmdBundle(args []string) error {
 	out := fs.String("out", "dist", "folder to write the bundle and its manifest to")
 	version := fs.String("version", "", "version (the release tag); default: the time")
 	exe := fs.String("exe", "", "foreverroutes.exe to include (built for Windows)")
+	addon := fs.String("addon", "", "exported addon Routes.lua to include")
 	fs.Parse(args)
 	if *version == "" {
 		*version = time.Now().UTC().Format("20060102-150405")
@@ -38,7 +39,7 @@ func cmdBundle(args []string) error {
 		"walks.json.gz":       "data/walks.json.gz",
 		"README-data.md":      "data/README.md",
 	}
-	for _, pat := range []string{"data/routes/*.json", "data/routes/README.md", "data/profiles/*.json"} {
+	for _, pat := range []string{"data/routes/*.json", "data/routes/README.md", "data/profiles/*.json", "data/fallbacks/*"} {
 		m, err := filepath.Glob(pat)
 		if err != nil {
 			return err
@@ -50,6 +51,9 @@ func cmdBundle(args []string) error {
 	}
 	if *exe != "" {
 		files["foreverroutes.exe"] = *exe
+	}
+	if *addon != "" {
+		files["addon/Routes.lua"] = *addon
 	}
 	names := make([]string, 0, len(files))
 	for n := range files {

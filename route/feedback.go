@@ -49,7 +49,7 @@ func (w *World) AcceptFeedback(f CombatFeedback) error {
 	if !w.Opt.Feedback.Active() {
 		return fmt.Errorf("ForeverSim live feedback disabled: post-release user confirmation required")
 	}
-	if f.Schema != "foreverroutes.combat-feedback.v1" || f.Character != w.Char || f.EquipmentRevision == "" || f.BuildRevision == "" || f.GameBuild != w.Opt.Feedback.ReleaseBuild || (f.Source != "foreversim" && f.Source != "measured") {
+	if f.Schema != "foreverroutes.combat-feedback.v1" || !SameCharacter(f.Character, w.Char) || f.EquipmentRevision == "" || f.BuildRevision == "" || f.GameBuild != w.Opt.Feedback.ReleaseBuild || (f.Source != "foreversim" && f.Source != "measured") {
 		return fmt.Errorf("invalid or incompatible combat feedback")
 	}
 	for _, k := range f.Kills {

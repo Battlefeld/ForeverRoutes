@@ -42,6 +42,9 @@ func DefaultSleepingBagModel() SleepingBagModel {
 }
 func (w *World) Preparations() PreparationPlan { return w.preparation }
 func (w *World) SetPreparations(p PreparationPlan) error {
+	if p.Wands && !WandClass(w.Char.Class) {
+		return fmt.Errorf("class cannot use the selected wand preparation")
+	}
 	if p.BagStacks < 0 || p.BagStacks > 3 || p.ProfessionLevel < 1 || p.ProfessionLevel > 60 || p.ProfessionDetour < 0 || math.IsNaN(p.ProfessionDetour) || math.IsInf(p.ProfessionDetour, 0) {
 		return fmt.Errorf("invalid preparation plan")
 	}

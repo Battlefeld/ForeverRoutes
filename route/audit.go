@@ -47,89 +47,68 @@ func AuditQuests(d *dataset.Dataset, target int) (*QuestAuditReport, error) {
 		feasible map[int]bool
 	}
 	var contexts []context
-	races := []string{"Human", "Orc", "Dwarf", "NightElf", "Undead", "Tauren", "Gnome", "Troll", "Skyborne"}
-	// Roster shipped in data/routes, including Forever's added race/class combinations.
-	roster := map[string][]string{
-		"Human":     {"Hunter", "Mage", "Paladin", "Priest", "Rogue", "Warlock", "Warrior"},
-		"Orc":       {"Hunter", "Mage", "Rogue", "Shaman", "Warlock", "Warrior"},
-		"Dwarf":     {"Hunter", "Paladin", "Priest", "Rogue", "Shaman", "Warrior"},
-		"NightElf":  {"Druid", "Hunter", "Priest", "Rogue", "Warrior"},
-		"Undead":    {"Mage", "Paladin", "Priest", "Rogue", "Warlock", "Warrior"},
-		"Tauren":    {"Druid", "Hunter", "Shaman", "Warrior"},
-		"Gnome":     {"Mage", "Priest", "Rogue", "Warlock", "Warrior"},
-		"Troll":     {"Hunter", "Mage", "Priest", "Rogue", "Shaman", "Warlock", "Warrior"},
-		"SkyborneA": {"Druid", "Hunter", "Mage", "Rogue", "Warrior"},
-		"SkyborneH": {"Druid", "Hunter", "Rogue", "Shaman", "Warrior"},
-	}
-	for _, race := range races {
-		factions := []string{""}
-		if race == "Skyborne" {
-			factions = []string{"A", "H"}
+	for _, character := range SupportedCharacters() {
+		w, err := NewWorld(d, character, Options{Dungeons: true})
+		if err != nil {
+			return nil, err
 		}
-		for _, side := range factions {
-			for _, class := range roster[race+side] {
-				w, err := NewWorld(d, Character{Race: race, Class: class, Faction: side}, Options{Dungeons: true})
-				if err != nil {
-					return nil, err
+		memo, possible := map[int]bool{}, map[int]bool{}
+		for _, q := range w.Quests {
+			ok := q.MinLevel <= target
+			if q.Dungeon != nil && q.Dungeon.Min > target {
+				ok = false
+			}
+			for _, o := range q.Objectives {
+				if o.Inside {
+					continue
 				}
-				memo, possible := map[int]bool{}, map[int]bool{}
-				for _, q := range w.Quests {
-					ok := q.MinLevel <= target
-					if q.Dungeon != nil && q.Dungeon.Min > target {
-						ok = false
-					}
-					for _, o := range q.Objectives {
-						if o.Inside {
-							continue
-						}
-						can, capacity := false, 0
-						for _, src := range o.Sources {
-							if !w.dangerousAt(target, src) {
-								can = true
-								capacity += max(1, src.Site.Spawns)
-							}
-						}
-						if !can || ((o.Kind == "talk" || o.Kind == "interact") && capacity < o.Count) {
-							ok = false
-						}
-					}
-					if len(q.StartSources) > 0 {
-						can := false
-						for _, src := range q.StartSources {
-							can = can || !w.dangerousAt(target, src)
-						}
-						ok = ok && can
-					}
-					possible[q.ID] = ok
-				}
-				// Monotone closure handles alternative prerequisites correctly even when another alternative cycles.
-				for changed := true; changed; {
-					changed = false
-					for _, q := range w.Quests {
-						if memo[q.ID] || !possible[q.ID] {
-							continue
-						}
-						ok := true
-						for _, pre := range q.PreAll {
-							ok = ok && memo[pre]
-						}
-						if len(q.PreAny) > 0 {
-							any := false
-							for _, pre := range q.PreAny {
-								any = any || memo[pre]
-							}
-							ok = ok && any
-						}
-						if ok {
-							memo[q.ID] = true
-							changed = true
-						}
+				can, capacity := false, 0
+				for _, src := range o.Sources {
+					if !w.dangerousAt(target, src) {
+						can = true
+						capacity += max(1, src.Site.Spawns)
 					}
 				}
-				contexts = append(contexts, context{w, memo})
+				if !can || ((o.Kind == "talk" || o.Kind == "interact") && capacity < o.Count) {
+					ok = false
+				}
+			}
+			if len(q.StartSources) > 0 {
+				can := false
+				for _, src := range q.StartSources {
+					can = can || !w.dangerousAt(target, src)
+				}
+				ok = ok && can
+			}
+			possible[q.ID] = ok
+		}
+		// Monotone closure handles alternative prerequisites correctly even when another alternative cycles.
+		for changed := true; changed; {
+			changed = false
+			for _, q := range w.Quests {
+				if memo[q.ID] || !possible[q.ID] {
+					continue
+				}
+				ok := true
+				for _, pre := range q.PreAll {
+					ok = ok && memo[pre]
+				}
+				if len(q.PreAny) > 0 {
+					any := false
+					for _, pre := range q.PreAny {
+						any = any || memo[pre]
+					}
+					ok = ok && any
+				}
+				if ok {
+					memo[q.ID] = true
+					changed = true
+				}
 			}
 		}
+		contexts = append(contexts, context{w, memo})
 	}
+
 	report.CharacterContexts = len(contexts)
 	ids := map[int]bool{}
 	for _, q := range d.Quests {

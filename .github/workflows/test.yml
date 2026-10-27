@@ -20,5 +20,7 @@ jobs:
         run: test -z "$(gofmt -l .)" || { gofmt -l .; exit 1; }
       - name: vet
         run: go vet ./...
+      - name: local references and JSON
+        run: python3 tools/check_refs.py
       - name: test (includes the Orc Warlock / Human Mage baseline)
         run: go test -timeout 25m ./...

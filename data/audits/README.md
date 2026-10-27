@@ -1,5 +1,7 @@
 # Questprüfung bis Mindestlevel 20
 
+Die aktuelle Code-, Simulations- und Routenprüfung aller 56 Kombinationen mit neu berechneten Ausgaben steht in [roster-v22.md](roster-v22.md). Die Quest-Einzelprüfung und ihre dokumentierten Datenlücken unten bleiben davon getrennt.
+
 Geprüft wird der gesamte ausgelieferte Datensatz mit Mindestlevel ≤20: **1908 Quests**, einschließlich höherstufiger Quests, die schon früher angenommen werden dürfen. Jede Quest steht mit Quellen, Ausschlussgründen und Unsicherheiten in [quests-through-20.json](quests-through-20.json). Der Check baut die 56 ausgelieferten Volk-/Klassenkontexte auf, einschließlich beider Skyborne-Fraktionen und Dungeonbetrieb.
 
 Dies ist eine Quellen- und Modellprüfung. Eine vollständige Prüfung jeder Quest im laufenden Spiel und eine Kalibrierung ihrer Zeiten stehen aus.

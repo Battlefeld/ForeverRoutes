@@ -44,6 +44,12 @@ func (c Character) side() (faction string, race int, ok bool) {
 		return f, SkyborneBits[f], f != ""
 	}
 	race = RaceBits[c.Race]
+	if c.Faction != "" {
+		f := map[string]string{"A": "A", "Alliance": "A", "H": "H", "Horde": "H"}[c.Faction]
+		if f == "" || f != FactionOf(c.Race) {
+			return "", 0, false
+		}
+	}
 	return FactionOf(c.Race), race, race != 0
 }
 

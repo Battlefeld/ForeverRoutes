@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/Battlefeld/ForeverRoutes/dataset"
+	"github.com/Battlefeld/ForeverRoutes/fallback"
 	"github.com/Battlefeld/ForeverRoutes/route"
 )
 
@@ -20,10 +21,18 @@ func cmdExportAddon(args []string) error {
 	path := fs.String("data", "data/routes-data.json.gz", "dataset")
 	dir := fs.String("routes", "data/routes", "route files")
 	profiles := fs.String("profiles", "data/profiles", "kill profiles (<class>.json)")
+	fallbackFile := fs.String("fallbacks", "", "ordinary pinned RXP fallback catalog; default beside dataset")
 	out := fs.String("out", "", "Lua file to write (the addon's Data/Routes.lua)")
 	fs.Parse(args)
+	if *fallbackFile == "" {
+		*fallbackFile = filepath.Join(filepath.Dir(*path), "fallbacks", "rxp.json.gz")
+	}
 	if *out == "" {
 		return fmt.Errorf("export-addon needs -out")
+	}
+	cat, err := fallback.Load(*fallbackFile)
+	if err != nil {
+		return fmt.Errorf("RXP fallbacks: %w", err)
 	}
 	files, err := filepath.Glob(filepath.Join(*dir, "*.json"))
 	if err != nil {
@@ -37,7 +46,7 @@ func cmdExportAddon(args []string) error {
 	b.WriteString("-- A step: op a(ccept) w(ork) t(urnin) g(rind) d(ungeon run; ii instance map id, qi quests taken inside); q quest, n name; o objective (1-based, route order), k kind, c count,\n")
 	b.WriteString("-- tg target; m continent, x y world yards (x north, y west); l level reached by then; v d(eathskip) or h(earth)\n")
 	b.WriteString("-- with dm dx dy the place to die and gy the graveyard.\n")
-	b.WriteString("ForeverRoutesData = ForeverRoutesData or {}\nForeverRoutesData.routes = ForeverRoutesData.routes or {}\n")
+	b.WriteString("ForeverRoutesData = ForeverRoutesData or {}\nForeverRoutesData.routes = {}\n")
 	var ds *dataset.Dataset
 	for _, f := range files {
 		raw, err := os.ReadFile(f)
@@ -55,7 +64,7 @@ func cmdExportAddon(args []string) error {
 			Wand      float64            `json:"wandDetour"`
 		}
 		if err := json.Unmarshal(raw, &r); err != nil || len(r.Events) == 0 {
-			continue
+			return fmt.Errorf("%s: malformed or empty route", f)
 		}
 		prof := filepath.Join(*profiles, strings.ToLower(r.Character.Class)+".json")
 		if !fileExists(prof) {
@@ -77,6 +86,9 @@ func cmdExportAddon(args []string) error {
 			fmt.Fprintf(os.Stderr, "%s: left out: %v\n", key, err)
 			continue
 		}
+		if res.Level < r.Target || len(res.Skipped) > 0 {
+			return fmt.Errorf("%s: incomplete route or skipped events; regenerate routes", f)
+		}
 		fmt.Fprintf(&b, "ForeverRoutesData.routes[%s] = {race = %s, class = %s, faction = %s, target = %d, hours = %.1f, basis = %s, s = {\n",
 			luaStr(key), luaStr(r.Character.Race), luaStr(r.Character.Class), luaStr(r.Character.Faction), r.Target, res.Seconds/3600, luaStr(r.Winner))
 		for _, st := range res.Steps {
@@ -92,7 +104,45 @@ func cmdExportAddon(args []string) error {
 	if ds != nil {
 		fmt.Fprintf(&b, "ForeverRoutesData.build = %s\n", luaStr(ds.Build))
 	}
+	writeFallbackCatalog(&b, cat)
 	return os.WriteFile(*out, []byte(b.String()), 0o644)
+}
+
+func writeFallbackCatalog(b *strings.Builder, c *fallback.Catalog) {
+	fmt.Fprintf(b, "ForeverRoutesData.rxpRevision = %s\nForeverRoutesData.rxpLicense = %s\nForeverRoutesData.rxpChapters = {}\nForeverRoutesData.fallbacks = {}\n", luaStr(c.Revision), luaStr(c.License))
+	var names []string
+	for name := range c.Chapters {
+		names = append(names, name)
+	}
+	sort.Strings(names)
+	for _, name := range names {
+		ch := c.Chapters[name]
+		fmt.Fprintf(b, "ForeverRoutesData.rxpChapters[%s] = {file=%s, line=%d, body=%s}\n", luaStr(name), luaStr(ch.File), ch.Line, luaStr(ch.Body))
+	}
+	for _, r := range c.Routes {
+		var chapters []string
+		for _, name := range r.Chapters {
+			chapters = append(chapters, luaStr(name))
+		}
+		fmt.Fprintf(b, "ForeverRoutesData.fallbacks[%s] = {kind=\"rxp-source\", race=%s, class=%s, faction=%s, target=20, chapters={%s}}\n", luaStr(r.Key), luaStr(r.Character.Race), luaStr(r.Character.Class), luaStr(r.Character.Faction), strings.Join(chapters, ","))
+	}
+	b.WriteString(`
+-- Original chapter bodies retain RXP conditions, instructions and #next references.
+-- The UI consumes these as RXP guides; they are independent of simulated optimized steps.
+function ForeverRoutesData.SelectRoute(race, class, faction, dungeons, forceFallback)
+  if race == "Scourge" then race = "Undead" end
+  if race == "Skyborne" then
+    if faction == "Alliance" then faction = "A" elseif faction == "Horde" then faction = "H" end
+    if faction ~= "A" and faction ~= "H" then return nil, "missing faction" end
+    race = race .. "-" .. faction
+  end
+  local base = string.lower(race .. "-" .. class)
+  local key = base .. (dungeons and "-dungeons" or "")
+  local best = ForeverRoutesData.routes[key]
+  if not forceFallback and best and best.s and #best.s > 0 then return best, "optimized" end
+  return ForeverRoutesData.fallbacks[base], "rxp-fallback"
+end
+`)
 }
 
 // writeStep writes a step's fields: what to do, where, the level by then, how to get there.

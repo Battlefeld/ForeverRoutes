@@ -221,6 +221,9 @@ func (w *World) Optimize(events []GuideEvent, o OptimizeOptions) ([]GuideEvent, 
 		}
 		for _, c := range w.ClassChains(o.Target) {
 			if slices.Contains(goals, c.Goal.ID) {
+				if r, err := w.walkFast(e, o.Target, math.Inf(1)); err == nil && handsIn(r, c.Goal.ID) {
+					continue
+				}
 				e = w.WeaveIn(e, c, o.Target)
 			}
 		}
@@ -495,6 +498,19 @@ func (w *World) Optimize(events []GuideEvent, o OptimizeOptions) ([]GuideEvent, 
 	}
 	w.preparation = best.plan
 	w.SetWandDetour(best.wand)
+	// Remove inert source events together. Each produced no action/state change,
+	// so replaying every long obsolete suffix once per event is unnecessary.
+	var pruned []GuideEvent
+	for i, e := range best.events {
+		if i < len(best.res.used) && best.res.used[i] {
+			pruned = append(pruned, e)
+		}
+	}
+	if len(pruned) < len(best.events) {
+		if r := cost(pruned, best.res.Seconds); r != nil && r.Seconds <= best.res.Seconds {
+			best.events, best.res = pruned, r
+		}
+	}
 	for i := len(best.events) - 1; i >= 0; i-- {
 		e := slices.Delete(slices.Clone(best.events), i, i+1)
 		if r := cost(e, best.res.Seconds); r != nil && r.Seconds <= best.res.Seconds {

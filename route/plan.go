@@ -56,7 +56,7 @@ type macro struct {
 // best found, not a proven optimum.
 func (w *World) Plan(po PlanOptions) (*Result, error) {
 	po = po.withDefaults()
-	if po.TargetLevel < 2 || po.TargetLevel > len(w.Data.LevelXP) {
+	if po.TargetLevel < 2 || po.TargetLevel > len(w.Data.LevelXP)+1 || po.Restarts < 1 || po.MaxSteps < 1 {
 		return nil, errors.New("target level out of range")
 	}
 	rng := rand.New(rand.NewSource(po.Seed))
@@ -316,7 +316,7 @@ func (w *World) bestSource(s *State, q *Quest, oi int) (Action, bool) {
 }
 
 // workLog works the unfinished objectives of the given quests, nearest first, until none is left or none can be done.
-func (w *World) workLog(s *State, acts *[]Action, quests []*Quest) bool {
+func (w *World) workLog(s *State, acts *[]Action, quests []*Quest, only ...int) bool {
 	for {
 		var next Action
 		bd, found := math.Inf(1), false
@@ -325,6 +325,9 @@ func (w *World) workLog(s *State, acts *[]Action, quests []*Quest) bool {
 				continue
 			}
 			for oi, o := range q.Objectives {
+				if len(only) > 0 && oi != only[0] {
+					continue
+				}
 				if s.Prog[q.Index][oi] >= float64(o.Count) {
 					continue
 				}
@@ -507,7 +510,7 @@ func (w *World) hubMacro(s0 *State, h hub) *macro {
 }
 
 // grindMacro: kill the best mobs nearby until the next level (at most 30 kills).
-func (w *World) grindMacro(s0 *State, target int) *macro {
+func (w *World) grindMacro(s0 *State, target int, xpCap ...int) *macro {
 	var best *macro
 	lvl := w.Level(s0)
 	if lvl >= target {
@@ -531,7 +534,11 @@ func (w *World) grindMacro(s0 *State, target int) *macro {
 		if gain <= 0 {
 			continue
 		}
-		needed := float64(xp.Total(w.Data.LevelXP, next) - preview.XP)
+		goal := xp.Total(w.Data.LevelXP, next)
+		if len(xpCap) > 0 {
+			goal = min(goal, xpCap[0])
+		}
+		needed := float64(goal - preview.XP)
 		rested := math.Min(preview.Rested, needed/2)
 		kills := max(1, min(30, int(math.Ceil((needed-rested)/float64(gain)))))
 		if !w.try(s, &acts, Action{Op: "grind", NPC: f.NPC.ID, Kills: kills, At: f.Site.Center}) {

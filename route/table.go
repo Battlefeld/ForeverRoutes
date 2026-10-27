@@ -23,15 +23,16 @@ const KillProfileSchema = "foreverroutes.killprofile.v1"
 // level; plus 4 s for looting and pulling the next mob, as in DefaultProfile. Levels the table does not cover fall
 // back to DefaultProfile.
 type TableProfile struct {
-	Schema       string         `json:"schema"`
-	Source       string         `json:"source"`
-	Class        string         `json:"class"`
-	Race         string         `json:"race"`
-	Rotation     string         `json:"rotation"`
-	ClassOptions map[string]any `json:"classOptions"`
-	Gear         string         `json:"gear"`
-	Talents      string         `json:"talents"`
-	Levels       []TableLevel   `json:"levels"`
+	CurveWarnings []string       `json:"curveWarnings,omitempty"`
+	Schema        string         `json:"schema"`
+	Source        string         `json:"source"`
+	Class         string         `json:"class"`
+	Race          string         `json:"race"`
+	Rotation      string         `json:"rotation"`
+	ClassOptions  map[string]any `json:"classOptions"`
+	Gear          string         `json:"gear"`
+	Talents       string         `json:"talents"`
+	Levels        []TableLevel   `json:"levels"`
 
 	// MeleeShare is the share of the fight the mob hits the character. Without a value: 0.25 when a voidwalker
 	// tanks (it takes the mob after the first hits), else 1 minus the time the mob needs to run to a caster.
@@ -67,14 +68,46 @@ func LoadTableProfile(r io.Reader) (*TableProfile, error) {
 	if p.Schema != KillProfileSchema {
 		return nil, fmt.Errorf("kill profile: schema %q, want %q", p.Schema, KillProfileSchema)
 	}
+	known := false
+	for c := range ClassBits {
+		known = known || strings.EqualFold(c, p.Class)
+	}
+	if !known {
+		return nil, fmt.Errorf("kill profile: unknown class %q", p.Class)
+	}
 	p.byLevel = map[int]*TableLevel{}
 	for i := range p.Levels {
 		l := &p.Levels[i]
+		if l.Level < 1 || l.Level > 60 || p.byLevel[l.Level] != nil || l.Health <= 0 || l.Mana < 0 || math.IsNaN(l.Health+l.Mana) || math.IsInf(l.Health+l.Mana, 0) {
+			return nil, fmt.Errorf("kill profile: invalid or duplicate level %d", l.Level)
+		}
 		for _, off := range []string{"0", "2"} {
 			pts := l.Targets[off]
 			sort.Slice(pts, func(a, b int) bool { return pts[a].Seconds < pts[b].Seconds })
 			if len(pts) == 0 || pts[0].Seconds <= 0 || pts[len(pts)-1].Damage <= 0 {
 				return nil, fmt.Errorf("kill profile: level %d has no fight data for target %+s", l.Level, off)
+			}
+			previous := TablePoint{}
+			for _, point := range pts {
+				if math.IsNaN(point.Seconds+point.Damage+point.ManaSpent+point.HealthSpent) || math.IsInf(point.Seconds+point.Damage+point.ManaSpent+point.HealthSpent, 0) || point.Seconds <= previous.Seconds || point.Damage < 0 {
+					return nil, fmt.Errorf("kill profile: invalid/non-monotone curve at level %d target %s", l.Level, off)
+				}
+				previous = point
+			}
+			// Separate duration simulations can report less cumulative damage later.
+			// Use the conservative monotone minorant: lower earlier damage, never raise it.
+			adjusted := false
+			for j := len(pts) - 2; j >= 0; j-- {
+				if pts[j].Damage > pts[j+1].Damage {
+					pts[j].Damage = pts[j+1].Damage
+					adjusted = true
+				}
+			}
+			if adjusted {
+				p.CurveWarnings = append(p.CurveWarnings, fmt.Sprintf("level %d target %s: conservative monotone damage envelope", l.Level, off))
+			}
+			if len(pts) > 1 && pts[len(pts)-1].Damage <= pts[len(pts)-2].Damage {
+				return nil, fmt.Errorf("kill profile: level %d target %s has no terminal damage rate", l.Level, off)
 			}
 		}
 		p.byLevel[l.Level] = l
@@ -89,7 +122,21 @@ func LoadTableProfile(r io.Reader) (*TableProfile, error) {
 func (p *TableProfile) Fits(c Character) bool { return strings.EqualFold(p.Class, c.Class) }
 
 func (p *TableProfile) Name() string {
-	return fmt.Sprintf("MythicSim %s %s (gear %s, talents %s; outside the table: %s scaled to the table's edge)", p.Class, p.Rotation, p.Gear, p.Talents, p.Fallback.Name())
+	s := fmt.Sprintf("MythicSim %s %s (gear %s, talents %s; outside the table: %s scaled to the table's edge)", p.Class, p.Rotation, p.Gear, p.Talents, p.Fallback.Name())
+	if len(p.CurveWarnings) > 0 {
+		s += fmt.Sprintf("; %d conservative curve corrections", len(p.CurveWarnings))
+	}
+	return s
+}
+
+// forWorld creates an independent fallback and edge cache. A supplied profile can be shared by callers safely.
+func (p *TableProfile) forWorld(d *dataset.Dataset) *TableProfile {
+	q := &TableProfile{Schema: p.Schema, Source: p.Source, Class: p.Class, Race: p.Race, Rotation: p.Rotation, ClassOptions: p.ClassOptions, Gear: p.Gear, Talents: p.Talents, Levels: p.Levels, MeleeShare: p.MeleeShare, Fallback: p.Fallback, byLevel: p.byLevel, CurveWarnings: p.CurveWarnings}
+	if q.Fallback.EvenHP == nil {
+		q.Fallback.EvenHP = medianByLevel(d, func(n *dataset.NPC) float64 { return float64(n.HP) })
+		q.Fallback.EvenDmg = medianByLevel(d, func(n *dataset.NPC) float64 { return n.Dmg })
+	}
+	return q
 }
 
 func (p *TableProfile) KillSeconds(c Character, pl int, m *dataset.NPC) (float64, float64) {

@@ -5,8 +5,11 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
+	"strings"
 	"time"
 
+	"github.com/Battlefeld/ForeverRoutes/fallback"
 	"github.com/Battlefeld/ForeverRoutes/route"
 )
 
@@ -40,11 +43,19 @@ func cmdNext(args []string) error {
 	profile := fs.String("profile", "", "kill profile from ForeverCore; empty = default estimate")
 	live := fs.String("live", "-", "live state (JSON {race, class, live}); - = standard input")
 	horizon := fs.Float64("horizon", 3600, "seconds of play to plan ahead")
-	routeFile := fs.String("route", "", "the character's best route (output of improve, or a list of guide steps): followed from the live state; empty = plan freely")
+	routeFile := fs.String("route", "auto", "auto = shipped route with RXP fallback; a route path; empty = plan freely")
+	routesDir := fs.String("routes", "", "shipped route directory; default beside dataset")
+	fallbackFile := fs.String("fallbacks", "", "ordinary RXP fallback catalog; default beside dataset")
 	out := fs.String("out", "", "write the reply here instead of standard output")
 	group := fs.Bool("dungeons", false, "route with dungeons: dungeon runs with their quests may be planned (also when the route runs dungeons)")
 	feedbackPolicy := fs.String("feedback-policy", "", "optional locally approved post-release ForeverSim feedback settings; disabled by default")
 	fs.Parse(args)
+	if *routesDir == "" {
+		*routesDir = filepath.Join(filepath.Dir(*path), "routes")
+	}
+	if *fallbackFile == "" {
+		*fallbackFile = filepath.Join(filepath.Dir(*path), "fallbacks", "rxp.json.gz")
+	}
 	var raw []byte
 	var err error
 	if *live == "-" {
@@ -62,11 +73,54 @@ func cmdNext(args []string) error {
 	t0 := time.Now()
 	var events []route.GuideEvent
 	var file routeFileData
-	if *routeFile != "" {
-		if file, err = readRoute(*routeFile); err != nil {
+	var selectionNotes []string
+	fallbackMode := false
+	character := route.Character{Race: req.Race, Class: req.Class, Faction: req.Faction}
+	loadFallback := func() error {
+		cat, err := fallback.Load(*fallbackFile)
+		if err != nil {
 			return err
 		}
+		r, err := cat.For(character)
+		if err != nil {
+			return err
+		}
+		file = routeFileData{Events: r.Events, Character: r.Character, Target: r.Target}
+		events = r.Events
+		fallbackMode = true
+		selectionNotes = append(selectionNotes, "ordinary RXP fallback selected; CLI uses a quest-workload projection; original chapter instructions are preserved for the addon")
+		return nil
+	}
+	if *routeFile == "auto" {
+		key := character.RouteKey()
+		if *group {
+			key += "-dungeons"
+		}
+		selected := filepath.Join(*routesDir, key+".json")
+		file, err = readRoute(selected)
+		if err != nil || file.Character.Race == "" || !route.SameCharacter(file.Character, character) || file.Revision != route.TimelineModelRevision {
+			selectionNotes = append(selectionNotes, "optimized route missing, invalid or for another character; using RXP fallback")
+			if err = loadFallback(); err != nil {
+				return fmt.Errorf("no usable optimized route or RXP fallback: %w", err)
+			}
+		}
 		events = file.Events
+	} else {
+		if *routeFile != "" {
+			if file, err = readRoute(*routeFile); err != nil {
+				return err
+			}
+			events = file.Events
+		}
+	}
+	if file.Character.Race != "" && !route.SameCharacter(file.Character, character) {
+		return fmt.Errorf("route character does not match live character")
+	}
+	if *profile == "" && *routeFile == "auto" && strings.HasPrefix(file.Profile, "MythicSim ") {
+		candidate := filepath.Join(filepath.Dir(*path), "profiles", strings.ToLower(req.Class)+".json")
+		if fileExists(candidate) {
+			*profile = candidate
+		}
 	}
 	w, err := loadWorld(*path, req.Race, req.Class, req.Faction, *profile, *group || hasDungeons(events))
 	if err != nil {
@@ -86,8 +140,21 @@ func cmdNext(args []string) error {
 		}
 		w.Opt.Feedback = policy
 	}
+	previousPolicy, previousBag := w.Preparations(), w.Opt.SleepingBag
 	if err := file.RouteModel.apply(w); err != nil {
-		return err
+		if *routeFile != "auto" || fallbackMode {
+			return err
+		}
+		selectionNotes = append(selectionNotes, "invalid optimized route model: "+err.Error())
+		if err = loadFallback(); err != nil {
+			return err
+		}
+		if err = w.SetPreparations(previousPolicy); err != nil {
+			return err
+		}
+		if err = w.SetSleepingBagModel(previousBag); err != nil {
+			return err
+		}
 	}
 	w.SetWandDetour(file.WandDetour) // as the route was made
 	if len(req.Options) > 0 && len(events) > 0 {
@@ -111,12 +178,28 @@ func cmdNext(args []string) error {
 	if err != nil {
 		return err
 	}
+	notes = append(notes, selectionNotes...)
 	var res *route.Result
 	mode := "plan"
 	if len(events) > 0 {
 		// the best route known for this character; when nothing of it is left, plan freely
-		if g, err := w.FollowGuideFrom(s, events, 60, *horizon); err == nil {
+		target := file.Target
+		if target == 0 {
+			target = 60
+		}
+		if g, err := w.FollowGuideFrom(s, events, target, *horizon); err == nil {
 			res, mode = g.Result, "route"
+			if fallbackMode {
+				mode = "rxp-fallback"
+			}
+		} else if *routeFile == "auto" && !fallbackMode && req.Live.Level < 20 {
+			notes = append(notes, "optimized route failed from live state: "+err.Error())
+			if err := loadFallback(); err != nil {
+				return err
+			}
+			if g, err := w.FollowGuideFrom(s, events, file.Target, *horizon); err == nil {
+				res, mode = g.Result, "rxp-fallback"
+			}
 		}
 	}
 	if res == nil {
@@ -136,6 +219,10 @@ func cmdNext(args []string) error {
 // routeFileData is what next takes from a route file: its events, its options and its wand detour.
 type routeFileData struct {
 	RouteModel
+	Character  route.Character    `json:"character"`
+	Target     int                `json:"target"`
+	Profile    string             `json:"killProfile"`
+	Revision   string             `json:"modelRevision"`
 	Events     []route.GuideEvent `json:"events"`
 	Options    []route.ClassCost  `json:"classQuests"`
 	WandDetour float64            `json:"wandDetour"`

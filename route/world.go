@@ -108,6 +108,14 @@ type World struct {
 
 // NewWorld prepares the dataset for one character.
 func NewWorld(d *dataset.Dataset, c Character, opt Options) (*World, error) {
+	if d == nil || len(d.LevelXP) == 0 {
+		return nil, fmt.Errorf("dataset or level XP table missing")
+	}
+	for _, n := range d.LevelXP {
+		if n <= 0 {
+			return nil, fmt.Errorf("invalid level XP table")
+		}
+	}
 	faction, race, ok := c.side()
 	cls := ClassBits[c.Class]
 	if !ok || cls == 0 {
@@ -115,6 +123,14 @@ func NewWorld(d *dataset.Dataset, c Character, opt Options) (*World, error) {
 	}
 	w := &World{Data: d, Char: c, Faction: faction, Opt: opt.withDefaults(), ByID: map[int]*Quest{}, NPC: map[int]*dataset.NPC{},
 		Objects: map[int]*dataset.Object{}, Excluded: map[int]string{}}
+	for _, v := range []float64{w.Opt.RunSpeed, w.Opt.PathFactor, w.Opt.InteractSecs, w.Opt.AssumedDrop, w.Opt.GroupSearch} {
+		if v <= 0 || math.IsNaN(v) || math.IsInf(v, 0) {
+			return nil, fmt.Errorf("invalid model option")
+		}
+	}
+	if w.Opt.AssumedDrop > 1 || w.Opt.QuestLogCap < 1 || w.Opt.MaxMobAbove < 0 {
+		return nil, fmt.Errorf("invalid model limit")
+	}
 	if !validMode(opt.Preparations.Camping) || !validMode(opt.Preparations.Wands) || !validMode(opt.Preparations.SleepingBag) {
 		return nil, fmt.Errorf("invalid preparation mode")
 	}
@@ -148,9 +164,11 @@ func NewWorld(d *dataset.Dataset, c Character, opt Options) (*World, error) {
 		dp.EvenDmg = medianByLevel(d, func(n *dataset.NPC) float64 { return n.Dmg })
 		w.Opt.Profile = dp
 	}
-	if tp, ok := w.Opt.Profile.(*TableProfile); ok && tp.Fallback.EvenHP == nil {
-		tp.Fallback.EvenHP = medianByLevel(d, func(n *dataset.NPC) float64 { return float64(n.HP) })
-		tp.Fallback.EvenDmg = medianByLevel(d, func(n *dataset.NPC) float64 { return n.Dmg })
+	if tp, ok := w.Opt.Profile.(*TableProfile); ok {
+		if tp == nil || len(tp.byLevel) == 0 || !tp.Fits(c) {
+			return nil, fmt.Errorf("combat profile is uninitialized or belongs to another class")
+		}
+		w.Opt.Profile = tp.forWorld(d)
 	}
 	startNPC := w.NPC[StartNPC[c.Race]]
 	if startNPC == nil || len(startNPC.Spawns) == 0 {

@@ -1,5 +1,7 @@
 # Zeitstrahl-Optimierung: Stand und Validierung
 
+Historischer Prüfstand v2.1. Die aktuelle vollständige Kaderprüfung und neu berechneten Routendateien stehen in [roster-v22.md](roster-v22.md).
+
 Implementiert im Routenplaner, Modellrevision `foreverroutes.timeline-model.v2.1`. ForeverSim wurde nicht geändert. Die ursprünglichen Guide-/Routendateien bleiben eigenständige Eingaben; neue Ergebnisse heißen ausdrücklich `timeline`.
 
 ## Was die Suche entscheidet

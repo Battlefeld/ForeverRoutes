@@ -63,6 +63,20 @@ func (w *World) StateFrom(l Live) (*State, []string, error) {
 	if l.Pos == nil {
 		return nil, nil, errors.New("position missing")
 	}
+	if l.XP < 0 || l.Level <= len(w.Data.LevelXP) && l.XP >= w.Data.LevelXP[l.Level-1] || l.Level > len(w.Data.LevelXP) && l.XP != 0 {
+		return nil, nil, fmt.Errorf("live XP does not match the reported level")
+	}
+	for _, v := range []float64{l.Pos.X, l.Pos.Y, l.HearthIn} {
+		if math.IsNaN(v) || math.IsInf(v, 0) {
+			return nil, nil, fmt.Errorf("non-finite live position or hearth timer")
+		}
+	}
+	if l.HearthIn < 0 || l.Pos.Map < 0 {
+		return nil, nil, fmt.Errorf("invalid live position or hearth timer")
+	}
+	if l.Bind != nil && (math.IsNaN(l.Bind.X) || math.IsNaN(l.Bind.Y) || math.IsInf(l.Bind.X, 0) || math.IsInf(l.Bind.Y, 0) || l.Bind.Map < 0) {
+		return nil, nil, fmt.Errorf("invalid live bind position")
+	}
 	if l.BagStacks < 0 || l.BagStacks > 3 || l.BagBuffRemaining < 0 || l.BagCooldownRemaining < 0 || math.IsNaN(l.BagBuffRemaining+l.BagCooldownRemaining) || math.IsInf(l.BagBuffRemaining+l.BagCooldownRemaining, 0) {
 		return nil, nil, fmt.Errorf("invalid live buff state")
 	}
@@ -106,12 +120,24 @@ func (w *World) StateFrom(l Live) (*State, []string, error) {
 			notes = append(notes, err.Error())
 		}
 	}
+	completed := map[int]bool{}
 	for _, id := range l.Completed {
+		completed[id] = true
 		if q := w.ByID[id]; q != nil {
 			s.Status[q.Index] = done
 		}
 	}
+	activeIDs := map[int]bool{}
 	for _, lq := range l.Active {
+		if lq.ID <= 0 || activeIDs[lq.ID] || completed[lq.ID] {
+			return nil, nil, fmt.Errorf("duplicate, invalid or completed quest %d in live log", lq.ID)
+		}
+		activeIDs[lq.ID] = true
+		for _, o := range lq.Objectives {
+			if o.Have < 0 || o.Need < 0 {
+				return nil, nil, fmt.Errorf("negative live objective progress for quest %d", lq.ID)
+			}
+		}
 		s.Active++
 		q := w.ByID[lq.ID]
 		if q == nil {
@@ -189,6 +215,9 @@ func matchObjectives(q *Quest, game []LiveObjective, prog []float64) int {
 // times count from s.
 func (w *World) PlanAhead(s *State, po PlanOptions, horizon float64) (*Result, error) {
 	po = po.withDefaults()
+	if s == nil || po.TargetLevel < 2 || po.TargetLevel > len(w.Data.LevelXP)+1 || horizon <= 0 || math.IsNaN(horizon) || math.IsInf(horizon, 0) {
+		return nil, fmt.Errorf("invalid live planning target, state or horizon")
+	}
 	start := s.clone()
 	cur := s.clone()
 	var acts []Action

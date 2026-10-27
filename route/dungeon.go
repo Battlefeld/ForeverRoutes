@@ -164,8 +164,8 @@ func (w *World) run(s *State, d *Dungeon) error {
 	if s.Runs&(1<<d.Index) != 0 {
 		return fail("%s already run", d.Name)
 	}
-	if l := w.Level(s); l < d.Min {
-		return fail("%s needs level %d", d.Name, d.Min)
+	if l := w.Level(s); l < d.Min || l > d.Max {
+		return fail("%s requires levels %d-%d", d.Name, d.Min, d.Max)
 	}
 	queued := s.Time - s.RunEnd // the group is searched while the character quests on, from the last run's end
 	if err := w.move(s, d.Entrance); err != nil {

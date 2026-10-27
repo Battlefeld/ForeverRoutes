@@ -603,15 +603,16 @@ func (w *World) closestStep(events []GuideEvent, p dataset.Point) (int, float64)
 // quests a level lower and grind at the end.
 func EventsOf(steps []Step) []GuideEvent {
 	var out []GuideEvent
-	done := map[int]bool{}
+	seen := map[[2]int]bool{}
 	for _, s := range steps {
 		switch s.Op {
 		case "accept", "turnin":
 			out = append(out, GuideEvent{Op: s.Op, Quest: s.Quest})
 		case "work":
-			if !done[s.Quest] {
-				done[s.Quest] = true
-				out = append(out, GuideEvent{Op: "complete", Quest: s.Quest})
+			key := [2]int{s.Quest, s.Obj}
+			if !seen[key] {
+				out = append(out, GuideEvent{Op: "complete", Quest: s.Quest, Objective: s.Obj + 1})
+				seen[key] = true
 			}
 		case "sleep":
 			out = append(out, GuideEvent{Op: "sleep", Stacks: s.Stacks})
@@ -620,8 +621,9 @@ func EventsOf(steps []Step) []GuideEvent {
 		case "grind":
 			if n := len(out); n > 0 && out[n-1].Op == "level" {
 				out[n-1].Level = s.Level
+				out[n-1].TotalXP = s.XP
 			} else {
-				out = append(out, GuideEvent{Op: "level", Level: s.Level})
+				out = append(out, GuideEvent{Op: "level", Level: s.Level, TotalXP: s.XP})
 			}
 		}
 	}
@@ -826,6 +828,12 @@ func (w *World) setClassOverride(goal int, v string) {
 
 // ClassReport measures every class quest chain of this character (ClassChains) against a route.
 func (w *World) ClassReport(events []GuideEvent, target int) []ClassCost {
+	return w.ClassReportWithBudget(events, target, reportBudget)
+}
+
+// ClassReportWithBudget separates optional diagnostic searches from route verification.
+// Zero measures the route and each woven option without an eight-second search per comparison.
+func (w *World) ClassReportWithBudget(events []GuideEvent, target int, budget time.Duration) []ClassCost {
 	base, err := w.FollowGuide(events, target)
 	if err != nil {
 		return nil
@@ -840,7 +848,7 @@ func (w *World) ClassReport(events []GuideEvent, target int) []ClassCost {
 	}
 	// the route itself improved as briefly, so both sides of every measure had the same search
 	ref := base
-	if _, r, err := w.Improve(events, target, reportBudget); err == nil {
+	if _, r, err := w.Improve(events, target, budget); err == nil {
 		ref = r
 	}
 	var out []ClassCost
@@ -857,7 +865,7 @@ func (w *World) ClassReport(events []GuideEvent, target int) []ClassCost {
 		measure := func(evs []GuideEvent, override string) ([]GuideEvent, *GuideResult) {
 			w.setClassOverride(c.Goal.ID, override)
 			defer w.setClassOverride(c.Goal.ID, "")
-			if e, r, err := w.Improve(evs, target, reportBudget); err == nil {
+			if e, r, err := w.Improve(evs, target, budget); err == nil {
 				return e, r
 			}
 			return nil, nil

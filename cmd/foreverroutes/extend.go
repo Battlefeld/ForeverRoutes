@@ -44,6 +44,7 @@ func cmdExtend(args []string) error {
 	if err := r.RouteModel.apply(w); err != nil {
 		return err
 	}
+	w.SetWandDetour(r.WandDetour)
 	t0 := time.Now()
 	base, err := w.FollowGuide(r.Events, r.Target)
 	if err != nil {
@@ -95,17 +96,18 @@ func cmdExtend(args []string) error {
 // routeFile is a route of data/routes.
 type routeFile struct {
 	RouteModel
-	Schema    string             `json:"schema"`
-	Character route.Character    `json:"character"`
-	Target    int                `json:"target"`
-	Winner    string             `json:"winner"`
-	Hours     map[string]float64 `json:"hours"`
-	Quests    int                `json:"quests"`
-	Profile   string             `json:"killProfile"`
-	Assumed   int                `json:"assumedDropSteps"`
-	Dungeons  int                `json:"dungeonRuns,omitempty"`
-	Basis     string             `json:"basis"`
-	Events    []route.GuideEvent `json:"events"`
+	Schema     string             `json:"schema"`
+	Character  route.Character    `json:"character"`
+	Target     int                `json:"target"`
+	Winner     string             `json:"winner"`
+	Hours      map[string]float64 `json:"hours"`
+	Quests     int                `json:"quests"`
+	Profile    string             `json:"killProfile"`
+	Assumed    int                `json:"assumedDropSteps"`
+	Dungeons   int                `json:"dungeonRuns,omitempty"`
+	Basis      string             `json:"basis"`
+	Events     []route.GuideEvent `json:"events"`
+	WandDetour float64            `json:"wandDetour,omitempty"`
 }
 
 // hasDungeons: the route runs dungeons (a route with dungeons).
