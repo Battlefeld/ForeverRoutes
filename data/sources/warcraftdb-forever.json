@@ -1,7 +1,7 @@
 {
  "schema": "foreverroutes.warcraftdb.v1",
  "source": "WarcraftDB Forever (https://forever.warcraftdb.com), game client quest data",
- "fetched": "2026-10-24",
+ "fetched": "2026-10-27",
  "quests": {
   "1016": {
    "id": 1016,
@@ -180,6 +180,44 @@
     }
    ],
    "url": "https://forever.warcraftdb.com/data/quest/116"
+  },
+  "117": {
+   "id": 117,
+   "name": "Thunderbrew",
+   "level": 15,
+   "min": 0,
+   "xp": 0,
+   "startNpc": [
+    239
+   ],
+   "endNpc": [
+    239
+   ],
+   "starts": [
+    {
+     "uiMap": 1436,
+     "u": 0.446561,
+     "v": 0.801936,
+     "label": "Grimbooze Thunderbrew"
+    }
+   ],
+   "ends": [
+    {
+     "uiMap": 1436,
+     "u": 0.446561,
+     "v": 0.801936,
+     "label": "Grimbooze Thunderbrew"
+    }
+   ],
+   "objectives": [
+    {
+     "type": 1,
+     "id": 1274,
+     "amount": 5,
+     "desc": "Hops"
+    }
+   ],
+   "url": "https://forever.warcraftdb.com/data/quest/117"
   },
   "1195": {
    "id": 1195,
@@ -1357,6 +1395,22 @@
    ],
    "url": "https://forever.warcraftdb.com/data/quest/6504"
   },
+  "6522": {
+   "id": 6522,
+   "name": "An Unholy Alliance",
+   "level": 36,
+   "min": 28,
+   "xp": 2800,
+   "objectives": [
+    {
+     "type": 1,
+     "id": 17008,
+     "amount": 1,
+     "desc": "Small Scroll"
+    }
+   ],
+   "url": "https://forever.warcraftdb.com/data/quest/6522"
+  },
   "6543": {
    "id": 6543,
    "name": "The Warsong Reports",
@@ -1813,6 +1867,174 @@
    "xp": 910,
    "objectives": [],
    "url": "https://forever.warcraftdb.com/data/quest/770"
+  },
+  "78124": {
+   "id": 78124,
+   "name": "Nar'thalas Almanac",
+   "level": 20,
+   "min": 1,
+   "xp": 155,
+   "objectives": [
+    {
+     "type": 1,
+     "id": 209843,
+     "amount": 1,
+     "desc": "Nar'thalas Almanac, Vol. 74"
+    }
+   ],
+   "url": "https://forever.warcraftdb.com/data/quest/78124"
+  },
+  "78127": {
+   "id": 78127,
+   "name": "The Dalaran Digest",
+   "level": 20,
+   "min": 1,
+   "xp": 155,
+   "endNpc": [
+    211033,
+    211022
+   ],
+   "ends": [
+    {
+     "uiMap": 1458,
+     "u": 0.737659,
+     "v": 0.333332,
+     "label": "Owen Thadd"
+    },
+    {
+     "uiMap": 1453,
+     "u": 0.490048,
+     "v": 0.866845,
+     "label": "Garion Wendell"
+    }
+   ],
+   "objectives": [
+    {
+     "type": 1,
+     "id": 209844,
+     "amount": 1,
+     "desc": "The Dalaran Digest, Vol. 23"
+    }
+   ],
+   "url": "https://forever.warcraftdb.com/data/quest/78127"
+  },
+  "78142": {
+   "id": 78142,
+   "name": "Bewitchments and Glamours",
+   "level": 20,
+   "min": 1,
+   "xp": 155,
+   "objectives": [
+    {
+     "type": 1,
+     "id": 209845,
+     "amount": 1,
+     "desc": "Bewitchments and Glamours"
+    }
+   ],
+   "url": "https://forever.warcraftdb.com/data/quest/78142"
+  },
+  "78143": {
+   "id": 78143,
+   "name": "Secrets of the Dreamers",
+   "level": 20,
+   "min": 1,
+   "xp": 155,
+   "endNpc": [
+    211022
+   ],
+   "ends": [
+    {
+     "uiMap": 1458,
+     "u": 0.737659,
+     "v": 0.333332,
+     "label": "Owen Thadd"
+    }
+   ],
+   "objectives": [
+    {
+     "type": 1,
+     "id": 209846,
+     "amount": 1,
+     "desc": "Secrets of the Dreamers"
+    }
+   ],
+   "url": "https://forever.warcraftdb.com/data/quest/78143"
+  },
+  "78145": {
+   "id": 78145,
+   "name": "Arcanic Systems Manual",
+   "level": 20,
+   "min": 1,
+   "xp": 155,
+   "objectives": [
+    {
+     "type": 1,
+     "id": 209847,
+     "amount": 1,
+     "desc": "Arcanic Systems Manual"
+    }
+   ],
+   "url": "https://forever.warcraftdb.com/data/quest/78145"
+  },
+  "78146": {
+   "id": 78146,
+   "name": "Goaz Scrolls",
+   "level": 20,
+   "min": 1,
+   "xp": 155,
+   "endNpc": [
+    211022
+   ],
+   "ends": [
+    {
+     "uiMap": 1458,
+     "u": 0.737659,
+     "v": 0.333332,
+     "label": "Owen Thadd"
+    }
+   ],
+   "objectives": [
+    {
+     "type": 1,
+     "id": 209848,
+     "amount": 1,
+     "desc": "Goaz Scrolls"
+    }
+   ],
+   "url": "https://forever.warcraftdb.com/data/quest/78146"
+  },
+  "78147": {
+   "id": 78147,
+   "name": "Crimes Against Anatomy",
+   "level": 20,
+   "min": 1,
+   "xp": 155,
+   "objectives": [
+    {
+     "type": 1,
+     "id": 209849,
+     "amount": 1,
+     "desc": "Crimes Against Anatomy"
+    }
+   ],
+   "url": "https://forever.warcraftdb.com/data/quest/78147"
+  },
+  "78149": {
+   "id": 78149,
+   "name": "Fury of the Land",
+   "level": 20,
+   "min": 1,
+   "xp": 155,
+   "objectives": [
+    {
+     "type": 1,
+     "id": 209851,
+     "amount": 1,
+     "desc": "Fury of the Land"
+    }
+   ],
+   "url": "https://forever.warcraftdb.com/data/quest/78149"
   },
   "79008": {
    "id": 79008,
@@ -8913,47 +9135,141 @@
  "missing": [
   96,
   100,
+  236,
+  349,
+  522,
+  566,
+  594,
+  595,
+  597,
+  620,
+  624,
+  625,
+  636,
+  645,
+  646,
+  657,
+  708,
+  715,
+  720,
+  734,
   746,
   769,
+  777,
+  785,
   812,
+  909,
+  912,
   921,
   929,
   933,
   944,
   949,
+  960,
+  961,
+  999,
+  1005,
+  1006,
   1046,
+  1099,
+  1174,
   1203,
   1218,
+  1263,
+  1281,
+  1283,
+  1288,
+  1289,
   1367,
   1369,
   1370,
   1382,
   1384,
   1385,
+  1422,
   1463,
+  1500,
   1535,
   1641,
   1642,
   1649,
+  1661,
   1789,
   1846,
   1858,
+  2198,
+  2200,
+  2201,
+  2203,
+  2204,
+  2240,
   2242,
+  2284,
+  2318,
+  2398,
   2459,
+  2501,
+  2753,
+  2754,
+  2756,
+  2758,
+  2766,
+  2771,
+  2772,
+  2773,
+  2849,
+  2850,
+  2851,
+  2852,
+  2856,
+  2857,
+  2859,
+  2866,
+  2867,
+  2875,
+  2876,
+  2882,
+  2902,
+  2903,
+  2933,
   2947,
   2949,
   2951,
   2952,
   2953,
+  2978,
+  3111,
+  3125,
+  3366,
+  3375,
+  3523,
+  3525,
+  3631,
+  4125,
+  4127,
+  4131,
+  4281,
   4295,
+  4449,
+  4487,
+  4488,
+  4489,
   4601,
   4602,
   4603,
   4604,
   4605,
   4606,
+  4784,
+  4785,
+  4962,
+  4963,
+  5101,
+  5283,
+  5301,
   5421,
   5641,
+  5659,
   5680,
   5805,
   5841,
@@ -8961,10 +9277,34 @@
   5843,
   5844,
   5847,
+  6610,
+  7681,
+  7682,
+  7790,
+  7887,
+  7888,
+  7921,
+  7923,
+  7924,
+  7925,
+  7961,
+  7962,
+  8001,
+  8157,
+  8158,
+  8159,
+  8163,
+  8164,
+  8165,
   8194,
   8221,
   8224,
   8225,
+  8274,
+  8289,
+  8290,
+  8295,
+  8296,
   8368,
   8370,
   8372,
@@ -8977,8 +9317,30 @@
   8404,
   8426,
   8431,
+  8565,
+  8566,
+  8567,
+  8568,
+  8569,
+  8570,
   8744,
+  8769,
   8846,
+  8847,
+  8848,
+  8851,
+  8852,
+  8853,
+  8971,
+  8972,
+  8973,
+  8974,
+  8975,
+  8976,
+  78088,
+  78090,
+  78092,
+  78093,
   87288,
   87491,
   95495,
