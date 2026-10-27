@@ -35,7 +35,15 @@ const wandVisitLevel = lesserWandLevel - 1
 const defaultWandDetour = 420.0
 
 // SetWandDetour sets the detour for the wands a route was made with (0: defaultWandDetour).
-func (w *World) SetWandDetour(d float64) { w.wandDetour = d }
+func (w *World) SetWandDetour(d float64) {
+	if d <= 0 {
+		d = defaultWandDetour
+	}
+	w.wandDetour = d
+}
+
+// WandDetour is the detour for the wands the route is walked with.
+func (w *World) WandDetour() float64 { return w.wandDetour }
 
 // ChooseWandDetour sets the detour for the wands (WandDetours) under which the guide reaches the target soonest.
 func (w *World) ChooseWandDetour(events []GuideEvent, target int) float64 {
@@ -93,7 +101,7 @@ type WandProfile interface {
 
 // wandDPS is the best wand this character has in s, 0 for none.
 func (w *World) wandDPS(s *State) float64 {
-	if !wandClasses[w.Char.Class] {
+	if !wandClasses[w.Char.Class] || !s.Preparation.Wands {
 		return 0
 	}
 	best := 0.0
@@ -114,12 +122,15 @@ func (w *World) wandDPS(s *State) float64 {
 // wandAction: the visit to a capital for the wands on the way to next (the route's next step) when it adds at most
 // the detour chosen (ChooseWandDetour), else nil.
 func (w *World) wandAction(s *State, next dataset.Point) *Action {
-	if s.Wand || !wandClasses[w.Char.Class] || w.Level(s) < wandVisitLevel {
+	if s.Wand || !s.Preparation.Wands || !wandClasses[w.Char.Class] || w.Level(s) < wandVisitLevel {
 		return nil
 	}
 	direct, _ := w.travel(s, s.Pos, next)
 	var best *dataset.Point
 	bt := w.wandDetour
+	if s.Preparation.ForceWand {
+		bt = math.Inf(1)
+	}
 	if bt == 0 {
 		bt = defaultWandDetour
 	}

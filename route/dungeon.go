@@ -2,6 +2,8 @@ package route
 
 import (
 	"math"
+	"slices"
+	"sort"
 
 	"github.com/Battlefeld/ForeverRoutes/dataset"
 	"github.com/Battlefeld/ForeverRoutes/xp"
@@ -29,8 +31,9 @@ const (
 	groupKill = 15.0
 	// maxExtraShare: the extra kills of collection quests take at most this share of the run's minutes
 	maxExtraShare = 0.5
-	// groupSearch: finding a group for the run, before it starts (seconds); groupSearchRole: for a class that can tank
-	// or heal (warrior, paladin, shaman, priest, druid), whom groups look for: almost at once
+	// groupSearch: finding a group for the run (seconds), searched while questing on since the last run (run);
+	// groupSearchRole: for a class that can tank or heal (warrior, paladin, shaman, priest, druid), whom groups look
+	// for: almost at once
 	groupSearch     = 600.0
 	groupSearchRole = 60.0
 	// elitesPerMinute: elites per minute of a usual run where the instance's spawns are not known (Ragefire 6.6,
@@ -114,15 +117,16 @@ func (w *World) dungeonQuest(q *dataset.Quest) (*Quest, string) {
 			}
 		}
 		if !o.Inside {
-			solo, _ := w.resolve(&dataset.Quest{ID: q.ID, Start: q.Start, End: q.End, StartAt: &rq.StartPos, EndAt: &rq.EndPos, Objectives: []dataset.Objective{o}})
-			if solo != nil {
-				ro.Sources = solo.Objectives[0].Sources
+			solo, why := w.resolve(&dataset.Quest{ID: q.ID, Classes: q.Classes, Start: q.Start, End: q.End, StartAt: &rq.StartPos, EndAt: &rq.EndPos, Objectives: []dataset.Objective{o}})
+			if solo == nil {
+				return nil, "outside dungeon: " + why
 			}
+			ro.Sources = solo.Objectives[0].Sources
 			near := len(ro.Sources) > 0
 			for _, src := range ro.Sources {
 				near = near && distance(src.Site.Center, d.Entrance) <= insideRadius
 			}
-			ro.Inside = len(ro.Sources) == 0 || near
+			ro.Inside = near
 		}
 		rq.Objectives = append(rq.Objectives, ro)
 	}
@@ -160,9 +164,10 @@ func (w *World) run(s *State, d *Dungeon) error {
 	if s.Runs&(1<<d.Index) != 0 {
 		return fail("%s already run", d.Name)
 	}
-	if l := w.Level(s); l < d.Min {
-		return fail("%s needs level %d", d.Name, d.Min)
+	if l := w.Level(s); l < d.Min || l > d.Max {
+		return fail("%s requires levels %d-%d", d.Name, d.Min, d.Max)
 	}
+	queued := s.Time - s.RunEnd // the group is searched while the character quests on, from the last run's end
 	if err := w.move(s, d.Entrance); err != nil {
 		return err
 	}
@@ -171,11 +176,12 @@ func (w *World) run(s *State, d *Dungeon) error {
 	if !w.canTank(s) {
 		search = groupSearch // a druid without bear form, a warrior without defensive stance: queued as damage
 	}
-	secs := d.Minutes*60 + search
+	started := s.Time
+	secs := d.Minutes*60 + math.Max(0, search-queued) // waited only for what the questing before did not cover
 	s.Time += secs
 	s.Combat += secs
 	trash := w.killXP(d, l)
-	s.XP += trash + restedGain(s, trash) // rested experience doubles the run's kills too
+	w.awardKillXP(s, trash, started+math.Max(0, search-queued), s.Time) // rested experience doubles the run's kills too
 	// collection quests: every member needs their own drops; the run's kills bring one share, the other four cost more
 	// kills (and bring their XP). A single item (a boss's) everyone loots.
 	extra := 0.0
@@ -195,7 +201,7 @@ func (w *World) run(s *State, d *Dungeon) error {
 		s.Time += extra * groupKill
 		s.Combat += extra * groupKill
 		if n := d.trashKills(); n > 0 {
-			s.XP += int(math.Round(float64(trash) / n * extra))
+			w.awardKillXP(s, int(math.Round(float64(trash)/n*extra)), s.Time-extra*groupKill, s.Time)
 		}
 	}
 	for changed := true; changed; {
@@ -217,8 +223,12 @@ func (w *World) run(s *State, d *Dungeon) error {
 					}
 				}
 				if q.EndInside && w.complete(s, q) {
-					s.XP += xp.Quest(q.XP, w.Level(s), q.Level)
+					s.XP += w.bonusXP(s, xp.Quest(q.XP, w.Level(s), q.Level), s.Time)
+					beforeWand := w.wandDPS(s)
 					s.Status[q.Index] = done
+					if w.wandDPS(s) > beforeWand {
+						s.EquipmentRevision = ""
+					}
 					s.Active--
 					delete(s.Prog, q.Index)
 					s.Time += w.Opt.InteractSecs
@@ -229,6 +239,7 @@ func (w *World) run(s *State, d *Dungeon) error {
 		}
 	}
 	s.Runs |= 1 << d.Index
+	s.RunEnd = s.Time
 	return nil
 }
 
@@ -258,7 +269,9 @@ func (w *World) pickUpDungeonQuests(s *State, acts *[]Action, d *Dungeon) {
 			if q.StartInside || !q.runnable() || s.Status[q.Index] != notTaken || w.CanAccept(s, q) != nil || q.StartPos.Map != d.Entrance.Map {
 				continue
 			}
-			if t := w.TravelTime(s, s.Pos, q.StartPos); t < bt && t <= pickupReach {
+			// near where the character is, or near the dungeon it is on its way to (its quests next to the portal)
+			t := w.TravelTime(s, s.Pos, q.StartPos)
+			if t < bt && (t <= pickupReach || w.TravelTime(s, d.Entrance, q.StartPos) <= pickupReach) {
 				next, bt = q, t
 			}
 		}
@@ -340,4 +353,146 @@ func (d *Dungeon) trashKills() float64 {
 		return elitesPerMinute * d.Minutes * runClear
 	}
 	return float64(n) * runClear
+}
+
+// pickupTries: the places a dungeon quest's accept or turn-in is tried at: where the route comes closest to its giver.
+const pickupTries = 4
+
+// withDungeonPickups puts the accepts of a dungeon's quests given outside into the route before its run, each where
+// the route comes closest to the giver once the quest can be taken (Ragefire's quests in Undercity at 10 before the
+// zeppelin, Thunder Bluff's when the Barrens bring the character there), and the turn-ins of those handed in on
+// another continent after it, where the route is next close to the ender; each only when it makes the route faster.
+func (w *World) withDungeonPickups(events []GuideEvent, d *Dungeon, target int, best *GuideResult) ([]GuideEvent, *GuideResult) {
+	run := slices.IndexFunc(events, func(e GuideEvent) bool { return e.Op == "dungeon" && e.Dungeon == d.Key })
+	if run < 0 {
+		return events, best
+	}
+	in := map[int]bool{}
+	for _, e := range events {
+		if e.Op == "accept" {
+			in[e.Quest] = true
+		}
+	}
+	// near: the tries places in [lo, hi) the route comes closest to p, with their level at least min
+	near := func(evs []GuideEvent, levels []int, lo, hi int, p dataset.Point, min int) []int {
+		type at struct {
+			i int
+			d float64
+		}
+		var c []at
+		for j := lo; j < hi; j++ {
+			if j < len(levels) && levels[j] < min {
+				continue
+			}
+			if ep, ok := w.eventPos(evs[j]); ok && ep.Map == p.Map {
+				c = append(c, at{j, distance(ep, p)})
+			}
+		}
+		sort.Slice(c, func(a, b int) bool { return c[a].d < c[b].d })
+		var out []int
+		for k := 0; k < len(c) && k < pickupTries; k++ {
+			out = append(out, c[k].i)
+		}
+		return out
+	}
+	for _, q := range d.Quests {
+		if q.StartInside || !q.runnable() || in[q.ID] {
+			continue
+		}
+		far := !q.EndInside && q.EndPos.Map != d.Entrance.Map // handed in across the sea: the turn-in is placed too
+		var pick []GuideEvent
+		for _, base := range w.delayedVisits(events, best.levels, run, q) {
+			levels := best.levels
+			if len(base) != len(events) || !slices.Equal(base, events) {
+				r, err := w.FollowGuide(base, target)
+				if err != nil {
+					continue
+				}
+				levels = r.levels
+			}
+			brun := slices.IndexFunc(base, func(e GuideEvent) bool { return e.Op == "dungeon" && e.Dungeon == d.Key })
+			for _, a := range near(base, levels, 0, brun, q.StartPos, q.MinLevel) {
+				cand := slices.Insert(slices.Clone(base), a+1, GuideEvent{Op: "accept", Quest: q.ID})
+				tries := [][]GuideEvent{cand}
+				if far {
+					tries = nil
+					for _, t := range near(cand, levels, brun+2, len(cand), q.EndPos, 0) {
+						tries = append(tries, slices.Insert(slices.Clone(cand), t+1, GuideEvent{Op: "turnin", Quest: q.ID}))
+					}
+				}
+				for _, c := range tries {
+					if r, err := w.FollowGuide(c, target); err == nil && r.Level >= target && r.Seconds < best.Seconds-1 {
+						best, pick = r, c
+					}
+				}
+			}
+		}
+		if pick != nil {
+			events = pick
+			run = slices.IndexFunc(events, func(e GuideEvent) bool { return e.Op == "dungeon" && e.Dungeon == d.Key })
+		}
+	}
+	return events, best
+}
+
+// visitRadius: events this close to a quest giver are a visit to it (the same town).
+const visitRadius = 250.0
+
+// delayedVisits: the route as it is, and the route with its visits to a dungeon quest's giver that come before the
+// quest can be taken moved to where it can (the Barrens' mushroom turn-in in Thunder Bluff at 9 waits for the dungeon
+// quest there at 11, other quests done in between), there or to the route's next visit after: one trip for both. Only
+// visits before the run; the turn-ins alone, or with the accepts there.
+func (w *World) delayedVisits(events []GuideEvent, levels []int, run int, q *Quest) [][]GuideEvent {
+	out := [][]GuideEvent{events}
+	first := -1
+	for j := 0; j < run && j < len(levels); j++ {
+		if levels[j] >= q.MinLevel {
+			first = j
+			break
+		}
+	}
+	if first <= 0 {
+		return out
+	}
+	at := func(j int) bool {
+		p, ok := w.eventPos(events[j])
+		return ok && distance(p, q.StartPos) <= visitRadius
+	}
+	next := -1 // the route's next visit once the quest can be taken
+	for j := first; j < run; j++ {
+		if at(j) {
+			next = j
+			break
+		}
+	}
+	for _, turninsOnly := range []bool{true, false} {
+		moved := map[int]bool{}
+		for j := 0; j < first; j++ {
+			if at(j) && (events[j].Op == "turnin" || !turninsOnly && events[j].Op == "accept") {
+				moved[j] = true
+			}
+		}
+		if len(moved) == 0 {
+			continue
+		}
+		for _, to := range []int{first, next} {
+			if to < 0 {
+				continue
+			}
+			var block, rest []GuideEvent
+			ins := 0
+			for j, e := range events {
+				if j == to {
+					ins = len(rest)
+				}
+				if moved[j] {
+					block = append(block, e)
+				} else {
+					rest = append(rest, e)
+				}
+			}
+			out = append(out, slices.Insert(rest, ins, block...))
+		}
+	}
+	return out
 }

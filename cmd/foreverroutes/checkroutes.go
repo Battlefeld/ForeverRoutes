@@ -25,6 +25,7 @@ func cmdCheckRoutes(args []string) error {
 	polestar := fs.String("polestar", "", "Polestar guides/forever folder")
 	long := fs.Float64("long", 900, "a step longer than this many seconds is reported")
 	out := fs.String("out", "", "write the report (Markdown) here")
+	strict := fs.Bool("strict", true, "fail when a route is malformed, incomplete, skips events or misses required class goals")
 	fs.Parse(args)
 
 	guided := map[int]bool{}
@@ -50,6 +51,10 @@ func cmdCheckRoutes(args []string) error {
 		return err
 	}
 	sort.Strings(files)
+	if len(files) == 0 {
+		return fmt.Errorf("no route files in %s", *dir)
+	}
+	var problems []string
 	var b strings.Builder
 	fmt.Fprintf(&b, "# Route check\n\n%d routes, steps over %.0f min reported", len(files), *long/60)
 	if len(guided) > 0 {
@@ -63,6 +68,7 @@ func cmdCheckRoutes(args []string) error {
 			return err
 		}
 		var r struct {
+			RouteModel
 			Character route.Character    `json:"character"`
 			Target    int                `json:"target"`
 			Events    []route.GuideEvent `json:"events"`
@@ -70,7 +76,7 @@ func cmdCheckRoutes(args []string) error {
 			Wand      float64            `json:"wandDetour"`
 		}
 		if err := json.Unmarshal(raw, &r); err != nil || len(r.Events) == 0 {
-			continue
+			return fmt.Errorf("%s: malformed or empty route", f)
 		}
 		prof := filepath.Join(*profiles, strings.ToLower(r.Character.Class)+".json")
 		if !fileExists(prof) {
@@ -79,6 +85,9 @@ func cmdCheckRoutes(args []string) error {
 		w, err := loadWorld(*path, r.Character.Race, r.Character.Class, r.Character.Faction, prof, hasDungeons(r.Events))
 		if err != nil {
 			return fmt.Errorf("%s: %w", f, err)
+		}
+		if err := r.RouteModel.apply(w); err != nil {
+			return err
 		}
 		w.SetWandDetour(r.Wand)
 		res, err := w.FollowGuide(r.Events, r.Target)
@@ -124,6 +133,18 @@ func cmdCheckRoutes(args []string) error {
 		for _, n := range res.Skipped {
 			skipped += n
 		}
+		if res.Level < r.Target || skipped > 0 {
+			problems = append(problems, name+": incomplete or skipped events")
+		}
+		done:=map[int]bool{};for _,step:=range res.Steps{if step.Op=="turnin"{done[step.Quest]=true}}
+		for _, c := range w.ClassChains(r.Target) {
+			if c.Tier == "required" && !done[c.Goal.ID] {
+				problems = append(problems, fmt.Sprintf("%s: missing required quest %d", name, c.Goal.ID))
+			}
+		}
+		if len(unfinished) > 0 {
+			problems = append(problems, name+": unfinished option routes")
+		}
 		fmt.Fprintf(&b, "| %s | %.1f | %d | %d | %d | %d (%d) | %d | %d (%d) |\n", name, res.Seconds/3600, len(longSteps), len(unguided), res.Assumed, res.Deaths, len(sick), skipped, len(options), len(unfinished))
 		if len(longSteps)+len(unguided)+len(sick)+len(res.Missed)+len(unfinished) > 0 {
 			fmt.Fprintf(&details, "\n## %s\n", name)
@@ -147,7 +168,11 @@ func cmdCheckRoutes(args []string) error {
 	b.WriteString(details.String())
 	if *out == "" {
 		fmt.Print(b.String())
-		return nil
+	} else if err := os.WriteFile(*out, []byte(b.String()), 0o644); err != nil {
+		return err
 	}
-	return os.WriteFile(*out, []byte(b.String()), 0o644)
+	if *strict && len(problems) > 0 {
+		return fmt.Errorf("route validation failed: %s", strings.Join(problems, "; "))
+	}
+	return nil
 }

@@ -14,25 +14,43 @@ ForeverCore.exe gebaut (Paket `route`). Die Kampfzeiten kommen aus MythicSim (Fo
 
 ## Stand
 
-- Datensatz mit 2349 Quests, 3060 NPCs, 393 Objekten, 59 Flugmeistern, 45 Gasthäusern, Zeppelinen und Schiffen, dazu das
+- Datensatz mit 2922 Quests, 3751 NPCs, 630 Objekten, 59 Flugmeistern, 45 Gasthäusern, Zeppelinen und Schiffen, dazu das
   Skyborne-Startgebiet Zephras Isle mit der Abreise beider Fraktionen. Skyborne brauchen `-faction A` oder `-faction H`.
-- Orc Hexer und Mensch Magier sind die Ausgangstests: Beide erreichen Level 30 mit vollständigen, nachgeprüften Routen.
+- Alle 56 unterstützten Volk-/Klassenkontexte werden bis 20 geprüft; je Kontext werden Solo und optionale Dungeons sowie passende Zauberstab-/Schlafsackvarianten berechnet. [Gesamtprüfung](data/audits/roster-v22.md).
+- Orc Hexer und Mensch Magier bleiben zusätzliche Ausgangstests bis Level 30.
 - **Die Stundenangaben sind nicht kalibriert.** Ohne `-profile` gilt das eingebaute Kampfmodell (`DefaultProfile`), eine Schätzung. Es
   bewertet Grinden im Vergleich zu Quests etwa doppelt so gut wie die Wirklichkeit: Ein Guide-Ablauf (RestedXP) und
-  reines Grinden landen bis Level 21 im Modell fast gleichauf. Darum grinden die Routen heute zu viel. Echte Zahlen kommen
-  über ForeverCore aus MythicSim (`KillProfile`); mit `guide` lassen sich Guides unter denselben Regeln nachgehen und so
+  reines Grinden landen bis Level 21 im Modell fast gleichauf. Darum grinden die Routen heute zu viel. Klassenbezogene Simulationswerte kommen
+  über die eingefrorenen MythicSim-Profile (`KillProfile`); auch sie sind keine Ingame-Messung. Mit `guide` lassen sich Guides unter denselben Regeln nachgehen und so
   das Modell prüfen.
-- Bekannte Datenlücken (siehe `foreverroutes audit`): rund 100 Quests brauchen Forever-eigene Gegenstände, deren
-  Beutequelle keine Datenbank kennt (nur das Spiel selbst weiß es); rund 20 brauchen hergestellte Gegenstände oder
-  Schlachtfeld-Marken; 13 werden über einen Gegenstand ohne bekannte Beutequelle gestartet; Ruf-, Gebiets- und Zauberziele
-  sind noch nicht modelliert; 17 sind Elite- oder Dungeonquests (nicht solo). Diese Quests bleiben markiert und werden
-  nicht geraten. Wo eine Quelle den Gegner nennt, aber keine Chance, nimmt der Planer einen gekennzeichneten Wert an.
+- **Questprüfung bis 20:** [vollständiger Bericht](data/audits/quests-through-20.json), [Ergebnis und Grenzen](data/audits/README.md).
+  Alle 1908 Quests mit Mindestlevel ≤20 werden über die 56 ausgelieferten Volk-/Klassenkombinationen geprüft.
+  1450 sind für mindestens einen Kontext bis 20 modellierbar (19 wiederholbare davon einmalig); 179 haben offene Datenlücken.
+  Unbekannte Mengen, Orte und Quellen erzeugen keine kostenlosen Questbelohnungen. Unbekannte XP bleiben gekennzeichnet bei 0.
+  Statische Routendateien müssen nach Datenänderungen neu berechnet werden; ihre alten Stunden sind kein Vergleich mit diesem Datensatz.
+
+## Neue Zeitstrahl-Optimierung
+
+`timeline` vergleicht unabhängige Startdateien, Dungeon-Teilmengen einschließlich keiner Instanz sowie Vorbereitungsvarianten.
+Größere Questabschnitte werden neu zusammengesetzt; ein kompatibler Checkpoint bewahrt die beste nachgespielte Lösung.
+Die Suche minimiert die Zeit bis zum Ziellevel. Originalguides werden nicht überschrieben.
+
+[Verfahren, Befehle, Tests und Ergebnisse](data/audits/timeline-v2.md). [ForeverSim-Schnittstelle und Freigabesperre](docs/foreversim-feedback.md).
+Die Schnittstelle ist vorbereitet, bleibt aber bis nach dem Release und ausdrücklicher Nutzerbestätigung deaktiviert.
+
+## Normaler RXP-Fallback bis 20
+
+`data/fallbacks/rxp.json.gz` enthält 30 unveränderte normale RXP-Kapitel sowie 56 getrennte Kapitelketten. AoE- und Dungeon-Guides werden nicht als normaler Fallback eingesetzt. Die mitgelieferte Lizenz und die festgeschriebene Quellrevision bleiben erhalten.
+
+`next -route auto` wählt die passende aktuelle Routendatei; fehlt sie, ist sie veraltet oder gehört sie zu einem anderen Charakter, wird RXP verwendet. `-route ""` plant frei. Der CLI-Nachgang eines RXP-Fallbacks ist ausdrücklich nur eine Quest-Arbeitsprojektion: dynamische RXP-Bedingungen, Geld, Inventar und alle Reise-/Lehreranweisungen sind darin nicht vollständig simuliert. Für das spätere Ingame-UI exportiert `export-addon` die vollständigen Originalanweisungen und `ForeverRoutesData.SelectRoute(...)`. [Fallback-Vertrag](docs/rxp-fallback.md).
 
 ## Befehle
 
 ```sh
 go test ./...                      # alle Tests, inkl. Ausgangstest Orc Hexer / Mensch Magier (~3 min)
 go test -short ./...               # ohne die langen Planungsläufe
+go run ./cmd/foreverroutes check-quests -target 20 -out quest-audit.json
+go run ./cmd/foreverroutes timeline -seeds data/routes/undead-warlock.json,data/routes/undead-warlock-dungeons.json -profile data/profiles/warlock.json -budget 3m -out data/optimized/undead-warlock.json
 
 go run ./cmd/foreverroutes plan -race Orc -class Warlock -out orc.json
 go run ./cmd/foreverroutes plan -race Human -class Mage -target 30 -restarts 4 -out human.json
@@ -44,7 +62,7 @@ go run ./cmd/foreverroutes audit                                              # 
 ```
 
 `guide` liest eine Liste von Schritten `[{"op":"accept","quest":4641},{"op":"complete","quest":4641},
-{"op":"turnin","quest":4641},{"op":"level","level":6}]`. Guide-Dateien werden nicht eingecheckt (Lizenzen der Guides).
+{"op":"turnin","quest":4641},{"op":"level","level":6}]`. Der normale RXP-Fallback liegt mit Originalanweisungen und CC-BY-NC-SA-4.0-Lizenz in `data/fallbacks`; andere Guide-Quellen werden dadurch nicht ersetzt. Einzelziele können mit `objective` (1-basiert), XP-Zwischenziele mit `xp` angegeben werden.
 
 ### Solo mit Dungeon (`-dungeons`)
 
@@ -57,18 +75,17 @@ lohnt, entscheidet das Verbessern (es kann die Quest samt Grinden weglassen).
 Klassenquests (`route/classquests.go`): Jede Route macht die Pflicht-Klassenquests samt Vorquests, auch wenn es länger
 dauert: Klassenbrief (Level 1–2), Wichtel und Leerwandler (Hexenmeister), Begleiter zähmen (Jäger), Bärengestalt
 (Druide), Erd- und Feuertotem (Schamane), Verteidigungshaltung (Krieger), Schlossknacken (Schurke). Von mehreren
-Versionen zählt die aus dem eigenen Startgebiet oder der eigenen Hauptstadt, sonst die nächstgelegene. Sie kommen
-innerhalb von zwei Leveln nach ihrem Mindestlevel in die Route, wo sie dem Questgeber am nächsten ist, und das Verbessern
-lässt sie nicht weg. Empfohlene (Waffen, Roben, Volkszauber der Priester) und sonstige Klassenquests sind Optionen. Die
+Versionen zählt die aus dem eigenen Startgebiet oder der eigenen Hauptstadt, sonst die nächstgelegene. Die Einfügeheuristik sucht zunächst innerhalb von zwei Leveln nach dem Mindestlevel einen passenden Besuch. Die Optimierung darf den Zeitpunkt verschieben; die tatsächliche Abschlussstufe steht in `classQuests.level`. Pflichtreihen müssen vor dem Ziellevel abgeschlossen sein und dürfen nicht entfallen. Empfohlene (Waffen, Roben, Volkszauber der Priester) und sonstige Klassenquests sind Optionen. Die
 Routendatei nennt für jede Reihe unter `classQuests`, was sie die Route kostet (`minutes`; negativ: ihre XP machen die
 Route schneller). Klassenquest-Gegner zählen auch als Elite als solo machbar.
 
 Voraussetzungen: Ein Breadcrumb (cmangos `BreadcrumbForQuestId`) ist keine Voraussetzung, auch wenn die Client-Daten
 ihn so führen (Cutting Teeth, Redridge Rendezvous, Surena Caledon). Nimmt ein RestedXP-Forever-Guide eine Quest an,
-während die angebliche Voraussetzung noch offen ist, oder macht kein Guide sie je, entfällt sie (nicht bei
-Klassenquests). Eine Voraussetzung einer anderen Rasse zählt für den Charakter nicht.
+während die angebliche Voraussetzung noch offen ist, kann diese entfallen (nicht bei Klassenquests).
+Dass kein Guide eine Vorquest erwähnt, reicht nicht zum Entfernen. Alternative Voraussetzungen bleiben als Alternativen erhalten;
+nur wenn der Guide alle gleichzeitig offen hat, kann die OR-Bedingung entfallen. Eine Voraussetzung einer anderen Rasse zählt für den Charakter nicht.
 
-Es gibt je Volk und Klasse zwei Routen: **Solo ohne Dungeon** (`<volk>-<klasse>.json`, keine Dungeonquests) und **Solo mit Dungeon** (`<volk>-<klasse>-dungeons.json`). Mit `-dungeons` (bei `plan`, `improve`, `extend`, `next`) gehören Dungeon-Läufe zur Route. Ein Dungeon-Baustein nimmt die
+Es gibt je Volk und Klasse zwei Routen: **Solo ohne Dungeon** (`<volk>-<klasse>.json`, keine Dungeonquests) und **Solo mit erlaubten Dungeons** (`<volk>-<klasse>-dungeons.json`, auch kein Lauf ist erlaubt). Mit `-dungeons` (bei `plan`, `improve`, `extend`, `next`) gehören Dungeon-Läufe zur Route. Ein Dungeon-Baustein nimmt die
 Dungeonquests an, die draußen vergeben werden und die der Lauf erledigt (nächstgelegene zuerst; unterwegs schon ab drei
 Stufen vor dem Dungeon, wenn der Geber nahe ist), läuft den Dungeon (dafür eine Gruppe) und gibt danach ab, wenn nötig
 auf dem anderen Kontinent. Im Dungeon vergebene und abgegebene Quests samt Folgequests erledigt der Lauf
@@ -79,7 +96,8 @@ nur innerhalb seiner Stufen.
   der Trash aus den cmangos-Spawns der Instanz (5er-Gruppe mit Classic-Gruppenbonus 1,4; ein Questlauf tötet 40 %, was im Weg steht). Vor jedem Lauf 10 Minuten Gruppensuche; Klassen, die tanken oder heilen können (Krieger, Paladin, Schamane, Priester, Druide), finden fast sofort eine Gruppe (1 Minute); Druide und Krieger erst mit Bärengestalt bzw. Verteidigungshaltung, die Routen mit Dungeon holen sie vor dem ersten Lauf. Sammelquests im Dungeon: jedes Gruppenmitglied braucht eigene Drops, die vier weiteren Anteile kosten zusätzliche Kills (15 s je Kill); einzelne Bossgegenstände nicht.
 - `extend -route data/routes/orc-warrior.json -target 40 [-dungeons]` setzt eine Route fort: Er spielt sie bis zu
   ihrem Ende nach, plant ab dem erreichten Stand und verbessert das Ganze wie `improve`.
-- Ein Lauf, der sich nicht lohnt, fällt beim Verbessern heraus wie eine Quest. Laufzeiten werden nach dem Release im
+- Beim Optimieren werden Dungeonquests gemeinsam mit ihrer vollständigen Vorquestkette als ein Kandidat bewertet.
+  Ein Lauf, der sich nicht lohnt, fällt beim Verbessern heraus wie eine Quest. Laufzeiten werden nach dem Release im
   Spiel kalibriert.
 
 ### Planen beim Spielen (`next`)
@@ -100,8 +118,8 @@ jeder Quest-Änderung neu auf. So folgt die Route dem Charakter, statt ihn auf e
 
 `-profile` (bei `plan`, `replay` und `guide`) nimmt die Kampfzeiten aus einem Profil, das ForeverCore mit MythicSim und
 dem Level-Overlay rechnet (`kill-profile`, Schema `foreverroutes.killprofile.v1`). In `data/profiles` liegen die
-Profile aller neun Klassen (Level 10–30): synthetischer Charakter mit der weißen Startwaffe, ohne weitere Ausrüstung
-und Talente. Der Unterschied zwischen den Völkern ist ohne Ausrüstung gering; ein Profil gilt für alle Völker der Klasse.
+Profile aller neun Klassen (Level 10–40): synthetischer Charakter mit der weißen Startwaffe, ohne weitere Ausrüstung
+und Talente. Für alle Völker derselben Klasse wird dasselbe Vergleichsprofil verwendet; individuelle Volksfähigkeiten sind damit nicht separat kalibriert.
 
 - **Kampf:** Für jedes Level stehen Schaden, Manaverbrauch und selbst verbrauchte Gesundheit nach 6, 10, 15, 22 und
   30 Sekunden gegen ein gleich hohes Ziel und gegen eines zwei Level darüber. Der Kampf dauert, bis der Schaden die
@@ -111,8 +129,8 @@ und Talente. Der Unterschied zwischen den Völkern ist ohne Ausrüstung gering; 
   aus cmangos, ein Schlag alle 2 s. Gezählt wird er für die Zeit, in der der Gegner den Charakter erreicht: beim Hexer
   mit Leerwandler ein Viertel des Kampfs, sonst der Kampf ohne die ersten 3 s Anlauf. Dazu kommen 4 s für Plündern und
   den nächsten Pull.
-- **Grenzen:** Die Profile gelten für einen Charakter ohne Ausrüstung und Talente; echte Charaktere sind schneller.
-  Unter Level 10 rechnet die Engine nicht, dort gilt weiter `DefaultProfile`. Rüstung und Ausweichen des Charakters
+- **Grenzen:** Die Profile gelten für einen Charakter ohne Ausrüstung und Talente; Ausrüstungs- und Talentunterschiede sind damit nur eingeschränkt abgebildet.
+  Unter Level 10 und außerhalb der Tabellen gilt `DefaultProfile`, an die Randwerte des Klassenprofils angepasst. Rüstung und Ausweichen des Charakters
   sind nicht berücksichtigt. Die Annahmen zu erlittenem Schaden prüft erst die Aufzeichnung im Spiel.
 
 ### Daten aktuell halten
@@ -139,6 +157,8 @@ entsteht.
 | Pfad | Inhalt |
 |---|---|
 | `route/` | Planer: Welt je Charakter, Zustand und Regeln (`Apply`/`Replay`), Reisen (Laufen, Flugmeister, Zeppelin, Schiff, Ruhestein), Suche, Guide-Nachgang, Kampfmodell |
+| `fallback/` | Normale RXP-Kapitel und getrennte Charakter-/Fraktionsketten laden und prüfen |
+| `data/fallbacks/` | Festgeschriebener normaler RXP-Fallback einschließlich Lizenz |
 | `dataset/` | Format des Datensatzes (`foreverroutes.dataset.v1`), Laden und Schreiben |
 | `xp/` | Classic-XP-Regeln: Quest-XP nach Levelabstand, Kill-XP (cmangos), Levelkurve |
 | `internal/update/` | Quellen prüfen, neu bauen, Ergebnis prüfen (`update`, `build-data`) |
@@ -166,11 +186,8 @@ entsteht.
   Schiffe mit Zeiten aus der cmangos-Transporttabelle, Ruhestein (10 s, 1 h Abklingzeit, gebunden am letzten Gasthaus).
 - Zauberstab: Magier, Priester und Hexenmeister bauen sich bei einem Besuch in der nächsten Hauptstadt
   (Verzauberkunst-Lehrer, -Händler, Auktionshaus) den Novice's Practice Wand (getragen bis Stufe 5) und den Geringen
-  Zauberstab (ab Stufe 5) und erledigen Gegner damit ohne Mana; Quest- und Dungeon-Zauberstäbe ersetzen ihn, wenn sie besser sind.
-- Lager: Alle lernen unterwegs Kürschnern, Kochkunst und Lederverarbeitung (Caster in der Hauptstadt ihrer
-  Zauberstäbe: Verzauberkunst für die Stäbe, danach verlernt). Ab Stufe 10 einmal pro Stunde Lager mit Lagerzelt:
-  erholte XP über 5 % einer Stufe, die Kill-XP verdoppeln. Bis 20 kostet das etwa 10 Minuten, ab 20 bringt es viel
-  (20–60 geschätzt 5 bis 12 Stunden).
+  Zauberstab (ab Stufe 5), sofern diese Vorbereitung gewählt wurde; die Kampfwahl vergleicht Zauber und Zauberstab ohne Manakosten. Quest- und Dungeon-Zauberstäbe ersetzen ihn, wenn sie besser sind.
+- Lager: Die Optimierung vergleicht Kürschnern, Kochkunst und Lederverarbeitung mit dem Verzicht darauf. Gewählte Vorbereitungen bezahlen Trainerweg und die geschätzten Beschaffungskosten. Ab Stufe 10 können Lager mit Lagerzelt erholte XP geben; Ruhezeit und Abklingzeit werden bezahlt. Materialbeschaffung und Berufsplätze sind weiterhin ein vereinfachtes Kostenmodell.
 - Laufgitter: Ein Punkt auf einer abgeschnittenen Gitter-Insel (Dammkrone, Felsvorsprung) wird über die nächste
   verbundene Zelle erreicht statt mit dem Notwert (sechsfache Luftlinie).
 - Optionen: Klassenreihen, die nicht Pflicht sind, und Forever-Ziele wie der Gemütliche Schlafsack (ab Level 14) werden
@@ -184,3 +201,5 @@ entsteht.
 
 Code: MIT (siehe `LICENSE`). Daten: siehe [`data/README.md`](data/README.md); der Datensatz enthält aus cmangos
 classic-db, Polestars forever-db und NorgannonDB abgeleitete Werte (GPL-3.0).
+
+Die normalen RXP-Kapitel und daraus abgeleitete Routensequenzen unterliegen CC BY-NC-SA 4.0; siehe [RXP-Lizenz](data/fallbacks/RXP-LICENSE.txt).

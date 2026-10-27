@@ -15,7 +15,7 @@ func TestPrerequisitesFromBreadcrumbsAndGuides(t *testing.T) {
 		{ID: 871, Sources: src()},                                    // taken together with 5041 by the guide
 		{ID: 5041, PreAny: []int{871}, Sources: src()},               // the guide takes it while 871 is open
 		{ID: 785, Sources: src()},                                    // no guide does it
-		{ID: 786, PreAll: []int{785}, Sources: src()},                // so it is not needed for 786
+		{ID: 786, PreAll: []int{785}, Sources: src()},                // omission from a guide does not disprove the prerequisite
 		{ID: 1688, PreAll: []int{785}, Classes: 256, Sources: src()}, // a class quest keeps its prerequisites
 	}, rxpOrder: map[string][]guides.OrderStep{"a.lua": {
 		{Op: "accept", Quest: 788}, {Op: "turnin", Quest: 788},
@@ -28,7 +28,7 @@ func TestPrerequisitesFromBreadcrumbsAndGuides(t *testing.T) {
 	for _, q := range b.out {
 		pre[q.ID] = len(q.PreAll) + len(q.PreAny)
 	}
-	if pre[788] != 0 || pre[5041] != 0 || pre[786] != 0 || pre[1688] != 1 {
+	if pre[788] != 0 || pre[5041] != 0 || pre[786] != 1 || pre[1688] != 1 {
 		t.Errorf("prerequisites left: %v", pre)
 	}
 }

@@ -54,6 +54,10 @@ type Fact struct {
 	Complete bool `json:"complete,omitempty"`
 	Accept   bool `json:"accept,omitempty"`
 	Turnin   bool `json:"turnin,omitempty"`
+	// Action and Targets are explicit objective actions, not combat inferred from a creature credit ID.
+	Action      string   `json:"action,omitempty"`
+	Targets     []int    `json:"targets,omitempty"`
+	TargetNames []string `json:"targetNames,omitempty"`
 }
 
 var (
@@ -90,7 +94,7 @@ func ParseRXP(files map[string]string) []Fact {
 				if i := strings.Index(line, " << "); i > 0 {
 					line = strings.TrimSpace(line[:i])
 				}
-				if i := strings.Index(line, " --"); i > 0 {
+				if i := strings.Index(line, " --"); i > 0 && !strings.HasPrefix(line, ".complete ") {
 					line = strings.TrimSpace(line[:i])
 				}
 				step = append(step, line)
@@ -155,6 +159,9 @@ func rxpStep(file string, lines []string) []Fact {
 	}
 	var out []Fact
 	for _, f := range facts {
+		if f.Complete {
+			objectiveAction(f, lines)
+		}
 		if len(f.Mobs) == 0 {
 			f.Mobs = stepMobs
 		}
@@ -176,7 +183,7 @@ func rxpStep(file string, lines []string) []Fact {
 
 var (
 	psStep    = regexp.MustCompile(`^step\b`)
-	psObj     = regexp.MustCompile(`^(kill|collect|interact)\s+(\d+)(?:\s+x\d+)?\s+quest\s+(\d+)(?:\.(\d+))?(.*)$`)
+	psObj     = regexp.MustCompile(`^(kill|collect|interact|use|talk)\s+(\d+)(?:\s+x\d+)?\s+quest\s+(\d+)(?:\.(\d+))?(.*)$`)
 	psAt      = regexp.MustCompile(`@(-?[\d.]+),(-?[\d.]+)`)
 	psGoto    = regexp.MustCompile(`^goto\s+(-?[\d.]+),(-?[\d.]+)`)
 	psZone    = regexp.MustCompile(`^zone\s+(.+)$`)
@@ -260,7 +267,13 @@ func polestarStep(file, zone string, lines []string) []Fact {
 		if m := psDone.FindStringSubmatch(l); m != nil {
 			q, _ := strconv.Atoi(m[1])
 			n, _ := strconv.Atoi(m[2])
-			out = append(out, Fact{Source: "polestar", File: file, Quest: q, Obj: n, Places: stepPlaces, Zone: zone, Complete: true, Accept: accepts[q], Turnin: turnins[q]})
+			places := stepPlaces
+			if at := psAt.FindStringSubmatch(l); at != nil {
+				x, _ := strconv.ParseFloat(at[1], 64)
+				y, _ := strconv.ParseFloat(at[2], 64)
+				places = []Place{{Zone: zone, X: x, Y: y}}
+			}
+			out = append(out, Fact{Source: "polestar", File: file, Quest: q, Obj: n, Places: places, Zone: zone, Complete: true, Accept: accepts[q], Turnin: turnins[q]})
 			continue
 		}
 		m := psObj.FindStringSubmatch(l)
@@ -283,6 +296,13 @@ func polestarStep(file, zone string, lines []string) []Fact {
 			f.Item = id
 		case "interact":
 			f.Objects = []int{id}
+		case "use":
+			f.Action = "use"
+			f.Complete = true
+		case "talk":
+			f.Action = "talk"
+			f.Targets = []int{id}
+			f.Complete = true
 		}
 		// an item without a place: found while killing the step's creatures, or dropped by the creatures its tip
 		// names when the step kills nothing

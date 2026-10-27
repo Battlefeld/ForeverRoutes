@@ -43,7 +43,7 @@ func TestEventsOfKeepsGrinding(t *testing.T) {
 		{Action: Action{Op: "turnin", Quest: 1}, Level: 5},
 	}
 	got := EventsOf(steps)
-	want := []GuideEvent{{Op: "accept", Quest: 1}, {Op: "level", Level: 4}, {Op: "complete", Quest: 1}, {Op: "turnin", Quest: 1}}
+	want := []GuideEvent{{Op: "accept", Quest: 1}, {Op: "level", Level: 4}, {Op: "complete", Quest: 1, Objective: 1}, {Op: "turnin", Quest: 1}}
 	if len(got) != len(want) {
 		t.Fatalf("got %v", got)
 	}

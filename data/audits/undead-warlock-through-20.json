@@ -1,0 +1,211 @@
+{
+  "schema": "foreverroutes.quest-audit-benchmark.v1",
+  "baseCommit": "dd2c371f03d44b2d1bcdda7311219137c808430d",
+  "target": 20,
+  "character": {
+    "race": "Undead",
+    "class": "Warlock"
+  },
+  "search": {
+    "seed": 20261027,
+    "improveSecondsPerSeed": 30,
+    "optimizeSeconds": 180,
+    "GOMAXPROCS": 1
+  },
+  "limitations": [
+    "Uncalibrated combat/travel/dungeon model; no in-game timing guarantee",
+    "Sleeping bag acquisition is included; its later XP bonus is not modelled",
+    "Wall-clock search budget means the exact chosen route can vary",
+    "The shipped static route files have not all been regenerated"
+  ],
+  "scenarios": [
+    {
+      "scenario": "solo",
+      "datasetSHA256": "77bc65167ba44d86e0b55f918ef56a49ffd0011d390e8de5fa47654514687db8",
+      "seconds": 49953.2,
+      "hours": 13.875888888888888,
+      "dungeons": false,
+      "wands": false,
+      "sleepingBag": false,
+      "dungeonRuns": [],
+      "wandSteps": 0,
+      "sleepingBagFinished": false,
+      "requiredChains": {
+        "1470": "Wichtel",
+        "1471": "Leerwandler",
+        "3099": "Klassenbrief"
+      },
+      "replayVerified": true,
+      "hiddenEnemiesChainFinished": false,
+      "powerToDestroyFinished": false,
+      "leadersOfFangFinished": false
+    },
+    {
+      "scenario": "solo_wand",
+      "datasetSHA256": "77bc65167ba44d86e0b55f918ef56a49ffd0011d390e8de5fa47654514687db8",
+      "seconds": 49327.7,
+      "hours": 13.702138888888888,
+      "dungeons": false,
+      "wands": true,
+      "sleepingBag": false,
+      "dungeonRuns": [],
+      "wandSteps": 1,
+      "sleepingBagFinished": false,
+      "requiredChains": {
+        "1470": "Wichtel",
+        "1471": "Leerwandler",
+        "3099": "Klassenbrief"
+      },
+      "replayVerified": true,
+      "hiddenEnemiesChainFinished": false,
+      "powerToDestroyFinished": false,
+      "leadersOfFangFinished": false
+    },
+    {
+      "scenario": "solo_bag",
+      "datasetSHA256": "77bc65167ba44d86e0b55f918ef56a49ffd0011d390e8de5fa47654514687db8",
+      "seconds": 56267.4,
+      "hours": 15.629833333333334,
+      "dungeons": false,
+      "wands": false,
+      "sleepingBag": true,
+      "dungeonRuns": [],
+      "wandSteps": 0,
+      "sleepingBagFinished": true,
+      "requiredChains": {
+        "1470": "Wichtel",
+        "1471": "Leerwandler",
+        "3099": "Klassenbrief",
+        "79976": "Gem\u00fctlicher Schlafsack"
+      },
+      "replayVerified": true,
+      "hiddenEnemiesChainFinished": false,
+      "powerToDestroyFinished": false,
+      "leadersOfFangFinished": false
+    },
+    {
+      "scenario": "solo_wand_bag",
+      "datasetSHA256": "77bc65167ba44d86e0b55f918ef56a49ffd0011d390e8de5fa47654514687db8",
+      "seconds": 52864,
+      "hours": 14.684444444444445,
+      "dungeons": false,
+      "wands": true,
+      "sleepingBag": true,
+      "dungeonRuns": [],
+      "wandSteps": 1,
+      "sleepingBagFinished": true,
+      "requiredChains": {
+        "1470": "Wichtel",
+        "1471": "Leerwandler",
+        "3099": "Klassenbrief",
+        "79976": "Gem\u00fctlicher Schlafsack"
+      },
+      "replayVerified": true,
+      "hiddenEnemiesChainFinished": false,
+      "powerToDestroyFinished": false,
+      "leadersOfFangFinished": false
+    },
+    {
+      "scenario": "dungeon",
+      "datasetSHA256": "77bc65167ba44d86e0b55f918ef56a49ffd0011d390e8de5fa47654514687db8",
+      "seconds": 42921,
+      "hours": 11.9225,
+      "dungeons": true,
+      "wands": false,
+      "sleepingBag": false,
+      "dungeonRuns": [
+        "ragefire-chasm",
+        "wailing-caverns",
+        "ruins-of-lordaeron"
+      ],
+      "wandSteps": 0,
+      "sleepingBagFinished": false,
+      "requiredChains": {
+        "1470": "Wichtel",
+        "1471": "Leerwandler",
+        "3099": "Klassenbrief"
+      },
+      "replayVerified": true,
+      "hiddenEnemiesChainFinished": true,
+      "powerToDestroyFinished": true,
+      "leadersOfFangFinished": false
+    },
+    {
+      "scenario": "dungeon_wand",
+      "datasetSHA256": "77bc65167ba44d86e0b55f918ef56a49ffd0011d390e8de5fa47654514687db8",
+      "seconds": 41793.2,
+      "hours": 11.609222222222222,
+      "dungeons": true,
+      "wands": true,
+      "sleepingBag": false,
+      "dungeonRuns": [
+        "ragefire-chasm",
+        "wailing-caverns",
+        "ruins-of-lordaeron"
+      ],
+      "wandSteps": 1,
+      "sleepingBagFinished": false,
+      "requiredChains": {
+        "1470": "Wichtel",
+        "1471": "Leerwandler",
+        "3099": "Klassenbrief"
+      },
+      "replayVerified": true,
+      "hiddenEnemiesChainFinished": true,
+      "powerToDestroyFinished": true,
+      "leadersOfFangFinished": false
+    },
+    {
+      "scenario": "dungeon_bag",
+      "datasetSHA256": "77bc65167ba44d86e0b55f918ef56a49ffd0011d390e8de5fa47654514687db8",
+      "seconds": 49102.7,
+      "hours": 13.639638888888888,
+      "dungeons": true,
+      "wands": false,
+      "sleepingBag": true,
+      "dungeonRuns": [
+        "ragefire-chasm",
+        "wailing-caverns",
+        "ruins-of-lordaeron"
+      ],
+      "wandSteps": 0,
+      "sleepingBagFinished": true,
+      "requiredChains": {
+        "1470": "Wichtel",
+        "1471": "Leerwandler",
+        "3099": "Klassenbrief",
+        "79976": "Gem\u00fctlicher Schlafsack"
+      },
+      "replayVerified": true,
+      "hiddenEnemiesChainFinished": true,
+      "powerToDestroyFinished": false,
+      "leadersOfFangFinished": false
+    },
+    {
+      "scenario": "dungeon_wand_bag",
+      "datasetSHA256": "77bc65167ba44d86e0b55f918ef56a49ffd0011d390e8de5fa47654514687db8",
+      "seconds": 45903.5,
+      "hours": 12.750972222222222,
+      "dungeons": true,
+      "wands": true,
+      "sleepingBag": true,
+      "dungeonRuns": [
+        "ragefire-chasm",
+        "wailing-caverns",
+        "ruins-of-lordaeron"
+      ],
+      "wandSteps": 1,
+      "sleepingBagFinished": true,
+      "requiredChains": {
+        "1470": "Wichtel",
+        "1471": "Leerwandler",
+        "3099": "Klassenbrief",
+        "79976": "Gem\u00fctlicher Schlafsack"
+      },
+      "replayVerified": true,
+      "hiddenEnemiesChainFinished": true,
+      "powerToDestroyFinished": true,
+      "leadersOfFangFinished": false
+    }
+  ]
+}

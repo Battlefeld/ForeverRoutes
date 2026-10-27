@@ -66,9 +66,11 @@ func (b *builder) applyPolestar(out *dataset.Quest) {
 		}
 	}
 	// objectives: the client's list where the other sources have none, or only some without a count
-	if objectivesUnknown(out) && len(b.pdb.Objectives[out.ID]) > 0 {
+	if len(b.pdb.Objectives[out.ID]) > 0 && !observed(out.Sources["objectives"]) {
+		previous := out.Objectives
 		out.Objectives, out.Unsupported, out.NeedItems = nil, "", nil
-		b.polestarObjectives(out)
+		b.polestarObjectives(out, previous)
+		out.Sources["objectives"] = polestarSrc
 		b.stats["objectives_from_polestar"]++
 	} else if strings.Contains(out.Unsupported, "objectives unknown") && len(b.pdb.Objectives[out.ID]) == 0 &&
 		b.pdb.Quests[out.ID] != nil && len(b.pdb.Starts[out.ID]) > 0 && len(b.pdb.Ends[out.ID]) > 0 {
@@ -109,6 +111,7 @@ func (b *builder) newPolestarQuest(p *polestar.Quest) (dataset.Quest, bool) {
 		// the client lists no objective: a delivery or talk quest, done by turning it in
 		b.stats["polestar_quests_without_objectives"]++
 	}
+	b.applyWarcraftDB(&out)
 	b.startItem(&out)
 	if out.Unsupported != "" {
 		b.stats["quests_unsupported"]++
@@ -173,10 +176,26 @@ func (b *builder) polestarPrereqs(id, breadcrumb int) (all, anyOf []int, bc int)
 // polestarObjectives sets a quest's objectives from forever-db: kills, talks and objects as they are, items with what
 // drops them (forever-db, then cmangos and the other item sources). An event objective (explore, escort, use) is not
 // modelled: the quest stays in the data, unsupported.
-func (b *builder) polestarObjectives(out *dataset.Quest) {
+func (b *builder) polestarObjectives(out *dataset.Quest, previous ...[]dataset.Objective) {
 	for _, o := range b.pdb.Objectives[out.ID] {
 		if o.Count <= 0 {
-			o.Count = 1
+			for _, old := range previous {
+				for _, p := range old {
+					if p.Kind == o.Kind && p.ID == o.Target && p.Count > 0 {
+						o.Count = p.Count
+					}
+				}
+			}
+			if o.Count <= 0 {
+				cm := b.w.quest[out.ID]
+				legacyEvent := cm != nil && b.w.qt.Int(cm, "SpecialFlags")&2 != 0
+				if o.Kind == "event" || o.Kind == "talk" || legacyEvent {
+					o.Count = 1
+				} else {
+					b.unsupported(out, fmt.Sprintf("objective %s %d: count unknown in client and references", o.Kind, o.Target))
+					continue
+				}
+			}
 		}
 		switch o.Kind {
 		case "kill", "talk":
@@ -186,7 +205,7 @@ func (b *builder) polestarObjectives(out *dataset.Quest) {
 			}
 			if o.Kind == "talk" && (o.Target <= 0 || len(b.pdb.Spawns["npc"][o.Target]) == 0 && len(b.w.spawns[o.Target]) == 0) {
 				// a talk target no source places is an event in disguise (an area to reach)
-				b.eventObjective(out, o.N)
+				b.eventObjective(out, o.N, o.Count)
 				continue
 			}
 			out.Objectives = append(out.Objectives, dataset.Objective{Kind: o.Kind, ID: o.Target, Count: o.Count, Source: polestarSrc})
@@ -209,7 +228,7 @@ func (b *builder) polestarObjectives(out *dataset.Quest) {
 			}
 			if !ok && b.delivered(out.ID, o) {
 				b.stats["items_delivered_by_giver"]++
-				out.Sources["objectives"] = "item assumed handed over by the giver (delivery quest)"
+				out.Sources["objectives"] = "item explicitly provided by the giver (WCLBox)"
 				continue // a letter or package the giver hands over: nothing to collect
 			}
 			if !ok {
@@ -225,7 +244,7 @@ func (b *builder) polestarObjectives(out *dataset.Quest) {
 			out.Objectives = append(out.Objectives, obj)
 		default:
 			// an event (explore an area, escort someone, use something)
-			b.eventObjective(out, o.N)
+			b.eventObjective(out, o.N, o.Count)
 		}
 	}
 }
@@ -233,7 +252,7 @@ func (b *builder) polestarObjectives(out *dataset.Quest) {
 // eventObjective: an event (explore an area, escort someone, use something somewhere) is done where the guides send the
 // player for it, or where players' games saw the quest move (EG Link, AEGIS). Without such a place the quest is held
 // back: planned without the objective it would be done the moment it is taken.
-func (b *builder) eventObjective(out *dataset.Quest, n int) {
+func (b *builder) eventObjective(out *dataset.Quest, n int, count ...int) {
 	var pts []dataset.Point
 	atGiver, atTurnin, done := false, false, false
 	if b.gdx != nil {
@@ -294,7 +313,11 @@ func (b *builder) eventObjective(out *dataset.Quest, n int) {
 		b.stats["event_objectives_without_place"]++
 		return
 	}
-	out.Objectives = append(out.Objectives, dataset.Objective{Kind: "event", ID: n, Count: 1, Source: polestarSrc + "+places", Places: dedupePoints(pts)})
+	units := 1
+	if len(count) > 0 {
+		units = max(1, count[0])
+	}
+	out.Objectives = append(out.Objectives, dataset.Objective{Kind: "event", ID: n, Count: units, Source: polestarSrc + "+places", Places: dedupePoints(pts)})
 	b.stats["event_objectives_placed"]++
 }
 
@@ -326,30 +349,13 @@ func without(l []int, v int) []int {
 	return out
 }
 
-// delivered: Forever's delivery quests (a letter, a package, a note for someone else) ask for one item that no source
-// drops and no guide sends the player to find; it is their only objective and the giver is not the one who takes it.
-// The giver hands it over with the quest (cmangos would say SrcItemId; Forever's own quests are not in cmangos).
+// delivered only accepts an explicit supplied-item fact. Different giver/turn-in NPCs and an unknown drop
+// table are insufficient evidence: that used to turn missing collection goals into free delivery XP.
 func (b *builder) delivered(quest int, o polestar.Objective) bool {
-	if b.pdb == nil || o.Count != 1 || len(b.pdb.Objectives[quest]) != 1 || len(b.pdb.Starts[quest]) == 0 || len(b.pdb.Ends[quest]) == 0 {
-		return false
-	}
-	if b.gdx != nil && len(b.gdx.byQuest[quest]) > 0 {
-		return false
-	}
 	if it, known := b.wclQuestItem(quest, o.Target); known {
-		return it.Provided // the quest page says
+		return it.Provided
 	}
-	for _, s := range b.pdb.Starts[quest] {
-		if s.Kind != "npc" {
-			return false
-		}
-		for _, e := range b.pdb.Ends[quest] {
-			if e.Kind == s.Kind && e.ID == s.ID {
-				return false
-			}
-		}
-	}
-	return true
+	return false
 }
 
 // providedItem is the item the giver hands over with the quest (cmangos SrcItemId), 0 if none or unknown.

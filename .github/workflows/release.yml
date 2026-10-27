@@ -10,6 +10,10 @@ on:
       - "route/**"
       - "dataset/**"
       - "xp/**"
+      - "fallback/**"
+      - "internal/**"
+      - "data/fallbacks/**"
+      - "tools/release.sh"
       - "data/routes/**"
       - "data/profiles/**"
       - "data/walks.json.gz"
@@ -37,6 +41,7 @@ jobs:
           test -z "$(gofmt -l .)"
           go vet ./...
           go test -timeout 30m ./...
+          python3 tools/check_refs.py
       - name: publish
         env:
           GH_TOKEN: ${{ github.token }}

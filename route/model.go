@@ -44,6 +44,12 @@ func (c Character) side() (faction string, race int, ok bool) {
 		return f, SkyborneBits[f], f != ""
 	}
 	race = RaceBits[c.Race]
+	if c.Faction != "" {
+		f := map[string]string{"A": "A", "Alliance": "A", "H": "H", "Horde": "H"}[c.Faction]
+		if f == "" || f != FactionOf(c.Race) {
+			return "", 0, false
+		}
+	}
 	return FactionOf(c.Race), race, race != 0
 }
 
@@ -120,6 +126,9 @@ func medianByLevel(d *dataset.Dataset, val func(*dataset.NPC) float64) []float64
 
 // Options of the model; zero values take the defaults.
 type Options struct {
+	Preparations PreparationConstraints
+	SleepingBag  SleepingBagModel
+	Feedback     FeedbackSettings
 	RunSpeed     float64        // yards per second (7 = Classic run speed)
 	PathFactor   float64        // real paths are longer than straight lines (1.2)
 	QuestLogCap  int            // 20 in Classic
@@ -131,11 +140,14 @@ type Options struct {
 	NoClassRules bool           // keep the options as given instead of the class's rules
 	AssumedDrop  float64        // chance per kill assumed where a source names the creature but no chance (0.3); reported in the result
 	Walks        *dataset.Walks // walking costs measured on navigation maps (nil: straight lines times PathFactor)
-	Dungeons     bool           // route with dungeons: dungeon runs with their quests are part of the route
+	Dungeons     bool           // dungeon runs are allowed; the optimizer may choose none
 	GroupSearch  float64        // seconds to find a group for a dungeon run (600; tanks and healers 60)
 }
 
 func (o Options) withDefaults() Options {
+	if o.SleepingBag == (SleepingBagModel{}) {
+		o.SleepingBag = DefaultSleepingBagModel()
+	}
 	if o.RunSpeed == 0 {
 		o.RunSpeed = 7
 	}

@@ -6,7 +6,8 @@ notes="${1:-/dev/null}"
 stamp="$(date -u +%Y%m%d-%H%M%S)"
 out="$(mktemp -d)"
 GOOS=windows GOARCH=amd64 CGO_ENABLED=0 go build -trimpath -o "$out/foreverroutes.exe" ./cmd/foreverroutes
-go run ./cmd/foreverroutes bundle -out "$out" -version "$stamp" -exe "$out/foreverroutes.exe"
+go run ./cmd/foreverroutes export-addon -out "$out/Routes.lua"
+go run ./cmd/foreverroutes bundle -out "$out" -version "$stamp" -exe "$out/foreverroutes.exe" -addon "$out/Routes.lua"
 cp data/routes-data.json.gz "$out/routes-data.json.gz"
 (cd "$out" && sha256sum routes-data.json.gz > routes-data.json.gz.sha256)
 gh release create "data-$stamp" "$out/foreverroutes-bundle.zip" "$out/foreverroutes-bundle.json" \

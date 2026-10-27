@@ -22,6 +22,10 @@ jobs:
           go-version-file: go.mod
       - name: rebuild from the pinned sources
         run: go run ./cmd/foreverroutes build-data -out /tmp/routes-data.json.gz
+      - name: verify ordinary RXP fallback against pinned guide sources
+        run: |
+          revision="$(python3 -c 'import json; print(json.load(open("data/sources/lock.json"))["rxp"])')"
+          python3 tools/import_rxp.py ".cache/rxp-$revision" --check
       - name: compare
         run: |
           if ! cmp -s data/routes-data.json.gz /tmp/routes-data.json.gz; then

@@ -1,0 +1,1769 @@
+{
+ "schema": "foreverroutes.timeline-validation.v1",
+ "modelRevision": "foreverroutes.timeline-model.v2.1",
+ "referenceBaseCommit": "6b0ea771876b994ce089da51f0be2ef2cc4d082c",
+ "datasetSHA256": "77bc65167ba44d86e0b55f918ef56a49ffd0011d390e8de5fa47654514687db8",
+ "profileSHA256": "f363a96870f25a9502bce9c2d37d0075d997c536c0a6a227010e3c8879eae3b2",
+ "character": {
+  "race": "Undead",
+  "class": "Warlock"
+ },
+ "target": 20,
+ "searchBudgetSeconds": 180,
+ "searchSeed": 20261027,
+ "GOMAXPROCS": 1,
+ "scenarios": [
+  {
+   "scenario": "auto",
+   "baselineSeconds": 41674.6,
+   "seconds": 41105.4,
+   "resumedSeconds": 41105.4,
+   "preparations": {
+    "forceWand": false,
+    "forceProfessions": false,
+    "camping": true,
+    "wands": true,
+    "professionDetour": 180,
+    "professionLevel": 10,
+    "bagStacks": 0
+   },
+   "sleepingBagModel": {
+    "perStack": 0.01,
+    "stackSeconds": 60,
+    "placementSeconds": 10,
+    "duration": 7200,
+    "cooldown": 3600,
+    "source": "Forever item 211527 / spell 429959 tooltip; duration disputed (3600/7200s); placement estimated"
+   },
+   "dungeonRuns": [
+    "ragefire-chasm",
+    "wailing-caverns",
+    "ruins-of-lordaeron"
+   ],
+   "wandSteps": 1,
+   "sleepSteps": 0,
+   "sleepingBagFinished": false,
+   "replayVerified": true,
+   "checkpointResumeVerified": true,
+   "feedbackActive": false,
+   "search": {
+    "DungeonCombinationsAllowed": 16,
+    "DungeonChecks": [
+     {
+      "keys": [],
+      "candidateFound": true,
+      "seconds": 55654
+     },
+     {
+      "keys": [
+       "ragefire-chasm"
+      ],
+      "candidateFound": true,
+      "seconds": 52406.5
+     },
+     {
+      "keys": [
+       "wailing-caverns"
+      ],
+      "candidateFound": true,
+      "seconds": 51709.3
+     },
+     {
+      "keys": [
+       "ragefire-chasm",
+       "wailing-caverns"
+      ],
+      "candidateFound": true,
+      "seconds": 48755.6
+     },
+     {
+      "keys": [
+       "ruins-of-lordaeron"
+      ],
+      "candidateFound": true,
+      "seconds": 49737.5
+     },
+     {
+      "keys": [
+       "ragefire-chasm",
+       "ruins-of-lordaeron"
+      ],
+      "candidateFound": true,
+      "seconds": 45939
+     },
+     {
+      "keys": [
+       "wailing-caverns",
+       "ruins-of-lordaeron"
+      ],
+      "candidateFound": true,
+      "seconds": 45337.3
+     },
+     {
+      "keys": [
+       "ragefire-chasm",
+       "wailing-caverns",
+       "ruins-of-lordaeron"
+      ],
+      "candidateFound": true,
+      "seconds": 41674.6
+     },
+     {
+      "keys": [
+       "deadmines"
+      ],
+      "candidateFound": true,
+      "seconds": 58548.2
+     },
+     {
+      "keys": [
+       "ragefire-chasm",
+       "deadmines"
+      ],
+      "candidateFound": true,
+      "seconds": 55217.7
+     },
+     {
+      "keys": [
+       "wailing-caverns",
+       "deadmines"
+      ],
+      "candidateFound": true,
+      "seconds": 54085.5
+     },
+     {
+      "keys": [
+       "ragefire-chasm",
+       "wailing-caverns",
+       "deadmines"
+      ],
+      "candidateFound": true,
+      "seconds": 50753.7
+     },
+     {
+      "keys": [
+       "ruins-of-lordaeron",
+       "deadmines"
+      ],
+      "candidateFound": true,
+      "seconds": 51982
+     },
+     {
+      "keys": [
+       "ragefire-chasm",
+       "ruins-of-lordaeron",
+       "deadmines"
+      ],
+      "candidateFound": true,
+      "seconds": 48278.8
+     },
+     {
+      "keys": [
+       "wailing-caverns",
+       "ruins-of-lordaeron",
+       "deadmines"
+      ],
+      "candidateFound": true,
+      "seconds": 47452.9
+     },
+     {
+      "keys": [
+       "ragefire-chasm",
+       "wailing-caverns",
+       "ruins-of-lordaeron",
+       "deadmines"
+      ],
+      "candidateFound": true,
+      "seconds": 44907.7
+     }
+    ],
+    "Walks": [
+     563,
+     682,
+     668,
+     416,
+     315,
+     256,
+     0,
+     132,
+     688,
+     2202,
+     2045
+    ],
+    "Kept": [
+     90,
+     65,
+     6,
+     74,
+     56,
+     0,
+     0,
+     57,
+     208,
+     104,
+     829
+    ],
+    "Better": [
+     0,
+     0,
+     0,
+     0,
+     2,
+     0,
+     0,
+     0,
+     1,
+     1,
+     2
+    ],
+    "SeedsEvaluated": 7,
+    "DungeonCombinationsEvaluated": 16,
+    "DungeonCombinationsTotal": 16,
+    "DungeonEnumerationComplete": true,
+    "PreparationCandidates": 168,
+    "Restarts": 16,
+    "CheckpointLoaded": false,
+    "BestSeconds": 41105.4
+   }
+  },
+  {
+   "scenario": "no_wand",
+   "baselineSeconds": 43008.3,
+   "seconds": 41305.8,
+   "resumedSeconds": 41305.8,
+   "preparations": {
+    "forceWand": false,
+    "forceProfessions": false,
+    "camping": true,
+    "wands": false,
+    "professionDetour": 180,
+    "professionLevel": 1,
+    "bagStacks": 0
+   },
+   "sleepingBagModel": {
+    "perStack": 0.01,
+    "stackSeconds": 60,
+    "placementSeconds": 10,
+    "duration": 7200,
+    "cooldown": 3600,
+    "source": "Forever item 211527 / spell 429959 tooltip; duration disputed (3600/7200s); placement estimated"
+   },
+   "dungeonRuns": [
+    "ragefire-chasm",
+    "wailing-caverns",
+    "ruins-of-lordaeron"
+   ],
+   "wandSteps": 0,
+   "sleepSteps": 0,
+   "sleepingBagFinished": false,
+   "replayVerified": true,
+   "checkpointResumeVerified": true,
+   "feedbackActive": false,
+   "search": {
+    "DungeonCombinationsAllowed": 16,
+    "DungeonChecks": [
+     {
+      "keys": [],
+      "candidateFound": true,
+      "seconds": 58514.7
+     },
+     {
+      "keys": [
+       "ragefire-chasm"
+      ],
+      "candidateFound": true,
+      "seconds": 53814.5
+     },
+     {
+      "keys": [
+       "wailing-caverns"
+      ],
+      "candidateFound": true,
+      "seconds": 55353.2
+     },
+     {
+      "keys": [
+       "ragefire-chasm",
+       "wailing-caverns"
+      ],
+      "candidateFound": true,
+      "seconds": 50920
+     },
+     {
+      "keys": [
+       "ruins-of-lordaeron"
+      ],
+      "candidateFound": true,
+      "seconds": 52464.8
+     },
+     {
+      "keys": [
+       "ragefire-chasm",
+       "ruins-of-lordaeron"
+      ],
+      "candidateFound": true,
+      "seconds": 47205.9
+     },
+     {
+      "keys": [
+       "wailing-caverns",
+       "ruins-of-lordaeron"
+      ],
+      "candidateFound": true,
+      "seconds": 48307.4
+     },
+     {
+      "keys": [
+       "ragefire-chasm",
+       "wailing-caverns",
+       "ruins-of-lordaeron"
+      ],
+      "candidateFound": true,
+      "seconds": 43008.3
+     },
+     {
+      "keys": [
+       "deadmines"
+      ],
+      "candidateFound": true,
+      "seconds": 61440.7
+     },
+     {
+      "keys": [
+       "ragefire-chasm",
+       "deadmines"
+      ],
+      "candidateFound": true,
+      "seconds": 56114
+     },
+     {
+      "keys": [
+       "wailing-caverns",
+       "deadmines"
+      ],
+      "candidateFound": true,
+      "seconds": 57678.6
+     },
+     {
+      "keys": [
+       "ragefire-chasm",
+       "wailing-caverns",
+       "deadmines"
+      ],
+      "candidateFound": true,
+      "seconds": 52806.9
+     },
+     {
+      "keys": [
+       "ruins-of-lordaeron",
+       "deadmines"
+      ],
+      "candidateFound": true,
+      "seconds": 54615
+     },
+     {
+      "keys": [
+       "ragefire-chasm",
+       "ruins-of-lordaeron",
+       "deadmines"
+      ],
+      "candidateFound": true,
+      "seconds": 49332.8
+     },
+     {
+      "keys": [
+       "wailing-caverns",
+       "ruins-of-lordaeron",
+       "deadmines"
+      ],
+      "candidateFound": true,
+      "seconds": 50321.6
+     },
+     {
+      "keys": [
+       "ragefire-chasm",
+       "wailing-caverns",
+       "ruins-of-lordaeron",
+       "deadmines"
+      ],
+      "candidateFound": true,
+      "seconds": 45596.6
+     }
+    ],
+    "Walks": [
+     577,
+     648,
+     692,
+     404,
+     277,
+     257,
+     0,
+     0,
+     649,
+     2103,
+     840
+    ],
+    "Kept": [
+     128,
+     81,
+     9,
+     82,
+     64,
+     2,
+     0,
+     0,
+     277,
+     98,
+     417
+    ],
+    "Better": [
+     1,
+     0,
+     0,
+     0,
+     4,
+     0,
+     0,
+     0,
+     3,
+     2,
+     0
+    ],
+    "SeedsEvaluated": 7,
+    "DungeonCombinationsEvaluated": 16,
+    "DungeonCombinationsTotal": 16,
+    "DungeonEnumerationComplete": true,
+    "PreparationCandidates": 7,
+    "Restarts": 12,
+    "CheckpointLoaded": false,
+    "BestSeconds": 41305.8
+   }
+  },
+  {
+   "scenario": "wand",
+   "baselineSeconds": 41761,
+   "seconds": 40481.2,
+   "resumedSeconds": 40481.2,
+   "preparations": {
+    "forceWand": false,
+    "forceProfessions": false,
+    "camping": true,
+    "wands": true,
+    "professionDetour": 180,
+    "professionLevel": 10,
+    "bagStacks": 0
+   },
+   "sleepingBagModel": {
+    "perStack": 0.01,
+    "stackSeconds": 60,
+    "placementSeconds": 10,
+    "duration": 7200,
+    "cooldown": 3600,
+    "source": "Forever item 211527 / spell 429959 tooltip; duration disputed (3600/7200s); placement estimated"
+   },
+   "dungeonRuns": [
+    "ragefire-chasm",
+    "wailing-caverns",
+    "ruins-of-lordaeron"
+   ],
+   "wandSteps": 1,
+   "sleepSteps": 0,
+   "sleepingBagFinished": false,
+   "replayVerified": true,
+   "checkpointResumeVerified": true,
+   "feedbackActive": false,
+   "search": {
+    "DungeonCombinationsAllowed": 16,
+    "DungeonChecks": [
+     {
+      "keys": [],
+      "candidateFound": true,
+      "seconds": 55738
+     },
+     {
+      "keys": [
+       "ragefire-chasm"
+      ],
+      "candidateFound": true,
+      "seconds": 52536.7
+     },
+     {
+      "keys": [
+       "wailing-caverns"
+      ],
+      "candidateFound": true,
+      "seconds": 51795.7
+     },
+     {
+      "keys": [
+       "ragefire-chasm",
+       "wailing-caverns"
+      ],
+      "candidateFound": true,
+      "seconds": 48842
+     },
+     {
+      "keys": [
+       "ruins-of-lordaeron"
+      ],
+      "candidateFound": true,
+      "seconds": 49867.7
+     },
+     {
+      "keys": [
+       "ragefire-chasm",
+       "ruins-of-lordaeron"
+      ],
+      "candidateFound": true,
+      "seconds": 46025.4
+     },
+     {
+      "keys": [
+       "wailing-caverns",
+       "ruins-of-lordaeron"
+      ],
+      "candidateFound": true,
+      "seconds": 45423.7
+     },
+     {
+      "keys": [
+       "ragefire-chasm",
+       "wailing-caverns",
+       "ruins-of-lordaeron"
+      ],
+      "candidateFound": true,
+      "seconds": 41761
+     },
+     {
+      "keys": [
+       "deadmines"
+      ],
+      "candidateFound": true,
+      "seconds": 58672.3
+     },
+     {
+      "keys": [
+       "ragefire-chasm",
+       "deadmines"
+      ],
+      "candidateFound": true,
+      "seconds": 55304.1
+     },
+     {
+      "keys": [
+       "wailing-caverns",
+       "deadmines"
+      ],
+      "candidateFound": true,
+      "seconds": 54206.7
+     },
+     {
+      "keys": [
+       "ragefire-chasm",
+       "wailing-caverns",
+       "deadmines"
+      ],
+      "candidateFound": true,
+      "seconds": 50840.1
+     },
+     {
+      "keys": [
+       "ruins-of-lordaeron",
+       "deadmines"
+      ],
+      "candidateFound": true,
+      "seconds": 52068.4
+     },
+     {
+      "keys": [
+       "ragefire-chasm",
+       "ruins-of-lordaeron",
+       "deadmines"
+      ],
+      "candidateFound": true,
+      "seconds": 48366.4
+     },
+     {
+      "keys": [
+       "wailing-caverns",
+       "ruins-of-lordaeron",
+       "deadmines"
+      ],
+      "candidateFound": true,
+      "seconds": 47539.3
+     },
+     {
+      "keys": [
+       "ragefire-chasm",
+       "wailing-caverns",
+       "ruins-of-lordaeron",
+       "deadmines"
+      ],
+      "candidateFound": true,
+      "seconds": 44994.1
+     }
+    ],
+    "Walks": [
+     682,
+     751,
+     732,
+     502,
+     378,
+     300,
+     0,
+     146,
+     751,
+     1532,
+     1134
+    ],
+    "Kept": [
+     124,
+     52,
+     1,
+     68,
+     59,
+     4,
+     0,
+     48,
+     222,
+     44,
+     424
+    ],
+    "Better": [
+     0,
+     0,
+     0,
+     0,
+     5,
+     0,
+     0,
+     1,
+     4,
+     1,
+     2
+    ],
+    "SeedsEvaluated": 7,
+    "DungeonCombinationsEvaluated": 16,
+    "DungeonCombinationsTotal": 16,
+    "DungeonEnumerationComplete": true,
+    "PreparationCandidates": 14,
+    "Restarts": 12,
+    "CheckpointLoaded": false,
+    "BestSeconds": 40481.2
+   }
+  },
+  {
+   "scenario": "bag",
+   "baselineSeconds": 47380.4,
+   "seconds": 46251.1,
+   "resumedSeconds": 46251.1,
+   "preparations": {
+    "forceWand": false,
+    "forceProfessions": false,
+    "camping": true,
+    "wands": false,
+    "professionDetour": 180,
+    "professionLevel": 1,
+    "bagStacks": 0
+   },
+   "sleepingBagModel": {
+    "perStack": 0.01,
+    "stackSeconds": 60,
+    "placementSeconds": 10,
+    "duration": 7200,
+    "cooldown": 3600,
+    "source": "Forever item 211527 / spell 429959 tooltip; duration disputed (3600/7200s); placement estimated"
+   },
+   "dungeonRuns": [
+    "ragefire-chasm",
+    "wailing-caverns",
+    "ruins-of-lordaeron"
+   ],
+   "wandSteps": 0,
+   "sleepSteps": 0,
+   "sleepingBagFinished": true,
+   "replayVerified": true,
+   "checkpointResumeVerified": true,
+   "feedbackActive": false,
+   "search": {
+    "DungeonCombinationsAllowed": 16,
+    "DungeonChecks": [
+     {
+      "keys": [],
+      "candidateFound": true,
+      "seconds": 63654.9
+     },
+     {
+      "keys": [
+       "ragefire-chasm"
+      ],
+      "candidateFound": true,
+      "seconds": 58743.9
+     },
+     {
+      "keys": [
+       "wailing-caverns"
+      ],
+      "candidateFound": true,
+      "seconds": 61170.6
+     },
+     {
+      "keys": [
+       "ragefire-chasm",
+       "wailing-caverns"
+      ],
+      "candidateFound": true,
+      "seconds": 55699.7
+     },
+     {
+      "keys": [
+       "ruins-of-lordaeron"
+      ],
+      "candidateFound": true,
+      "seconds": 57739.6
+     },
+     {
+      "keys": [
+       "ragefire-chasm",
+       "ruins-of-lordaeron"
+      ],
+      "candidateFound": true,
+      "seconds": 50208.4
+     },
+     {
+      "keys": [
+       "wailing-caverns",
+       "ruins-of-lordaeron"
+      ],
+      "candidateFound": true,
+      "seconds": 53319.5
+     },
+     {
+      "keys": [
+       "ragefire-chasm",
+       "wailing-caverns",
+       "ruins-of-lordaeron"
+      ],
+      "candidateFound": true,
+      "seconds": 47380.4
+     },
+     {
+      "keys": [
+       "deadmines"
+      ],
+      "candidateFound": true,
+      "seconds": 65633.4
+     },
+     {
+      "keys": [
+       "ragefire-chasm",
+       "deadmines"
+      ],
+      "candidateFound": true,
+      "seconds": 60565.1
+     },
+     {
+      "keys": [
+       "wailing-caverns",
+       "deadmines"
+      ],
+      "candidateFound": true,
+      "seconds": 62238.4
+     },
+     {
+      "keys": [
+       "ragefire-chasm",
+       "wailing-caverns",
+       "deadmines"
+      ],
+      "candidateFound": true,
+      "seconds": 56803.5
+     },
+     {
+      "keys": [
+       "ruins-of-lordaeron",
+       "deadmines"
+      ],
+      "candidateFound": true,
+      "seconds": 59333.2
+     },
+     {
+      "keys": [
+       "ragefire-chasm",
+       "ruins-of-lordaeron",
+       "deadmines"
+      ],
+      "candidateFound": true,
+      "seconds": 52179.6
+     },
+     {
+      "keys": [
+       "wailing-caverns",
+       "ruins-of-lordaeron",
+       "deadmines"
+      ],
+      "candidateFound": true,
+      "seconds": 56079.9
+     },
+     {
+      "keys": [
+       "ragefire-chasm",
+       "wailing-caverns",
+       "ruins-of-lordaeron",
+       "deadmines"
+      ],
+      "candidateFound": false
+     }
+    ],
+    "Walks": [
+     536,
+     582,
+     599,
+     380,
+     333,
+     232,
+     0,
+     0,
+     481,
+     866,
+     1368
+    ],
+    "Kept": [
+     69,
+     47,
+     4,
+     57,
+     52,
+     0,
+     0,
+     0,
+     160,
+     21,
+     812
+    ],
+    "Better": [
+     3,
+     0,
+     0,
+     4,
+     5,
+     0,
+     0,
+     0,
+     7,
+     0,
+     4
+    ],
+    "SeedsEvaluated": 7,
+    "DungeonCombinationsEvaluated": 16,
+    "DungeonCombinationsTotal": 16,
+    "DungeonEnumerationComplete": true,
+    "PreparationCandidates": 28,
+    "Restarts": 9,
+    "CheckpointLoaded": false,
+    "BestSeconds": 46251.1
+   }
+  },
+  {
+   "scenario": "wand_bag",
+   "baselineSeconds": 46065,
+   "seconds": 45274.1,
+   "resumedSeconds": 45274.1,
+   "preparations": {
+    "forceWand": true,
+    "forceProfessions": false,
+    "camping": true,
+    "wands": true,
+    "professionDetour": 180,
+    "professionLevel": 1,
+    "bagStacks": 1
+   },
+   "sleepingBagModel": {
+    "perStack": 0.01,
+    "stackSeconds": 60,
+    "placementSeconds": 10,
+    "duration": 7200,
+    "cooldown": 3600,
+    "source": "Forever item 211527 / spell 429959 tooltip; duration disputed (3600/7200s); placement estimated"
+   },
+   "dungeonRuns": [
+    "ragefire-chasm",
+    "wailing-caverns",
+    "ruins-of-lordaeron"
+   ],
+   "wandSteps": 1,
+   "sleepSteps": 1,
+   "sleepingBagFinished": true,
+   "replayVerified": true,
+   "checkpointResumeVerified": true,
+   "feedbackActive": false,
+   "search": {
+    "DungeonCombinationsAllowed": 16,
+    "DungeonChecks": [
+     {
+      "keys": [],
+      "candidateFound": true,
+      "seconds": 62777.5
+     },
+     {
+      "keys": [
+       "ragefire-chasm"
+      ],
+      "candidateFound": true,
+      "seconds": 56884.4
+     },
+     {
+      "keys": [
+       "wailing-caverns"
+      ],
+      "candidateFound": true,
+      "seconds": 58892.5
+     },
+     {
+      "keys": [
+       "ragefire-chasm",
+       "wailing-caverns"
+      ],
+      "candidateFound": true,
+      "seconds": 53138.9
+     },
+     {
+      "keys": [
+       "ruins-of-lordaeron"
+      ],
+      "candidateFound": true,
+      "seconds": 56618.8
+     },
+     {
+      "keys": [
+       "ragefire-chasm",
+       "ruins-of-lordaeron"
+      ],
+      "candidateFound": true,
+      "seconds": 49907.6
+     },
+     {
+      "keys": [
+       "wailing-caverns",
+       "ruins-of-lordaeron"
+      ],
+      "candidateFound": true,
+      "seconds": 52415.5
+     },
+     {
+      "keys": [
+       "ragefire-chasm",
+       "wailing-caverns",
+       "ruins-of-lordaeron"
+      ],
+      "candidateFound": true,
+      "seconds": 46065
+     },
+     {
+      "keys": [
+       "deadmines"
+      ],
+      "candidateFound": true,
+      "seconds": 65767.9
+     },
+     {
+      "keys": [
+       "ragefire-chasm",
+       "deadmines"
+      ],
+      "candidateFound": true,
+      "seconds": 59281.7
+     },
+     {
+      "keys": [
+       "wailing-caverns",
+       "deadmines"
+      ],
+      "candidateFound": true,
+      "seconds": 61267.2
+     },
+     {
+      "keys": [
+       "ragefire-chasm",
+       "wailing-caverns",
+       "deadmines"
+      ],
+      "candidateFound": true,
+      "seconds": 55033.7
+     },
+     {
+      "keys": [
+       "ruins-of-lordaeron",
+       "deadmines"
+      ],
+      "candidateFound": true,
+      "seconds": 58835.1
+     },
+     {
+      "keys": [
+       "ragefire-chasm",
+       "ruins-of-lordaeron",
+       "deadmines"
+      ],
+      "candidateFound": true,
+      "seconds": 52223.8
+     },
+     {
+      "keys": [
+       "wailing-caverns",
+       "ruins-of-lordaeron",
+       "deadmines"
+      ],
+      "candidateFound": true,
+      "seconds": 55295.6
+     },
+     {
+      "keys": [
+       "ragefire-chasm",
+       "wailing-caverns",
+       "ruins-of-lordaeron",
+       "deadmines"
+      ],
+      "candidateFound": true,
+      "seconds": 49612.2
+     }
+    ],
+    "Walks": [
+     323,
+     362,
+     367,
+     239,
+     212,
+     147,
+     0,
+     74,
+     306,
+     1489,
+     586
+    ],
+    "Kept": [
+     41,
+     21,
+     1,
+     22,
+     21,
+     0,
+     0,
+     74,
+     103,
+     48,
+     291
+    ],
+    "Better": [
+     0,
+     3,
+     0,
+     1,
+     1,
+     0,
+     0,
+     0,
+     1,
+     5,
+     2
+    ],
+    "SeedsEvaluated": 7,
+    "DungeonCombinationsEvaluated": 16,
+    "DungeonCombinationsTotal": 16,
+    "DungeonEnumerationComplete": true,
+    "PreparationCandidates": 56,
+    "Restarts": 5,
+    "CheckpointLoaded": false,
+    "BestSeconds": 45274.1
+   }
+  },
+  {
+   "scenario": "auto_1h",
+   "baselineSeconds": 41674.6,
+   "seconds": 41105.4,
+   "resumedSeconds": 41105.4,
+   "preparations": {
+    "forceWand": false,
+    "forceProfessions": false,
+    "camping": true,
+    "wands": true,
+    "professionDetour": 180,
+    "professionLevel": 10,
+    "bagStacks": 0
+   },
+   "sleepingBagModel": {
+    "perStack": 0.01,
+    "stackSeconds": 60,
+    "placementSeconds": 10,
+    "duration": 3600,
+    "cooldown": 3600,
+    "source": "Forever item 211527 / spell 429959 tooltip; duration disputed (3600/7200s); placement estimated"
+   },
+   "dungeonRuns": [
+    "ragefire-chasm",
+    "wailing-caverns",
+    "ruins-of-lordaeron"
+   ],
+   "wandSteps": 1,
+   "sleepSteps": 0,
+   "sleepingBagFinished": false,
+   "replayVerified": true,
+   "checkpointResumeVerified": true,
+   "feedbackActive": false,
+   "search": {
+    "DungeonCombinationsAllowed": 16,
+    "DungeonChecks": [
+     {
+      "keys": [],
+      "candidateFound": true,
+      "seconds": 55654
+     },
+     {
+      "keys": [
+       "ragefire-chasm"
+      ],
+      "candidateFound": true,
+      "seconds": 52406.5
+     },
+     {
+      "keys": [
+       "wailing-caverns"
+      ],
+      "candidateFound": true,
+      "seconds": 51709.3
+     },
+     {
+      "keys": [
+       "ragefire-chasm",
+       "wailing-caverns"
+      ],
+      "candidateFound": true,
+      "seconds": 48755.6
+     },
+     {
+      "keys": [
+       "ruins-of-lordaeron"
+      ],
+      "candidateFound": true,
+      "seconds": 49737.5
+     },
+     {
+      "keys": [
+       "ragefire-chasm",
+       "ruins-of-lordaeron"
+      ],
+      "candidateFound": true,
+      "seconds": 45939
+     },
+     {
+      "keys": [
+       "wailing-caverns",
+       "ruins-of-lordaeron"
+      ],
+      "candidateFound": true,
+      "seconds": 45337.3
+     },
+     {
+      "keys": [
+       "ragefire-chasm",
+       "wailing-caverns",
+       "ruins-of-lordaeron"
+      ],
+      "candidateFound": true,
+      "seconds": 41674.6
+     },
+     {
+      "keys": [
+       "deadmines"
+      ],
+      "candidateFound": true,
+      "seconds": 58548.2
+     },
+     {
+      "keys": [
+       "ragefire-chasm",
+       "deadmines"
+      ],
+      "candidateFound": true,
+      "seconds": 55217.7
+     },
+     {
+      "keys": [
+       "wailing-caverns",
+       "deadmines"
+      ],
+      "candidateFound": true,
+      "seconds": 54085.5
+     },
+     {
+      "keys": [
+       "ragefire-chasm",
+       "wailing-caverns",
+       "deadmines"
+      ],
+      "candidateFound": true,
+      "seconds": 50753.7
+     },
+     {
+      "keys": [
+       "ruins-of-lordaeron",
+       "deadmines"
+      ],
+      "candidateFound": true,
+      "seconds": 51982
+     },
+     {
+      "keys": [
+       "ragefire-chasm",
+       "ruins-of-lordaeron",
+       "deadmines"
+      ],
+      "candidateFound": true,
+      "seconds": 48278.8
+     },
+     {
+      "keys": [
+       "wailing-caverns",
+       "ruins-of-lordaeron",
+       "deadmines"
+      ],
+      "candidateFound": true,
+      "seconds": 47452.9
+     },
+     {
+      "keys": [
+       "ragefire-chasm",
+       "wailing-caverns",
+       "ruins-of-lordaeron",
+       "deadmines"
+      ],
+      "candidateFound": true,
+      "seconds": 44907.7
+     }
+    ],
+    "Walks": [
+     365,
+     420,
+     407,
+     281,
+     206,
+     162,
+     0,
+     90,
+     453,
+     1451,
+     1309
+    ],
+    "Kept": [
+     52,
+     33,
+     1,
+     42,
+     31,
+     0,
+     0,
+     41,
+     139,
+     53,
+     520
+    ],
+    "Better": [
+     0,
+     0,
+     0,
+     0,
+     2,
+     0,
+     0,
+     0,
+     1,
+     1,
+     2
+    ],
+    "SeedsEvaluated": 7,
+    "DungeonCombinationsEvaluated": 16,
+    "DungeonCombinationsTotal": 16,
+    "DungeonEnumerationComplete": true,
+    "PreparationCandidates": 168,
+    "Restarts": 10,
+    "CheckpointLoaded": false,
+    "BestSeconds": 41105.4
+   }
+  },
+  {
+   "scenario": "bag_1h",
+   "baselineSeconds": 47380.4,
+   "seconds": 46251.1,
+   "resumedSeconds": 46251.1,
+   "preparations": {
+    "forceWand": false,
+    "forceProfessions": false,
+    "camping": true,
+    "wands": false,
+    "professionDetour": 180,
+    "professionLevel": 1,
+    "bagStacks": 0
+   },
+   "sleepingBagModel": {
+    "perStack": 0.01,
+    "stackSeconds": 60,
+    "placementSeconds": 10,
+    "duration": 3600,
+    "cooldown": 3600,
+    "source": "Forever item 211527 / spell 429959 tooltip; duration disputed (3600/7200s); placement estimated"
+   },
+   "dungeonRuns": [
+    "ragefire-chasm",
+    "wailing-caverns",
+    "ruins-of-lordaeron"
+   ],
+   "wandSteps": 0,
+   "sleepSteps": 0,
+   "sleepingBagFinished": true,
+   "replayVerified": true,
+   "checkpointResumeVerified": true,
+   "feedbackActive": false,
+   "search": {
+    "DungeonCombinationsAllowed": 16,
+    "DungeonChecks": [
+     {
+      "keys": [],
+      "candidateFound": true,
+      "seconds": 63654.9
+     },
+     {
+      "keys": [
+       "ragefire-chasm"
+      ],
+      "candidateFound": true,
+      "seconds": 58743.9
+     },
+     {
+      "keys": [
+       "wailing-caverns"
+      ],
+      "candidateFound": true,
+      "seconds": 61170.6
+     },
+     {
+      "keys": [
+       "ragefire-chasm",
+       "wailing-caverns"
+      ],
+      "candidateFound": true,
+      "seconds": 55699.7
+     },
+     {
+      "keys": [
+       "ruins-of-lordaeron"
+      ],
+      "candidateFound": true,
+      "seconds": 57739.6
+     },
+     {
+      "keys": [
+       "ragefire-chasm",
+       "ruins-of-lordaeron"
+      ],
+      "candidateFound": true,
+      "seconds": 50208.4
+     },
+     {
+      "keys": [
+       "wailing-caverns",
+       "ruins-of-lordaeron"
+      ],
+      "candidateFound": true,
+      "seconds": 53319.5
+     },
+     {
+      "keys": [
+       "ragefire-chasm",
+       "wailing-caverns",
+       "ruins-of-lordaeron"
+      ],
+      "candidateFound": true,
+      "seconds": 47380.4
+     },
+     {
+      "keys": [
+       "deadmines"
+      ],
+      "candidateFound": true,
+      "seconds": 65633.4
+     },
+     {
+      "keys": [
+       "ragefire-chasm",
+       "deadmines"
+      ],
+      "candidateFound": true,
+      "seconds": 60565.1
+     },
+     {
+      "keys": [
+       "wailing-caverns",
+       "deadmines"
+      ],
+      "candidateFound": true,
+      "seconds": 62238.4
+     },
+     {
+      "keys": [
+       "ragefire-chasm",
+       "wailing-caverns",
+       "deadmines"
+      ],
+      "candidateFound": true,
+      "seconds": 56803.5
+     },
+     {
+      "keys": [
+       "ruins-of-lordaeron",
+       "deadmines"
+      ],
+      "candidateFound": true,
+      "seconds": 59333.2
+     },
+     {
+      "keys": [
+       "ragefire-chasm",
+       "ruins-of-lordaeron",
+       "deadmines"
+      ],
+      "candidateFound": true,
+      "seconds": 52179.6
+     },
+     {
+      "keys": [
+       "wailing-caverns",
+       "ruins-of-lordaeron",
+       "deadmines"
+      ],
+      "candidateFound": true,
+      "seconds": 56079.9
+     },
+     {
+      "keys": [
+       "ragefire-chasm",
+       "wailing-caverns",
+       "ruins-of-lordaeron",
+       "deadmines"
+      ],
+      "candidateFound": false
+     }
+    ],
+    "Walks": [
+     560,
+     605,
+     642,
+     400,
+     348,
+     246,
+     0,
+     0,
+     510,
+     907,
+     1420
+    ],
+    "Kept": [
+     73,
+     48,
+     4,
+     60,
+     52,
+     0,
+     0,
+     0,
+     171,
+     21,
+     843
+    ],
+    "Better": [
+     3,
+     0,
+     0,
+     4,
+     5,
+     0,
+     0,
+     0,
+     7,
+     0,
+     4
+    ],
+    "SeedsEvaluated": 7,
+    "DungeonCombinationsEvaluated": 16,
+    "DungeonCombinationsTotal": 16,
+    "DungeonEnumerationComplete": true,
+    "PreparationCandidates": 28,
+    "Restarts": 10,
+    "CheckpointLoaded": false,
+    "BestSeconds": 46251.1
+   }
+  },
+  {
+   "scenario": "wand_bag_1h",
+   "baselineSeconds": 46065,
+   "seconds": 45236.3,
+   "resumedSeconds": 45236.3,
+   "preparations": {
+    "forceWand": true,
+    "forceProfessions": false,
+    "camping": true,
+    "wands": true,
+    "professionDetour": 180,
+    "professionLevel": 1,
+    "bagStacks": 0
+   },
+   "sleepingBagModel": {
+    "perStack": 0.01,
+    "stackSeconds": 60,
+    "placementSeconds": 10,
+    "duration": 3600,
+    "cooldown": 3600,
+    "source": "Forever item 211527 / spell 429959 tooltip; duration disputed (3600/7200s); placement estimated"
+   },
+   "dungeonRuns": [
+    "ragefire-chasm",
+    "wailing-caverns",
+    "ruins-of-lordaeron"
+   ],
+   "wandSteps": 1,
+   "sleepSteps": 0,
+   "sleepingBagFinished": true,
+   "replayVerified": true,
+   "checkpointResumeVerified": true,
+   "feedbackActive": false,
+   "search": {
+    "DungeonCombinationsAllowed": 16,
+    "DungeonChecks": [
+     {
+      "keys": [],
+      "candidateFound": true,
+      "seconds": 62777.5
+     },
+     {
+      "keys": [
+       "ragefire-chasm"
+      ],
+      "candidateFound": true,
+      "seconds": 56884.4
+     },
+     {
+      "keys": [
+       "wailing-caverns"
+      ],
+      "candidateFound": true,
+      "seconds": 58892.5
+     },
+     {
+      "keys": [
+       "ragefire-chasm",
+       "wailing-caverns"
+      ],
+      "candidateFound": true,
+      "seconds": 53138.9
+     },
+     {
+      "keys": [
+       "ruins-of-lordaeron"
+      ],
+      "candidateFound": true,
+      "seconds": 56618.8
+     },
+     {
+      "keys": [
+       "ragefire-chasm",
+       "ruins-of-lordaeron"
+      ],
+      "candidateFound": true,
+      "seconds": 49907.6
+     },
+     {
+      "keys": [
+       "wailing-caverns",
+       "ruins-of-lordaeron"
+      ],
+      "candidateFound": true,
+      "seconds": 52415.5
+     },
+     {
+      "keys": [
+       "ragefire-chasm",
+       "wailing-caverns",
+       "ruins-of-lordaeron"
+      ],
+      "candidateFound": true,
+      "seconds": 46065
+     },
+     {
+      "keys": [
+       "deadmines"
+      ],
+      "candidateFound": true,
+      "seconds": 65767.9
+     },
+     {
+      "keys": [
+       "ragefire-chasm",
+       "deadmines"
+      ],
+      "candidateFound": true,
+      "seconds": 59281.7
+     },
+     {
+      "keys": [
+       "wailing-caverns",
+       "deadmines"
+      ],
+      "candidateFound": true,
+      "seconds": 61267.2
+     },
+     {
+      "keys": [
+       "ragefire-chasm",
+       "wailing-caverns",
+       "deadmines"
+      ],
+      "candidateFound": true,
+      "seconds": 55033.7
+     },
+     {
+      "keys": [
+       "ruins-of-lordaeron",
+       "deadmines"
+      ],
+      "candidateFound": true,
+      "seconds": 58835.1
+     },
+     {
+      "keys": [
+       "ragefire-chasm",
+       "ruins-of-lordaeron",
+       "deadmines"
+      ],
+      "candidateFound": true,
+      "seconds": 52223.8
+     },
+     {
+      "keys": [
+       "wailing-caverns",
+       "ruins-of-lordaeron",
+       "deadmines"
+      ],
+      "candidateFound": true,
+      "seconds": 55295.6
+     },
+     {
+      "keys": [
+       "ragefire-chasm",
+       "wailing-caverns",
+       "ruins-of-lordaeron",
+       "deadmines"
+      ],
+      "candidateFound": true,
+      "seconds": 49612.2
+     }
+    ],
+    "Walks": [
+     414,
+     498,
+     477,
+     298,
+     255,
+     189,
+     0,
+     103,
+     356,
+     854,
+     524
+    ],
+    "Kept": [
+     53,
+     36,
+     3,
+     29,
+     24,
+     0,
+     0,
+     103,
+     93,
+     7,
+     274
+    ],
+    "Better": [
+     3,
+     1,
+     0,
+     1,
+     5,
+     0,
+     0,
+     0,
+     5,
+     1,
+     1
+    ],
+    "SeedsEvaluated": 7,
+    "DungeonCombinationsEvaluated": 16,
+    "DungeonCombinationsTotal": 16,
+    "DungeonEnumerationComplete": true,
+    "PreparationCandidates": 56,
+    "Restarts": 5,
+    "CheckpointLoaded": false,
+    "BestSeconds": 45236.3
+   }
+  }
+ ],
+ "pooledFreeWinner": {
+  "seconds": 40481.2,
+  "independentAutoSeconds": 41105.4,
+  "bestKnownFixedSeconds": 40481.2,
+  "preparations": {
+   "forceWand": false,
+   "forceProfessions": false,
+   "camping": true,
+   "wands": true,
+   "professionDetour": 180,
+   "professionLevel": 10,
+   "bagStacks": 0
+  },
+  "dungeonRuns": [
+   "ragefire-chasm",
+   "wailing-caverns",
+   "ruins-of-lordaeron"
+  ],
+  "replayVerified": true,
+  "feedbackActive": false
+ },
+ "identicalRouteDurationSensitivity": [
+  {
+   "method": "identical events, preparations and wand detour; only buff duration changes",
+   "scenario": "auto",
+   "seconds_1h": 41105.4,
+   "seconds_2h": 41105.4
+  },
+  {
+   "method": "identical events, preparations and wand detour; only buff duration changes",
+   "scenario": "bag",
+   "seconds_1h": 46251.1,
+   "seconds_2h": 46251.1
+  },
+  {
+   "method": "identical events, preparations and wand detour; only buff duration changes",
+   "scenario": "wand_bag",
+   "seconds_1h": 45447.5,
+   "seconds_2h": 45274.1
+  }
+ ],
+ "limitations": [
+  "Model times, not measured in-game times",
+  "All eligible dungeon subsets were sampled; this is not proof of globally optimal placement or quest selection",
+  "Profession material preparation, combat, travel and dungeon times remain estimates",
+  "Sleeping-bag tooltip values and duration are beta assumptions; 1h and 2h were tested separately",
+  "Food procurement, food XP effects and overlapping camp/bag rests are not fully modelled",
+  "Static routes for the entire roster have not been regenerated",
+  "Live ForeverSim feedback stays disabled until release and explicit user approval"
+ ]
+}

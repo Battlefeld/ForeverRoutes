@@ -363,6 +363,7 @@ func Build(in Inputs) (*dataset.Dataset, error) {
 	b.guideSpawns()
 	b.capitalNPCs()
 	b.skillQuests()
+	b.objectiveActions()
 	b.instantQuests()
 	b.notLeveling()
 	b.aegisQuests()
@@ -1083,8 +1084,7 @@ func (b *builder) applyWarcraftDB(out *dataset.Quest) {
 	}
 	place := func(ps []warcraftdb.Place) *dataset.Point {
 		for _, p := range ps {
-			if t, ok := b.uiT[strconv.Itoa(p.UIMap)]; ok {
-				pt := t.apply(p.U*100, p.V*100)
+			if pt, ok := b.uiPoint(p.UIMap, p.U*100, p.V*100); ok {
 				return &pt
 			}
 		}
