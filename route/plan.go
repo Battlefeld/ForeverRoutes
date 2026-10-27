@@ -290,8 +290,14 @@ func (w *World) bestSource(s *State, q *Quest, oi int) (Action, bool) {
 		if w.tooDangerous(s, src) {
 			continue
 		}
-		work := w.Opt.InteractSecs
-		if !src.Talk {
+		work := 0.0
+		if src.Talk || src.Duel {
+			_, t, ok := w.nonCombatWork(s, q, oi, src)
+			if !ok {
+				continue
+			}
+			work = t
+		} else {
 			work, _, _ = w.killSeconds(s, src.NPC, src.Site, left/src.Chance) // respawns included: a lone rare is slow
 		}
 		t := w.TravelTime(s, s.Pos, src.Site.Center) + work

@@ -40,6 +40,8 @@ func main() {
 		err = cmdExtend(os.Args[2:])
 	case "check-routes":
 		err = cmdCheckRoutes(os.Args[2:])
+	case "check-quests":
+		err = cmdCheckQuests(os.Args[2:])
 	default:
 		usage()
 		os.Exit(2)
@@ -65,6 +67,7 @@ func usage() {
   extend       continue a route to a higher level (-route data/routes/orc-warrior.json -target 40 [-dungeons])
   export-addon write the routes as Lua data for the in-game addon
   check-routes replay every route file and report long steps, quests no guide does, assumed drops, deathskips
+  check-quests audit every quest and its prerequisites up to a target level, with explicit data gaps
   guide        walk a quest guide (list of accept/complete/turnin/level events) with the same model`)
 }
 

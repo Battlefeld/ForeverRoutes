@@ -22,6 +22,10 @@ func (w *World) Improve(events []GuideEvent, target int, budget time.Duration) (
 	}
 	cur := append([]GuideEvent(nil), events...)
 	deadline := time.Now().Add(budget)
+	cur = w.improveDungeonChains(cur, target, deadline)
+	if improved, issue := w.FollowGuide(cur, target); issue == nil {
+		best = improved
+	}
 	// the required class chains the route finishes stay finished: an edit that loses one is no improvement
 	var goals []int
 	for _, c := range w.ClassChains(target) {

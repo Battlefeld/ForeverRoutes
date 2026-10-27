@@ -27,20 +27,21 @@ type State struct {
 	Bind                 dataset.Point     // where the hearthstone leads
 	Hearth               float64           // time from which the hearthstone can be used again
 	Travel, Combat, Talk float64
-	Wait                 float64        // part of Combat spent waiting for respawns
-	Assumed              int            // steps that rely on an assumed drop chance
-	Dead                 map[int]dead   // site key -> mobs of that site still dead
-	Deathskips           int            // deaths taken on purpose to travel
-	Runs                 uint64         // dungeons run (bit per World.Dungeons index)
-	RunEnd               float64        // when the last run ended: the search for the next group overlaps the questing since
-	Switches             int            // changes between Kalimdor and the Eastern Kingdoms
-	Wand                 bool           // a caster has crafted its wands: the practice wand, the Lesser Magic Wand from level 5 (wand.go)
-	Prof                 bool           // Skinning, Cooking and Leatherworking learned (camp.go)
-	Rested               float64        // rested experience left: doubles kill XP
-	Camp                 float64        // time from which the next camp gives rested experience
-	Camps                int            // camps made
-	via                  string         // how the last action travelled when not on foot (hearth, teleport, network, deathskip: <graveyard>)
-	viaAt                *dataset.Point // where to die for that deathskip
+	Wait                 float64                    // part of Combat spent waiting for respawns
+	Assumed              int                        // steps that rely on an assumed drop chance
+	Dead                 map[int]dead               // site key -> mobs of that site still dead
+	Interacted           map[interactionKey]float64 // distinct noncombat targets already used for an objective
+	Deathskips           int                        // deaths taken on purpose to travel
+	Runs                 uint64                     // dungeons run (bit per World.Dungeons index)
+	RunEnd               float64                    // when the last run ended: the search for the next group overlaps the questing since
+	Switches             int                        // changes between Kalimdor and the Eastern Kingdoms
+	Wand                 bool                       // a caster has crafted its wands: the practice wand, the Lesser Magic Wand from level 5 (wand.go)
+	Prof                 bool                       // Skinning, Cooking and Leatherworking learned (camp.go)
+	Rested               float64                    // rested experience left: doubles kill XP
+	Camp                 float64                    // time from which the next camp gives rested experience
+	Camps                int                        // camps made
+	via                  string                     // how the last action travelled when not on foot (hearth, teleport, network, deathskip: <graveyard>)
+	viaAt                *dataset.Point             // where to die for that deathskip
 }
 
 // dead counts the mobs of one creature killed at its site, as of a time. They come back over the respawn time.
@@ -62,6 +63,10 @@ func (s *State) clone() *State {
 		c.Prog[k] = append([]float64(nil), v...)
 	}
 	c.Dead = make(map[int]dead, len(s.Dead))
+	c.Interacted = make(map[interactionKey]float64, len(s.Interacted))
+	for k, v := range s.Interacted {
+		c.Interacted[k] = v
+	}
 	for k, v := range s.Dead {
 		if s.Time-v.At < 900 { // everything is back after at most a quarter hour; forget older entries
 			c.Dead[k] = v
@@ -295,7 +300,15 @@ func (w *World) kill(s *State, n *dataset.NPC, obj int, site Site, k float64) {
 }
 
 // Apply performs one action; the state is changed only when the action is possible.
-func (w *World) Apply(s *State, a Action) error {
+func (w *World) Apply(s *State, a Action) (err error) {
+	// Validation can fail after camping but before movement. No map/slice is written until all fallible checks
+	// pass, so restoring the scalar state suffices and avoids cloning the entire quest log for every action.
+	before := *s
+	defer func() {
+		if err != nil {
+			*s = before
+		}
+	}()
 	if a.Op == "work" || a.Op == "grind" {
 		w.camp(s) // the hourly camp before a fight (camp.go)
 	}
@@ -412,23 +425,37 @@ func (w *World) Apply(s *State, a Action) error {
 			return fail("quest %d objective %d: too high level there", a.Quest, a.Obj)
 		}
 		left := float64(o.Count) - s.Prog[q.Index][a.Obj]
+		if left <= 0 {
+			return fail("quest %d objective %d already done", a.Quest, a.Obj)
+		}
 		if src.Assumed {
 			s.Assumed++
 		}
 		if src.Skill && !(s.Prof && w.Level(s) >= campLevel) {
 			return fail("quest %d: the profession is not at its skill yet", q.ID)
 		}
-		if src.Talk {
+		if src.Talk || src.Duel {
+			units, t, ok := w.nonCombatWork(s, q, a.Obj, *src)
+			if !ok {
+				return fail("quest %d objective %d: no unused interaction targets", q.ID, a.Obj)
+			}
 			if err := w.move(s, src.Site.Center); err != nil {
 				return err
 			}
-			s.Time += w.Opt.InteractSecs
-			s.Talk += w.Opt.InteractSecs
-			s.Prog[q.Index][a.Obj] = float64(o.Count)
+			s.Time += t
+			if src.Duel {
+				s.Combat += t
+			} else {
+				s.Talk += t
+			}
+			if o.Kind == "interact" || o.Kind == "talk" {
+				if s.Interacted == nil {
+					s.Interacted = map[interactionKey]float64{}
+				}
+				s.Interacted[interactionKey{q.ID, a.Obj, src.Site.Key}] += units
+			}
+			s.Prog[q.Index][a.Obj] = math.Min(float64(o.Count), s.Prog[q.Index][a.Obj]+units)
 			return nil
-		}
-		if left <= 0 {
-			return fail("quest %d objective %d already done", a.Quest, a.Obj)
 		}
 		if err := w.move(s, src.Site.Center); err != nil {
 			return err

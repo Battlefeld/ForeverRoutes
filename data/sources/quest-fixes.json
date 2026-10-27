@@ -1,15 +1,148 @@
 {
  "description": "Quest facts the sources get wrong or leave out, each with the page that shows it. Applied by the build after all sources (internal/build/fixes.go).",
  "fixes": [
-  {"quest": 79974, "preAll": [79980], "source": "https://conquestcapped.com/guides/wow-forever/wow-forever-cozy-sleeping-bag/",
-   "note": "Wet Job is taken at the Mound of Dirt that ends Scramble"},
-  {"quest": 79192, "addStartObjects": [424010], "source": "https://conquestcapped.com/guides/wow-forever/wow-forever-cozy-sleeping-bag/",
-   "note": "Stepping Stones is taken where the note is handed in: the Horde at the Nailed Plank in Westfall, the Alliance at the remains in the Barrens"},
-  {"quest": 79008, "placesFromObjects": true, "source": "https://conquestcapped.com/guides/wow-forever/wow-forever-cozy-sleeping-bag/",
-   "note": "the Alliance takes the note at the Burned-Out Remains in Westfall (Alexston Farmstead) and hands it in at the ones in the Barrens"},
-  {"quest": 94817, "instant": true, "source": "https://urgametips.com/wow-forever/quest-guides/confounding-flash-high-priestess-mims-gnome-priest/",
-   "note": "Confounding Flash (gnome priest racial): taken from High Priestess Mims in Ironforge, handed in by speaking to her again"},
-  {"quest": 94773, "instant": true, "source": "https://www.wowhead.com/forever/quest=94773",
-   "note": "Divine Grace (human priest racial): High Priestess Laurena in Stormwind gives and takes it; the reward is the spell, nothing to do between (as Confounding Flash)"}
+  {
+   "quest": 79974,
+   "preAll": [
+    79980
+   ],
+   "source": "https://conquestcapped.com/guides/wow-forever/wow-forever-cozy-sleeping-bag/",
+   "note": "Wet Job is taken at the Mound of Dirt that ends Scramble"
+  },
+  {
+   "quest": 79192,
+   "addStartObjects": [
+    424010
+   ],
+   "source": "https://conquestcapped.com/guides/wow-forever/wow-forever-cozy-sleeping-bag/",
+   "note": "Stepping Stones is taken where the note is handed in: the Horde at the Nailed Plank in Westfall, the Alliance at the remains in the Barrens"
+  },
+  {
+   "quest": 79008,
+   "placesFromObjects": true,
+   "source": "https://conquestcapped.com/guides/wow-forever/wow-forever-cozy-sleeping-bag/",
+   "note": "the Alliance takes the note at the Burned-Out Remains in Westfall (Alexston Farmstead) and hands it in at the ones in the Barrens"
+  },
+  {
+   "quest": 94817,
+   "instant": true,
+   "source": "https://urgametips.com/wow-forever/quest-guides/confounding-flash-high-priestess-mims-gnome-priest/",
+   "note": "Confounding Flash (gnome priest racial): taken from High Priestess Mims in Ironforge, handed in by speaking to her again"
+  },
+  {
+   "quest": 94773,
+   "instant": true,
+   "source": "https://www.wowhead.com/forever/quest=94773",
+   "note": "Divine Grace (human priest racial): High Priestess Laurena in Stormwind gives and takes it; the reward is the spell, nothing to do between (as Confounding Flash)"
+  },
+  {
+   "quest": 91294,
+   "objectiveKinds": {
+    "246389": "talk",
+    "246393": "talk",
+    "246394": "talk",
+    "246378": "talk"
+   },
+   "source": "https://www.wowhead.com/forever/quest=91294",
+   "note": "The residents and faction leaders are spoken to; creature credits do not mean kills."
+  },
+  {
+   "quest": 93739,
+   "objectiveKinds": {
+    "3230": "talk",
+    "10540": "talk",
+    "3057": "talk",
+    "10181": "talk"
+   },
+   "source": "https://www.wowhead.com/forever/quest=93739",
+   "note": "The residents and faction leaders are spoken to; creature credits do not mean kills."
+  },
+  {
+   "quest": 93963,
+   "objectiveKinds": {
+    "275491": "talk",
+    "7937": "talk",
+    "2784": "talk",
+    "7999": "talk"
+   },
+   "source": "https://www.wowhead.com/forever/quest=93963",
+   "note": "The residents and faction leaders are spoken to; creature credits do not mean kills."
+  },
+  {
+   "quest": 99134,
+   "objectiveKinds": {
+    "1746": "interact"
+   },
+   "objectiveTargets": {
+    "1746": [
+     1495,
+     1496,
+     1519,
+     1652,
+     1735,
+     1736,
+     1737,
+     1738,
+     1739,
+     1740,
+     1741,
+     1742,
+     1743,
+     1744,
+     1745,
+     2209,
+     2210,
+     5725,
+     7980,
+     12428,
+     16003,
+     251001,
+     257655,
+     257663,
+     272101,
+     275103
+    ]
+   },
+   "source": "https://www.wowhead.com/forever/quest=99134",
+   "note": "Use the supplied motivator on five distinct Deathguards, not kill them. Alternative Tirisfal guards come from pinned client names and spawns; the Forever report permits guards in Deathknell or near Brill."
+  },
+  {
+   "quest": 1640,
+   "objectiveKinds": {
+    "6090": "duel"
+   },
+   "source": "https://www.wowhead.com/forever/quest=1640",
+   "note": "Beat Bartleby in a scripted duel; no ordinary kill XP or loot."
+  },
+  {
+   "quest": 6001,
+   "objectiveKinds": {
+    "12144": "talk"
+   },
+   "addFight": 12138,
+   "source": "https://www.wowhead.com/forever/quest=6001",
+   "note": "Summon and defeat Lunaclaw, then speak to its spirit. The credited spirit is not the enemy. Fight positions come from the pinned Forever guide."
+  },
+  {
+   "quest": 6002,
+   "objectiveKinds": {
+    "12144": "talk"
+   },
+   "addFight": 12138,
+   "source": "https://www.wowhead.com/forever/quest=6002",
+   "note": "Summon and defeat Lunaclaw, then speak to its spirit. The credited spirit is not the enemy. Fight positions come from the pinned Forever guide."
+  },
+  {
+   "quest": 99108,
+   "objectives": [
+    {
+     "k": "duel",
+     "id": 10721,
+     "n": 3
+    }
+   ],
+   "source": "https://github.com/fitzforge/polestar/blob/88c30ff0a32158684ef614798df20b9f21c0f9ad/guides/forever/horde/tauren/01-mulgore.guide",
+   "note": "The pinned Forever guide explicitly requires beating three Novice Warriors (or winning player duels). Price three NPC duels without ordinary kill XP, not a free conversation/event credit."
+  }
  ]
 }

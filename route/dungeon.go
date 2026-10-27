@@ -117,15 +117,16 @@ func (w *World) dungeonQuest(q *dataset.Quest) (*Quest, string) {
 			}
 		}
 		if !o.Inside {
-			solo, _ := w.resolve(&dataset.Quest{ID: q.ID, Start: q.Start, End: q.End, StartAt: &rq.StartPos, EndAt: &rq.EndPos, Objectives: []dataset.Objective{o}})
-			if solo != nil {
-				ro.Sources = solo.Objectives[0].Sources
+			solo, why := w.resolve(&dataset.Quest{ID: q.ID, Classes: q.Classes, Start: q.Start, End: q.End, StartAt: &rq.StartPos, EndAt: &rq.EndPos, Objectives: []dataset.Objective{o}})
+			if solo == nil {
+				return nil, "outside dungeon: " + why
 			}
+			ro.Sources = solo.Objectives[0].Sources
 			near := len(ro.Sources) > 0
 			for _, src := range ro.Sources {
 				near = near && distance(src.Site.Center, d.Entrance) <= insideRadius
 			}
-			ro.Inside = len(ro.Sources) == 0 || near
+			ro.Inside = near
 		}
 		rq.Objectives = append(rq.Objectives, ro)
 	}

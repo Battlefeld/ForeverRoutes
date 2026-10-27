@@ -19,9 +19,14 @@ type questFix struct {
 	// PlacesFromObjects: the start and end places a source gives are wrong, they follow from the objects
 	PlacesFromObjects bool `json:"placesFromObjects,omitempty"`
 	// Instant: taken and handed in at the same NPC with nothing to do between (a talk quest that teaches a spell)
-	Instant bool   `json:"instant,omitempty"`
-	Source  string `json:"source"`
-	Note    string `json:"note"`
+	Instant bool `json:"instant,omitempty"`
+	// ObjectiveKinds maps NPC credit IDs to a sourced action (talk or interact), preserving counts and positions.
+	ObjectiveKinds   map[int]string      `json:"objectiveKinds,omitempty"`
+	ObjectiveTargets map[int][]int       `json:"objectiveTargets,omitempty"`
+	AddFight         int                 `json:"addFight,omitempty"`
+	Objectives       []dataset.Objective `json:"objectives,omitempty"`
+	Source           string              `json:"source"`
+	Note             string              `json:"note"`
 }
 
 func readQuestFixes(path string) ([]questFix, error) {
@@ -35,6 +40,21 @@ func readQuestFixes(path string) ([]questFix, error) {
 	if err := json.Unmarshal(raw, &f); err != nil {
 		return nil, fmt.Errorf("quest fixes: %w", err)
 	}
+	for _, fix := range f.Fixes {
+		if fix.Quest <= 0 || fix.Source == "" {
+			return nil, fmt.Errorf("quest fix needs an id and source")
+		}
+		for _, kind := range fix.ObjectiveKinds {
+			if kind != "talk" && kind != "interact" && kind != "duel" {
+				return nil, fmt.Errorf("quest %d: invalid objective kind %q", fix.Quest, kind)
+			}
+		}
+		for _, o := range fix.Objectives {
+			if o.ID <= 0 || o.Count <= 0 || o.Kind != "duel" {
+				return nil, fmt.Errorf("quest %d: invalid replacement duel", fix.Quest)
+			}
+		}
+	}
 	return f.Fixes, nil
 }
 
@@ -45,6 +65,18 @@ func (b *builder) applyQuestFixes() {
 			q := &b.out[i]
 			if q.ID != f.Quest {
 				continue
+			}
+			if f.AddFight > 0 {
+				b.npcWanted[f.AddFight] = true
+			}
+			if f.Objectives != nil {
+				q.Objectives = slices.Clone(f.Objectives)
+				q.Unsupported, q.NeedItems = "", nil
+				q.Sources["objectives"] = f.Source
+				for j := range q.Objectives {
+					q.Objectives[j].Source = f.Source
+					b.npcWanted[q.Objectives[j].ID] = true
+				}
 			}
 			if f.PreAll != nil {
 				q.PreAll, q.PreAny = f.PreAll, nil
@@ -70,6 +102,19 @@ func (b *builder) applyQuestFixes() {
 			if f.Instant {
 				b.instantOK[q.ID] = true
 				q.Sources["objectives"] = f.Source
+			}
+			for j := range q.Objectives {
+				o := &q.Objectives[j]
+				if kind, ok := f.ObjectiveKinds[o.ID]; ok && o.Kind == "kill" {
+					o.Kind, o.Source = kind, f.Source
+					q.Sources["objectiveAction"] = f.Source
+				}
+				if targets, ok := f.ObjectiveTargets[o.ID]; ok {
+					o.Targets = targets
+					for _, id := range targets {
+						b.npcWanted[id] = true
+					}
+				}
 			}
 			b.stats["quest_fixes_applied"]++
 		}

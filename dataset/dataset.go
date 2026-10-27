@@ -43,6 +43,7 @@ type Drop struct {
 type Objective struct {
 	Kind    string  `json:"k"` // kill | item | object | talk | event | skill (ID a profession, Count its skill)
 	ID      int     `json:"id"`
+	Targets []int   `json:"targets,omitempty"` // alternative NPCs that give the same interaction credit
 	Count   int     `json:"n"`
 	Source  string  `json:"src"`
 	Drops   []Drop  `json:"drops,omitempty"`

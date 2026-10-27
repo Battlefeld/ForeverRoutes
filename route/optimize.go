@@ -35,6 +35,8 @@ const optimizeReach = 400.0
 func (w *World) Optimize(events []GuideEvent, o OptimizeOptions) ([]GuideEvent, *GuideResult, error) {
 	target := o.Target
 	events = w.withClassQuests(events, target)
+	deadline := time.Now().Add(o.Budget)
+	events = w.improveDungeonChains(events, target, deadline)
 	start, err := w.FollowGuide(events, target)
 	if err != nil {
 		return nil, nil, err
@@ -84,7 +86,6 @@ func (w *World) Optimize(events []GuideEvent, o OptimizeOptions) ([]GuideEvent, 
 		late[i] = curC
 	}
 	wand := wandClasses[w.Char.Class]
-	deadline := time.Now().Add(o.Budget)
 	for k := 0; time.Now().Before(deadline); k++ {
 		wandBefore := w.wandDetour
 		cand, kind := w.edit(cur, rng, pool, target, wand)
@@ -224,11 +225,7 @@ func (w *World) edit(cur []GuideEvent, rng *rand.Rand, pool []*Quest, target int
 		if d > optimizeReach {
 			return nil, kind
 		}
-		block := []GuideEvent{{Op: "accept", Quest: q.ID}}
-		if q.Dungeon == nil {
-			block = append(block, GuideEvent{Op: "complete", Quest: q.ID}, GuideEvent{Op: "turnin", Quest: q.ID})
-		}
-		return slices.Insert(slices.Clone(cur), i+1, block...), kind
+		return w.insertQuestChain(cur, q, i+1), kind
 	case p < 94: // a dungeon run put in or left out
 		kind = 5
 		if !w.Opt.Dungeons || len(w.Dungeons) == 0 {

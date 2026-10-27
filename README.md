@@ -14,7 +14,7 @@ ForeverCore.exe gebaut (Paket `route`). Die Kampfzeiten kommen aus MythicSim (Fo
 
 ## Stand
 
-- Datensatz mit 2349 Quests, 3060 NPCs, 393 Objekten, 59 Flugmeistern, 45 Gasthäusern, Zeppelinen und Schiffen, dazu das
+- Datensatz mit 2922 Quests, 3751 NPCs, 630 Objekten, 59 Flugmeistern, 45 Gasthäusern, Zeppelinen und Schiffen, dazu das
   Skyborne-Startgebiet Zephras Isle mit der Abreise beider Fraktionen. Skyborne brauchen `-faction A` oder `-faction H`.
 - Orc Hexer und Mensch Magier sind die Ausgangstests: Beide erreichen Level 30 mit vollständigen, nachgeprüften Routen.
 - **Die Stundenangaben sind nicht kalibriert.** Ohne `-profile` gilt das eingebaute Kampfmodell (`DefaultProfile`), eine Schätzung. Es
@@ -22,17 +22,18 @@ ForeverCore.exe gebaut (Paket `route`). Die Kampfzeiten kommen aus MythicSim (Fo
   reines Grinden landen bis Level 21 im Modell fast gleichauf. Darum grinden die Routen heute zu viel. Echte Zahlen kommen
   über ForeverCore aus MythicSim (`KillProfile`); mit `guide` lassen sich Guides unter denselben Regeln nachgehen und so
   das Modell prüfen.
-- Bekannte Datenlücken (siehe `foreverroutes audit`): rund 100 Quests brauchen Forever-eigene Gegenstände, deren
-  Beutequelle keine Datenbank kennt (nur das Spiel selbst weiß es); rund 20 brauchen hergestellte Gegenstände oder
-  Schlachtfeld-Marken; 13 werden über einen Gegenstand ohne bekannte Beutequelle gestartet; Ruf-, Gebiets- und Zauberziele
-  sind noch nicht modelliert; 17 sind Elite- oder Dungeonquests (nicht solo). Diese Quests bleiben markiert und werden
-  nicht geraten. Wo eine Quelle den Gegner nennt, aber keine Chance, nimmt der Planer einen gekennzeichneten Wert an.
+- **Questprüfung bis 20:** [vollständiger Bericht](data/audits/quests-through-20.json), [Ergebnis und Grenzen](data/audits/README.md).
+  Alle 1908 Quests mit Mindestlevel ≤20 werden über die 56 ausgelieferten Volk-/Klassenkombinationen geprüft.
+  1450 sind für mindestens einen Kontext bis 20 modellierbar (19 wiederholbare davon einmalig); 179 haben offene Datenlücken.
+  Unbekannte Mengen, Orte und Quellen erzeugen keine kostenlosen Questbelohnungen. Unbekannte XP bleiben gekennzeichnet bei 0.
+  Statische Routendateien müssen nach Datenänderungen neu berechnet werden; ihre alten Stunden sind kein Vergleich mit diesem Datensatz.
 
 ## Befehle
 
 ```sh
 go test ./...                      # alle Tests, inkl. Ausgangstest Orc Hexer / Mensch Magier (~3 min)
 go test -short ./...               # ohne die langen Planungsläufe
+go run ./cmd/foreverroutes check-quests -target 20 -out quest-audit.json
 
 go run ./cmd/foreverroutes plan -race Orc -class Warlock -out orc.json
 go run ./cmd/foreverroutes plan -race Human -class Mage -target 30 -restarts 4 -out human.json
@@ -65,8 +66,9 @@ Route schneller). Klassenquest-Gegner zählen auch als Elite als solo machbar.
 
 Voraussetzungen: Ein Breadcrumb (cmangos `BreadcrumbForQuestId`) ist keine Voraussetzung, auch wenn die Client-Daten
 ihn so führen (Cutting Teeth, Redridge Rendezvous, Surena Caledon). Nimmt ein RestedXP-Forever-Guide eine Quest an,
-während die angebliche Voraussetzung noch offen ist, oder macht kein Guide sie je, entfällt sie (nicht bei
-Klassenquests). Eine Voraussetzung einer anderen Rasse zählt für den Charakter nicht.
+während die angebliche Voraussetzung noch offen ist, kann diese entfallen (nicht bei Klassenquests).
+Dass kein Guide eine Vorquest erwähnt, reicht nicht zum Entfernen. Alternative Voraussetzungen bleiben als Alternativen erhalten;
+nur wenn der Guide alle gleichzeitig offen hat, kann die OR-Bedingung entfallen. Eine Voraussetzung einer anderen Rasse zählt für den Charakter nicht.
 
 Es gibt je Volk und Klasse zwei Routen: **Solo ohne Dungeon** (`<volk>-<klasse>.json`, keine Dungeonquests) und **Solo mit Dungeon** (`<volk>-<klasse>-dungeons.json`). Mit `-dungeons` (bei `plan`, `improve`, `extend`, `next`) gehören Dungeon-Läufe zur Route. Ein Dungeon-Baustein nimmt die
 Dungeonquests an, die draußen vergeben werden und die der Lauf erledigt (nächstgelegene zuerst; unterwegs schon ab drei
@@ -79,7 +81,8 @@ nur innerhalb seiner Stufen.
   der Trash aus den cmangos-Spawns der Instanz (5er-Gruppe mit Classic-Gruppenbonus 1,4; ein Questlauf tötet 40 %, was im Weg steht). Vor jedem Lauf 10 Minuten Gruppensuche; Klassen, die tanken oder heilen können (Krieger, Paladin, Schamane, Priester, Druide), finden fast sofort eine Gruppe (1 Minute); Druide und Krieger erst mit Bärengestalt bzw. Verteidigungshaltung, die Routen mit Dungeon holen sie vor dem ersten Lauf. Sammelquests im Dungeon: jedes Gruppenmitglied braucht eigene Drops, die vier weiteren Anteile kosten zusätzliche Kills (15 s je Kill); einzelne Bossgegenstände nicht.
 - `extend -route data/routes/orc-warrior.json -target 40 [-dungeons]` setzt eine Route fort: Er spielt sie bis zu
   ihrem Ende nach, plant ab dem erreichten Stand und verbessert das Ganze wie `improve`.
-- Ein Lauf, der sich nicht lohnt, fällt beim Verbessern heraus wie eine Quest. Laufzeiten werden nach dem Release im
+- Beim Optimieren werden Dungeonquests gemeinsam mit ihrer vollständigen Vorquestkette als ein Kandidat bewertet.
+  Ein Lauf, der sich nicht lohnt, fällt beim Verbessern heraus wie eine Quest. Laufzeiten werden nach dem Release im
   Spiel kalibriert.
 
 ### Planen beim Spielen (`next`)

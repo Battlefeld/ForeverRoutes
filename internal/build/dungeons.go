@@ -3,6 +3,7 @@ package build
 import (
 	"math"
 	"sort"
+	"strings"
 
 	"github.com/Battlefeld/ForeverRoutes/dataset"
 )
@@ -108,6 +109,16 @@ func (b *builder) dungeons() []dataset.Dungeon {
 		return false
 	}
 	instanceOf := func(q *dataset.Quest) (int, bool) {
+		for _, drop := range q.StartDrops {
+			if drop.NPC <= 0 || drop.Unknown || drop.Chance < 100 {
+				continue
+			}
+			for m, creatures := range b.w.inside {
+				if i, ok := byInstance[m]; ok && creatures[drop.NPC] > 0 && !npcOut(drop.NPC) {
+					return i, true
+				}
+			}
+		}
 		for _, o := range q.Objectives {
 			ids := []int{o.ID}
 			if o.Kind == "item" {
@@ -179,6 +190,12 @@ func (b *builder) dungeons() []dataset.Dungeon {
 	}
 	for qi := range b.out {
 		q := &b.out[qi]
+		if q.Type == "" && len(q.StartDrops) > 0 {
+			if _, ok := instanceOf(q); ok {
+				q.Type = "dungeon"
+				q.Sources["type"] = "quest item guaranteed by an instance creature"
+			}
+		}
 		if q.Type == "" {
 			if pq := b.pdb.Quests[q.ID]; pq != nil {
 				if i, ok := byArea[pq.Zone]; ok && !soloDoable(q, b.w.inside[out[i].Instance], out[i].Entrance) {
@@ -230,7 +247,9 @@ func (b *builder) dungeons() []dataset.Dungeon {
 			}
 			inside = inside || o.Inside
 		}
-		cleared := q.Unsupported != ""
+		// A run can supply an inside objective's missing world position. It cannot supply an unknown objective
+		// count or a profession requirement.
+		cleared := q.Unsupported != "" && dungeonPositionGap(q.Unsupported)
 		if cleared {
 			q.Sources["unsupported_solo"] = q.Unsupported
 			q.Unsupported, q.NeedItems = "", nil
@@ -246,6 +265,14 @@ func (b *builder) dungeons() []dataset.Dungeon {
 	}
 	b.stats["dungeons"] = len(out)
 	return out
+}
+
+func dungeonPositionGap(why string) bool {
+	if strings.Contains(why, "count unknown") || strings.Contains(why, "profession") {
+		return false
+	}
+	return strings.Contains(why, "event objective without a place") || strings.Contains(why, "scripted objective credit without a recorded place") ||
+		strings.Contains(why, "only in a dungeon or raid") || strings.Contains(why, "no source named by WCLBox") || why == "started by an item"
 }
 
 // dungeonMobs: the creatures cmangos spawns in an instance, by level and elite; a monastery's wings share the
