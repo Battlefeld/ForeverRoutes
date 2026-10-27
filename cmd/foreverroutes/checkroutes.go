@@ -63,6 +63,7 @@ func cmdCheckRoutes(args []string) error {
 			return err
 		}
 		var r struct {
+			RouteModel
 			Character route.Character    `json:"character"`
 			Target    int                `json:"target"`
 			Events    []route.GuideEvent `json:"events"`
@@ -79,6 +80,9 @@ func cmdCheckRoutes(args []string) error {
 		w, err := loadWorld(*path, r.Character.Race, r.Character.Class, r.Character.Faction, prof, hasDungeons(r.Events))
 		if err != nil {
 			return fmt.Errorf("%s: %w", f, err)
+		}
+		if err := r.RouteModel.apply(w); err != nil {
+			return err
 		}
 		w.SetWandDetour(r.Wand)
 		res, err := w.FollowGuide(r.Events, r.Target)

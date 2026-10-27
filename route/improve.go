@@ -65,8 +65,8 @@ func (w *World) Improve(events []GuideEvent, target int, budget time.Duration) (
 			}
 		}
 		for i := 0; i < len(cur) && time.Now().Before(deadline); i++ {
-			if cur[i].Op == "level" || (cur[i].Op == "dungeon" && Runs(cur) > 1) {
-				// a route with dungeons keeps at least one run: whoever asks for dungeons runs the one that costs least
+			if cur[i].Op == "level" || cur[i].Op == "dungeon" {
+				// Dungeons are optional unless an explicit optimization constraint requires a run.
 				if try(append(append([]GuideEvent(nil), cur[:i]...), cur[i+1:]...)) {
 					improved = true
 					i--
@@ -82,7 +82,7 @@ func (w *World) Improve(events []GuideEvent, target int, budget time.Duration) (
 			if time.Now().After(deadline) {
 				break
 			}
-			if in[q.ID] || q.MinLevel > target || q.Level > target+3 || q.Repeatable {
+			if in[q.ID] || q.MinLevel > target {
 				continue
 			}
 			i, d := w.closestStep(cur, q.StartPos)
@@ -104,8 +104,7 @@ func (w *World) Improve(events []GuideEvent, target int, budget time.Duration) (
 }
 
 // WithDungeons puts dungeon runs into a route (a guide has none): each dungeon at the one of twenty places spread over
-// the route that brings it fastest to the target, when one does. When none does, the run that costs least goes in:
-// a route with dungeons runs at least one. A run takes the dungeon's quests on the way and hands them in after, as
+// the route that brings it fastest to the target, when one does. When none does, the solo route stays. A run takes the dungeon's quests on the way and hands them in after, as
 // the planner's dungeon block.
 // runPlaces: the cheapest places of a run whose quests are then put where the route passes their givers.
 const runPlaces = 3
@@ -116,8 +115,7 @@ func (w *World) WithDungeons(events []GuideEvent, target int) []GuideEvent {
 		return events
 	}
 	cur := events
-	var least []GuideEvent
-	leastT := math.Inf(1)
+
 	// dungeon after dungeon, again while one more pays: each tried at every step of the route that has its level
 	// (up to dungeonWindow levels above its lowest), where it costs least
 	for changed := true; changed; {
@@ -164,9 +162,6 @@ func (w *World) WithDungeons(events []GuideEvent, target int) []GuideEvent {
 				if r.Seconds < best.Seconds-1 {
 					best, pick = r, cand
 				}
-				if r.Seconds < leastT {
-					least, leastT = cand, r.Seconds
-				}
 				places = append(places, place{cand, r})
 			}
 			sort.Slice(places, func(a, b int) bool { return places[a].r.Seconds < places[b].r.Seconds })
@@ -179,9 +174,6 @@ func (w *World) WithDungeons(events []GuideEvent, target int) []GuideEvent {
 				cur, changed = pick, true
 			}
 		}
-	}
-	if Runs(cur) == 0 && least != nil {
-		return least // no run made it faster: until then cur is the route given, least one run put into it
 	}
 	return w.MergeTrips(cur, target)
 }
@@ -621,6 +613,8 @@ func EventsOf(steps []Step) []GuideEvent {
 				done[s.Quest] = true
 				out = append(out, GuideEvent{Op: "complete", Quest: s.Quest})
 			}
+		case "sleep":
+			out = append(out, GuideEvent{Op: "sleep", Stacks: s.Stacks})
 		case "dungeon":
 			out = append(out, GuideEvent{Op: "dungeon", Dungeon: s.Dungeon})
 		case "grind":

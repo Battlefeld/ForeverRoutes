@@ -176,11 +176,12 @@ func (w *World) run(s *State, d *Dungeon) error {
 	if !w.canTank(s) {
 		search = groupSearch // a druid without bear form, a warrior without defensive stance: queued as damage
 	}
+	started := s.Time
 	secs := d.Minutes*60 + math.Max(0, search-queued) // waited only for what the questing before did not cover
 	s.Time += secs
 	s.Combat += secs
 	trash := w.killXP(d, l)
-	s.XP += trash + restedGain(s, trash) // rested experience doubles the run's kills too
+	w.awardKillXP(s, trash, started+math.Max(0, search-queued), s.Time) // rested experience doubles the run's kills too
 	// collection quests: every member needs their own drops; the run's kills bring one share, the other four cost more
 	// kills (and bring their XP). A single item (a boss's) everyone loots.
 	extra := 0.0
@@ -200,7 +201,7 @@ func (w *World) run(s *State, d *Dungeon) error {
 		s.Time += extra * groupKill
 		s.Combat += extra * groupKill
 		if n := d.trashKills(); n > 0 {
-			s.XP += int(math.Round(float64(trash) / n * extra))
+			w.awardKillXP(s, int(math.Round(float64(trash)/n*extra)), s.Time-extra*groupKill, s.Time)
 		}
 	}
 	for changed := true; changed; {
@@ -222,8 +223,12 @@ func (w *World) run(s *State, d *Dungeon) error {
 					}
 				}
 				if q.EndInside && w.complete(s, q) {
-					s.XP += xp.Quest(q.XP, w.Level(s), q.Level)
+					s.XP += w.bonusXP(s, xp.Quest(q.XP, w.Level(s), q.Level), s.Time)
+					beforeWand := w.wandDPS(s)
 					s.Status[q.Index] = done
+					if w.wandDPS(s) > beforeWand {
+						s.EquipmentRevision = ""
+					}
 					s.Active--
 					delete(s.Prog, q.Index)
 					s.Time += w.Opt.InteractSecs

@@ -39,13 +39,16 @@ var profSites = map[string][]dataset.Point{
 // profAction: the visit to the trainers on the way to next when it adds at most profDetour (from profLate on, without
 // them yet, profDetourLate: the camps from campLevel need them), else nil.
 func (w *World) profAction(s *State, next dataset.Point) *Action {
-	if s.Prof {
+	if s.Prof || !s.Preparation.Camping || w.Level(s) < s.Preparation.ProfessionLevel {
 		return nil
 	}
 	direct, _ := w.travel(s, s.Pos, next)
 	var best *dataset.Point
-	bt := profDetour
-	if w.Level(s) >= profLate {
+	bt := s.Preparation.ProfessionDetour
+	if s.Preparation.ForceProfessions {
+		bt = math.Inf(1)
+	}
+	if w.Level(s) >= profLate && bt == profDetour {
 		bt = profDetourLate
 	}
 	for i, p := range profSites[w.Faction] {
@@ -67,7 +70,7 @@ func (w *World) profAction(s *State, next dataset.Point) *Action {
 // camp: from campLevel, a camp before the next fight once the hour is over and the rested experience is used up
 // (with rested experience left the tent raises nothing).
 func (w *World) camp(s *State) {
-	if !s.Prof || w.Level(s) < campLevel || s.Time < s.Camp {
+	if !s.Prof || !s.Preparation.Camping || w.Level(s) < campLevel || s.Time < s.Camp {
 		return
 	}
 	l := w.Level(s)

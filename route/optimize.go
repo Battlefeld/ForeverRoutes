@@ -1,131 +1,534 @@
 package route
 
 import (
+	"fmt"
 	"math"
 	"math/rand"
 	"slices"
+	"sort"
 	"time"
 )
 
-// OptimizeOptions: what Optimize keeps and how long it searches.
 type OptimizeOptions struct {
-	Target  int
-	Budget  time.Duration
-	Seed    int64
-	Keep    []int // quests the route must hand in: the goal of an option switched on (the sleeping bag's)
-	History int   // late acceptance: an edit is kept when no slower than the route this many edits ago (400)
-	Stats   *OptimizeStats
+	Target          int
+	Budget          time.Duration
+	Seed            int64
+	Keep            []int
+	History         int
+	Stats           *OptimizeStats
+	Seeds           []OptimizationSeed
+	RequireDungeons []string
+	ExcludeDungeons []string
+	Checkpoint      string
+	// MaxIterations bounds stochastic evaluations deterministically when set; wall-clock Budget still bounds all phases.
+	MaxIterations int
 }
-
-// OptimizeStats: how the search went, per kind of edit.
+type DungeonCombinationCheck struct {
+	Keys           []string `json:"keys"`
+	CandidateFound bool     `json:"candidateFound"`
+	Seconds        float64  `json:"seconds,omitempty"`
+}
 type OptimizeStats struct {
-	Walks, Kept, Better [9]int // by kind: step, quest, stretch, drop, add, dungeon, level, wand, visit
+	DungeonCombinationsAllowed   int
+	DungeonChecks                []DungeonCombinationCheck
+	Walks, Kept, Better          [11]int
+	SeedsEvaluated               int
+	DungeonCombinationsEvaluated int
+	DungeonCombinationsTotal     int
+	DungeonEnumerationComplete   bool
+	PreparationCandidates        int
+	Restarts                     int
+	CheckpointLoaded             bool
+	BestSeconds                  float64
 }
 
-// optimizeReach: a quest put in goes where the route comes this close to its giver (yards).
 const optimizeReach = 400.0
 
-// Optimize searches the route as a timeline: every step can move, whole quests and stretches of the route (a stay in
-// a zone) move, quests are left out or put in where the route passes their givers, dungeon runs are put in, moved
-// and left out, and a caster's detour for its wands changes, so the quests, the dungeon quests and runs, the options
-// and the wands find the order that reaches the target soonest. Camps and rests follow from the route (the walk makes
-// them when the buff runs out). Random edits with late acceptance: a slower route is kept for a while when it is not
-// slower than the route some edits ago, so the search gets past orders where every single edit costs. The required
-// class chains, the quests to keep, the tank form before the first run and, for a route with dungeons, one run stay.
+// Optimize keeps a replay-verified incumbent across seeds, dungeon subsets, preparation policies and large moves.
+// The simulation remains authoritative: every candidate is evaluated forward with level, quest and buff state.
 func (w *World) Optimize(events []GuideEvent, o OptimizeOptions) ([]GuideEvent, *GuideResult, error) {
-	target := o.Target
-	events = w.withClassQuests(events, target)
-	deadline := time.Now().Add(o.Budget)
-	events = w.improveDungeonChains(events, target, deadline)
-	start, err := w.FollowGuide(events, target)
-	if err != nil {
-		return nil, nil, err
+	if o.Target < 2 || o.Target > len(w.Data.LevelXP)+1 || o.Budget < 0 {
+		return nil, nil, fmt.Errorf("invalid target or search budget")
 	}
+	originalPlan, originalWand := w.Preparations(), w.WandDetour()
+	success := false
+	defer func() {
+		if !success {
+			w.preparation = originalPlan
+			w.SetWandDetour(originalWand)
+		}
+	}()
+	stats := o.Stats
+	if stats == nil {
+		stats = &OptimizeStats{}
+	}
+	*stats = OptimizeStats{}
+	deadline := time.Now().Add(o.Budget)
+	phaseDeadline := time.Now().Add(o.Budget / 3)
+	preparationDeadline := time.Now().Add(o.Budget * 2 / 3)
 	var goals []int
-	for _, c := range w.ClassChains(target) {
-		if c.Tier == "required" && handsIn(start, c.Goal.ID) {
+	for _, c := range w.ClassChains(o.Target) {
+		if c.Tier == "required" {
 			goals = append(goals, c.Goal.ID)
 		}
 	}
 	goals = append(goals, o.Keep...)
-	tank := w.tankFirst(start)
-	runs := Runs(events) > 0 && w.Opt.Dungeons
-	cost := func(evs []GuideEvent, limit float64) (float64, *GuideResult) {
-		r, err := w.walkFast(evs, target, limit+1)
-		if err != nil || r.Level < target || tank && !w.tankFirst(r) || runs && Runs(evs) == 0 || w.runAbove(evs, target) {
-			return math.Inf(1), nil
+	if w.Opt.Preparations.SleepingBag == "on" {
+		goals = append(goals, 79976)
+	}
+	sort.Ints(goals)
+	goals = slices.Compact(goals)
+	for _, id := range goals {
+		if w.ByID[id] == nil {
+			return nil, nil, fmt.Errorf("required quest %d is not available", id)
 		}
-		for _, g := range goals {
-			if !handsIn(r, g) {
-				return math.Inf(1), nil
+	}
+	for _, key := range append(slices.Clone(o.RequireDungeons), o.ExcludeDungeons...) {
+		if w.dungeonOf[key] == nil {
+			return nil, nil, fmt.Errorf("unknown or unavailable dungeon %q", key)
+		}
+	}
+	for _, key := range o.RequireDungeons {
+		if slices.Contains(o.ExcludeDungeons, key) {
+			return nil, nil, fmt.Errorf("dungeon %s is both required and excluded", key)
+		}
+	}
+	valid := func(r *GuideResult) bool {
+		if r == nil || r.Level < o.Target || !w.tankFirst(r) || !w.planAllowed(w.Preparations()) {
+			return false
+		}
+		for _, id := range goals {
+			if !handsIn(r, id) {
+				return false
 			}
 		}
-		return r.Seconds, r
+		if w.Opt.Preparations.SleepingBag == "off" && handsIn(r, 79976) {
+			return false
+		}
+		keys := actualDungeonKeys(r)
+		for _, key := range o.RequireDungeons {
+			if !slices.Contains(keys, key) {
+				return false
+			}
+		}
+		for _, key := range o.ExcludeDungeons {
+			if slices.Contains(keys, key) {
+				return false
+			}
+		}
+		if w.Opt.Preparations.Wands == "on" && o.Target >= lesserWandLevel && !r.CraftedWand {
+			return false
+		}
+		if w.Opt.Preparations.Camping == "on" && o.Target >= campLevel && !r.ProfessionsLearned {
+			return false
+		}
+
+		return true
 	}
-	var pool []*Quest // quests that may be put in
+	cost := func(e []GuideEvent, limit float64) *GuideResult {
+		r, err := w.walkFast(e, o.Target, limit+1)
+		if err != nil || !valid(r) || w.runAbove(e, o.Target) {
+			return nil
+		}
+		return r
+	}
+	type candidate struct {
+		events []GuideEvent
+		plan   PreparationPlan
+		wand   float64
+		res    *GuideResult
+	}
+	var best *candidate
+	var checkpointErr error
+	key := ""
+	if o.Checkpoint != "" {
+		var err error
+		key, err = w.optimizationKey(o, goals)
+		if err != nil {
+			return nil, nil, err
+		}
+	}
+	consider := func(e []GuideEvent) *GuideResult {
+		limit := math.Inf(1)
+		r := cost(e, limit)
+		if r != nil && (best == nil || r.Seconds < best.res.Seconds-.05) {
+			best = &candidate{slices.Clone(e), w.Preparations(), w.WandDetour(), r}
+			stats.BestSeconds = r.Seconds
+			if o.Checkpoint != "" {
+				checkpointErr = w.saveCheckpoint(o.Checkpoint, key, best.events, best.plan, best.wand, o.Target)
+			}
+		}
+		return r
+	}
+	// A checkpoint is re-evaluated, never trusted for its recorded seconds. Its context must match exactly.
+	if o.Checkpoint != "" {
+		cp, err := loadCheckpoint(o.Checkpoint, key)
+		if err != nil {
+			return nil, nil, err
+		}
+		if cp != nil {
+			if err := w.SetPreparations(cp.Preparations); err != nil {
+				return nil, nil, err
+			}
+			w.SetWandDetour(cp.WandDetour)
+			if consider(cp.Events) == nil {
+				return nil, nil, fmt.Errorf("checkpoint is no longer feasible")
+			}
+			stats.CheckpointLoaded = true
+		}
+	}
+	seeds := append([]OptimizationSeed{{Events: events, Preparations: &originalPlan, WandDetour: originalWand}}, o.Seeds...)
+	allowed := map[string]bool{}
+	for _, d := range w.Dungeons {
+		allowed[d.Key] = !slices.Contains(o.ExcludeDungeons, d.Key)
+	}
+	// Named input guides remain independent seeds; no result is attributed back to an unchanged guide.
+	for _, seed := range seeds {
+		p := originalPlan
+		if seed.Preparations != nil {
+			p = *seed.Preparations
+		}
+		if w.Opt.Preparations.Camping == "on" {
+			p.Camping = true
+		}
+		if w.Opt.Preparations.Camping == "off" {
+			p.Camping = false
+		}
+		if w.Opt.Preparations.Wands == "on" {
+			p.Wands = true
+		}
+		if w.Opt.Preparations.Wands == "off" {
+			p.Wands = false
+		}
+		if w.Opt.Preparations.SleepingBag == "off" {
+			p.BagStacks = 0
+		}
+		if err := w.SetPreparations(p); err != nil {
+			return nil, nil, err
+		}
+		w.SetWandDetour(seed.WandDetour)
+		e := w.withClassQuests(w.filterDungeons(seed.Events, allowed), o.Target)
+		if w.Opt.Preparations.SleepingBag == "off" {
+			for _, c := range w.ClassChains(o.Target) {
+				if c.Goal.ID == 79976 {
+					ids := map[int]bool{}
+					for _, q := range c.Quests {
+						ids[q.ID] = true
+					}
+					e = without(e, func(e GuideEvent) bool { return ids[e.Quest] || e.Op == "sleep" })
+				}
+			}
+		}
+		for _, c := range w.ClassChains(o.Target) {
+			if slices.Contains(goals, c.Goal.ID) {
+				e = w.WeaveIn(e, c, o.Target)
+			}
+		}
+		for _, id := range o.Keep {
+			q := w.ByID[id]
+			if q != nil && !slices.ContainsFunc(e, func(x GuideEvent) bool { return x.Quest == id }) {
+				at, _ := w.closestStep(e, q.StartPos)
+				if len(e) == 0 {
+					at = -1
+				}
+				if added := w.insertQuestChain(e, q, at+1); added != nil {
+					e = added
+				}
+			}
+		}
+		if len(o.RequireDungeons) > 0 {
+			selected := map[string]bool{}
+			for _, k := range RunKeys(e) {
+				selected[k] = true
+			}
+			for _, k := range o.RequireDungeons {
+				selected[k] = true
+			}
+			if placed := w.dungeonSubset(e, selected, o.Target, time.Now().Add(30*time.Second)); placed != nil {
+				e = placed
+			}
+		}
+		if consider(e) == nil {
+			fallback := p
+			if w.Opt.Preparations.Wands == "on" {
+				fallback.ForceWand = true
+			}
+			if w.Opt.Preparations.Camping == "on" {
+				fallback.ForceProfessions = true
+			}
+			if fallback != p {
+				w.preparation = fallback
+				consider(e)
+			}
+		}
+		stats.SeedsEvaluated++
+	}
+	if best == nil {
+		return nil, nil, fmt.Errorf("no starting route satisfies the level, class and selected-option constraints")
+	}
+	w.preparation = best.plan
+	w.SetWandDetour(best.wand)
+	var pool []*Quest
 	for _, q := range w.Quests {
-		if q.MinLevel <= target && q.Level <= target+3 && !q.Repeatable {
+		if q.MinLevel <= o.Target {
 			pool = append(pool, q)
 		}
 	}
+	// First compare complete dungeon subsets, including zero. More than eight eligible dungeons uses a bounded portfolio.
+	var ds []*Dungeon
+	for _, d := range w.Dungeons {
+		if d.Min < o.Target && allowed[d.Key] {
+			ds = append(ds, d)
+		}
+	}
+	n := len(ds)
+	stats.DungeonCombinationsTotal = -1
+	if n <= 30 {
+		stats.DungeonCombinationsTotal = 1 << n
+	}
+	masks := []uint64{}
+	if n <= 8 {
+		for mask := uint64(0); mask < uint64(1)<<n; mask++ {
+			masks = append(masks, mask)
+		}
+	} else {
+		masks = append(masks, 0)
+		for i := 0; i < min(n, 63); i++ {
+			masks = append(masks, uint64(1)<<i)
+		}
+	}
+	for _, mask := range masks {
+		matches := true
+		for _, key := range o.RequireDungeons {
+			included := false
+			for i, d := range ds {
+				if d.Key == key && i < 64 && mask&(uint64(1)<<i) != 0 {
+					included = true
+				}
+			}
+			matches = matches && included
+		}
+		if matches {
+			stats.DungeonCombinationsAllowed++
+		}
+	}
+	subsetSeed := slices.Clone(best.events)
+	for _, mask := range masks {
+		if time.Now().After(phaseDeadline) {
+			break
+		}
+		chosen := map[string]bool{}
+		for i, d := range ds {
+			if i < 64 && mask&(uint64(1)<<i) != 0 {
+				chosen[d.Key] = true
+			}
+		}
+		skip := false
+		for _, k := range o.RequireDungeons {
+			skip = skip || !chosen[k]
+		}
+		if skip {
+			continue
+		}
+		w.preparation = best.plan
+		w.SetWandDetour(best.wand)
+		check := DungeonCombinationCheck{Keys: []string{}}
+		for _, d := range ds {
+			if chosen[d.Key] {
+				check.Keys = append(check.Keys, d.Key)
+			}
+		}
+		if e := w.dungeonSubset(subsetSeed, chosen, o.Target, phaseDeadline); e != nil {
+			if r := cost(e, math.Inf(1)); r != nil {
+				actual := actualDungeonKeys(r)
+				exact := len(actual) == len(check.Keys)
+				for _, key := range check.Keys {
+					exact = exact && slices.Contains(actual, key)
+				}
+				if exact {
+					check.CandidateFound = true
+					check.Seconds = r.Seconds
+					consider(e)
+				}
+			}
+		}
+		stats.DungeonChecks = append(stats.DungeonChecks, check)
+		stats.DungeonCombinationsEvaluated++
+	}
+	stats.DungeonEnumerationComplete = n <= 8 && stats.DungeonCombinationsEvaluated == stats.DungeonCombinationsAllowed
+	// Evaluate acquisition AND subsequent use together: an expensive setup alone may hide a later benefit.
+	prepSeeds := [][]GuideEvent{slices.Clone(best.events)}
+	basePlan := best.plan
+	if w.Opt.Preparations.SleepingBag != "off" && w.ByID[79976] != nil && !handsIn(best.res, 79976) && time.Now().Before(preparationDeadline) {
+		for _, c := range w.ClassChains(o.Target) {
+			if c.Goal.ID == 79976 {
+				prepSeeds = append(prepSeeds, w.WeaveIn(best.events, c, o.Target))
+			}
+		}
+	}
+	camping := []bool{basePlan.Camping, !basePlan.Camping}
+	wands := []bool{basePlan.Wands}
+	if wandClasses[w.Char.Class] {
+		wands = append(wands, !basePlan.Wands)
+	}
+	for _, prepSeed := range prepSeeds {
+		for _, camp := range camping {
+			for _, wand := range wands {
+				for _, level := range []int{1, 8, 10} {
+					for _, stacks := range []int{0, 1, 2, 3} {
+						if time.Now().After(preparationDeadline) {
+							break
+						}
+						if !camp && level != 1 {
+							continue
+						}
+						p := basePlan
+						p.Camping = camp
+						p.Wands = wand
+						p.ProfessionLevel = level
+						p.BagStacks = stacks
+						if !w.planAllowed(p) {
+							continue
+						}
+						w.preparation = p
+						w.SetWandDetour(best.wand)
+						for _, forceWand := range []bool{false, true} {
+							if !wand && forceWand {
+								continue
+							}
+							p.ForceWand = forceWand
+							for _, forceProf := range []bool{false, true} {
+								if !camp && forceProf {
+									continue
+								}
+								if time.Now().After(preparationDeadline) {
+									break
+								}
+								p.ForceProfessions = forceProf
+								w.preparation = p
+								consider(w.bagRests(prepSeed, stacks, o.Target))
+								stats.PreparationCandidates++
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+
+	w.preparation = best.plan
+	w.SetWandDetour(best.wand)
 	rng := rand.New(rand.NewSource(o.Seed))
 	hist := o.History
 	if hist <= 0 {
 		hist = 400
 	}
-	cur := events
-	curC, best := cost(cur, math.Inf(1))
-	if best == nil {
-		best = start // the route given breaks a rule already: searched from it anyway
-		curC = start.Seconds
-	}
-	bestE, bestC := cur, curC
-	bestWand := w.wandDetour
+	cur := slices.Clone(best.events)
+	curC := best.res.Seconds
 	late := make([]float64, hist)
 	for i := range late {
 		late[i] = curC
 	}
-	wand := wandClasses[w.Char.Class]
-	for k := 0; time.Now().Before(deadline); k++ {
-		wandBefore := w.wandDetour
-		cand, kind := w.edit(cur, rng, pool, target, wand)
-		if cand == nil {
+	weights := [3]int{6, 3, 2}
+	stale := 0
+	for k := 0; time.Now().Before(deadline) && (o.MaxIterations <= 0 || k < o.MaxIterations); k++ {
+		wandBefore := w.WandDetour()
+		var e []GuideEvent
+		kind := 0
+		draw := rng.Intn(weights[0] + weights[1] + weights[2])
+		op := 0
+		switch {
+		case draw < weights[0]:
+			e, kind = w.edit(cur, rng, pool, o.Target, wandClasses[w.Char.Class] && w.preparation.Wands)
+		case draw < weights[0]+weights[1]:
+			op = 1
+			kind = 9
+			e = w.destroyRepair(cur, rng, o.Target)
+		default:
+			op = 2
+			kind = 10
+			e = w.moveVisit(cur, rng)
+		}
+		if e == nil {
+			stale++
 			continue
 		}
-		v := k % hist
-		c, r := cost(cand, math.Max(curC, late[v])) // a walk slower than what is kept stops early
-		if o.Stats != nil {
-			o.Stats.Walks[kind]++
-		}
-		if c <= curC || c <= late[v] {
-			if o.Stats != nil {
-				o.Stats.Kept[kind]++
+		stats.Walks[kind]++
+		r := cost(e, math.Max(curC, late[k%hist]))
+		improved := false
+		if r != nil && (r.Seconds <= curC || r.Seconds <= late[k%hist]) {
+			cur, curC = e, r.Seconds
+			stats.Kept[kind]++
+			late[k%hist] = curC
+			if curC < best.res.Seconds-.05 {
+				consider(cur)
+				stats.Better[kind]++
+				weights[op] = min(20, weights[op]+1)
+				improved = true
 			}
-			cur, curC = cand, c
-			if c < bestC-1 {
-				if o.Stats != nil {
-					o.Stats.Better[kind]++
-				}
-				bestE, bestC, best, bestWand = cand, c, r, w.wandDetour
-			}
-			late[v] = curC
 		} else {
-			w.wandDetour = wandBefore
+			w.SetWandDetour(wandBefore)
+		}
+		if improved {
+			stale = 0
+		} else {
+			stale++
+		}
+		if stale >= 500 {
+			// Restart from a different valid seed or the incumbent; the incumbent itself is never discarded.
+			w.preparation = best.plan
+			w.SetWandDetour(best.wand)
+			cur = slices.Clone(best.events)
+			curC = best.res.Seconds
+			if len(seeds) > 1 {
+				s := seeds[rng.Intn(len(seeds))]
+				if r := cost(s.Events, math.Inf(1)); r != nil {
+					cur, curC = slices.Clone(s.Events), r.Seconds
+				}
+			}
+			for i := range late {
+				late[i] = curC
+			}
+			stats.Restarts++
+			stale = 0
 		}
 	}
-	w.wandDetour = bestWand
-	// what the search left behind and the walk does not need (a step it skips, a run after the target): out
-	for i := len(bestE) - 1; i >= 0; i-- {
-		cand := slices.Delete(slices.Clone(bestE), i, i+1)
-		if c, r := cost(cand, bestC); c <= bestC {
-			bestE, bestC, best = cand, c, r
+	w.preparation = best.plan
+	w.SetWandDetour(best.wand)
+	for i := len(best.events) - 1; i >= 0; i-- {
+		e := slices.Delete(slices.Clone(best.events), i, i+1)
+		if r := cost(e, best.res.Seconds); r != nil && r.Seconds <= best.res.Seconds {
+			best.events, best.res = e, r
 		}
 	}
-	full, err := w.FollowGuide(bestE, target) // the time line, for the report
-	if err != nil {
-		return nil, nil, err
+	if o.Checkpoint != "" {
+		cp, err := loadCheckpoint(o.Checkpoint, key)
+		if err != nil {
+			return nil, nil, err
+		}
+		if cp != nil {
+			w.preparation = cp.Preparations
+			w.SetWandDetour(cp.WandDetour)
+			consider(cp.Events)
+		}
+		w.preparation = best.plan
+		w.SetWandDetour(best.wand)
 	}
-	return bestE, full, nil
+	full, err := w.FollowGuide(best.events, o.Target)
+	if err != nil || !valid(full) {
+		return nil, nil, fmt.Errorf("optimized route failed final replay: %v", err)
+	}
+	stats.BestSeconds = full.Seconds
+	if o.Checkpoint != "" {
+		if err := w.saveCheckpoint(o.Checkpoint, key, best.events, best.plan, best.wand, o.Target); err != nil {
+			return nil, nil, err
+		}
+	}
+	if checkpointErr != nil {
+		return nil, nil, checkpointErr
+	}
+	success = true
+	return best.events, full, nil
 }
 
 // edit: one random change of the route and its kind, nil when the one drawn does not apply.

@@ -7,6 +7,7 @@ import (
 
 // GuideEvent is one step of a quest guide: accept, complete or turn in a quest, or reach a level.
 type GuideEvent struct {
+	Stacks  int    `json:"stacks,omitempty"`
 	Op      string `json:"op"` // accept, complete, turnin, level, dungeon (a group run)
 	Quest   int    `json:"quest,omitempty"`
 	Level   int    `json:"level,omitempty"`
@@ -16,11 +17,12 @@ type GuideEvent struct {
 // GuideResult is a guide walked with this model, for comparing guides with planned routes on equal terms.
 type GuideResult struct {
 	*Result
-	Quests  int            `json:"guideQuests"`  // quests turned in
-	Grind   float64        `json:"grindSeconds"` // grinding the guide asks for (level steps) and to the target level
-	Skipped map[string]int `json:"skipped"`      // events that could not be followed, by reason
-	Missed  []GuideMiss    `json:"missed"`       // each skipped quest event with its reason
-	levels  []int          // the character's level as each event came up (the target after the walk ended)
+	Quests     int            `json:"guideQuests"`  // quests turned in
+	Grind      float64        `json:"grindSeconds"` // grinding the guide asks for (level steps) and to the target level
+	Skipped    map[string]int `json:"skipped"`      // events that could not be followed, by reason
+	Missed     []GuideMiss    `json:"missed"`       // each skipped quest event with its reason
+	eventTimes []float64
+	levels     []int // the character's level as each event came up (the target after the walk ended)
 }
 
 // GuideMiss is a guide event that could not be followed.
@@ -68,7 +70,7 @@ func (w *World) follow(s *State, events []GuideEvent, target int, horizon float6
 	res := &GuideResult{Skipped: map[string]int{}}
 	grindTo := func(level int) {
 		for w.Level(s) < level && s.Time-s0.Time < horizon {
-			m := w.grindMacro(s, target)
+			m := w.grindMacro(s, level)
 			if m == nil {
 				res.Skipped["no grind spot"]++
 				return
@@ -78,11 +80,13 @@ func (w *World) follow(s *State, events []GuideEvent, target int, horizon float6
 			s = m.state
 		}
 	}
+	res.eventTimes = make([]float64, len(events))
 	res.levels = make([]int, len(events))
 	for i := range res.levels {
 		res.levels[i] = target
 	}
 	for i, e := range events {
+		res.eventTimes[i] = s.Time - s0.Time
 		if w.Level(s) >= target || s.Time-s0.Time >= horizon {
 			break
 		}
@@ -90,7 +94,7 @@ func (w *World) follow(s *State, events []GuideEvent, target int, horizon float6
 			if a := w.wandAction(s, p); a != nil {
 				w.try(s, &acts, *a) // a caster fetches its wands where a capital is on its way (wand.go)
 			}
-			if !wandClasses[w.Char.Class] {
+			if !wandClasses[w.Char.Class] || !s.Preparation.Wands || s.Wand {
 				if a := w.profAction(s, p); a != nil {
 					w.try(s, &acts, *a) // the trainers for Skinning, Cooking, Leatherworking on the way (camp.go)
 				}
@@ -99,6 +103,12 @@ func (w *World) follow(s *State, events []GuideEvent, target int, horizon float6
 		res.levels[i] = w.Level(s)
 		if q := w.ByID[e.Quest]; q != nil && s0.Status[q.Index] == done {
 			continue // done before this walk began
+		}
+		if e.Op == "sleep" {
+			if !w.try(s, &acts, Action{Op: "sleep", Stacks: e.Stacks, At: s.Pos}) {
+				res.Skipped["sleeping bag unavailable"]++
+			}
+			continue
 		}
 		if e.Op == "level" {
 			grindTo(e.Level)
@@ -203,7 +213,7 @@ func (w *World) follow(s *State, events []GuideEvent, target int, horizon float6
 		return nil, fmt.Errorf("nothing left to do in this guide")
 	}
 	if fast {
-		r := &Result{Character: w.Char, Seconds: round1(s.Time - s0.Time), Level: w.Level(s), XP: s.XP, Steps: make([]Step, len(acts))}
+		r := &Result{ProfessionsLearned: s.Prof, CraftedWand: s.Wand, Preparations: s.Preparation, BuffModel: w.Opt.SleepingBag, Character: w.Char, Seconds: round1(s.Time - s0.Time), Level: w.Level(s), XP: s.XP, Steps: make([]Step, len(acts))}
 		for i, a := range acts {
 			r.Steps[i].Action = a
 		}

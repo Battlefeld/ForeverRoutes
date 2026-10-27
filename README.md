@@ -28,12 +28,22 @@ ForeverCore.exe gebaut (Paket `route`). Die Kampfzeiten kommen aus MythicSim (Fo
   Unbekannte Mengen, Orte und Quellen erzeugen keine kostenlosen Questbelohnungen. Unbekannte XP bleiben gekennzeichnet bei 0.
   Statische Routendateien müssen nach Datenänderungen neu berechnet werden; ihre alten Stunden sind kein Vergleich mit diesem Datensatz.
 
+## Neue Zeitstrahl-Optimierung
+
+`timeline` vergleicht unabhängige Startdateien, Dungeon-Teilmengen einschließlich keiner Instanz sowie Vorbereitungsvarianten.
+Größere Questabschnitte werden neu zusammengesetzt; ein kompatibler Checkpoint bewahrt die beste nachgespielte Lösung.
+Die Suche minimiert die Zeit bis zum Ziellevel. Originalguides werden nicht überschrieben.
+
+[Verfahren, Befehle, Tests und Ergebnisse](data/audits/timeline-v2.md). [ForeverSim-Schnittstelle und Freigabesperre](docs/foreversim-feedback.md).
+Die Schnittstelle ist vorbereitet, bleibt aber bis nach dem Release und ausdrücklicher Nutzerbestätigung deaktiviert.
+
 ## Befehle
 
 ```sh
 go test ./...                      # alle Tests, inkl. Ausgangstest Orc Hexer / Mensch Magier (~3 min)
 go test -short ./...               # ohne die langen Planungsläufe
 go run ./cmd/foreverroutes check-quests -target 20 -out quest-audit.json
+go run ./cmd/foreverroutes timeline -seeds data/routes/undead-warlock.json,data/routes/undead-warlock-dungeons.json -profile data/profiles/warlock.json -budget 3m -out data/optimized/undead-warlock.json
 
 go run ./cmd/foreverroutes plan -race Orc -class Warlock -out orc.json
 go run ./cmd/foreverroutes plan -race Human -class Mage -target 30 -restarts 4 -out human.json

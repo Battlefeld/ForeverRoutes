@@ -40,7 +40,17 @@ func TestUndeadQuestAuditBenchmark(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	w, err := NewWorld(data, Character{Race: "Undead", Class: "Warlock"}, Options{Dungeons: dungeons, Walks: walks, Profile: profile})
+	w, err := NewWorld(data, Character{Race: "Undead", Class: "Warlock"}, Options{Dungeons: dungeons, Walks: walks, Profile: profile, Preparations: PreparationConstraints{Wands: func() string {
+		if wands {
+			return "on"
+		}
+		return "off"
+	}(), SleepingBag: func() string {
+		if bag {
+			return "on"
+		}
+		return "off"
+	}()}})
 	if err != nil {
 		t.Fatal(err)
 	}

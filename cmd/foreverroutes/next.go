@@ -43,6 +43,7 @@ func cmdNext(args []string) error {
 	routeFile := fs.String("route", "", "the character's best route (output of improve, or a list of guide steps): followed from the live state; empty = plan freely")
 	out := fs.String("out", "", "write the reply here instead of standard output")
 	group := fs.Bool("dungeons", false, "route with dungeons: dungeon runs with their quests may be planned (also when the route runs dungeons)")
+	feedbackPolicy := fs.String("feedback-policy", "", "optional locally approved post-release ForeverSim feedback settings; disabled by default")
 	fs.Parse(args)
 	var raw []byte
 	var err error
@@ -69,6 +70,23 @@ func cmdNext(args []string) error {
 	}
 	w, err := loadWorld(*path, req.Race, req.Class, req.Faction, *profile, *group || hasDungeons(events))
 	if err != nil {
+		return err
+	}
+	if *feedbackPolicy != "" {
+		raw, err := os.ReadFile(*feedbackPolicy)
+		if err != nil {
+			return err
+		}
+		var policy route.FeedbackSettings
+		if err = json.Unmarshal(raw, &policy); err != nil {
+			return err
+		}
+		if !policy.Active() {
+			return fmt.Errorf("feedback policy requires release confirmation and explicit post-release user approval")
+		}
+		w.Opt.Feedback = policy
+	}
+	if err := file.RouteModel.apply(w); err != nil {
 		return err
 	}
 	w.SetWandDetour(file.WandDetour) // as the route was made
@@ -117,6 +135,7 @@ func cmdNext(args []string) error {
 
 // routeFileData is what next takes from a route file: its events, its options and its wand detour.
 type routeFileData struct {
+	RouteModel
 	Events     []route.GuideEvent `json:"events"`
 	Options    []route.ClassCost  `json:"classQuests"`
 	WandDetour float64            `json:"wandDetour"`

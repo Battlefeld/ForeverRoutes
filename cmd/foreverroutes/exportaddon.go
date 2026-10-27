@@ -45,6 +45,7 @@ func cmdExportAddon(args []string) error {
 			return err
 		}
 		var r struct {
+			RouteModel
 			Character route.Character    `json:"character"`
 			Target    int                `json:"target"`
 			Winner    string             `json:"winner"`
@@ -63,6 +64,9 @@ func cmdExportAddon(args []string) error {
 		w, err := loadWorld(*path, r.Character.Race, r.Character.Class, r.Character.Faction, prof, hasDungeons(r.Events))
 		if err != nil {
 			return fmt.Errorf("%s: %w", f, err)
+		}
+		if err := r.RouteModel.apply(w); err != nil {
+			return err
 		}
 		w.SetWandDetour(r.Wand)
 		ds = w.Data
@@ -114,6 +118,8 @@ func writeStep(b *strings.Builder, w *route.World, res *route.GuideResult, st ro
 		if n := w.NPC[st.NPC]; n != nil {
 			fmt.Fprintf(b, ", tg = %s", luaStr(n.Name))
 		}
+	case "sleep":
+		fmt.Fprintf(b, "op = \"sleep\", n = %s, it = 211527, stacks = %d, seconds = %.0f", luaStr(st.Name), st.Stacks, w.Opt.SleepingBag.PlacementSeconds+float64(st.Stacks)*w.Opt.SleepingBag.StackSeconds)
 	case "prof":
 		// trainers: Skinning, Cooking, Leatherworking (the Camp Tent at Leatherworking 20, cl the level the camps start)
 		fmt.Fprintf(b, "op = \"p\", cl = %d", route.CampLevel)

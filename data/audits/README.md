@@ -75,3 +75,7 @@ Je Startseed 30 Sekunden Verbesserung, dann 180 Sekunden Timelinesuche mit Seed 
 ## Direkter Vergleich ohne HDW
 
 [Ergebnisse und Reproduktion für RF + RoL mit oder ohne HDW](without-wailing-caverns.md). Beide Seiten wurden zusätzlich mit gleichem Zeitbudget optimiert.
+
+## Neuer Optimiererstand
+
+[Zeitstrahl-Optimierung und neue Validierung](timeline-v2.md). Die bisherigen Zeiten auf dieser Seite bleiben historische Ergebnisse ihres damaligen Modellstands.

@@ -26,6 +26,8 @@ func main() {
 		err = cmdPlan(os.Args[2:])
 	case "replay":
 		err = cmdReplay(os.Args[2:])
+	case "timeline":
+		err = cmdTimeline(os.Args[2:])
 	case "improve":
 		err = cmdImprove(os.Args[2:])
 	case "next":
@@ -61,6 +63,7 @@ func usage() {
   audit        what the dataset knows and what is missing
   plan         plan a route (-race Orc -class Warlock -target 30)
   replay       check a planned route step by step
+  timeline     optimize independent seeds, dungeon subsets and preparation policies; persist the best replay
   improve      a guide and our planned route, each improved by local edits; the faster wins
   next         the next stretch of route from the character's live state (-live state.json -horizon 3600)
   bundle       pack dataset, walk grid, routes, profiles (and the Windows planner) for ForeverCore's update

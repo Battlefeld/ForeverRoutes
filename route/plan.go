@@ -8,6 +8,7 @@ import (
 	"sync"
 
 	"github.com/Battlefeld/ForeverRoutes/dataset"
+	"github.com/Battlefeld/ForeverRoutes/xp"
 )
 
 // PlanOptions steer the search.
@@ -509,6 +510,10 @@ func (w *World) hubMacro(s0 *State, h hub) *macro {
 func (w *World) grindMacro(s0 *State, target int) *macro {
 	var best *macro
 	lvl := w.Level(s0)
+	if lvl >= target {
+		return nil
+	}
+	next := min(target, lvl+1)
 	for i := range w.Farms {
 		f := &w.Farms[i]
 		ml := mobLevel(f.NPC)
@@ -520,7 +525,16 @@ func (w *World) grindMacro(s0 *State, target int) *macro {
 		}
 		s := s0.clone()
 		var acts []Action
-		if !w.try(s, &acts, Action{Op: "grind", NPC: f.NPC.ID, Kills: 30, At: f.Site.Center}) {
+		preview := s0.clone()
+		w.camp(preview)
+		gain := w.bonusXP(preview, xp.Kill(lvl, ml, f.NPC.Rank == 1), preview.Time)
+		if gain <= 0 {
+			continue
+		}
+		needed := float64(xp.Total(w.Data.LevelXP, next) - preview.XP)
+		rested := math.Min(preview.Rested, needed/2)
+		kills := max(1, min(30, int(math.Ceil((needed-rested)/float64(gain)))))
+		if !w.try(s, &acts, Action{Op: "grind", NPC: f.NPC.ID, Kills: kills, At: f.Site.Center}) {
 			continue
 		}
 		m := w.finish(s0, s, acts, "grind")

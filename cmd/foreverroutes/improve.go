@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"path/filepath"
 	"slices"
 	"sort"
 	"strings"
@@ -14,6 +15,7 @@ import (
 
 // bestReply is the faster of the improved guide and the improved planned route for one character.
 type bestReply struct {
+	RouteModel
 	Character  route.Character    `json:"character"`
 	Target     int                `json:"target"`
 	Winner     string             `json:"winner"` // guide | plan
@@ -49,7 +51,11 @@ func cmdImprove(args []string) error {
 	workers := fs.Int("workers", 4, "with -optimize: searches in parallel")
 	rounds := fs.Int("rounds", 4, "with -optimize: rounds, each from the best route of the one before")
 	keep := fs.String("keep", "", "with -optimize: quests the route must hand in (comma-separated): an option switched on")
+	checkpoint := fs.String("checkpoint", "", "persistent best route for timeline optimization (defaults beside output)")
 	fs.Parse(args)
+	if *workers < 1 || *rounds < 1 || *budget < 0 || *optimize < 0 {
+		return fmt.Errorf("workers/rounds must be positive and budgets nonnegative")
+	}
 	w, err := loadWorld(*path, *race, *class, *faction, *profile, *group)
 	if err != nil {
 		return err
@@ -90,6 +96,7 @@ func cmdImprove(args []string) error {
 		res    *route.GuideResult
 	}
 	set := func(c cand) {
+		rep.RouteModel = RouteModel{Preparations: &c.res.Preparations, SleepingBagModel: &c.res.BuffModel}
 		rep.Winner, rep.Events, rep.Quests, rep.Profile, rep.Assumed = c.winner, c.events, c.res.Quests, c.res.Profile, c.res.Assumed
 	}
 	// without dungeons: the guide unless ours is clearly faster
@@ -217,10 +224,20 @@ func cmdImprove(args []string) error {
 		}
 	}
 	if *optimize > 0 {
+		checkpointPath := *checkpoint
+		if checkpointPath == "" {
+			if *out != "" {
+				checkpointPath = *out + ".best.json"
+			} else {
+				checkpointPath = filepath.Join("data", "checkpoints", strings.ToLower(*race+"-"+*class)+fmt.Sprintf("-%d-improve.best.json", *target))
+			}
+		}
 		type found struct {
+			err    error
 			events []route.GuideEvent
 			res    *route.GuideResult
 			wand   float64
+			prep   route.PreparationPlan
 		}
 		before, _ := w.FollowGuide(rep.Events, *target)
 		worlds := make([]*route.World, *workers)
@@ -234,27 +251,41 @@ func cmdImprove(args []string) error {
 		// rounds: the workers search from the best route so far, each with its own seed
 		var top *found
 		events, wd := rep.Events, wand
+		prep := w.Preparations()
 		for round := 0; round < *rounds; round++ {
 			out := make(chan found, *workers)
 			for k, ww := range worlds {
 				go func(ww *route.World, seed int64) {
 					ww.SetWandDetour(wd)
-					e, r, err := ww.Optimize(events, route.OptimizeOptions{Target: *target, Budget: *optimize / time.Duration(*rounds), Seed: seed, Keep: keepIDs})
+					ww.SetPreparations(prep)
+					e, r, err := ww.Optimize(events, route.OptimizeOptions{Target: *target, Budget: *optimize / time.Duration(*rounds), Seed: seed, Keep: keepIDs, Checkpoint: checkpointPath})
 					if err != nil {
-						out <- found{}
+						out <- found{err: err}
 						return
 					}
-					out <- found{e, r, ww.WandDetour()}
+					out <- found{nil, e, r, ww.WandDetour(), ww.Preparations()}
 				}(ww, int64(round**workers+k+1))
 			}
+			var lastError error
+			successes := 0
 			for range worlds {
 				f := <-out
+				if f.err != nil {
+					lastError = f.err
+					fmt.Fprintf(os.Stderr, "optimizer worker: %v\n", f.err)
+				} else {
+					successes++
+				}
 				if f.res != nil && (top == nil || f.res.Seconds < top.res.Seconds) {
 					top = &f
 				}
 			}
+			if successes == 0 {
+				return fmt.Errorf("all optimizer workers failed: %w", lastError)
+			}
 			if top != nil {
 				events, wd = top.events, top.wand
+				prep = top.prep
 				fmt.Fprintf(os.Stderr, "optimize round %d: %.2f h\n", round+1, top.res.Seconds/3600)
 			}
 		}
@@ -262,10 +293,12 @@ func cmdImprove(args []string) error {
 			fmt.Fprintf(os.Stderr, "optimized: %.2f h -> %.2f h, %s\n", before.Seconds/3600, top.res.Seconds/3600, strings.Join(route.RunKeys(top.events), " "))
 			rep.Events, rep.Quests, rep.Profile, rep.Assumed, rep.WandDetour = top.events, top.res.Quests, top.res.Profile, top.res.Assumed, top.wand
 			w.SetWandDetour(top.wand)
+			w.SetPreparations(top.prep)
+			rep.RouteModel = RouteModel{Preparations: &top.res.Preparations, SleepingBagModel: &top.res.BuffModel}
 			rep.Hours["optimized"] = top.res.Seconds / 3600
 		}
 	}
-	if len(keepIDs) == 0 {
+	if len(keepIDs) == 0 && *optimize == 0 {
 		rep.Events = w.WithoutExtraOptions(rep.Events, *target) // an option's chain is the addon's to switch on
 	}
 	rep.Class = w.ClassReport(rep.Events, *target)

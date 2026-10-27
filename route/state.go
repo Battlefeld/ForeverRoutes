@@ -17,31 +17,38 @@ const (
 
 // State is the character at one moment of the route.
 type State struct {
-	Pos                  dataset.Point
-	XP                   int
-	Time                 float64
-	Status               []byte            // per quest index
-	Prog                 map[int][]float64 // active quest index -> progress per objective
-	Active               int               // quests in the log
-	Known                uint64            // flight masters found (bit per network node)
-	Bind                 dataset.Point     // where the hearthstone leads
-	Hearth               float64           // time from which the hearthstone can be used again
-	Travel, Combat, Talk float64
-	Wait                 float64                    // part of Combat spent waiting for respawns
-	Assumed              int                        // steps that rely on an assumed drop chance
-	Dead                 map[int]dead               // site key -> mobs of that site still dead
-	Interacted           map[interactionKey]float64 // distinct noncombat targets already used for an objective
-	Deathskips           int                        // deaths taken on purpose to travel
-	Runs                 uint64                     // dungeons run (bit per World.Dungeons index)
-	RunEnd               float64                    // when the last run ended: the search for the next group overlaps the questing since
-	Switches             int                        // changes between Kalimdor and the Eastern Kingdoms
-	Wand                 bool                       // a caster has crafted its wands: the practice wand, the Lesser Magic Wand from level 5 (wand.go)
-	Prof                 bool                       // Skinning, Cooking and Leatherworking learned (camp.go)
-	Rested               float64                    // rested experience left: doubles kill XP
-	Camp                 float64                    // time from which the next camp gives rested experience
-	Camps                int                        // camps made
-	via                  string                     // how the last action travelled when not on foot (hearth, teleport, network, deathskip: <graveyard>)
-	viaAt                *dataset.Point             // where to die for that deathskip
+	RestAreaAt                  *dataset.Point
+	BagOwnershipKnown, OwnedBag bool
+	BuildRevision               string
+	Preparation                 PreparationPlan
+	BagStacks                   int
+	BagUntil, BagReady          float64
+	EquipmentRevision           string
+	Pos                         dataset.Point
+	XP                          int
+	Time                        float64
+	Status                      []byte            // per quest index
+	Prog                        map[int][]float64 // active quest index -> progress per objective
+	Active                      int               // quests in the log
+	Known                       uint64            // flight masters found (bit per network node)
+	Bind                        dataset.Point     // where the hearthstone leads
+	Hearth                      float64           // time from which the hearthstone can be used again
+	Travel, Combat, Talk        float64
+	Wait                        float64                    // part of Combat spent waiting for respawns
+	Assumed                     int                        // steps that rely on an assumed drop chance
+	Dead                        map[int]dead               // site key -> mobs of that site still dead
+	Interacted                  map[interactionKey]float64 // distinct noncombat targets already used for an objective
+	Deathskips                  int                        // deaths taken on purpose to travel
+	Runs                        uint64                     // dungeons run (bit per World.Dungeons index)
+	RunEnd                      float64                    // when the last run ended: the search for the next group overlaps the questing since
+	Switches                    int                        // changes between Kalimdor and the Eastern Kingdoms
+	Wand                        bool                       // a caster has crafted its wands: the practice wand, the Lesser Magic Wand from level 5 (wand.go)
+	Prof                        bool                       // Skinning, Cooking and Leatherworking learned (camp.go)
+	Rested                      float64                    // rested experience left: doubles kill XP
+	Camp                        float64                    // time from which the next camp gives rested experience
+	Camps                       int                        // camps made
+	via                         string                     // how the last action travelled when not on foot (hearth, teleport, network, deathskip: <graveyard>)
+	viaAt                       *dataset.Point             // where to die for that deathskip
 }
 
 // dead counts the mobs of one creature killed at its site, as of a time. They come back over the respawn time.
@@ -52,7 +59,7 @@ type dead struct {
 
 // NewState is a fresh character at the start position.
 func (w *World) NewState() *State {
-	return &State{Pos: w.Start, Bind: w.Start, Status: make([]byte, len(w.Quests)), Prog: map[int][]float64{}, Dead: map[int]dead{}}
+	return &State{Preparation: w.preparation, Pos: w.Start, Bind: w.Start, Status: make([]byte, len(w.Quests)), Prog: map[int][]float64{}, Dead: map[int]dead{}}
 }
 
 func (s *State) clone() *State {
@@ -84,6 +91,7 @@ func (w *World) Level(s *State) int {
 // Action is one step of a route. Op: accept, turnin, work (objective Obj of Quest at source NPC/Object until done),
 // grind (Kills of NPC at its site).
 type Action struct {
+	Stacks int    `json:"stacks,omitempty"`
 	Op     string `json:"op"`
 	Quest  int    `json:"quest,omitempty"`
 	Obj    int    `json:"obj,omitempty"`
@@ -213,6 +221,9 @@ func (w *World) mobTime(s *State, n *dataset.NPC, site Site) float64 {
 			f, r = wp.KillSecondsWand(w.Char, w.Level(s), n, dps)
 		}
 	}
+	if ff, rr, ok := w.feedbackSeconds(s, n); ok {
+		f, r = ff, rr
+	}
 	return f + r + site.Spacing*w.Opt.PathFactor/w.Opt.RunSpeed
 }
 
@@ -260,6 +271,7 @@ func (w *World) kill(s *State, n *dataset.NPC, obj int, site Site, k float64) {
 	if k <= 0 {
 		return
 	}
+	started := s.Time
 	t, wait, after := w.killSeconds(s, n, site, k)
 	s.Wait += wait
 	if n != nil && site.Spawns > 0 {
@@ -277,6 +289,7 @@ func (w *World) kill(s *State, n *dataset.NPC, obj int, site Site, k float64) {
 			if float64(i) >= k-1 { // the last, partial kill counts in part (expected value)
 				gain = int(math.Round(float64(gain) * (k - float64(i))))
 			}
+			gain = w.bonusXP(s, gain, started+float64(i+1)/float64(whole)*t)
 			s.XP += gain + restedGain(s, gain)
 		}
 	}
@@ -313,7 +326,21 @@ func (w *World) Apply(s *State, a Action) (err error) {
 		w.camp(s) // the hourly camp before a fight (camp.go)
 	}
 	switch a.Op {
+	case "sleep":
+		if a.Stacks < 1 || a.Stacks > 3 || !w.bagOwned(s) || s.Time < s.BagReady || !w.canSleep(s) {
+			return fail("sleeping bag not ready or not owned")
+		}
+		started := s.Time
+		secs := w.Opt.SleepingBag.PlacementSeconds + float64(a.Stacks)*w.Opt.SleepingBag.StackSeconds
+		s.Time += secs
+		s.Talk += secs
+		s.BagStacks = a.Stacks
+		s.BagUntil = s.Time + w.Opt.SleepingBag.Duration
+		s.BagReady = started + w.Opt.SleepingBag.Cooldown
 	case "prof":
+		if !atTrainerHub(a.At, profSites[w.Faction]) {
+			return fail("profession preparation needs a trainer hub")
+		}
 		// to the trainers: Skinning, Cooking, Leatherworking
 		if s.Prof {
 			return fail("professions learned already")
@@ -325,6 +352,9 @@ func (w *World) Apply(s *State, a Action) (err error) {
 		s.Talk += profSecs
 		s.Prof = true
 	case "wand":
+		if !atTrainerHub(a.At, wandSites[w.Faction]) {
+			return fail("wand crafting needs a capital trainer/supplier hub")
+		}
 		// to a capital's Enchanting trainer and supplier for the wands
 		if s.Wand || !wandClasses[w.Char.Class] {
 			return fail("no wands to craft")
@@ -335,7 +365,8 @@ func (w *World) Apply(s *State, a Action) (err error) {
 		s.Time += wandCraft
 		s.Talk += wandCraft
 		s.Wand = true
-		if !s.Prof {
+		s.EquipmentRevision = "" // a planned upgrade invalidates timing for the old equipment revision
+		if !s.Prof && s.Preparation.Camping && w.Level(s) >= s.Preparation.ProfessionLevel {
 			// Enchanting unlearned again for Leatherworking, at the same capital
 			s.Time += profSecs
 			s.Talk += profSecs
@@ -388,8 +419,12 @@ func (w *World) Apply(s *State, a Action) (err error) {
 		if err := w.move(s, q.EndPos); err != nil {
 			return err
 		}
-		s.XP += xp.Quest(q.XP, w.Level(s), q.Level)
+		s.XP += w.bonusXP(s, xp.Quest(q.XP, w.Level(s), q.Level), s.Time)
+		beforeWand := w.wandDPS(s)
 		s.Status[q.Index] = done
+		if w.wandDPS(s) > beforeWand {
+			s.EquipmentRevision = ""
+		}
 		s.Active--
 		delete(s.Prog, q.Index)
 		s.Time += w.Opt.InteractSecs
@@ -541,18 +576,22 @@ type Step struct {
 
 // Result of a replay.
 type Result struct {
-	Character Character `json:"character"`
-	Seconds   float64   `json:"seconds"`
-	Travel    float64   `json:"travel"`
-	Combat    float64   `json:"combat"`
-	Talk      float64   `json:"talk"`
-	Level     int       `json:"level"`
-	XP        int       `json:"xp"`
-	Quests    int       `json:"questsDone"`
-	Profile   string    `json:"killProfile"`
-	Assumed   int       `json:"assumedDropSteps"` // steps that rely on a drop chance the data does not give
-	Deaths    int       `json:"deathskips"`
-	Steps     []Step    `json:"steps"`
+	ProfessionsLearned bool             `json:"professionsLearned"`
+	CraftedWand        bool             `json:"craftedWand"`
+	Preparations       PreparationPlan  `json:"preparations"`
+	BuffModel          SleepingBagModel `json:"sleepingBagModel"`
+	Character          Character        `json:"character"`
+	Seconds            float64          `json:"seconds"`
+	Travel             float64          `json:"travel"`
+	Combat             float64          `json:"combat"`
+	Talk               float64          `json:"talk"`
+	Level              int              `json:"level"`
+	XP                 int              `json:"xp"`
+	Quests             int              `json:"questsDone"`
+	Profile            string           `json:"killProfile"`
+	Assumed            int              `json:"assumedDropSteps"` // steps that rely on a drop chance the data does not give
+	Deaths             int              `json:"deathskips"`
+	Steps              []Step           `json:"steps"`
 }
 
 // Replay checks a route action by action and reports the time line.
@@ -564,7 +603,7 @@ func (w *World) Replay(actions []Action) (*Result, error) {
 func (w *World) replayFrom(s0 *State, actions []Action) (*Result, error) {
 	s := s0.clone()
 	t0, tr0, c0, tk0 := s.Time, s.Travel, s.Combat, s.Talk
-	res := &Result{Character: w.Char, Profile: w.Opt.Profile.Name()}
+	res := &Result{Character: w.Char, Profile: w.Opt.Profile.Name(), Preparations: s.Preparation, BuffModel: w.Opt.SleepingBag}
 	d0 := s.Deathskips
 	for i, a := range actions {
 		s.via, s.viaAt = "", nil
@@ -576,6 +615,7 @@ func (w *World) replayFrom(s0 *State, actions []Action) (*Result, error) {
 	res.Deaths = s.Deathskips - d0
 	res.Seconds, res.Travel, res.Combat, res.Talk = round1(s.Time-t0), round1(s.Travel-tr0), round1(s.Combat-c0), round1(s.Talk-tk0)
 	res.Level, res.XP, res.Assumed = w.Level(s), s.XP, s.Assumed
+	res.ProfessionsLearned, res.CraftedWand = s.Prof, s.Wand
 	for _, st := range s.Status {
 		if st == done {
 			res.Quests++
@@ -610,6 +650,8 @@ func (w *World) describe(a Action) string {
 		if d := w.dungeonOf[a.Dungeon]; d != nil {
 			return d.Name + " (dungeon run)"
 		}
+	case "sleep":
+		return fmt.Sprintf("Cozy Sleeping Bag: rest for %d stacks", a.Stacks)
 	case "wand":
 		return "Novice's Practice Wand and Lesser Magic Wand (Enchanting)"
 	case "prof":

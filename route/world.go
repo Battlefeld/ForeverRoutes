@@ -70,26 +70,28 @@ type Farm struct {
 
 // World is the dataset seen by one character.
 type World struct {
-	Data      *dataset.Dataset
-	Char      Character
-	Faction   string
-	Opt       Options
-	Quests    []*Quest
-	ByID      map[int]*Quest
-	NPC       map[int]*dataset.NPC
-	Objects   map[int]*dataset.Object
-	Start     dataset.Point
-	Excluded  map[int]string // quest -> why this character cannot use it
-	Farms     []Farm
-	net       *network
-	walkGrids walks
-	deaths    *deaths
-	lifts     []dataset.Lift
-	danger    dangerMap
-	elites    dangerMap    // elite places: cell -> highest elite level
-	Dungeons  []*Dungeon   // dungeons a route with dungeons may run (Options.Dungeons)
-	required  map[int]bool // quests of the required class chains (keepClassQuest), for requiredTarget
-	tank      map[int]bool // quests that give the tank form or stance (tankGoals)
+	preparation PreparationPlan
+	feedback    *CombatFeedback
+	Data        *dataset.Dataset
+	Char        Character
+	Faction     string
+	Opt         Options
+	Quests      []*Quest
+	ByID        map[int]*Quest
+	NPC         map[int]*dataset.NPC
+	Objects     map[int]*dataset.Object
+	Start       dataset.Point
+	Excluded    map[int]string // quest -> why this character cannot use it
+	Farms       []Farm
+	net         *network
+	walkGrids   walks
+	deaths      *deaths
+	lifts       []dataset.Lift
+	danger      dangerMap
+	elites      dangerMap    // elite places: cell -> highest elite level
+	Dungeons    []*Dungeon   // dungeons a route with dungeons may run (Options.Dungeons)
+	required    map[int]bool // quests of the required class chains (keepClassQuest), for requiredTarget
+	tank        map[int]bool // quests that give the tank form or stance (tankGoals)
 	// classOverride turns a class chain (by its goal) off ("off": not required) or on ("on": required) for a measure
 	classOverride map[int]string
 	// wandDetour: the most a visit to a capital for the wands may add to the way (seconds; 0: defaultWandDetour)
@@ -113,6 +115,22 @@ func NewWorld(d *dataset.Dataset, c Character, opt Options) (*World, error) {
 	}
 	w := &World{Data: d, Char: c, Faction: faction, Opt: opt.withDefaults(), ByID: map[int]*Quest{}, NPC: map[int]*dataset.NPC{},
 		Objects: map[int]*dataset.Object{}, Excluded: map[int]string{}}
+	if !validMode(opt.Preparations.Camping) || !validMode(opt.Preparations.Wands) || !validMode(opt.Preparations.SleepingBag) {
+		return nil, fmt.Errorf("invalid preparation mode")
+	}
+	w.preparation = PreparationPlan{ForceWand: opt.Preparations.Wands == "on", ForceProfessions: opt.Preparations.Camping == "on", Camping: opt.Preparations.Camping != "off", Wands: wandClasses[c.Class] && opt.Preparations.Wands != "off", ProfessionLevel: 1, ProfessionDetour: profDetour}
+	for _, v := range []float64{w.Opt.SleepingBag.PerStack, w.Opt.SleepingBag.StackSeconds, w.Opt.SleepingBag.PlacementSeconds, w.Opt.SleepingBag.Duration, w.Opt.SleepingBag.Cooldown} {
+		if math.IsNaN(v) || math.IsInf(v, 0) {
+			return nil, fmt.Errorf("non-finite sleeping bag profile")
+		}
+	}
+	if w.Opt.SleepingBag.PerStack < 0 || w.Opt.SleepingBag.PerStack > .1 || w.Opt.SleepingBag.StackSeconds <= 0 || w.Opt.SleepingBag.PlacementSeconds < 0 || w.Opt.SleepingBag.Duration <= 0 || w.Opt.SleepingBag.Cooldown <= 0 {
+		return nil, fmt.Errorf("invalid sleeping bag model")
+	}
+	if opt.Preparations.Wands == "on" && !wandClasses[c.Class] {
+		return nil, fmt.Errorf("class cannot use wands")
+	}
+	w.SetWandDetour(defaultWandDetour)
 	w.classRules()
 	w.walkGrids = newWalks(w.Opt.Walks)
 	w.deaths = newDeaths(d.Travel, c, faction)

@@ -12,16 +12,25 @@ import (
 
 // Live is the character as the addon reads it in the game, the start of a route planned while playing.
 type Live struct {
-	Level         int            `json:"level"`
-	XP            int            `json:"xp"`  // into the current level (UnitXP)
-	Pos           *dataset.Point `json:"pos"` // world position in yards and continent (C_Map.GetWorldPosFromMapPos)
-	Completed     []int          `json:"completed"`
-	Active        []LiveQuest    `json:"active"`
-	Bind          *dataset.Point `json:"bind,omitempty"`          // where the hearthstone leads; unknown: here
-	HearthIn      float64        `json:"hearthIn,omitempty"`      // seconds until the hearthstone is ready
-	FlightMasters []int          `json:"flightMasters,omitempty"` // NPC ids of the flight masters the character knows
+	RestedXP             float64         `json:"restedXP,omitempty"`
+	InRestArea           bool            `json:"inRestArea,omitempty"`
+	HasSleepingBag       *bool           `json:"hasSleepingBag,omitempty"`
+	BagStacks            int             `json:"bagStacks,omitempty"`
+	BagBuffRemaining     float64         `json:"bagBuffRemaining,omitempty"`
+	BagCooldownRemaining float64         `json:"bagCooldownRemaining,omitempty"`
+	BuildRevision        string          `json:"buildRevision,omitempty"`
+	EquipmentRevision    string          `json:"equipmentRevision,omitempty"`
+	CombatFeedback       *CombatFeedback `json:"combatFeedback,omitempty"`
+	Level                int             `json:"level"`
+	XP                   int             `json:"xp"`  // into the current level (UnitXP)
+	Pos                  *dataset.Point  `json:"pos"` // world position in yards and continent (C_Map.GetWorldPosFromMapPos)
+	Completed            []int           `json:"completed"`
+	Active               []LiveQuest     `json:"active"`
+	Bind                 *dataset.Point  `json:"bind,omitempty"`          // where the hearthstone leads; unknown: here
+	HearthIn             float64         `json:"hearthIn,omitempty"`      // seconds until the hearthstone is ready
+	FlightMasters        []int           `json:"flightMasters,omitempty"` // NPC ids of the flight masters the character knows
 	// Wand and Prof: whether the character has its Lesser Magic Wand and Skinning and Leatherworking; nil: unknown
-	// (then from its level: the wand from 5, the professions from campLevel)
+	// (no crafted wand or learned profession is assumed from level alone)
 	Wand *bool `json:"wand,omitempty"`
 	Prof *bool `json:"prof,omitempty"`
 }
@@ -48,18 +57,35 @@ func (w *World) StateFrom(l Live) (*State, []string, error) {
 	if l.Level < 1 || l.Level > len(w.Data.LevelXP) {
 		return nil, nil, fmt.Errorf("level %d out of range", l.Level)
 	}
+	if l.RestedXP < 0 || math.IsNaN(l.RestedXP) || math.IsInf(l.RestedXP, 0) {
+		return nil, nil, fmt.Errorf("invalid rested XP")
+	}
 	if l.Pos == nil {
 		return nil, nil, errors.New("position missing")
 	}
+	if l.BagStacks < 0 || l.BagStacks > 3 || l.BagBuffRemaining < 0 || l.BagCooldownRemaining < 0 || math.IsNaN(l.BagBuffRemaining+l.BagCooldownRemaining) || math.IsInf(l.BagBuffRemaining+l.BagCooldownRemaining, 0) {
+		return nil, nil, fmt.Errorf("invalid live buff state")
+	}
 	s := w.NewState()
+	s.Rested = l.RestedXP
+	if l.HasSleepingBag != nil {
+		s.BagOwnershipKnown = true
+		s.OwnedBag = *l.HasSleepingBag
+	}
+	s.BagStacks = l.BagStacks
+	s.BagUntil = l.BagBuffRemaining
+	s.BagReady = l.BagCooldownRemaining
 	s.XP = xp.Total(w.Data.LevelXP, l.Level) + max(0, l.XP)
 	s.Pos, s.Bind = *l.Pos, *l.Pos
+	if l.InRestArea {
+		p := s.Pos
+		s.RestAreaAt = &p
+	}
 	if l.Bind != nil {
 		s.Bind = *l.Bind
 	}
 	s.Hearth = max(0, l.HearthIn)
-	s.Wand = wandClasses[w.Char.Class] && l.Level >= lesserWandLevel // a caster playing has its wand by then
-	s.Prof = l.Level >= campLevel                                    // and its professions
+	// Never infer gear or learned professions solely from level. Missing observations remain unknown.
 	if l.Wand != nil {
 		s.Wand = wandClasses[w.Char.Class] && *l.Wand
 	}
@@ -67,6 +93,19 @@ func (w *World) StateFrom(l Live) (*State, []string, error) {
 		s.Prof = *l.Prof
 	}
 	var notes []string
+	if l.Wand == nil && wandClasses[w.Char.Class] && l.Level >= lesserWandLevel {
+		notes = append(notes, "wand possession unknown; no crafted wand assumed")
+	}
+	if l.Prof == nil && l.Level >= campLevel {
+		notes = append(notes, "professions unknown; camping preparation not assumed")
+	}
+	s.EquipmentRevision = l.EquipmentRevision
+	s.BuildRevision = l.BuildRevision
+	if l.CombatFeedback != nil {
+		if err := w.AcceptFeedback(*l.CombatFeedback); err != nil {
+			notes = append(notes, err.Error())
+		}
+	}
 	for _, id := range l.Completed {
 		if q := w.ByID[id]; q != nil {
 			s.Status[q.Index] = done
