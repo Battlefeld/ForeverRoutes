@@ -14,6 +14,7 @@ import (
 // questFix is one entry of data/sources/quest-fixes.json: a fact the sources get wrong or leave out, with its page.
 type questFix struct {
 	Quest           int   `json:"quest"`
+	MinLevel        *int  `json:"minLevel,omitempty"`
 	PreAll          []int `json:"preAll,omitempty"`
 	AddStartObjects []int `json:"addStartObjects,omitempty"`
 	// PlacesFromObjects: the start and end places a source gives are wrong, they follow from the objects
@@ -65,6 +66,10 @@ func (b *builder) applyQuestFixes() {
 			q := &b.out[i]
 			if q.ID != f.Quest {
 				continue
+			}
+			if f.MinLevel != nil {
+				q.MinLevel = *f.MinLevel
+				q.Sources["minLevel"] = f.Source
 			}
 			if f.AddFight > 0 {
 				b.npcWanted[f.AddFight] = true
