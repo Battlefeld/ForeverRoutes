@@ -31,3 +31,10 @@ Right-click an authored side task to hide it; restore it through the options men
 
 From the repository root, run `python3 _dev/run_lua.py _dev/harness/routes_hud_test.lua` on a host with `liblua5.4.so.0`. The harness checks progression, undo, live-plan replacement, item counts, invalid navigation, arrival, TomTom reuse, dungeon suspension, tracker recycling and UI event dispatch. It is a mocked client integration test, not in-game visual verification. The addon uses Lua 5.1-compatible syntax; in-game mouseovers, model rendering, arrow orientation and final artwork sizing still require a WoW Forever client check.
 
+
+## Data credits
+
+Data from [ForeverDB.net](https://foreverdb.net), QuestieDB Forever, EverythingQuests Forever,
+WarcraftDB Forever, Polestar forever-db and the other sources named in the generated route data.
+The ordinary RestedXP fallback instructions retain their original attribution and are distributed
+under CC BY-NC-SA 4.0; see the included RXP-LICENSE.txt. Route provenance remains in Data/Routes.lua.
