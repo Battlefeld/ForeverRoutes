@@ -10,6 +10,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -52,7 +53,32 @@ type answer struct {
 	Meta json.RawMessage `json:"meta"`
 }
 
+var errTransient = errors.New("foreverdb: temporary server failure")
+
 func (c *Client) get(ctx context.Context, endpoint string, params url.Values) (*answer, error) {
+	for attempt := 1; ; attempt++ {
+		a, err := c.getOnce(ctx, endpoint, params)
+		if err == nil {
+			return a, nil
+		}
+		if ctx.Err() != nil {
+			return nil, ctx.Err()
+		}
+		var network net.Error
+		transient := errors.As(err, &network) || errors.Is(err, io.ErrUnexpectedEOF) || errors.Is(err, io.EOF) || errors.Is(err, errTransient)
+		if !transient || attempt == 3 {
+			return nil, err
+		}
+		select {
+		case <-ctx.Done():
+			return nil, ctx.Err()
+		case <-time.After(time.Duration(attempt) * time.Second):
+		}
+	}
+}
+
+// Every retry goes through the same interval and call budget as a normal request.
+func (c *Client) getOnce(ctx context.Context, endpoint string, params url.Values) (*answer, error) {
 	switch endpoint {
 	case "meta", "quests", "changes-seen":
 	default:
@@ -86,11 +112,16 @@ func (c *Client) get(ctx context.Context, endpoint string, params url.Values) (*
 		return nil, fmt.Errorf("foreverdb %s: %w", endpoint, err)
 	}
 	defer resp.Body.Close()
-	body, err := io.ReadAll(io.LimitReader(resp.Body, 8<<20))
+	body, err := io.ReadAll(io.LimitReader(resp.Body, (8<<20)+1))
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("foreverdb %s: reading response: %w", endpoint, err)
+	}
+	if len(body) > 8<<20 {
+		return nil, fmt.Errorf("foreverdb %s: response exceeds 8 MiB", endpoint)
 	}
 	switch {
+	case resp.StatusCode >= 500 && resp.StatusCode <= 599 || resp.StatusCode == http.StatusRequestTimeout:
+		return nil, fmt.Errorf("%w: %s HTTP %d", errTransient, endpoint, resp.StatusCode)
 	case resp.StatusCode == http.StatusTooManyRequests:
 		return nil, fmt.Errorf("%w: HTTP 429, Retry-After %s", ErrQuota, resp.Header.Get("Retry-After"))
 	case resp.StatusCode == http.StatusUnauthorized || resp.StatusCode == http.StatusForbidden:

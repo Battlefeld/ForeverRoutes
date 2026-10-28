@@ -79,3 +79,36 @@ func TestBudgetAndBadKey(t *testing.T) {
 		t.Error("an empty key must be refused")
 	}
 }
+
+func TestTemporaryFailureRetriesWithinBudget(t *testing.T) {
+	calls := 0
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		calls++
+		if calls == 1 {
+			w.WriteHeader(503)
+			return
+		}
+		fmt.Fprint(w, `{"data":{"build":"ok"}}`)
+	}))
+	defer srv.Close()
+	c := client(srv.URL, "secret")
+	if _, err := c.get(context.Background(), "meta", nil); err != nil || calls != 2 || c.Calls != 2 {
+		t.Fatalf("calls=%d budget=%d err=%v", calls, c.Calls, err)
+	}
+	calls = 0
+	c = client(srv.URL, "secret")
+	c.MaxCalls = 1
+	if _, err := c.get(context.Background(), "meta", nil); !errors.Is(err, ErrQuota) || calls != 1 {
+		t.Fatalf("budget exceeded: calls=%d err=%v", calls, err)
+	}
+}
+
+func TestQuotaNotRetried(t *testing.T) {
+	calls := 0
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { calls++; w.WriteHeader(429) }))
+	defer srv.Close()
+	c := client(srv.URL, "secret")
+	if _, err := c.get(context.Background(), "meta", nil); !errors.Is(err, ErrQuota) || calls != 1 {
+		t.Fatalf("calls=%d err=%v", calls, err)
+	}
+}
