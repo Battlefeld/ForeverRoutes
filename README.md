@@ -12,6 +12,15 @@ ist. Go-Modul ohne Fremdabhängigkeiten. Der Planer läuft offline als Kommandoz
 ForeverCore.exe gebaut (Paket `route`). Die Kampfzeiten kommen aus MythicSim (ForeverSim) über ForeverCores Auftrag
 `kill-profile` (siehe „Kampfprofil“).
 
+## Ingame-Addon
+
+Das eigenständige HUD liegt in `ForeverRoutes/`. Im aktuellen GitHub-Release enthält
+`ForeverRoutes-addon.zip` das vollständige Addon inklusive Grafiken und frisch exportierter Routen.
+Den enthaltenen Ordner `ForeverRoutes` nach `Interface/AddOns` entpacken und mit `/fr` öffnen.
+ForeverSim ist keine Abhängigkeit. [HUD-Funktionen und Befehle](ForeverRoutes/README-HUD.md).
+
+Die Routendaten werden beim Paketbau erzeugt; ein reiner Git-Checkout ist noch kein installierbares Addon.
+
 ## Stand
 
 - Datensatz mit 2922 Quests, 3751 NPCs, 630 Objekten, 59 Flugmeistern, 45 Gasthäusern, Zeppelinen und Schiffen, dazu das

@@ -23,5 +23,12 @@ jobs:
         run: go vet ./...
       - name: local references and JSON
         run: python3 tools/check_refs.py
+      - name: install Lua 5.1 for addon checks
+        run: sudo apt-get update -qq && sudo apt-get install -y lua5.1
+      - name: ForeverRoutes HUD and package checks
+        run: |
+          find ForeverRoutes -name "*.lua" -print0 | xargs -0 luac5.1 -p
+          lua5.1 _dev/harness/routes_hud_test.lua
+          python3 tools/package_addon.py --routes _dev/harness/addon_routes_fixture.lua --out /tmp/ForeverRoutes-addon.zip
       - name: test (includes the Orc Warlock / Human Mage baseline)
         run: go test -timeout 25m ./...
