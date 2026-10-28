@@ -20,6 +20,7 @@ jobs:
       - uses: actions/setup-go@v5
         with:
           go-version-file: go.mod
+          cache-dependency-path: go.mod
       - name: rebuild from the pinned sources
         run: go run ./cmd/foreverroutes build-data -out /tmp/routes-data.json.gz
       - name: verify ordinary RXP fallback against pinned guide sources

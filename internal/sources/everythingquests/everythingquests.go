@@ -6,13 +6,13 @@ package everythingquests
 import (
 	"context"
 	"fmt"
-	"io"
 	"net/http"
 	"regexp"
 	"sort"
 	"strconv"
 	"strings"
 
+	"github.com/Battlefeld/ForeverRoutes/internal/httpdownload"
 	"github.com/Battlefeld/ForeverRoutes/internal/lua"
 )
 
@@ -35,22 +35,12 @@ func Fetch(ctx context.Context, client *http.Client, revision string) (map[strin
 	raw := map[string]string{}
 	for kind, path := range files {
 		url := "https://raw.githubusercontent.com/" + Repository + "/" + revision + "/" + path
-		req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+		b, status, err := httpdownload.Get(ctx, client, url, 8<<20)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("everythingquests: %w", err)
 		}
-		req.Header.Set("User-Agent", "ForeverRoutes (https://github.com/Battlefeld/ForeverRoutes)")
-		resp, err := client.Do(req)
-		if err != nil {
-			return nil, err
-		}
-		b, err := io.ReadAll(io.LimitReader(resp.Body, 8<<20+1))
-		resp.Body.Close()
-		if err != nil {
-			return nil, err
-		}
-		if resp.StatusCode != http.StatusOK || len(b) <= 100 || len(b) > 8<<20 {
-			return nil, fmt.Errorf("everythingquests: %s: HTTP %d, %d bytes", url, resp.StatusCode, len(b))
+		if status != http.StatusOK || len(b) <= 100 || len(b) > 8<<20 {
+			return nil, fmt.Errorf("everythingquests: %s: HTTP %d, %d bytes", url, status, len(b))
 		}
 		raw[kind] = string(b)
 	}

@@ -136,7 +136,12 @@ func cmdCheckRoutes(args []string) error {
 		if res.Level < r.Target || skipped > 0 {
 			problems = append(problems, name+": incomplete or skipped events")
 		}
-		done:=map[int]bool{};for _,step:=range res.Steps{if step.Op=="turnin"{done[step.Quest]=true}}
+		done := map[int]bool{}
+		for _, step := range res.Steps {
+			if step.Op == "turnin" {
+				done[step.Quest] = true
+			}
+		}
 		for _, c := range w.ClassChains(r.Target) {
 			if c.Tier == "required" && !done[c.Goal.ID] {
 				problems = append(problems, fmt.Sprintf("%s: missing required quest %d", name, c.Goal.ID))

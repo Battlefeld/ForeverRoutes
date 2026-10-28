@@ -11,7 +11,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io"
+	"github.com/Battlefeld/ForeverRoutes/internal/httpdownload"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -247,21 +247,12 @@ func Fetch(ctx context.Context, client *http.Client, cache, revision string) (st
 			file, path = "entrances.json", "data/codex/entrances.json"
 		}
 		url := "https://raw.githubusercontent.com/" + Repository + "/" + revision + "/" + path
-		req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+		b, status, err := httpdownload.Get(ctx, client, url, 64<<20)
 		if err != nil {
-			return "", err
+			return "", fmt.Errorf("polestar: %w", err)
 		}
-		resp, err := client.Do(req)
-		if err != nil {
-			return "", err
-		}
-		b, err := io.ReadAll(io.LimitReader(resp.Body, 64<<20))
-		resp.Body.Close()
-		if err != nil {
-			return "", err
-		}
-		if resp.StatusCode != http.StatusOK {
-			return "", fmt.Errorf("polestar: HTTP %d for %s", resp.StatusCode, path)
+		if status != http.StatusOK {
+			return "", fmt.Errorf("polestar: HTTP %d for %s", status, path)
 		}
 		if err := os.WriteFile(filepath.Join(dir, file), b, 0o644); err != nil {
 			return "", err
