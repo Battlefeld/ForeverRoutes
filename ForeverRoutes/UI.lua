@@ -10,7 +10,9 @@ end
 local function tip(button,title,body)
  button:SetScript('OnEnter',function(self)
   GameTooltip:SetOwner(self,'ANCHOR_RIGHT');GameTooltip:AddLine(title,C.gold[1],C.gold[2],C.gold[3])
-  if body then GameTooltip:AddLine(body,1,1,1,true)end;GameTooltip:Show()
+  if body then GameTooltip:AddLine(body,1,1,1,true)end
+  if self==frame.crystal and FR.dataStatus then GameTooltip:AddLine(FR.dataStatus.message or'Datenpruefung ausstehend',1,.82,0,true)end
+  GameTooltip:Show()
  end)
  button:SetScript('OnLeave',function()GameTooltip:Hide()end)
 end
@@ -142,6 +144,7 @@ function FR.Refresh()
  local connected=FR.Connected();UI.SetArt(frame.crystal.tex,connected and'crystal_on'or'crystal_off')
  local mode=view.live and'Live geplant'or(view.kind=='rxp-fallback'and'Guide-Fallback'or'Gespeicherte Route')
  frame.status:SetText(view.paused and'Route pausiert · Dungeon'or string.format('%s · Schritt %d/%d',mode,math.min(view.index,view.total),view.total))
+ if FR.dataStatus and (FR.dataStatus.status=='warning' or FR.dataStatus.status=='error') then frame.status:SetText(frame.status:GetText()..' · Datenprüfung ausstehend')end
  frame.current.text:SetText(view.text)
  local ch=math.max(26,frame.current.text:GetStringHeight()+6);frame.current:SetHeight(ch)
  local y=76+ch

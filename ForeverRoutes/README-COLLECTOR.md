@@ -11,7 +11,16 @@ Der Collector läuft ausschließlich auf 1.60.x und trennt Build, Region und Spr
 JSON-Export in `WTF/Account/<Account>/SavedVariables/ForeverRoutes.lua`. Es werden
 keine Account-, Charakter- oder Chatdaten gesammelt und nichts hochgeladen.
 
-Im ForeverRoutes-Checkout:
+Mit ForeverCore ab `0.6.0-autodata1` werden neue Questtitel bei einer freien
+Verbindung automatisch und ohne `/reload` importiert. Gespeicherte Beobachtungen
+werden beim Schreiben der SavedVariables ebenfalls automatisch eingelesen.
+Die lokale Datenbank bleibt außerhalb der heruntergeladenen Routenpakete erhalten.
+Der Live-Planer liest unterstützte Titel automatisch über `next -client-quests`;
+ob ein Paket diese Funktion unterstützt, steht in seinem Bundle-Manifest
+(`features: ["client-quests-v1"]`). Alte Planer erhalten den neuen Parameter nicht.
+Ein ausstehender Datenabgleich erscheint im HUD-Status und im Kristall-Mouseover.
+
+Optional für Entwicklung ohne laufenden Companion, im ForeverRoutes-Checkout:
 
 ```sh
 python tools/import_client_quests.py '/Pfad/zu/SavedVariables/ForeverRoutes.lua'

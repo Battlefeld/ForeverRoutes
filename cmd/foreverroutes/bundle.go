@@ -15,10 +15,11 @@ import (
 // BundleManifest describes a bundle: its version, the zip's SHA-256 and every file in it with its SHA-256.
 // ForeverCore downloads the bundle of the latest release, checks both and only then replaces its ForeverRoutes folder.
 type BundleManifest struct {
-	Schema  string            `json:"schema"`
-	Version string            `json:"version"`
-	ZipSHA  string            `json:"zipSHA256"`
-	Files   map[string]string `json:"files"`
+	Features []string          `json:"features,omitempty"`
+	Schema   string            `json:"schema"`
+	Version  string            `json:"version"`
+	ZipSHA   string            `json:"zipSHA256"`
+	Files    map[string]string `json:"files"`
 }
 
 // cmdBundle packs what ForeverCore needs into dist/foreverroutes-bundle.zip and its manifest
@@ -68,7 +69,7 @@ func cmdBundle(args []string) error {
 	if err != nil {
 		return err
 	}
-	man := BundleManifest{Schema: "foreverroutes.bundle.v1", Version: *version, Files: map[string]string{}}
+	man := BundleManifest{Features: []string{"client-quests-v1"}, Schema: "foreverroutes.bundle.v1", Version: *version, Files: map[string]string{}}
 	zw := zip.NewWriter(zf)
 	for _, n := range names {
 		b, err := os.ReadFile(files[n])

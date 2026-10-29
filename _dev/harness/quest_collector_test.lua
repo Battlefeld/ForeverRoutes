@@ -35,3 +35,11 @@ clock=16; frame.OnUpdate(frame,.5)
 assert(requests==3,'timeout did not release request slot')
 assert(d.quests['972']==nil,'timeout became a quest fact')
 print('Quest collector: synchronous responses, deduplication, timeout and contextual XP passed')
+
+local sentPayload, callback
+ForeverCoreClient={clientDataSync=true,queue={},Request=function(kind,payload,fn)
+ assert(kind=='quest-observations');sentPayload=payload;callback=fn;return true
+end}
+c.FlushLive();assert(sentPayload and sentPayload.capture:find('Knowledge',1,true),'live export missing')
+callback({imported=1});sentPayload=nil;c.FlushLive();assert(not sentPayload,'acknowledged title sent again')
+print('Live quest export uses an idle bridge and waits for acknowledgement')

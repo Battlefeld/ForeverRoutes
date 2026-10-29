@@ -1,6 +1,7 @@
 -- Client observations, partitioned by build and locale. No account or character identifiers.
 local C = {}; ForeverRoutes.QuestCollector = C
 local queue, queued, requested, pending = {}, {}, {}, nil
+local dirty, sent = {}, {}
 local function call(fn, ...)
  if type(fn) ~= 'function' then return nil end
  local ok, value = pcall(fn, ...); if ok then return value end
@@ -39,6 +40,7 @@ function C.Capture(id)
   end
  end
  d.quests[tostring(id)] = q
+ if sent[id]~=title then dirty[id]=q end
 end
 function C.Enqueue(id)
  id = tonumber(id)
@@ -88,6 +90,32 @@ function C.Export()
  ForeverRoutesQuestExport = json(ForeverRoutesQuestDB or {schema=1,captures={}})
  return ForeverRoutesQuestExport
 end
+-- Send only public quest titles through an idle bridge; objective/turn-in observations
+-- also persist through SavedVariables. No character snapshot is attached to this job.
+local transmitting=false
+function C.FlushLive()
+ local client=ForeverCoreClient
+ if transmitting or not client or not client.clientDataSync or not client.Request or client.pending or #(client.queue or {})>0 then return end
+ if InCombatLockdown and InCombatLockdown() then return end
+ local d=db();if not d then return end
+ local batch, titles, count={}, {}, 0
+ for id,q in pairs(dirty) do
+  batch[tostring(id)]={id=id,title=q.title,seenAt=q.seenAt};titles[id]=q.title;count=count+1
+  if count>=24 then break end
+ end
+ if count==0 then return end
+ local key=d.build..'/'..d.region..'/'..d.locale
+ local document={schema=1,captures={[key]={build=d.build,region=d.region,locale=d.locale,quests=batch,turnins={}}}}
+ local raw=json(document);if #raw>20000 then return end
+ transmitting=true
+ local queued=client.Request('quest-observations',{capture=raw},function(result)
+  transmitting=false
+  if not result then return end
+  for id,title in pairs(titles) do sent[id]=title;if dirty[id] and dirty[id].title==title then dirty[id]=nil end end
+  if client.ApplyDataStatus then client.ApplyDataStatus(result.dataStatus)end
+ end)
+ if not queued then transmitting=false end
+end
 local frame=CreateFrame('Frame')
 for _,event in ipairs({'PLAYER_LOGIN','QUEST_LOG_UPDATE','QUEST_DATA_LOAD_RESULT','QUEST_DETAIL','QUEST_ACCEPTED','QUEST_TURNED_IN','PLAYER_LOGOUT'}) do frame:RegisterEvent(event) end
 frame:SetScript('OnEvent',function(_,event,id,xp,money)
@@ -112,8 +140,8 @@ frame:SetScript('OnEvent',function(_,event,id,xp,money)
   d.turnins[#d.turnins+1]={id=id,observedXP=xp,observedMoney=money,playerLevel=UnitLevel('player'),seenAt=time(),position=position()}
  elseif event=='PLAYER_LOGOUT' then C.Export() end
 end)
-local elapsed=0
-frame:SetScript('OnUpdate',function(_,delta) elapsed=elapsed+delta; if elapsed>=0.5 then elapsed=0; tick() end end)
+local elapsed, liveElapsed=0, 0
+frame:SetScript('OnUpdate',function(_,delta) elapsed=elapsed+delta;liveElapsed=liveElapsed+delta; if elapsed>=0.5 then elapsed=0; tick() end;if liveElapsed>=15 then liveElapsed=0;C.FlushLive()end end)
 SLASH_FOREVERROUTESCAPTURE1='/frcapture'
 SlashCmdList.FOREVERROUTESCAPTURE=function(text)
  local id=tonumber(text)

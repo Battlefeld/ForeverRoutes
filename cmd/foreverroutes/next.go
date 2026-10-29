@@ -40,6 +40,7 @@ type nextReply struct {
 func cmdNext(args []string) error {
 	fs := newFlags("next")
 	path := fs.String("data", "data/routes-data.json.gz", "dataset")
+	observations := fs.String("client-quests", "", "optional local build-scoped client quest observations")
 	profile := fs.String("profile", "", "kill profile from ForeverCore; empty = default estimate")
 	live := fs.String("live", "-", "live state (JSON {race, class, live}); - = standard input")
 	horizon := fs.Float64("horizon", 3600, "seconds of play to plan ahead")
@@ -122,7 +123,7 @@ func cmdNext(args []string) error {
 			*profile = candidate
 		}
 	}
-	w, err := loadWorld(*path, req.Race, req.Class, req.Faction, *profile, *group || hasDungeons(events))
+	w, err := loadWorldWithClientQuests(*path, req.Race, req.Class, req.Faction, *profile, *observations, *group || hasDungeons(events))
 	if err != nil {
 		return err
 	}

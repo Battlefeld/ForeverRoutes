@@ -10,15 +10,25 @@ import (
 	"strings"
 	"time"
 
+	"github.com/Battlefeld/ForeverRoutes/clientquests"
 	"github.com/Battlefeld/ForeverRoutes/dataset"
 	"github.com/Battlefeld/ForeverRoutes/route"
 )
 
 // loadWorld opens the dataset; profile is a kill profile written by ForeverCore ("" = the default estimate).
 func loadWorld(path, race, class, faction, profile string, dungeons ...bool) (*route.World, error) {
+	return loadWorldWithClientQuests(path, race, class, faction, profile, "", dungeons...)
+}
+
+func loadWorldWithClientQuests(path, race, class, faction, profile, observations string, dungeons ...bool) (*route.World, error) {
 	d, err := dataset.Load(path)
 	if err != nil {
 		return nil, err
+	}
+	if observations != "" {
+		if _, err := clientquests.Apply(observations, d); err != nil {
+			return nil, fmt.Errorf("client quest observations: %w", err)
+		}
 	}
 	c := route.Character{Race: race, Class: class, Faction: faction}
 	var opt route.Options
