@@ -1,4 +1,4 @@
-# ForeverRoutes für ForeverCore 1.0 – Routengenerator, Timeline und schlankes WoW-HUD
+# ForeverRoutes für ForeverCore 1.0 – Routengenerator, Timeline und bestehende Ingame-GUI
 
 > **STATUS: KONZEPT / UMBAU-SPEZIFIKATION, NICHT IMPLEMENTIERT.**
 >
@@ -6,6 +6,34 @@
 > Gegenstück: [ForeverSim / ForeverCore – Windows-App, Installer und Bridge](https://github.com/Battlefeld/ForeverSim/blob/main/README-FOREVERCORE-WINDOWS.md).
 > **Produktregel:** Der Nutzer lädt/startet nur **ForeverCore.exe**; kein separates `foreverroutes.exe`-Fenster, keine Konsole, keine ZIP-/CMD-/PowerShell-Installation. Die Routes-Engine bleibt intern ein eigenständig getestetes Modul. Das ForeverRoutes-Ingame-Addon wird automatisch durch ForeverCore verwaltet.
 
+
+
+## Verbindliche Bedienentscheidung: bestehende Addon-GUIs erhalten
+
+**Korrektur vom 29.10.2026:** ForeverSim und ForeverRoutes behalten ihre vorhandenen Ingame-Oberflächen, Reiter, Einstellungen und Bedienfunktionen. Die gemeinsame ForeverCore.exe ergänzt Installation, Updates und Rechenleistung; sie ersetzt keine bestehenden Addon-Fenster. Gear, Talente, Rotation, Buff-/VZ-Auswahl, Loot-/Dungeonhinweise und vorhandene Vergleiche bleiben dort bedienbar, wo sie heute bereits angeboten werden. Keine manuelle Übertragung realer Ausrüstung in eine Windows-Itemliste verlangen.
+
+**Ingame-Auftrag:** Im Addon auswählen -> benötigten Charakter-/Itemzustand automatisch und revisionsgebunden an ForeverCore übermitteln -> intern berechnen -> kompaktes Ergebnis in derselben Addon-Oberfläche anzeigen. Gear-, Level- und Talentänderungen automatisch berücksichtigen; unpassende Cachewerte verwerfen. Die bestehende Transport-/Kampf-/Slotbegrenzung bleibt bestehen. Eingaben und Anzeige bleiben im Spiel, schwere Berechnungen laufen auf Windows.
+
+**Optional am PC:** frei eingegebene hypothetische Stat-Profile vergleichen, ohne konkrete Item-IDs oder eine auszufüllende Ausrüstungsliste. Ein automatisch erfasster Charakter darf als freiwillige Ausgangsbasis dienen. Hypothetische Werte werden getrennt gespeichert und verändern weder Live-Charakter noch aktive Ingame-Einstellungen.
+
+Beispiel einer noch zu implementierenden Windows-Eingabe, **kein berechnetes Ergebnis**:
+
+| Eingabe | Profil A | Profil B |
+|---|---|---|
+| Beweglichkeit | 300 | 320 |
+| Intelligenz | 200 | 180 |
+| Kritische Trefferchance | 20 % | 24 % |
+| Trefferchance | am festgelegten Cap | 2 Prozentpunkte unter demselben Cap |
+
+Ein Treffer-Cap ist kein globaler Wert: Klasse, Level, Ziellevel, Angriffstyp (z. B. Zauber/Nahkampf/Fernkampf) und relevante Talente/Regeln müssen feststehen. „2 Prozentpunkte unter Cap“ ausdrücklich so speichern, nicht als 2 % relative Verringerung. Bei mehreren Angriffstypen getrennte Trefferwerte bzw. Caps angeben.
+
+Für eine belastbare DPS-Simulation sind zusätzlich gemeinsamer Kontext und ein kompatibles Engine-Modell nötig: Klasse/Spezialisierung soweit vorhanden, Level, Gegner, Rotation, relevante Talente/Buffs, Dauer/Iterationszahl und je nach Angriff Waffen-/Zauberdaten. Diese Werte können aus einem bekannten Basisszenario übernommen werden; sie werden nicht aus AGI/INT/Crit erraten. Falls der Nutzer nur vier Werte eingibt, fehlenden Kontext abfragen oder als explizite gemeinsame Annahme anzeigen.
+
+**Einheiten und Ableitung:** Eingabefelder zwischen Attributen, Rating, Prozentchance und Prozentpunkten unterscheiden. Bei manuell gesetzter effektiver Crit-/Hit-Chance nicht zusätzlich unbemerkt die aus AGI/Rating/Talenten abgeleitete Chance addieren. Definieren, ob ein Feld effektiver Endwert oder abgeleiteter Basiswert ist; widersprüchliche Kombinationen ablehnen. Beide Profile unter denselben Annahmen vergleichen, Baseline A = 100 %, Ergebnis inklusive Differenz und Modellgrenzen zeigen. Keine DPS-Zahlen erfinden.
+
+**Implementierung:** eigenen versionierten Stat-Szenario-Vertrag und Engine-Adapter ergänzen; vorhandene itemgebundene Engine nicht ungeprüft mit Pseudo-Items füttern. Nicht unterstützte Stat-/Angriffskombinationen klar melden. Für diesen Ausbau wird keine neue Berechnungsformel ohne fachliche Regression eingeführt.
+
+**Abnahme:** (1) Sämtliche bisherigen Addon-Reiter/Einstellungen bleiben nutzbar. (2) Reales Gear wird automatisch erfasst, nicht manuell auf dem PC nachgebaut. (3) Zwei manuelle Stat-Profile lassen sich mit belegtem gemeinsamen Kontext reproduzierbar vergleichen. (4) Ein PC-Szenario überschreibt niemals den Live-Charakter. (5) Der Windows-Routenbaukasten/Timeline bleibt eine zusätzliche Planungsfunktion; die vorhandene Routes-GUI wird nicht reduziert.
 
 ## Verbindliche Arbeitsreihenfolge ab Release
 
@@ -136,7 +164,7 @@ Die folgenden Abschnitte präzisieren S0–S6. Die frühere A–H-Liste bezeichn
 ## 1. Zielbild und Zuständigkeiten
 
 - **ForeverCore (Windows):** zentrale grafische Anwendung mit Dashboard, Auto Route Builder, Drag-and-drop Timeline, Simulationsvergleichen, Profil-/Datenverwaltung, Installer, Update-Center und Integration zu MythicSim/ForeverSim.
-- **ForeverRoutes (dieses Repo):** reine Engine/Bibliothek für Welt-/Questmodell, Routenplanung, Dungeon- und Berufsbausteine, Optimierung, Replay, Export, Tests sowie schlankes `ForeverRoutes`-HUD.
+- **ForeverRoutes (dieses Repo):** reine Engine/Bibliothek für Welt-/Questmodell, Routenplanung, Dungeon- und Berufsbausteine, Optimierung, Replay, Export, Tests sowie die bestehende eigenständige `ForeverRoutes`-GUI.
 - **ForeverSim / MythicSim:** liefern versionierte Kampfprofile und Auswirkungen geplanter Ausrüstung/Zauberstäbe/Talente auf Kampf- und Regenerationszeiten. **Nicht** aus dem Routes-Repositorium verändern.
 - **ForeverCoreBridge:** transportiert nur zulässige Live-Zustandsinformationen, Antwort-/Route-Snapshots, Steuer- und Versionsmeldungen. Nicht den vollständigen offline optimierten Routenverlauf ständig über die Pixelstreifen senden.
 - **WoW:** zeigt Pfeil, Questlog-Anreicherung, aktuelle Aufgabe, wenige nächste Schritte, wichtige Side-Tasks und Ist-vs.-Soll-Fortschritt; keine schwere Routenberechnung.
@@ -393,7 +421,7 @@ Das Dokument `ForeverRoutes/README-COLLECTOR.md` nennt aktuell den Client-Collec
 
 **Live-Status-Vertrag:** `routeId`, `stepId`, `sequence`, `sessionId`, `schemaVersion`, `gameBuild`, `datasetHash`, `lastConfirmedQuestEvent`, `progressActual`, `progressPlanned`, `offlineFallback`. Stale/inkompatible/aus fremder Session kommende Antworten verwerfen. Der blaue Kristall steht nur für die **wirklich bestätigte Core-Verbindung dieser Sitzung**. Ist-vs.-Soll-Zeit ohne tatsächliche Start-/Messpunkte nicht als gemessene Pace ausgeben.
 
-**Erhalt des bestehenden HUD:** Pfeil, kompakter Quest-/Zieltext, native Tracker-Mouseover, NPC-/Target-Hinweise **nur mit belegter NPC-ID**, Händler-/Nebenaufgaben, Dungeon-Hinweise, `Skip`/`Undo`, `Ziel erreicht`, einfache Zustandsanzeige, Platzwarnung, Lock/Position/Skalierung. Alle komplexen Editor-/Kosten-/Routenentscheidungen gehören nach Windows. Keine vollständige Bildschirmkopie von Journey/RXP und keine unausführbaren Ingame-Eingriffe.
+**Erhalt des bestehenden HUD:** Pfeil, kompakter Quest-/Zieltext, native Tracker-Mouseover, NPC-/Target-Hinweise **nur mit belegter NPC-ID**, Händler-/Nebenaufgaben, Dungeon-Hinweise, `Skip`/`Undo`, `Ziel erreicht`, einfache Zustandsanzeige, Platzwarnung, Lock/Position/Skalierung. Neue umfangreiche Routenbaukasten-/Timeline-Funktionen ergänzend in Windows anbieten; bestehende Ingame-Editoren, Einstellungen und Bedienaktionen bleiben erhalten. Keine vollständige Bildschirmkopie von Journey/RXP und keine unausführbaren Ingame-Eingriffe.
 
 **Rückfallebenen:** (a) Live-Route gültig -> aktuelle Schritte; (b) Host weg -> letzte kompatible installierte Route mit Warnung; (c) Paket fehlt/veraltet -> belegter eigenständiger Guide-Fallback, sofern passender Import/Attribution vorhanden; (d) unvereinbare Zustände -> Plan pausieren und Fehler zeigen, statt falschen Schritt vorzugeben.
 
