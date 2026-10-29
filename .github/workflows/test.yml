@@ -21,6 +21,8 @@ jobs:
         run: test -z "$(gofmt -l .)" || { gofmt -l .; exit 1; }
       - name: vet
         run: go vet ./...
+      - name: Client quest import regressions
+        run: python3 -m unittest discover -s tools -p 'test_import_client_quests.py' -v
       - name: local references and JSON
         run: python3 tools/check_refs.py
       - name: install Lua 5.1 for addon checks
@@ -29,6 +31,7 @@ jobs:
         run: |
           find ForeverRoutes -name "*.lua" -print0 | xargs -0 luac5.1 -p
           lua5.1 _dev/harness/routes_hud_test.lua
+          lua5.1 _dev/harness/quest_collector_test.lua
           python3 tools/package_addon.py --routes _dev/harness/addon_routes_fixture.lua --out /tmp/ForeverRoutes-addon.zip
       - name: test (includes the Orc Warlock / Human Mage baseline)
         run: go test -timeout 25m ./...
