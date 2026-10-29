@@ -6,6 +6,133 @@
 > Gegenstück: [ForeverSim / ForeverCore – Windows-App, Installer und Bridge](https://github.com/Battlefeld/ForeverSim/blob/main/README-FOREVERCORE-WINDOWS.md).
 > **Produktregel:** Der Nutzer lädt/startet nur **ForeverCore.exe**; kein separates `foreverroutes.exe`-Fenster, keine Konsole, keine ZIP-/CMD-/PowerShell-Installation. Die Routes-Engine bleibt intern ein eigenständig getestetes Modul. Das ForeverRoutes-Ingame-Addon wird automatisch durch ForeverCore verwaltet.
 
+
+## Verbindliche Arbeitsreihenfolge ab Release
+
+**Planungsstand: 29.10.2026.** Dieses Dokument beschreibt noch zu implementierende Schritte. Die folgenden Abläufe sind keine Behauptung, dass die GUI bereits ausgeliefert oder der Release-Client getestet ist. Ein erfolgreicher bisheriger Windows-Testpaket-Build ist keine Abnahme dieser neuen Oberfläche.
+
+Die gemeinsame Schrittfolge lautet **S0 -> S1 -> S2 -> S3 -> S4 -> S5 -> S6**. Für jeden Schritt gelten: Eingangsvoraussetzungen prüfen, Änderung umsetzen, Abnahme nachweisen, erst dann weitergehen. Bestehende Berechnungsregeln bleiben in S0–S3 erhalten; fachliche Modellerweiterungen in S4/S5 werden separat versioniert und getestet.
+
+| Schritt | Ergebnis | Zuständigkeit |
+|---|---|---|
+| S0 | Gepinnter, reproduzierbarer Ausgangsstand und gesicherte Nutzerdaten | beide Repos |
+| S1 – zuerst | Eine ForeverCore.exe mit vorläufiger grafischer Installation und bestehender Bridge | ForeverSim bündelt; ForeverRoutes liefert aktuelles HUD und Daten |
+| S2 | PC- und Ingame-Abnahme des bestehenden Betriebs auf dem tatsächlichen Release-Build | beide Repos |
+| S3 | Vorbereitete Routen-/Ergebnispakete vor Spielstart; getesteter Route-Export mit /reload | Host in ForeverSim; Export und lokaler Ablauf in ForeverRoutes |
+| S4 | Bestehende Sim-Funktionen in Windows; stabile Routes-Bibliotheksverträge | beide Repos |
+| S5 | Auto-Bausteine, Berufsmodell und Timeline mit vollständigem Replay | ForeverRoutes-Kern; GUI in ForeverSim |
+| S6 | Gemeinsames geprüftes Release mit Update, Reparatur und Rollback | beide Repos |
+
+**Vorläufige Oberfläche und fertiges Studio sind verschiedene Lieferstände.** S1 darf vor dem vollständigen Studio erscheinen. Sie muss bereits komfortabel installieren und die vorhandenen Funktionen starten; sie darf keine noch nicht implementierten Editoren oder automatisch erzeugten Routen als verfügbar darstellen.
+
+## Datenwege: feste Pakete und kleine Live-Aufträge
+
+| Daten | Weg und Aktivierung |
+|---|---|
+| Vollständige Datenbank, Simulationsmodelle, Optimierung, Timeline | In ForeverCore/den internen Engines auf Windows speichern und verarbeiten; nicht die gesamte Datenbank ins Addon kopieren |
+| Ausgewählte Route und benötigte HUD-Daten | Begrenztes Lua-Exportpaket in vorab installierten, in der TOC bekannten Dateien; vor Spielstart bereitstellen |
+| Bereits berechnete Item-/Gear-Vergleiche | Nur kompatible kompakte Ergebnisse mit Charakter-/Engine-/Datenrevision in den Addon-Cache exportieren |
+| Neue Itemvergleiche für Tooltips | Addon -> Pixelauftrag -> Windows-Berechnung -> vorhandener Antwortslot -> Tooltip-Cache; kein /reload für eine erfolgreich geladene Live-Antwort |
+| Pfeil, aktueller Routenschritt, Questfortschritt, Skip/Undo | Im Addon aus geladenem Paket und verfügbaren Spiel-APIs verarbeiten; nicht bei jeder Bewegung Windows fragen |
+| Login, Versionsabgleich, geänderte Ausrüstung/Level/Talente und optionale Questbeobachtungen | Kleine Kontroll-/Zustandsaufträge weiterhin über Bridge bzw. zulässigen gespeicherten Export; Änderungen invalidieren passende Ergebnis-Caches |
+
+**Damit entfällt die ständige Routenberechnung über die Bridge als Standardweg.** Der vorhandene `next`-Planer bleibt für Entwicklung und einen ausdrücklich gewählten Live-Modus erhalten, bis der lokale Routenablauf funktional gleichwertig abgenommen ist. Es werden nicht voreilig bestehende Funktionen entfernt. Reaktionen/Procs, soweit über Spiel-APIs verfügbar, zeigt das HUD lokal; keine zeitkritische Kampfentscheidung von einem Windows-Roundtrip abhängig machen.
+
+**Grenzen des bestehenden Protokolls:** 238 Nutzbytes pro Pixelbild, derzeit 0,10 Sekunden Soll-Bilddauer (konfigurierbar, mit Rückfall); maximal 65.536 Bytes serialisierter Auftrag. Das ist keine garantierte effektive Datenrate. Der Rückweg ist kein Pixelkanal: Der Host schreibt `Inbox.lua` in vorinstallierte LoadOnDemand-Antwortmodule; das Addon lädt diese nach. Es stehen 2.048 Slots pro Sitzung bereit; auch erfolglose Lade-/Pollingversuche können Slots verbrauchen. `publishReply` begrenzt die serialisierte Antwort derzeit auf 512 KiB und schreibt sie redundant in bis zu 128 Slots; das ist kein Beleg für sinnvolle große Live-Pakete. Slotbudget, Latenz, UI-Last und Framerate im echten Client messen. Während des Kampfes lädt der aktuelle Rückkanal keine Antworten nach; Tooltip zeigt dann nur passende Cache-Werte oder „Berechnung ausstehend“. Windows darf im Hintergrund rechnen; das hebt die Einschränkung des Rückkanals nicht auf.
+
+## Verbindliche Update- und Reload-Regeln
+
+| Änderung | Vorgehen |
+|---|---|
+| Erstinstallation, neue Module, TOC-/Dateilistenänderung oder strukturelles Addon-Update | WoW schließen, Paket vollständig installieren, WoW neu starten. Das ist unsere konservative Installationsregel, keine allgemeingültige Behauptung über alle WoW-Versionen |
+| Neue Route bei geschlossenem WoW | Geprüften Export schreiben; nächster Spielstart lädt ihn |
+| Neue Route bei laufendem WoW | Nur nach bestandenem S2/S3-Clienttest in einen bereits bekannten festen Exportpfad schreiben; anschließend außerhalb des Kampfes manuell /reload |
+| Neue Live-Itemantwort | Bestehenden Antwortslot laden; kein /reload nötig, solange Kanal verfügbar und Slotbudget vorhanden |
+| Nur Windows-Datenbank aktualisiert | Aktive Route und ihre Revisionsbindung beibehalten; bei Unverträglichkeit warnen. Erst neuer geprüfter Export ändert die geladene Route |
+
+Für den laufenden Routenexport muss der Host zuerst Schema, Build, Quellenstand, Pfade und Hash prüfen, eine vollständige temporäre Datei auf demselben Volume schreiben und den festen Zielpfad per getesteter Replace-Strategie austauschen. Nie leeren/unvollständigen Lua-Inhalt freigeben, keine komplette Addonstruktur nebenbei aktualisieren. Bei mehreren Dateien entweder eine einzige abgeschlossene Exportdatei bevorzugen oder eine getestete Generationsprüfung einführen, die Mischstände ablehnt. Bei Sperren/Abbruch altes Paket behalten und Spielneustart anbieten.
+
+Status strikt trennen: `STAGED` = vorbereitet; `INSTALLED` = Dateien geschrieben; `RELOAD_REQUIRED` bzw. `RESTART_REQUIRED` = noch nicht geladen; `ACTIVE` erst nach Ingame-Bestätigung von Export-ID und Revision. Bei nicht verbundener Bridge darf der Host die Aktivierung nicht erraten. Das Addon kann seine geladene Revision lokal anzeigen.
+
+**SavedVariables sind kein Host->WoW-Livekanal.** Keine vom laufenden Spiel verwalteten WTF-Dateien überschreiben: WoW schreibt beim Reload/Logout eigene Werte zurück. Routenpakete in verwalteten Addon-Dateien halten, Nutzereinstellungen/Questfortschritt getrennt und mit Migration nach stabilen IDs erhalten. Das genaue Reload-/Dateiladeverhalten auf dem Release-Build nachweisen; bis dahin nur geschlossener Client als freigegebener Installationsweg.
+
+## Datenquellen und aktueller Umfang
+
+Keinen zusätzlichen direkten CASC-/DB2-Extractor und keine neue direkte DBCache-Auswertung/-Erfassung als Voraussetzung für diesen Umbau einführen. Die zuvor vorgeschlagene lokale Extraktion wird nicht umgesetzt. Bestehende Cache-bezogene Funktionen bei S0 inventarisieren und vor Auslieferung ausdrücklich auf Umfang/Zulässigkeit prüfen; diese Dokumentänderung deaktiviert vorhandenen Code nicht automatisch. Bis zur Klärung nicht als freigegebenes Feature bewerben oder aktivieren.
+
+Bestehende freigegebene Datenquellen, Blueposts und zulässige Addon-Beobachtungen nutzen. Tägliche Prüfung plus deduplizierte Ereignisanstöße; kein stündlicher Vollabruf. Der aktuelle Bluepost-Tracker wird täglich abgefragt; eine vorbereitete Dispatch-Schnittstelle bedeutet keine eingerichtete Echtzeit-Push-Anbindung. Ein Bluepost ist ein Prüfanlass, kein fertig importierter Wert. Questtitel belegen weder Quest-XP noch sämtliche Voraussetzungen. „Geprüfter Quellenstand“ mit Zeit/Build anzeigen, keine garantierte Vollständigkeit aller Hotfixes; rein serverseitige Änderungen können unbekannt bleiben.
+
+## Bedienablauf für Kai nach erfolgreicher Implementierung
+
+1. WoW für die erste Installation vollständig schließen. Die veröffentlichte, geprüfte **ForeverCore.exe** herunterladen und per Doppelklick starten.
+2. In der vorläufigen Oberfläche die richtige Forever-Installation wählen; angezeigte Module/Zielpfade prüfen und grafisch installieren. Keine CMD-, PowerShell-, Python-, Lua- oder Token-Umgebungsvariablen-Schritte.
+3. ForeverCore geöffnet oder im Tray lassen, wenn Live-Itemvergleiche gewünscht sind. WoW über Launcher oder die App starten.
+4. Im Spiel beide unabhängigen HUDs, geladenen Exportstand und bestätigte Bridge-Verbindung prüfen. Ein installiertes Addon ist noch keine nachgewiesene Verbindung.
+5. Vorbereitete Route auswählen/laden. Neue Route während des Spiels erst dann über „Für WoW bereitstellen“ exportieren, wenn S3 verfügbar ist; nach Fertigmeldung außerhalb des Kampfes /reload eingeben. Bei „Neustart erforderlich“ WoW vollständig schließen und neu starten.
+6. Neue Items wie bisher im Tooltip vergleichen. Cache-Treffer erscheinen lokal; neue Berechnungen können warten, insbesondere während des Kampfes. Keine unbelegten Prozentwerte anzeigen.
+7. Bei Fehlern Diagnose/Reparatur in der GUI nutzen; letzte kompatible Version behalten. Kein manuelles Kopieren oder Shell-Kommando als normaler Lösungsweg.
+
+Dieser Ablauf ist die **spätere Bedienanleitung**, keine heute bereits ausführbare Zusage. Die folgenden repo-spezifischen Schritte beschreiben die Arbeit bis dahin.
+
+
+## Umsetzung in ForeverRoutes: Schritt für Schritt
+
+### S0 – Ausgangsstand und Exporte sichern
+1. Aktuellen Commit, Datenhash, Quell-Lock, HUD und vorhandene Exporte erfassen; mit dem ForeverSim-Host eine kompatible Kombination pinnen.
+2. Bestehende Routen, getrennte Originalguides, Planner-/Replay-Ergebnisse und HUD-Einstellungen als Regression sichern.
+3. Bestehenden lokalen HUD-Ablauf gegen den vorgesehenen vollständigen Export prüfen: Welche Schritte, Koordinaten, NPC-/Quest-IDs und Bedingungen fehlen? Funktionsumfang nicht allein aus einem Mock-Test ableiten.
+**Abnahme:** Reproduzierbares Paket, dokumentierte Exportlücken und unveränderte Rechenregeln.
+
+### S1 – Payload für die vorläufige gemeinsame EXE liefern
+1. Aktuelles ForeverRoutes-Addon aus diesem Repo vollständig paketieren; TOC, Lua-Dateien, Medien, Attribution und benötigte Daten validieren.
+2. Festen Datenpfad, derzeit `ForeverRoutes/Data/Routes.lua`, schon bei Erstinstallation anlegen und in der TOC führen. Das bestehende Format zunächst erhalten; neue Version nur mit passendem Reader/Migrator.
+3. Manifest mit Routes-Commit, Datenhash, HUD-/Exportversion, unterstütztem Host/Build, Dateiliste, Größen und Hashes liefern. Ein SHA ohne vertrauenswürdige Manifestherkunft ersetzt keine Authentizitätsprüfung.
+4. Geprüften Payload an ForeverSim zum Einbetten übergeben; keine zweite Nutzer-EXE/Addon-ZIP-Installation und keine Verwendung der alten ForeverSim-Routes-Kopie.
+**Abnahme:** Die vorläufige ForeverCore.exe installiert das aktuelle eigenständige Routes-HUD mitsamt gültigem Startpaket ohne manuelles Kopieren.
+
+### S2 – Release-Client und lokalen HUD-Ablauf nachweisen
+1. Bei geschlossenem WoW installieren, dann Pfeil, aktuelle Aufgabe, Questtracker/Mouseover, Nebenaufgaben, Skip/Undo, Position/Skalierung und Persistenz im tatsächlichen Release-Build testen.
+2. Ohne Host prüfen, ob eine vollständig exportierte kompatible Route lokal durchspielbar ist. Fehlende automatische Schrittwechsel/Questbedingungen implementieren, bevor Bridge-next als Standard entfällt.
+3. Mit Host Session/Revision, Verbindungskristall und kleine Kontrollaufträge prüfen; keine direkte Abhängigkeit vom Itemvergleich für Routenfortschritt.
+4. Questabschluss, Abbruch, bereits erledigte Quest, Mapwechsel, Tod soweit modelliert, /reload und Neustart testen. Fehlende Voraussetzung -> verständliche Pause/Alternative statt erfundenem Schritt.
+**Abnahme:** Lokaler Routenablauf nachgewiesen; vorhandene Funktionen und das akzeptierte HUD-Design erhalten.
+
+### S3 – Vollständiger Routenexport mit Reload-Bestätigung
+1. Offline validierte Route nach festem Schema exportieren; Export-ID, Daten-/Engine-/Charakterrevision und Größenlimit aufnehmen. Export ist ausführbarer Lua-Inhalt: nur eigene sichere Serialisierung, keine ungeprüften fremden Lua-Skripte ausführen.
+2. Ein Paket muss alle für lokalen Fortschritt nötigen Schritte/Bedingungen enthalten; nur „nächste 3 Schritte“ ohne Nachladeweg reicht nicht für eine ganze Offline-Route. Vollständige Rohdatenbank bleibt auf Windows.
+3. Export vor Spielstart laden und prüfen. Für laufendes WoW den eng begrenzten Replace-/Reload-Weg mit ForeverCore testen; keine neuen Module/TOC-Struktur nebenbei einführen.
+4. Route-ID-/Schritt-ID-basierte Fortschrittsmigration umsetzen. Alte SavedVariables dürfen den neuen Export nicht still ersetzen; ungültige Revision -> sauberer Reset-/Migrationsdialog.
+5. Geladene Export-ID im HUD anzeigen und über kleinen Capability-kompatiblen Handshake an Host bestätigen; bis dahin „Reload erforderlich“.
+**Abnahme:** Neue Route erzeugen -> prüfen -> bereitstellen -> /reload -> richtige neue Route mit korrektem Fortschritt. Bei Fehlern letzter kompatibler Stand und klare Meldung.
+
+### S4 – Bibliotheks-API und unveränderte Rechenregeln
+1. Fachfunktionen aus CLI-Eingabe/-Ausgabe entkoppeln; Context/Cancel, Fortschritt und strukturierte Fehler anbieten.
+2. Gemeinsame versionierte Contracts mit dem Host definieren; CLI bleibt Entwicklerwerkzeug oder interner Übergangsprozess.
+3. CLI-/Library-Ergebnisse unter identischen Inputs vergleichen; keine Berechnungsformeln durch den UI-Umbau ändern.
+4. Versionierte Sim-Kampfprofile annehmen, keine produktive Combat-Feedback-Pipeline automatisch freischalten.
+**Abnahme:** Host kann vorhandene Planung/Replay über stabilen Vertrag nutzen, Ergebnisse bleiben nachvollziehbar.
+
+### S5 – Auto-Bausteine, Berufsmodell und Timeline
+1. Pflicht-/optionale/verbotene/gesperrte Blöcke mit Abhängigkeiten und belegten Daten definieren.
+2. Quests/Dungeons einschließlich Vorquests, Reise, Gruppensuche und Abgabe als vollständige Ereignisse replayen; XP nicht doppelt zählen.
+3. Berufs-/Trainer-/Rezeptgates, Materialbeschaffung, Gold, Craft/Entzaubern und Skillchancen als eigene getestete Erweiterung ergänzen.
+4. Auto-Builder zunächst gültige Kandidaten erzeugen lassen; dann Suche verbessern. Schnellste **gefundene** gültige Route berichten, kein globales Optimum versprechen.
+5. Timeline-Operationen mit Undo/Redo/Locks und inkrementellem Replay anbieten. Vollständige Revalidierung vor Export.
+6. Troll-Magier-Szenario mit RF/RoL, Schneider/VZ 225 und Zauberstab prüfen. Wenn Level-/Datenregeln das Ziel verhindern, konkrete Blockade zurückgeben; keine Zahlen erfinden.
+**Abnahme:** Gültiger Ressourcen-/Zeit-/XP-Verlauf oder erklärter Unmöglichkeitsbericht; Originalguides unverändert und getrennt.
+
+### S6 – Gemeinsames Release unterstützen
+1. Gepinnten Host mit Library/CLI, Export, Daten und HUD gemeinsam prüfen.
+2. Lua-/Go-/Replay-/Contract-Tests, Exportgrößen, beschädigte Pakete, Revisionswechsel, echten Client und Windows-Installation nachweisen.
+3. Nur kompatiblen lizenzierten Payload veröffentlichen; Dataset-Updates nur innerhalb expliziter Kompatibilität.
+4. Daily-Quellencheck erhalten; schwere Releasebuilds nur bei relevanten Änderungen. Ausgeschöpftes Actions-Budget ist keine erfolgreiche Prüfung.
+**Abnahme:** ForeverCore liefert eine Nutzer-EXE; Routes-HUD arbeitet lokal mit dem richtigen Paket; neue Itemvergleiche bleiben Aufgabe des Sim-Hosts.
+
+## Technische Referenz zur Umsetzung
+
+Die folgenden Abschnitte präzisieren S0–S6. Die frühere A–H-Liste bezeichnet Themenpakete, keine zweite Ausführungsreihenfolge.
+
+
 ## 1. Zielbild und Zuständigkeiten
 
 - **ForeverCore (Windows):** zentrale grafische Anwendung mit Dashboard, Auto Route Builder, Drag-and-drop Timeline, Simulationsvergleichen, Profil-/Datenverwaltung, Installer, Update-Center und Integration zu MythicSim/ForeverSim.
@@ -130,7 +257,7 @@ Die neue `ProfessionTarget`-Engine ist ein eigener Meilenstein; der aktuell doku
 
 **Installationsweg:** ForeverCore.exe aus dem anderen Repo liefert `ForeverRoutes` als gepacktes, versioniertes Addon mit; findet WoW-Installationspfade, sichert alte eigene Dateien, spielt nach Hash-/Versionsprüfung neue Dateien ein. Kein manuelles Addon-ZIP, keine separaten Shell-Skripte oder `foreverroutes.exe`-Downloads.
 
-**Datenweg:** vollständige validierte Route wird als kompaktes, versioniertes lokales Addon-Datenpaket generiert und bei sicherem Spielzustand installiert; keine gigantischen Routen über Pixelstreifen. Live-Änderungen des Questlogs/Levels/Position werden über `ForeverCoreBridge` als kleine Snapshots zum Host gesendet. Der Host antwortet mit aktuellem Abschnitt, nächste Schritte, Wegpunkt, Warnung und Modellrevision. Addon liest bereits geladene Pakete; für neue Addon-Lua-Dateien ist ggf. ein WoW-Neustart oder `/reload` nötig, Status ehrlich anzeigen.
+**Datenweg:** Vollständige validierte Route als begrenztes lokales Addon-Datenpaket vor Spielstart bereitstellen. Das HUD verarbeitet aktuelle Schritte, Questereignisse und Navigation lokal. Bridge nur für kleine Kontroll-/Zustandsaufträge und ausdrücklich gewählte Live-Funktionen; routinemäßige Routenfortschritte benötigen nach S3 keinen Windows-Roundtrip. Laufender Route-Export ausschließlich nach der verbindlichen Reload-Tabelle; strukturelle Updates bei geschlossenem Spiel.
 
 **HUD MUSS behalten:** unabhängiger Pfeil, nächstes Ziel, Questlog/Mouseover, sichtbare Teilziele, wichtige Side-Tasks, Bag-Warnung, Skip/Undo, Kristall als echte Verbindungsmeldung, Lock/Skalierung und gespeicherte Positionen. Kein großer Routen- oder Berufe-Editor im WoW-Client. Ein kompakter Zeitvergleich „geplant / bisher tatsächlich“ nur bei belastbarem Live-Snapshot, keine Schätzung als Messwert präsentieren.
 
@@ -148,7 +275,7 @@ ForeverRoutes liefert an ForeverCore mindestens:
 
 **Manifest (Beispielfelder, kein bereits vorhandenes API):** `coreVersion`, `routesEngineRevision`, `datasetHash`, `simEngineRevision`, `gameBuildRange`, `addonApiVersion`, `routeSchemaVersion`, `assetSha256`, `licenseManifest`. Hash und Inhaltsvalidierung beim Erstellen, Installieren und Laden. Fehler können GUI-seitig behandelt werden, ohne stille inkompatible Dateikopien.
 
-## 10. Umbauphasen
+## 10. Themenpakete (Ausführung nach S0–S6)
 
 1. **A – Struktur/Audit:** vorhandene CLI-Funktionen, Datenmodelle, Exporte, Profile und allenfalls lizenzierbare Guides inventarisieren. Contract-Tests für identische CLI- und API-Ergebnisse.
 2. **B – Library API:** `cmd/foreverroutes` auf kleine Wrapper reduzieren, cancellation/progress/error, reentrant Immutable-Snapshots, versionsgebundene Cache-Invalidierung.
@@ -260,8 +387,8 @@ Der automatisch erstellte Plan nimmt **Bausteine** an, nicht bloß einen Zeitwun
 Das Dokument `ForeverRoutes/README-COLLECTOR.md` nennt aktuell den Client-Collector (`C_QuestLog.RequestLoadQuestByID`, nur Build 1.60.x), kurz übertragene Questtitel während freier Verbindung und gespeicherte Beobachtungen in `WTF/Account/.../SavedVariables/ForeverRoutes.lua`. Diese Quelle erhält Titel und verfügbare Ziele, **nicht automatisch** vollständige XP, Questvoraussetzungen, NPC-Drop-Raten oder sämtliche Clientdaten.
 
 **Drei getrennte Wege:**
-1. **Große Routen-/Questpakete:** ForeverCore baut komplette `Data/Routes.lua`/Addon-Manifestdaten offline, prüft Hash/TOC/Schema und installiert sie sicher, wenn WoW nicht aktiv ist; neue Dateien wirken erst nach wirklich erforderlichem WoW-Reload/Neustart. Status `STAGED`, `INSTALLED`, `RESTART_REQUIRED`, `ACTIVE` nicht verwechseln.
-2. **Kleine Live-Aktualisierungen:** erlaubter `ForeverCoreBridge`-Pixel-/Antwortslotkanal für Questfortschritt, nächstes Ziel, Kristall, Warnung; 2.048 LoadOnDemand-Slots pro Sitzung und mögliche Capture-Probleme als echte Grenze behandeln. Kein Versprechen einer grenzenlosen bidirektionalen Datei-Live-API.
+1. **Routen-/HUD-Pakete:** ForeverCore berechnet offline und exportiert nur benötigte Daten in den bekannten `Data/Routes.lua`-Pfad. Vor Spielstart installieren; laufender Routenexport nur nach S3 und bestätigtem /reload. Struktur-/TOC-/Modulupdates bei geschlossenem WoW mit Neustart. Status `STAGED`, `INSTALLED`, `RELOAD_REQUIRED`, `RESTART_REQUIRED`, `ACTIVE` unterscheiden.
+2. **Kleine Live-Aufträge:** bestehender Pixel-/Antwortslotkanal für neue Itemvergleiche und Kontroll-/Zustandsmeldungen; Zulässigkeit und tatsächliche Funktion vor Freigabe klären. Questfortschritt und nächstes Ziel im Standardmodus lokal. 2.048 Slots und fehlendes Antwortnachladen im Kampf beachten; keine unbegrenzte bidirektionale Live-API.
 3. **Beobachtungen:** Client-Collector-Daten bei zulässigen Ereignissen oder gesicherten SavedVariables-Schreibzeitpunkten importieren; nach Build/Region/Sprache trennen, unbekannte/ungesicherte Einträge im Rohbestand behalten, keine unvalidierten XP in Routen übernehmen.
 
 **Live-Status-Vertrag:** `routeId`, `stepId`, `sequence`, `sessionId`, `schemaVersion`, `gameBuild`, `datasetHash`, `lastConfirmedQuestEvent`, `progressActual`, `progressPlanned`, `offlineFallback`. Stale/inkompatible/aus fremder Session kommende Antworten verwerfen. Der blaue Kristall steht nur für die **wirklich bestätigte Core-Verbindung dieser Sitzung**. Ist-vs.-Soll-Zeit ohne tatsächliche Start-/Messpunkte nicht als gemessene Pace ausgeben.
@@ -280,7 +407,7 @@ Pipeline-Übertragungsvertrag:
 - Lizenzprüfung explizit: GPL-3.0-abhängige Datensätze, CC-BY-NC-SA-RXP-Guides, MIT-Code und sonstige Third-Party-Assets/Guide-Importe können unterschiedliche Weitergabepflichten auslösen. Inhalt nur mit geklärten Vertriebsrechten, Autorenhinweisen, erforderlichen Quellen/Notices paketieren. Fremde proprietäre Guides nicht einfach mitverteilen.
 - Vollständige Release-Verifikation: Prüf-Import, Rebuild gegen `data/sources/lock.json`, Replay und Klassen-/Rassenmatrix, Route-Diff, Export nach Addon, Mock-Lua-HUD-Tests, echter WoW-Client-Test, Windows-Erstinstallation, GitHub-Releasemanifest und Rollback.
 - Auto-Update-Weg respektiert private GitHub-Rechte; ForeverCore bietet Browser-/Token-Authentifizierung grafisch **nur bei berechtigtem Konto**, speichert Credentials sicher und zeigt 401/403/Rate-Limit/Offline getrennt. Kein Developer-Token in Nutzerversion.
-- WoW beim Update aktiv -> sicher stagen, kein live behauptetes Dateihotswap; `RESTART_REQUIRED` korrekt anzeigen. Installer löscht keine fremden Addons und keine SavedVariables.
+- WoW beim strukturellen Update aktiv -> stagen und `RESTART_REQUIRED`; allein feste Routendaten dürfen nach S3 mit `RELOAD_REQUIRED` exportiert werden. Erst geladene Revision bestätigt Aktivierung. Keine fremden Addons oder SavedVariables löschen.
 
 Die bestehende `.github/workflows/release.yml` bleibt bis zum geplanten Umbau unverändert. Das neue One-EXE-Release erst nach vollständiger Cross-Repo-Integration freigeben.
 
