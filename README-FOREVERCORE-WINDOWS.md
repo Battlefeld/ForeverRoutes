@@ -177,4 +177,141 @@ ForeverRoutes liefert an ForeverCore mindestens:
 
 Sie implementiert **keine** Windows-GUI, keine Go-API und keinen installierbaren Build. Sie garantiert weder „perfekte“ Laufzeit noch echte 1–20-Ergebnisse, eine zuverlässige Hot-Swap-Bridge oder vollständige Spieldaten. Solche Aussagen sind erst nach Tests zulässig. Spieler braucht für die installierten WoW-Addons weiterhin Dateien im AddOns-Verzeichnis; nur der **Download und Startpunkt** soll eine ForeverCore.exe sein.
 
-**Umsetzung erst nach separatem Auftrag. Bis dahin bleiben Engine, Branches, Workflows und Routen unverändert.**
+**Umsetzung erst nach separatem Auftrag. Bis dahin bleiben Engine, Branches, Workflows und Routen unverändert.** Die ergänzenden Abschnitte 13–21 definieren die technischen Schnittstellen, Datenmodelle, Grenzfälle und Testvorgaben für die spätere Implementierung.
+
+---
+
+## 13. Tatsächlicher Ist-Stand und Datei-/Vertrags-Audit
+
+**Keine Annahme, dass die neuen GUI-APIs schon existieren.** Im `main`-Branch sind nachgewiesen:
+
+| Vorhandener Bestandteil | Umbau für ForeverCore |
+|---|---|
+| `cmd/foreverroutes/main.go` enthält `build-data`, `audit`, `update`, `plan`, `replay`, `timeline`, `improve`, `next`, `guide`, `bundle`, `export-addon`, `extend`, `check-routes`, `check-quests` | Bestehende Geschäftslogik als Go-Library mit typisierten Parametern/Cancellation verfügbar machen; CLI als Test-/Developer-Wrapper behalten |
+| `route/` besitzt bereits `timeline`-/Optimierungs-/Checkpoint-/Dungeon-/Wand-/Live-/Reise-Logik | Bestehende Algorithmen/Tests weiterverwenden; **nicht** alle Routen zu einer gemeinsamen Guide-Datei zusammenführen |
+| `data/audits/timeline-v2.md` weist vollständig nachgespielte historische Szenarien aus, nicht automatisch aktuelle, ingame bestätigte Bestzeiten | Ergebnis-Snapshot mit konkreter Modellrevision, Charakter/Profil, Datensatz, Seed, Suchbudget und Replay-Status speichern |
+| `data/sources/dungeons.json` beschreibt `ragefire-chasm` und `ruins-of-lordaeron`, Laufzeiten sind laut Quelldatei **Schätzungen** | Dungeon-Komponenten gesondert mit Quest-/Kill-/Travel-/Wartezeit und Unsicherheit ausweisen; echte Zeiten später kalibrieren |
+| `ForeverRoutes/` mit `README-HUD.md` und `README-COLLECTOR.md` | Eigenständiges HUD und Quest-Collector **behalten**; nicht durch ForeverSim-HUD überschreiben oder dessen Aussehen erfinden |
+| `docs/foreversim-feedback.md` deaktiviert produktive Kampfrückmeldungen bis expliziter Release-/Nutzerfreigabe | Auch die neue Windows-GUI darf diese Sperre **nicht** automatisch umgehen |
+| `.github/workflows/release.yml` erzeugt bisher eigenständige Bundles, `.github/workflows/update.yml` verarbeitet Quelldaten | Für gemeinsames Produkt kompatible gepinnte Artefakte/Contracts liefern; kein willkürliches `latest` beider Repos |
+| Im ForeverSim-Repo liegt eine ältere `ForeverRoutes/`-Kopie; `ForeverCore/package.py` schließt sie vom Paket aus | **Nur dieses Repository besitzt die aktuelle ForeverRoutes-HUD-Quelle**. CI muss Altdateien im Endnutzerpaket ausschließen |
+
+Der Installer liegt beim **anderen** Repo. Dort dokumentiert `ForeverCore/setup/installer.go.txt` heute noch Konsoleneingabe und PowerShell-Ausführung; erst dessen Ablösung erfüllt den Wunsch „eine ForeverCore.exe, keine CMD/PowerShell“. Dieses Routes-Repo liefert die aktuelle Engines/Addon-Artefakte, aber baut **keine zweite vom Nutzer zu startende Anwendung**.
+
+## 14. Gemeinsamer technischer Datenvertrag (einmal definieren, überall verwenden)
+
+**Architekturregel:** ForeverCore-Windows-Host (ForeverSim-Repo) ist Eigentümer von Installationsmanagement, GUI, Bridge, MythicSim-Host und Auth. ForeverRoutes ist Eigentümer von Datenmodell, World-/Routen-/XP-Engine, Plan-/Optimierungslogik, Routenimporten und Routes-HUD. Eine **einzige** versionierte Schemaquelle (gepinnte JSON-Schemas oder generiertes DTO-Paket) ist notwendig; nicht in beiden Repos auseinanderlaufende Kopien manuell pflegen.
+
+**Vorgeschlagene DTOs (Designnamen, nicht als implementiert ausgeben):**
+
+- `PlanSpec`: `planId`, `character{race,class,faction,startLevel,startXp,knownFlightPaths,...}`, `target{level,requiredCompletedBlocks}`, `required`, `optional`, `forbidden`, `locks`, `optimization{goal,goldBudget,seed,timeBudget}`.
+- `ActivityBlock`: `blockId`, `kind`, `sourceRef`, `requiredState`, `producedState`, `prerequisites`, `location`, `costModel`, `durationModel`, `uncertainty`, `provenance`, `dataRevision`.
+- `RouteDraft`: eigenständige Route-ID und revisionierte zeitlich sortierte Events mit stabilem `eventId`; `originGuideId` und `originRevision` optional; `edited`-/`locked`-Markierung. **Originalguide niemals direkt mutieren.**
+- `ReplayResult`: `valid`, `blockingErrors`, `warnings`, `startState`, `endState`, `events`, `elapsedSeconds`, `xpLedger`, `goldLedger`, `inventoryLedger`, `professionLedger`, `confidence`.
+- `TimelineEdit`: Operation `insert/move/split/merge/delete/lock/unlock`, erwartete Route-Revision (optimistisches Concurrency-Control), Eingabe- und Ausgabezustand.
+- `CombatProfile`: Character/Gear/Talente/Rotation/Levelbereich/Gegner, `engineRevision`, `datasetHash`, `source=modeled|measured`, Gültigkeitszeitpunkt.
+- `HudRouteSnapshot`: routeId, sequence, currentStepId, nächste Schritte, Quest-/NPC-IDs, Zielkoordinaten, Side-Tasks, Zeit-/XP-Vergleich, Daten-/Bridge-Version, Verfalls-/Gültigkeitsstatus.
+
+**Protokollhärtung:** `schemaVersion`, `gameBuild`, `coreVersion`, `routesEngineRevision`, `datasetHash`, `characterRevision` obligatorisch, soweit die jeweilige Nachricht sie benötigt. Ausdrückliche Versionen für neue APIs, eigener Migrationspfad für historische Exporte. Alte `foreverroutes.dataset.v1` nicht kommentarlos überschreiben; zuerst API-Kompatibilität/Reader-/Writer-Migration prüfen.
+
+**Einheiten:** Zeiten intern Integer-Sekunden (keine beliebig gerundeten Minuten), XP und Gold als Integer der kleinsten relevanten Einheit, Wegpunkte mit Koordinatenraum/Map-ID, Level und Berufe als klar getrennte Werte; fehlender Wert = `unknown` statt `0` (ausdrücklich belegte 0-XP-Quests bleiben 0). Alle Zufallsannahmen mit Seed/Verteilung und alle externen Quellen mit Revision/Datum.
+
+## 15. Baukasten-Pflichten, Quests und Dungeon-Abhängigkeiten
+
+Der automatisch erstellte Plan nimmt **Bausteine** an, nicht bloß einen Zeitwunsch:
+
+1. `required` = muss tatsächlich abgeschlossen werden; `optional` = nur verwenden, wenn schneller; `forbidden` = niemals verwenden; `locked` = manuelle Position/Gruppe fest; `auto` = Engine bewertet die Wahl. Bei Konflikt `required` + `forbidden` für dasselbe Objekt **Validierungsfehler**, keine automatische Streichung.
+2. Pflicht-Dungeons umfassen grundsätzlich alle zwingenden Vorbereitungen der **ausgewählten** Dungeonquests, Eingang, Gruppenphase, Lauf, Questabschluss und Abgabe. Optionale Dungeonquests sind eigene mit der Dungeon-Aktivität verknüpfte Blöcke. Keine Belohnung für unerledigte/unerreichbare Quests.
+3. Quest-IDs und Voraussetzungen werden aus der validierten Quelldatenbank ermittelt; Reihung darf nicht blind nur nach XP/Hr erfolgen. Annahme und Abgabe sind unterschiedliche Ereignisse; Questloggrenze/gleichzeitige Questziele, Levelgates und Positionen zählen.
+4. XP-Herkunft ereignisbasiert: `questTurnInXp`, `mobKillXp`, `discoveryXp` **nur wenn modelliert**, `dungeonMobXp`, `restedOrBonusXp` mit klarer Baseline; **kein** separater pauschaler Dungeon-XP-Posten, der dieselben Mobkills erneut addiert.
+5. Ein Pflichtbaustein darf nicht verschwinden, nur weil Level 20 früher erreicht ist. Abschlusszeit ist `max(alle Pflichtziele tatsächlich erfüllt)`; Berufe auf 225 werden daher **nach** einem möglicherweise notwendigen Level-/Trainer-Gate beendet.
+6. Vorhandene eigene Routen, RestedXP, Journey, ForeverWisp, Polestar usw. sind **unabhängige Kandidaten**, keine vermischte falsche „Original-Route“. Nur lizenzierte/importierbare Inhalte verwenden; Quellen/Attribution annehmen und beibehalten.
+
+**Infeasible-Report statt Fake-Route:** `UNREACHABLE_TRAINER`, `MISSING_QUEST_PRECONDITION`, `REQUIRES_HIGHER_LEVEL`, `UNKNOWN_XP`, `INSUFFICIENT_GOLD`, `MISSING_MATERIAL_SOURCE`, `NO_LEGAL_ROUTE`; mit Block-ID, Quelle, erforderlichem Zustand und konkreter Behebungsoption. Auch bei `goldBudget = null` muss ein Golddefizit auf der Zeitachse finanziert werden; „kein Limit“ heißt nicht „unendlich Gold zu jeder Zeit“.
+
+## 16. Professionen als vollständige Event-Simulation (notwendig für 225)
+
+**Heutige Lücke:** `data/audits/timeline-v2.md` bezeichnet Geld, Auktionshausversorgung, Berufsslotwechsel und Materialmodell als vereinfacht. Das muss durch eine testbare eigene Skill-/Craft-/Ressourcen-Engine ersetzt bzw. ergänzt werden.
+
+**Ereignisse:** `learnProfession`, `trainRank`, `learnRecipe`, `buyMaterials`, `collectMaterials`, `craftItem`, `disenchantItem`, `sellItem`, `visitTrainer`, `visitBank`. Je Event: benötigtes Charakterlevel und Professionsrang, Ort, Reisezeit, NPC/Recipe-ID, Materialmengen und Itemverbrauch, Geldabbuchung, Herstellung/Kanalzeit, mögliche Fehlschläge und Skillpoint-Verteilung.
+
+- **Schneiderei** erzeugt herstellbare Items; deren Ergebnis ist bei passender Regel als Material für **Verzauberkunst/Entzaubern** verwendbar. Material weder doppelt verkaufen noch mehrfach entzaubern.
+- Rezept-/Trainerränge, Mindestlevel und Profession-Skill-Gates nach aktuellem Forever-Datensatz modellieren. **Level 20 als Wunsch-Endpunkt, nicht als unbelegte Garantie** für 225 fest verdrahten. Wenn Serverregeln 225 dort verhindern: sauber melden und Alternative vorschlagen, nie bescheinigen.
+- Zwei Hauptberufsslots, eventuelle Wechsel/Spezialisierungen und vorhandene Spielerberufe explizit modellieren. Zeit fürs Sammeln und Reisen mit Questaktivitäten nur dann überlappen lassen, wenn dieselben tatsächlich getöteten/geplünderten Mobs/Orte diese Materialien liefern.
+- Einkaufspreise nur aus markierter Preisquelle/Szenarioannahme, nie als aktuelle AH-Realpreise ohne Nachweis. Geschätzte Materialkosten mit Bandbreite, Zeitpunkt und Angebotseinschränkungen ausweisen.
+- Simulierte Craft-Skillups probabilistisch behandeln: Erwartungswert, Worst-/Best-Szenario oder Monte Carlo mit Seed; bei ungesicherten Raten **Warnung**, keine exakte Dauer ausgeben.
+
+**Abnahme:** Replay einer Route mit Schneider 225 + VZ 225 zeigt für **jedes** Item, wer es beschafft hat, wann es verbraucht wurde, verfügbaren Goldstand und Skillstand nach jeder Aktion. Ein Spieler darf nie mit negativem Inventar oder nicht freigeschaltetem Rezept weiterrechnen.
+
+## 17. Drag-and-drop-Timeline: Bedienvertrag und deterministische Neuberechnung
+
+**UI liegt in ForeverCore (Windows), nicht im WoW-Addon.** Routes liefert den Event-/Fehler-/Diff-Kern.
+
+- Mehrspurige Übersicht `Quests`, `Dungeons`, `Professionen/Material`, `Reisen`, `Combat/Items/Buffs`, `Zeit-/Gold-/XP-Bilanz`. Spuren sind **Darstellung**, nicht erlaubte Gleichzeitigkeit.
+- Links Katalog mit Questsuche (ID/Name/Hub), Berufen, Dungeons, Buff-/Vorbereitungsbausteinen; Filter nach Level/Fraktion/Prereqs/Verfügbarkeit. Rechts Details/Abhängigkeiten/Quelle, Kosten und Preview.
+- `PreviewMove` muss alle **nachfolgenden** abhängigen Events invalidieren und ab letztem unveränderlichen Checkpoint neu replayen; Level, XP, Questlog, Wege, Inventar, Geld, Trainer, Buffdauer, Dungeon-Gruppenphase und Kampfprofil zurückrechnen.
+- Verbindliches Feedback: **grün** gültig, **gelb** angenommen/unsicher, **rot** unmöglich. Vorschläge („Vorquest vorziehen“, „Material einkaufen“, „Trainer nach Levelgate“) ersetzen **niemals** die manuelle Entscheidung ohne Bestätigung.
+- Auto-Route -> Timeline -> manuelle Sperren -> selektive Optimierung -> komplette Revalidierung -> als **neue eigene Version** speichern; Undo/Redo, Vergleich „vorher/nachher“, Variantenklonen und Export. Importierte Ausgangsguides nicht überschreiben.
+- `CompareRoutes` nutzt dieselbe Engine, dieselbe Datenrevision, dasselbe CombatProfile und dieselben Annahmen; unterschiedliche Starter/Gruppen-/AH-Annahmen klar kennzeichnen. Keine geschönten Zahlen oder zeitlich unvollständige 1–30-Guides als echte 1–30-Vergleiche.
+- Performanceziel zunächst **als Messziel** festlegen, nicht behaupten: GUI bleibt beim Verschieben reaktionsfähig; schnelle lokale Preview ohne Full-Optimization, aufwendige Suche im Worker mit Abbrechen/Fortschritt und Checkpoint.
+
+## 18. Bridge, Quest-Collector und HUD – keine vorgetäuschte Live-Synchronisierung
+
+Das Dokument `ForeverRoutes/README-COLLECTOR.md` nennt aktuell den Client-Collector (`C_QuestLog.RequestLoadQuestByID`, nur Build 1.60.x), kurz übertragene Questtitel während freier Verbindung und gespeicherte Beobachtungen in `WTF/Account/.../SavedVariables/ForeverRoutes.lua`. Diese Quelle erhält Titel und verfügbare Ziele, **nicht automatisch** vollständige XP, Questvoraussetzungen, NPC-Drop-Raten oder sämtliche Clientdaten.
+
+**Drei getrennte Wege:**
+1. **Große Routen-/Questpakete:** ForeverCore baut komplette `Data/Routes.lua`/Addon-Manifestdaten offline, prüft Hash/TOC/Schema und installiert sie sicher, wenn WoW nicht aktiv ist; neue Dateien wirken erst nach wirklich erforderlichem WoW-Reload/Neustart. Status `STAGED`, `INSTALLED`, `RESTART_REQUIRED`, `ACTIVE` nicht verwechseln.
+2. **Kleine Live-Aktualisierungen:** erlaubter `ForeverCoreBridge`-Pixel-/Antwortslotkanal für Questfortschritt, nächstes Ziel, Kristall, Warnung; 2.048 LoadOnDemand-Slots pro Sitzung und mögliche Capture-Probleme als echte Grenze behandeln. Kein Versprechen einer grenzenlosen bidirektionalen Datei-Live-API.
+3. **Beobachtungen:** Client-Collector-Daten bei zulässigen Ereignissen oder gesicherten SavedVariables-Schreibzeitpunkten importieren; nach Build/Region/Sprache trennen, unbekannte/ungesicherte Einträge im Rohbestand behalten, keine unvalidierten XP in Routen übernehmen.
+
+**Live-Status-Vertrag:** `routeId`, `stepId`, `sequence`, `sessionId`, `schemaVersion`, `gameBuild`, `datasetHash`, `lastConfirmedQuestEvent`, `progressActual`, `progressPlanned`, `offlineFallback`. Stale/inkompatible/aus fremder Session kommende Antworten verwerfen. Der blaue Kristall steht nur für die **wirklich bestätigte Core-Verbindung dieser Sitzung**. Ist-vs.-Soll-Zeit ohne tatsächliche Start-/Messpunkte nicht als gemessene Pace ausgeben.
+
+**Erhalt des bestehenden HUD:** Pfeil, kompakter Quest-/Zieltext, native Tracker-Mouseover, NPC-/Target-Hinweise **nur mit belegter NPC-ID**, Händler-/Nebenaufgaben, Dungeon-Hinweise, `Skip`/`Undo`, `Ziel erreicht`, einfache Zustandsanzeige, Platzwarnung, Lock/Position/Skalierung. Alle komplexen Editor-/Kosten-/Routenentscheidungen gehören nach Windows. Keine vollständige Bildschirmkopie von Journey/RXP und keine unausführbaren Ingame-Eingriffe.
+
+**Rückfallebenen:** (a) Live-Route gültig -> aktuelle Schritte; (b) Host weg -> letzte kompatible installierte Route mit Warnung; (c) Paket fehlt/veraltet -> belegter eigenständiger Guide-Fallback, sofern passender Import/Attribution vorhanden; (d) unvereinbare Zustände -> Plan pausieren und Fehler zeigen, statt falschen Schritt vorzugeben.
+
+## 19. Release und automatische Installation durch die eine ForeverCore.exe
+
+**Kein eigenständiger Nutzer-Installer für dieses Repo.** ForeverRoutes liefert `route`-Bibliothek, Quelldatensatz, Datenpaket und **aktuelles** HUD. Finale `ForeverCore.exe` wird im ForeverSim-Repo gebaut und installiert die beiden HUDs + CoreBridge automatisch.
+
+Pipeline-Übertragungsvertrag:
+- `routesCommit`, `routesApiVersion`, `datasetHash`, `hudVersion`, `addonTocInterface`, `routeExportSchema`, `gameBuildRange`, `simEngineRevision`, `licenseManifest`, je Datei SHA-256 plus validierte Signatur-/Manifest-Herkunft.
+- `ForeverRoutes`-Build **als Teil der gemeinsamen Release-Matrix**; kein zufälliges Herunterladen des aktuellsten inkompatiblen Routenbundles. Alter ForeverSim-Ordner `ForeverRoutes/` ist *nicht* autoritativ.
+- Lizenzprüfung explizit: GPL-3.0-abhängige Datensätze, CC-BY-NC-SA-RXP-Guides, MIT-Code und sonstige Third-Party-Assets/Guide-Importe können unterschiedliche Weitergabepflichten auslösen. Inhalt nur mit geklärten Vertriebsrechten, Autorenhinweisen, erforderlichen Quellen/Notices paketieren. Fremde proprietäre Guides nicht einfach mitverteilen.
+- Vollständige Release-Verifikation: Prüf-Import, Rebuild gegen `data/sources/lock.json`, Replay und Klassen-/Rassenmatrix, Route-Diff, Export nach Addon, Mock-Lua-HUD-Tests, echter WoW-Client-Test, Windows-Erstinstallation, GitHub-Releasemanifest und Rollback.
+- Auto-Update-Weg respektiert private GitHub-Rechte; ForeverCore bietet Browser-/Token-Authentifizierung grafisch **nur bei berechtigtem Konto**, speichert Credentials sicher und zeigt 401/403/Rate-Limit/Offline getrennt. Kein Developer-Token in Nutzerversion.
+- WoW beim Update aktiv -> sicher stagen, kein live behauptetes Dateihotswap; `RESTART_REQUIRED` korrekt anzeigen. Installer löscht keine fremden Addons und keine SavedVariables.
+
+Die bestehende `.github/workflows/release.yml` bleibt bis zum geplanten Umbau unverändert. Das neue One-EXE-Release erst nach vollständiger Cross-Repo-Integration freigeben.
+
+## 20. Erweiterte Testmatrix und Qualitätsgrenzen
+
+| Testgruppe | Konkrete Testfälle und Akzeptanz |
+|---|---|
+| **Pflichtbausteine** | RF und RoL müssen im Troll-Magier-Szenario enthalten bleiben; fehlende Quest-/Dungeonvoraussetzungen -> Blockade mit Begründung, niemals stilles Entfernen |
+| **Level-/Berufsgates** | VZ/Schneider 225 als echter Endzustand nach Trainer-/Rezept-/Levelcheck; unmögliche Kombination => `INFEASIBLE` |
+| **Ökonomie** | Gold/Inventar nie negativ; kein Item doppelt verbraucht, verkauft oder entzaubert; Skillup-Verteilung und Quellen für Preise sichtbar |
+| **XP/Kampf** | Kill-/Quest-/Dungeon-XP genau einmal, Levelkurve prüfbar; Gear/Wand/Talente ändern nur abhängige Segmentprofile |
+| **Zeit** | Reise-/Gruppensuche/Kampfpause/Trainer/Craft inklusive; keine nicht erlaubte Überlappung; deterministischer Replay im selben Snapshot |
+| **Auto vs. Timeline** | Gleicher `RouteDraft`-/`ReplayResult`-Vertrag; Drag-/Lock-/Undo führt nicht zu heimlichem Quest-/Pflichtverlust |
+| **Guides** | RXP, Journey, ForeverWisp, Polestar nur als echte getrennte lizenzierte Imports; keine Fake-1–30-Ergebnisse durch unvollständige Kapitel |
+| **Daten** | fehlende XP/Koordinaten/Questvoraussetzungen, veraltete Source-Locks, Patch-Konflikte/403 -> Warnung oder Blockade; keine stillen 0-Werte |
+| **Live/HUD** | WoW-Mock und echter Client: Questfortschritt, Skip/Undo, Kristall, Tracker, Mouseover, Pfeil, Dungeonruhe, Offline-Fallback, Session-/Slot-/Reload-Limit |
+| **Windows** | GUI erzeugt/optimiert/exportiert Route und installiert Addon via die **eine** `ForeverCore.exe`; keine CMD/PowerShell/zweite Nutzer-EXE; Rollback nach unterbrochenem Update |
+| **CI/Release** | Gepinnte Revisionen, Daten-/Engine-/HUD-Hash, Lizenz- und Signaturcheck, End-to-End-Tests; unabhängige GitHub-Fails nie als erfolgreich darstellen |
+
+**Teststufen:** `unit` (reine Rechenregeln), `contract` (CLI vs. Library, Sim-Profil-Schema), `replay` (jede Planaktion und Ressourcenbilanz), `integration` (Cross-Repo), `desktop-e2e` (UI/Installer), `live-client` (WoW). Ein Mock-Test ist **kein** Ersatz für letzten Schritt.
+
+## 21. Nicht implementiert / offene Entscheidungen für das erste Development-Issue
+
+Folgende Punkte sind derzeit **ausdrücklich offen** und dürfen ohne Messung nicht als fertig in README, Dashboard oder Release Notes stehen:
+- Allgemeingültige optimal schnelle 1–30-Routen für jede Klassen-/Rassen-/Guide-Kombination; unvollständige Guides bleiben unvollständig.
+- Vollständig echte Forever-Quest-/Mob-/Dungeon-/Berufs-/AH-/Hotfixdaten und belastbare Gold-/Zeitwerte.
+- Vollständiger Live-Austausch von großen Daten während laufendem Spiel; Bridge-/Addon-/Reload-Limits gelten.
+- Ausreichende Routen-/Berufs-Solver-Qualität bei großen Suchräumen, echte Windows-GUI-Performance und reproduzierbare Cross-Repo-Releases.
+- Endgültiges professionelles Theme/Branding (Original-Forever-Assets, blaues „ever“, vorhandenes HUD/Kristall; keine Fantasie-Assets); Windows-UX wird nach den Engine-Verträgen finalisiert.
+- Ausdrückliche Freigabe der derzeit gesperrten produktiven Combat-Feedback-Pipeline.
+
+**Abschlusskriterium:** ForeverCore erzeugt aus den gewählten Pflichtbausteinen eine **nachgespielte, ressourcen- und regelkonforme** Route oder einen nachvollziehbaren Unmöglichkeitsbericht; derselbe Stand ist im Windows-Timeline-Editor modifizierbar und nach geprüftem Export im eigenständigen ForeverRoutes-HUD sichtbar. Keine Konsoleninteraktion auf Nutzerseite. Die offizielle Windows-`ForeverCore.exe` bleibt einziger Download-/Startpunkt.
+
+**Dieses Dokument ist eine vollständige Ziel- und Prüfspezifikation, keine Behauptung einer bereits fertigen Implementierung.**
