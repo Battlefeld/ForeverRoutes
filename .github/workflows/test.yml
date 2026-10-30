@@ -1,8 +1,19 @@
 name: test
 
+# Only main and pull requests to it: work in progress on other branches costs no Actions minutes (the free
+# plan has 2000 a month for private repositories). Documentation alone runs nothing.
 on:
   push:
+    branches: [main]
+    paths-ignore: ["**.md", "docs/**", "data/audits/**"]
   pull_request:
+    branches: [main]
+    paths-ignore: ["**.md", "docs/**", "data/audits/**"]
+  workflow_dispatch:
+
+concurrency:
+  group: test-${{ github.ref }}
+  cancel-in-progress: true
 
 permissions:
   contents: read

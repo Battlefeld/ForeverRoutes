@@ -1,23 +1,17 @@
 name: release
 
-# A push to main that changes the planner, the routes, the walk grid, the walk table or the kill profiles publishes a new bundle, so
-# ForeverCore picks it up the next time it starts. (Data updates publish from the update workflow.)
+# A push to main that changes what users get (the addon, the routes, the kill profiles, the walk grid and table, the
+# RXP fallback) publishes a new bundle, so ForeverCore picks it up the next time it starts. A change of the planner
+# alone publishes nothing until its routes are recomputed (or the workflow is started by hand). Data updates publish
+# from the update workflow.
 on:
   push:
     branches: [main]
     paths:
-      - "cmd/**"
-      - "route/**"
-      - "dataset/**"
-      - "xp/**"
-      - "fallback/**"
-      - "internal/**"
-      - "data/fallbacks/**"
-      - "tools/release.sh"
-      - "tools/package_addon.py"
       - "ForeverRoutes/**"
       - "data/routes/**"
       - "data/profiles/**"
+      - "data/fallbacks/**"
       - "data/walks.json.gz"
       - "data/walktable.json.gz"
   workflow_dispatch:
