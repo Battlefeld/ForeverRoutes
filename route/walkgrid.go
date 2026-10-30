@@ -19,7 +19,7 @@ const (
 	walkShort = 250.0 // below this a walk is a straight line times PathFactor
 	walkSnap  = 2     // cells searched around a point outside the walkable cells
 	walkMax   = 6.0   // a walk is never priced above this many times its straight line
-	navFactor = 1.05  // players run a little longer than the finder's path (the chained cells are within 2 % of it)
+	navFactor = 0.96  // the yards run per yard of chained cost: the path drawn straight is 9 % shorter than the chained 8-yard grid steps (532 walks of the routes)
 )
 
 type walkGrid struct {

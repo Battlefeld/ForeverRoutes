@@ -132,6 +132,9 @@ func (w *World) lift(a, b dataset.Point) float64 {
 }
 
 func (w *World) walkFlat(a, b dataset.Point) float64 {
+	if y, ok := w.walkTable.yards(a, b); ok {
+		return y / w.Opt.RunSpeed
+	}
 	d := distance(a, b)
 	if d > walkShort && !math.IsInf(d, 1) {
 		if g := w.walkGrids[a.Map]; g != nil {

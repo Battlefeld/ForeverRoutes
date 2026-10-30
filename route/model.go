@@ -120,19 +120,20 @@ func medianByLevel(d *dataset.Dataset, val func(*dataset.NPC) float64) []float64
 
 // Options of the model; zero values take the defaults.
 type Options struct {
-	RunSpeed     float64        // yards per second (7 = Classic run speed)
-	PathFactor   float64        // real paths are longer than straight lines (1.2)
-	QuestLogCap  int            // 20 in Classic
-	InteractSecs float64        // talking to an NPC (accept / turn in)
-	Profile      KillProfile    // nil = DefaultProfile
-	MaxMobAbove  int            // mobs more than this many levels above the character are not attacked (3; melee and shamans 1)
-	SoloElites   bool           // plain elites of the character's level or below are fought alone (warlocks and hunters: the pet tanks)
-	QuestAtLevel bool           // a quest's objectives are worked only from the quest's level on (off by default)
-	NoClassRules bool           // keep the options as given instead of the class's rules
-	AssumedDrop  float64        // chance per kill assumed where a source names the creature but no chance (0.3); reported in the result
-	Walks        *dataset.Walks // walking costs measured on navigation maps (nil: straight lines times PathFactor)
-	Dungeons     bool           // route with dungeons: dungeon runs with their quests are part of the route
-	GroupSearch  float64        // seconds to find a group for a dungeon run (600; tanks and healers 60)
+	RunSpeed     float64            // yards per second (7 = Classic run speed)
+	PathFactor   float64            // real paths are longer than straight lines (1.2)
+	QuestLogCap  int                // 20 in Classic
+	InteractSecs float64            // talking to an NPC (accept / turn in)
+	Profile      KillProfile        // nil = DefaultProfile
+	MaxMobAbove  int                // mobs more than this many levels above the character are not attacked (3; melee and shamans 1)
+	SoloElites   bool               // plain elites of the character's level or below are fought alone (warlocks and hunters: the pet tanks)
+	QuestAtLevel bool               // a quest's objectives are worked only from the quest's level on (off by default)
+	NoClassRules bool               // keep the options as given instead of the class's rules
+	AssumedDrop  float64            // chance per kill assumed where a source names the creature but no chance (0.3); reported in the result
+	Walks        *dataset.Walks     // walking costs measured on navigation maps (nil: straight lines times PathFactor)
+	WalkTable    *dataset.WalkTable // walks measured between the places routes go to (nil: the walk grid for all)
+	Dungeons     bool               // route with dungeons: dungeon runs with their quests are part of the route
+	GroupSearch  float64            // seconds to find a group for a dungeon run (600; tanks and healers 60)
 }
 
 func (o Options) withDefaults() Options {

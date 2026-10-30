@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime/pprof"
+	"sync"
 	"time"
 
 	"github.com/Battlefeld/ForeverRoutes/dataset"
@@ -27,6 +28,12 @@ func loadWorld(path, race, class, faction, profile string, dungeons ...bool) (*r
 			return nil, err
 		}
 	}
+	// the walk table beside it: the measured walks between the places routes go to
+	if wt := filepath.Join(filepath.Dir(path), "walktable.json.gz"); fileExists(wt) {
+		if opt.WalkTable, err = loadWalkTable(wt); err != nil {
+			return nil, err
+		}
+	}
 	if profile != "" {
 		f, err := os.Open(profile)
 		if err != nil {
@@ -43,6 +50,21 @@ func loadWorld(path, race, class, faction, profile string, dungeons ...bool) (*r
 		opt.Profile = p
 	}
 	return route.NewWorld(d, c, opt)
+}
+
+// walkTables: the walk tables read, by path: the worlds of one run (improve's workers) share one.
+var walkTables sync.Map
+
+func loadWalkTable(path string) (*dataset.WalkTable, error) {
+	if t, ok := walkTables.Load(path); ok {
+		return t.(*dataset.WalkTable), nil
+	}
+	t, err := dataset.LoadWalkTable(path)
+	if err != nil {
+		return nil, err
+	}
+	walkTables.Store(path, t)
+	return t, nil
 }
 
 func cmdPlan(args []string) error {

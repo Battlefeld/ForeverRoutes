@@ -18,6 +18,10 @@ func main() {
 		err = cmdBuildData(os.Args[2:])
 	case "build-walks":
 		err = cmdBuildWalks(os.Args[2:])
+	case "walk-places":
+		err = cmdWalkPlaces(os.Args[2:])
+	case "build-walktable":
+		err = cmdBuildWalktable(os.Args[2:])
 	case "audit":
 		err = cmdAudit(os.Args[2:])
 	case "update":
@@ -56,6 +60,8 @@ func usage() {
   update       check every source for a new state; rebuild and check the dataset when one changed
   build-data   rebuild data/routes-data.json.gz exactly from the pinned sources (data/sources/lock.json)
   build-walks  turn tools/walkgrid's measured walking costs into data/walks.json.gz
+  walk-places  the places of every route with their heights and the pairs to measure (tools/walktable)
+  build-walktable  turn tools/walktable's measured walks into data/walktable.json.gz
   audit        what the dataset knows and what is missing
   plan         plan a route (-race Orc -class Warlock -target 30)
   replay       check a planned route step by step

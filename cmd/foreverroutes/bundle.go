@@ -22,7 +22,7 @@ type BundleManifest struct {
 }
 
 // cmdBundle packs what ForeverCore needs into dist/foreverroutes-bundle.zip and its manifest
-// dist/foreverroutes-bundle.json: the dataset, the walk grid, the routes, the kill profiles and, when given, the
+// dist/foreverroutes-bundle.json: the dataset, the walk grid and table, the routes, the kill profiles and, when given, the
 // Windows planner.
 func cmdBundle(args []string) error {
 	fs := newFlags("bundle")
@@ -36,6 +36,7 @@ func cmdBundle(args []string) error {
 	files := map[string]string{ // name in the bundle -> source
 		"routes-data.json.gz": "data/routes-data.json.gz",
 		"walks.json.gz":       "data/walks.json.gz",
+		"walktable.json.gz":   "data/walktable.json.gz",
 		"README-data.md":      "data/README.md",
 	}
 	for _, pat := range []string{"data/routes/*.json", "data/routes/README.md", "data/profiles/*.json"} {

@@ -1,6 +1,6 @@
 name: release
 
-# A push to main that changes the planner, the routes, the walk grid or the kill profiles publishes a new bundle, so
+# A push to main that changes the planner, the routes, the walk grid, the walk table or the kill profiles publishes a new bundle, so
 # ForeverCore picks it up the next time it starts. (Data updates publish from the update workflow.)
 on:
   push:
@@ -13,6 +13,7 @@ on:
       - "data/routes/**"
       - "data/profiles/**"
       - "data/walks.json.gz"
+      - "data/walktable.json.gz"
   workflow_dispatch:
 
 permissions:

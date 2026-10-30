@@ -68,7 +68,11 @@ QuestieDB, EverythingQuests und cmangos werden beim Bau in den festgeschriebenen
   geschätzt (106 s); die Aufzüge von Thunder Bluff und Undercity (Fahrt plus mittleres Warten) als Zuschlag für jeden
   Weg auf die Hochebene oder in die Stadt hinein oder heraus (`travel.lifts`). Dazu `walks.json.gz`: Laufkosten zwischen benachbarten 200-Yard-Zellen, gemessen mit dem eigenen
   Wegsucher von Shortest Path Forever auf seinen selbst aus dem Client gebauten Navigationskarten
-  (`tools/walkgrid/README.md`). Stand in `data/sources/lock.json` (`spf`).
+  (`tools/walkgrid/README.md`), und `walktable.json.gz`: die Laufwege zwischen allen Orten, die Routen anlaufen
+  (Questgeber, Ziele, Grindplätze, Flugmeister, Friedhöfe, Eingänge, Lehrer), bis 3000 Yards, gemessen mit derselben
+  Wegsuche auf der Höhe der Orte (Höhen aus den Spawns von forever-db) als die Yards, die ein Spieler läuft: der
+  gezeichnete Weg samt Steigungen, Schwimmen mit eigenem Tempo (`tools/walktable/README.md`). Ein Weg zwischen zwei
+  Orten der Tabelle kommt aus ihr, jeder andere aus dem Raster. Stand in `data/sources/lock.json` (`spf`).
 - **EG Link output von Efficient Games** (https://github.com/JIVESCORP/eg-link-output-wowf, CC BY 4.0) — „Data from
   Efficient Games (https://efficient.games), licensed under CC BY 4.0.“ Was das Addon EG Link bei Spielern aufzeichnet,
   ein Ordner je Beta-Build. Gelesen werden `loot` (was ein Gegner oder Objekt droppte, mit der Chance je Kill, gezählt

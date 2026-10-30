@@ -82,6 +82,7 @@ type World struct {
 	Farms     []Farm
 	net       *network
 	walkGrids walks
+	walkTable walkTable // walks measured between the places routes go to (walktable.go)
 	deaths    *deaths
 	lifts     []dataset.Lift
 	danger    dangerMap
@@ -114,6 +115,7 @@ func NewWorld(d *dataset.Dataset, c Character, opt Options) (*World, error) {
 		Objects: map[int]*dataset.Object{}, Excluded: map[int]string{}}
 	w.classRules()
 	w.walkGrids = newWalks(w.Opt.Walks)
+	w.walkTable = newWalkTable(w.Opt.WalkTable)
 	w.deaths = newDeaths(d.Travel, c, faction)
 	w.lifts = d.Travel.Lifts
 	w.danger = newDanger(d.NPCs, faction)
