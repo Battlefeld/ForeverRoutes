@@ -7,7 +7,6 @@ package questie
 import (
 	"context"
 	"fmt"
-	"io"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -16,6 +15,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/Battlefeld/ForeverRoutes/internal/httpdownload"
 	"github.com/Battlefeld/ForeverRoutes/internal/lua"
 )
 
@@ -56,24 +56,14 @@ func Fetch(ctx context.Context, client *http.Client, revision, cache string) (ma
 			continue
 		}
 		url := "https://raw.githubusercontent.com/" + Repository + "/" + revision + "/" + path
-		req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+		b, status, err := httpdownload.Get(ctx, client, url, 12<<20)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("questie: %w", err)
 		}
-		req.Header.Set("User-Agent", "ForeverRoutes (https://github.com/Battlefeld/ForeverRoutes)")
-		resp, err := client.Do(req)
-		if err != nil {
-			return nil, err
-		}
-		b, err := io.ReadAll(io.LimitReader(resp.Body, 12<<20))
-		resp.Body.Close()
-		if err != nil {
-			return nil, err
-		}
-		if resp.StatusCode == http.StatusNotFound && strings.HasPrefix(kind, "trace_") {
+		if status == http.StatusNotFound && strings.HasPrefix(kind, "trace_") {
 			b = []byte("-- not in this revision") // older commits have no traces
-		} else if resp.StatusCode != http.StatusOK || len(b) < 1000 {
-			return nil, fmt.Errorf("questie: %s: HTTP %d, %d bytes", url, resp.StatusCode, len(b))
+		} else if status != http.StatusOK || len(b) < 1000 {
+			return nil, fmt.Errorf("questie: %s: HTTP %d, %d bytes", url, status, len(b))
 		}
 		if err := os.WriteFile(file, b, 0o644); err != nil {
 			return nil, err

@@ -32,6 +32,7 @@ import (
 
 // Inputs names the source files and their pinned revisions.
 type Inputs struct {
+	ClientQuests     string // optional build/region/locale-scoped client observations
 	Merged           string // merged quest database JSON (schema foreverroutes.unified_quests.v1)
 	MergedRevision   string
 	CMangos          string // cmangos classic-db full dump (.sql or .sql.gz)
@@ -358,11 +359,15 @@ func Build(in Inputs) (*dataset.Dataset, error) {
 	b.breadcrumbPrereqs()
 	b.rxpPrereqs()
 	b.applyQuestFixes()
+	if err := b.clientQuestNames(in.ClientQuests); err != nil {
+		return nil, err
+	}
 	b.npcs()
 	b.objects()
 	b.guideSpawns()
 	b.capitalNPCs()
 	b.skillQuests()
+	b.objectiveActions()
 	b.instantQuests()
 	b.notLeveling()
 	b.aegisQuests()
@@ -1083,8 +1088,7 @@ func (b *builder) applyWarcraftDB(out *dataset.Quest) {
 	}
 	place := func(ps []warcraftdb.Place) *dataset.Point {
 		for _, p := range ps {
-			if t, ok := b.uiT[strconv.Itoa(p.UIMap)]; ok {
-				pt := t.apply(p.U*100, p.V*100)
+			if pt, ok := b.uiPoint(p.UIMap, p.U*100, p.V*100); ok {
 				return &pt
 			}
 		}

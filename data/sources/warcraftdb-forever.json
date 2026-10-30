@@ -1,7 +1,7 @@
 {
  "schema": "foreverroutes.warcraftdb.v1",
  "source": "WarcraftDB Forever (https://forever.warcraftdb.com), game client quest data",
- "fetched": "2026-10-24",
+ "fetched": "2026-10-27",
  "quests": {
   "1016": {
    "id": 1016,
@@ -56,6 +56,15 @@
     }
    ],
    "url": "https://forever.warcraftdb.com/data/quest/1073"
+  },
+  "1086": {
+   "id": 1086,
+   "name": "The Flying Machine Airport",
+   "level": 23,
+   "min": 13,
+   "xp": 2300,
+   "objectives": [],
+   "url": "https://forever.warcraftdb.com/data/quest/1086"
   },
   "1103": {
    "id": 1103,
@@ -311,6 +320,22 @@
    ],
    "url": "https://forever.warcraftdb.com/data/quest/1435"
   },
+  "1442": {
+   "id": 1442,
+   "name": "Seeking the Kor Gem",
+   "level": 22,
+   "min": 20,
+   "xp": 435,
+   "objectives": [
+    {
+     "type": 1,
+     "id": 6995,
+     "amount": 1,
+     "desc": "Corrupted Kor Gem"
+    }
+   ],
+   "url": "https://forever.warcraftdb.com/data/quest/1442"
+  },
   "1534": {
    "id": 1534,
    "name": "Call of Water",
@@ -512,6 +537,65 @@
    ],
    "url": "https://forever.warcraftdb.com/data/quest/1654"
   },
+  "1655": {
+   "id": 1655,
+   "name": "Bailor's Ore Shipment",
+   "level": 22,
+   "min": 20,
+   "xp": 435,
+   "objectives": [
+    {
+     "type": 1,
+     "id": 6992,
+     "amount": 1,
+     "desc": "Jordan's Ore Shipment"
+    }
+   ],
+   "url": "https://forever.warcraftdb.com/data/quest/1655"
+  },
+  "1701": {
+   "id": 1701,
+   "name": "Fire Hardened Mail",
+   "level": 28,
+   "min": 20,
+   "xp": 2300,
+   "objectives": [
+    {
+     "type": 1,
+     "id": 6838,
+     "amount": 50,
+     "desc": "Scorched Spider Fang"
+    },
+    {
+     "type": 1,
+     "id": 6839,
+     "amount": 12,
+     "desc": "Charred Horn"
+    },
+    {
+     "type": 1,
+     "id": 6840,
+     "amount": 1,
+     "desc": "Galvanized Horn"
+    },
+    {
+     "type": 1,
+     "id": 6841,
+     "amount": 1,
+     "desc": "Vial of Phlogiston"
+    }
+   ],
+   "url": "https://forever.warcraftdb.com/data/quest/1701"
+  },
+  "1806": {
+   "id": 1806,
+   "name": "The Test of Righteousness",
+   "level": 22,
+   "min": 20,
+   "xp": 2200,
+   "objectives": [],
+   "url": "https://forever.warcraftdb.com/data/quest/1806"
+  },
   "1838": {
    "id": 1838,
    "name": "Brutal Armor",
@@ -546,6 +630,15 @@
    ],
    "url": "https://forever.warcraftdb.com/data/quest/1838"
   },
+  "1839": {
+   "id": 1839,
+   "name": "Ula'elek and the Brutal Gauntlets",
+   "level": 30,
+   "min": 20,
+   "xp": 1200,
+   "objectives": [],
+   "url": "https://forever.warcraftdb.com/data/quest/1839"
+  },
   "1861": {
    "id": 1861,
    "name": "Mirror Lake",
@@ -573,6 +666,89 @@
    ],
    "url": "https://forever.warcraftdb.com/data/quest/1861"
   },
+  "1920": {
+   "id": 1920,
+   "name": "Investigate the Blue Recluse",
+   "level": 16,
+   "min": 15,
+   "xp": 1150,
+   "startNpc": [
+    5497
+   ],
+   "endNpc": [
+    5497
+   ],
+   "starts": [
+    {
+     "uiMap": 1453,
+     "u": 0.495403,
+     "v": 0.859029,
+     "label": "Jennea Cannon"
+    }
+   ],
+   "ends": [
+    {
+     "uiMap": 1453,
+     "u": 0.495403,
+     "v": 0.859029,
+     "label": "Jennea Cannon"
+    }
+   ],
+   "objectives": [
+    {
+     "type": 1,
+     "id": 7292,
+     "amount": 3,
+     "desc": "Filled Containment Coffer"
+    },
+    {
+     "type": 1,
+     "id": 7247,
+     "amount": 1,
+     "desc": "Chest of Containment Coffers"
+    },
+    {
+     "type": 1,
+     "id": 7308,
+     "amount": 1,
+     "desc": "Cantation of Manifestation"
+    }
+   ],
+   "url": "https://forever.warcraftdb.com/data/quest/1920"
+  },
+  "1921": {
+   "id": 1921,
+   "name": "Gathering Materials",
+   "level": 15,
+   "min": 15,
+   "xp": 800,
+   "startNpc": [
+    5497
+   ],
+   "starts": [
+    {
+     "uiMap": 1453,
+     "u": 0.495403,
+     "v": 0.859029,
+     "label": "Jennea Cannon"
+    }
+   ],
+   "objectives": [
+    {
+     "type": 1,
+     "id": 2589,
+     "amount": 10,
+     "desc": "Linen Cloth"
+    },
+    {
+     "type": 1,
+     "id": 7249,
+     "amount": 6,
+     "desc": "Charged Rift Gem"
+    }
+   ],
+   "url": "https://forever.warcraftdb.com/data/quest/1921"
+  },
   "1944": {
    "id": 1944,
    "name": "Waters of Xavian",
@@ -588,6 +764,146 @@
     }
    ],
    "url": "https://forever.warcraftdb.com/data/quest/1944"
+  },
+  "1960": {
+   "id": 1960,
+   "name": "Investigate the Alchemist Shop",
+   "level": 16,
+   "min": 15,
+   "xp": 1150,
+   "objectives": [
+    {
+     "type": 1,
+     "id": 7292,
+     "amount": 3,
+     "desc": "Filled Containment Coffer"
+    },
+    {
+     "type": 1,
+     "id": 7247,
+     "amount": 1,
+     "desc": "Chest of Containment Coffers"
+    },
+    {
+     "type": 1,
+     "id": 7308,
+     "amount": 1,
+     "desc": "Cantation of Manifestation"
+    }
+   ],
+   "url": "https://forever.warcraftdb.com/data/quest/1960"
+  },
+  "2": {
+   "id": 2,
+   "name": "Sharptalon's Claw",
+   "level": 30,
+   "min": 20,
+   "xp": 2450,
+   "endNpc": [
+    12696
+   ],
+   "ends": [
+    {
+     "uiMap": 1440,
+     "u": 0.737428,
+     "v": 0.614645,
+     "label": "Senani Thunderheart"
+    }
+   ],
+   "objectives": [
+    {
+     "type": 1,
+     "id": 16305,
+     "amount": 1,
+     "desc": "Sharptalon's Claw"
+    }
+   ],
+   "url": "https://forever.warcraftdb.com/data/quest/2"
+  },
+  "23": {
+   "id": 23,
+   "name": "Ursangous's Paw",
+   "level": 24,
+   "min": 20,
+   "xp": 1950,
+   "endNpc": [
+    12696
+   ],
+   "ends": [
+    {
+     "uiMap": 1440,
+     "u": 0.737428,
+     "v": 0.614645,
+     "label": "Senani Thunderheart"
+    }
+   ],
+   "objectives": [
+    {
+     "type": 1,
+     "id": 16303,
+     "amount": 1,
+     "desc": "Ursangous's Paw"
+    }
+   ],
+   "url": "https://forever.warcraftdb.com/data/quest/23"
+  },
+  "24": {
+   "id": 24,
+   "name": "Shadumbra's Head",
+   "level": 27,
+   "min": 20,
+   "xp": 2200,
+   "endNpc": [
+    12696
+   ],
+   "ends": [
+    {
+     "uiMap": 1440,
+     "u": 0.737428,
+     "v": 0.614645,
+     "label": "Senani Thunderheart"
+    }
+   ],
+   "objectives": [
+    {
+     "type": 1,
+     "id": 16304,
+     "amount": 1,
+     "desc": "Shadumbra's Head"
+    }
+   ],
+   "url": "https://forever.warcraftdb.com/data/quest/24"
+  },
+  "247": {
+   "id": 247,
+   "name": "The Hunt Completed",
+   "level": 30,
+   "min": 20,
+   "xp": 3050,
+   "startNpc": [
+    12696
+   ],
+   "endNpc": [
+    12696
+   ],
+   "starts": [
+    {
+     "uiMap": 1440,
+     "u": 0.737428,
+     "v": 0.614645,
+     "label": "Senani Thunderheart"
+    }
+   ],
+   "ends": [
+    {
+     "uiMap": 1440,
+     "u": 0.737428,
+     "v": 0.614645,
+     "label": "Senani Thunderheart"
+    }
+   ],
+   "objectives": [],
+   "url": "https://forever.warcraftdb.com/data/quest/247"
   },
   "2478": {
    "id": 2478,
@@ -720,6 +1036,57 @@
    ],
    "url": "https://forever.warcraftdb.com/data/quest/272"
   },
+  "273": {
+   "id": 273,
+   "name": "Resupplying the Excavation",
+   "level": 15,
+   "min": 10,
+   "xp": 270,
+   "objectives": [],
+   "url": "https://forever.warcraftdb.com/data/quest/273"
+  },
+  "2745": {
+   "id": 2745,
+   "name": "Infiltrating the Castle",
+   "level": 31,
+   "min": 16,
+   "xp": 250,
+   "startNpc": [
+    482
+   ],
+   "starts": [
+    {
+     "uiMap": 1453,
+     "u": 0.661938,
+     "v": 0.743383,
+     "label": "Elling Trias"
+    }
+   ],
+   "objectives": [],
+   "url": "https://forever.warcraftdb.com/data/quest/2745"
+  },
+  "2746": {
+   "id": 2746,
+   "name": "Items of Some Consequence",
+   "level": 31,
+   "min": 16,
+   "xp": 630,
+   "objectives": [
+    {
+     "type": 1,
+     "id": 4306,
+     "amount": 3,
+     "desc": "Silk Cloth"
+    },
+    {
+     "type": 1,
+     "id": 8683,
+     "amount": 2,
+     "desc": "Clara's Fresh Apple"
+    }
+   ],
+   "url": "https://forever.warcraftdb.com/data/quest/2746"
+  },
   "2904": {
    "id": 2904,
    "name": "A Fine Mess",
@@ -848,6 +1215,100 @@
    ],
    "url": "https://forever.warcraftdb.com/data/quest/308"
   },
+  "309": {
+   "id": 309,
+   "name": "Protecting the Shipment",
+   "level": 15,
+   "min": 10,
+   "xp": 1050,
+   "objectives": [],
+   "url": "https://forever.warcraftdb.com/data/quest/309"
+  },
+  "3369": {
+   "id": 3369,
+   "name": "In Nightmares",
+   "level": 25,
+   "min": 10,
+   "xp": 2000,
+   "startNpc": [
+    8418
+   ],
+   "endNpc": [
+    5769
+   ],
+   "starts": [
+    {
+     "uiMap": 1413,
+     "u": 0.481723,
+     "v": 0.328412,
+     "label": "Falla Sagewind"
+    }
+   ],
+   "ends": [
+    {
+     "uiMap": 1456,
+     "u": 0.783393,
+     "v": 0.286734,
+     "label": "Arch Druid Hamuul Runetotem"
+    }
+   ],
+   "objectives": [
+    {
+     "type": 1,
+     "id": 10649,
+     "amount": 1,
+     "desc": "Nightmare Shard"
+    }
+   ],
+   "url": "https://forever.warcraftdb.com/data/quest/3369"
+  },
+  "3370": {
+   "id": 3370,
+   "name": "In Nightmares",
+   "level": 25,
+   "min": 10,
+   "xp": 2000,
+   "objectives": [
+    {
+     "type": 1,
+     "id": 10649,
+     "amount": 1,
+     "desc": "Nightmare Shard"
+    }
+   ],
+   "url": "https://forever.warcraftdb.com/data/quest/3370"
+  },
+  "350": {
+   "id": 350,
+   "name": "Look to an Old Friend",
+   "level": 31,
+   "min": 16,
+   "xp": 250,
+   "startNpc": [
+    332
+   ],
+   "endNpc": [
+    482
+   ],
+   "starts": [
+    {
+     "uiMap": 1453,
+     "u": 0.783768,
+     "v": 0.707137,
+     "label": "Master Mathias Shaw"
+    }
+   ],
+   "ends": [
+    {
+     "uiMap": 1453,
+     "u": 0.661938,
+     "v": 0.743383,
+     "label": "Elling Trias"
+    }
+   ],
+   "objectives": [],
+   "url": "https://forever.warcraftdb.com/data/quest/350"
+  },
   "373": {
    "id": 373,
    "name": "The Unsent Letter",
@@ -957,6 +1418,113 @@
    ],
    "url": "https://forever.warcraftdb.com/data/quest/3861"
   },
+  "389": {
+   "id": 389,
+   "name": "Bazil Thredd",
+   "level": 22,
+   "min": 16,
+   "xp": 435,
+   "startNpc": [
+    1646
+   ],
+   "endNpc": [
+    1719
+   ],
+   "starts": [
+    {
+     "uiMap": 1453,
+     "u": 0.575859,
+     "v": 0.478508,
+     "label": "Baros Alexston"
+    }
+   ],
+   "ends": [
+    {
+     "uiMap": 1453,
+     "u": 0.51536,
+     "v": 0.693567,
+     "label": "Warden Thelwater"
+    }
+   ],
+   "objectives": [],
+   "url": "https://forever.warcraftdb.com/data/quest/389"
+  },
+  "391": {
+   "id": 391,
+   "name": "The Stockade Riots",
+   "level": 29,
+   "min": 16,
+   "xp": 2350,
+   "startNpc": [
+    1719
+   ],
+   "endNpc": [
+    1719
+   ],
+   "starts": [
+    {
+     "uiMap": 1453,
+     "u": 0.51536,
+     "v": 0.693567,
+     "label": "Warden Thelwater"
+    }
+   ],
+   "ends": [
+    {
+     "uiMap": 1453,
+     "u": 0.51536,
+     "v": 0.693567,
+     "label": "Warden Thelwater"
+    }
+   ],
+   "objectives": [
+    {
+     "type": 1,
+     "id": 2926,
+     "amount": 1,
+     "desc": "Head of Bazil Thredd"
+    }
+   ],
+   "url": "https://forever.warcraftdb.com/data/quest/391"
+  },
+  "392": {
+   "id": 392,
+   "name": "The Curious Visitor",
+   "level": 29,
+   "min": 16,
+   "xp": 590,
+   "startNpc": [
+    1719
+   ],
+   "endNpc": [
+    1646
+   ],
+   "starts": [
+    {
+     "uiMap": 1453,
+     "u": 0.51536,
+     "v": 0.693567,
+     "label": "Warden Thelwater"
+    }
+   ],
+   "ends": [
+    {
+     "uiMap": 1453,
+     "u": 0.575859,
+     "v": 0.478508,
+     "label": "Baros Alexston"
+    }
+   ],
+   "objectives": [
+    {
+     "type": 1,
+     "id": 8687,
+     "amount": 1,
+     "desc": "Sealed Description of Thredd's Visitor"
+    }
+   ],
+   "url": "https://forever.warcraftdb.com/data/quest/392"
+  },
   "3924": {
    "id": 3924,
    "name": "Samophlange Manual",
@@ -972,6 +1540,166 @@
     }
    ],
    "url": "https://forever.warcraftdb.com/data/quest/3924"
+  },
+  "393": {
+   "id": 393,
+   "name": "Shadow of the Past",
+   "level": 29,
+   "min": 16,
+   "xp": 590,
+   "startNpc": [
+    1646
+   ],
+   "endNpc": [
+    332
+   ],
+   "starts": [
+    {
+     "uiMap": 1453,
+     "u": 0.575859,
+     "v": 0.478508,
+     "label": "Baros Alexston"
+    }
+   ],
+   "ends": [
+    {
+     "uiMap": 1453,
+     "u": 0.783768,
+     "v": 0.707137,
+     "label": "Master Mathias Shaw"
+    }
+   ],
+   "objectives": [
+    {
+     "type": 1,
+     "id": 8687,
+     "amount": 1,
+     "desc": "Sealed Description of Thredd's Visitor"
+    }
+   ],
+   "url": "https://forever.warcraftdb.com/data/quest/393"
+  },
+  "4021": {
+   "id": 4021,
+   "name": "Counterattack!",
+   "level": 20,
+   "min": 11,
+   "xp": 1950,
+   "objectives": [
+    {
+     "type": 1,
+     "id": 11227,
+     "amount": 1,
+     "desc": "Piece of Krom'zar's Banner"
+    }
+   ],
+   "url": "https://forever.warcraftdb.com/data/quest/4021"
+  },
+  "434": {
+   "id": 434,
+   "name": "The Attack!",
+   "level": 31,
+   "min": 16,
+   "xp": 1900,
+   "objectives": [
+    {
+     "type": 0,
+     "id": 1754,
+     "amount": 1,
+     "desc": "Lord Gregor Lescovar"
+    },
+    {
+     "type": 0,
+     "id": 1755,
+     "amount": 1,
+     "desc": "Marzon the Silent Blade"
+    }
+   ],
+   "url": "https://forever.warcraftdb.com/data/quest/434"
+  },
+  "454": {
+   "id": 454,
+   "name": "After the Ambush",
+   "level": 15,
+   "min": 10,
+   "xp": 105,
+   "objectives": [],
+   "url": "https://forever.warcraftdb.com/data/quest/454"
+  },
+  "455": {
+   "id": 455,
+   "name": "The Algaz Gauntlet",
+   "level": 21,
+   "min": 19,
+   "xp": 1250,
+   "startNpc": [
+    1342
+   ],
+   "endNpc": [
+    2086
+   ],
+   "starts": [
+    {
+     "uiMap": 1432,
+     "u": 0.254865,
+     "v": 0.105319,
+     "label": "Mountaineer Rockgar"
+    }
+   ],
+   "ends": [
+    {
+     "uiMap": 1437,
+     "u": 0.100901,
+     "v": 0.56844,
+     "label": "Valstag Ironjaw"
+    }
+   ],
+   "objectives": [
+    {
+     "type": 0,
+     "id": 2103,
+     "amount": 8,
+     "desc": "Dragonmaw Scout"
+    },
+    {
+     "type": 0,
+     "id": 2102,
+     "amount": 6,
+     "desc": "Dragonmaw Grunt"
+    }
+   ],
+   "url": "https://forever.warcraftdb.com/data/quest/455"
+  },
+  "4761": {
+   "id": 4761,
+   "name": "Thundris Windweaver",
+   "level": 15,
+   "min": 11,
+   "xp": 105,
+   "startNpc": [
+    3693
+   ],
+   "endNpc": [
+    3649
+   ],
+   "starts": [
+    {
+     "uiMap": 1439,
+     "u": 0.39323,
+     "v": 0.434402,
+     "label": "Terenthis"
+    }
+   ],
+   "ends": [
+    {
+     "uiMap": 1439,
+     "u": 0.374318,
+     "v": 0.401723,
+     "label": "Thundris Windweaver"
+    }
+   ],
+   "objectives": [],
+   "url": "https://forever.warcraftdb.com/data/quest/4761"
   },
   "4762": {
    "id": 4762,
@@ -999,6 +1727,22 @@
     }
    ],
    "url": "https://forever.warcraftdb.com/data/quest/4762"
+  },
+  "4763": {
+   "id": 4763,
+   "name": "The Blackwood Corrupted",
+   "level": 18,
+   "min": 15,
+   "xp": 1700,
+   "objectives": [
+    {
+     "type": 1,
+     "id": 12355,
+     "amount": 1,
+     "desc": "Talisman of Corruption"
+    }
+   ],
+   "url": "https://forever.warcraftdb.com/data/quest/4763"
   },
   "4812": {
    "id": 4812,
@@ -1307,6 +2051,37 @@
    ],
    "url": "https://forever.warcraftdb.com/data/quest/6127"
   },
+  "6383": {
+   "id": 6383,
+   "name": "The Ashenvale Hunt",
+   "level": 20,
+   "min": 20,
+   "xp": 0,
+   "startNpc": [
+    12696
+   ],
+   "endNpc": [
+    12696
+   ],
+   "starts": [
+    {
+     "uiMap": 1440,
+     "u": 0.737428,
+     "v": 0.614645,
+     "label": "Senani Thunderheart"
+    }
+   ],
+   "ends": [
+    {
+     "uiMap": 1440,
+     "u": 0.737428,
+     "v": 0.614645,
+     "label": "Senani Thunderheart"
+    }
+   ],
+   "objectives": [],
+   "url": "https://forever.warcraftdb.com/data/quest/6383"
+  },
   "6504": {
    "id": 6504,
    "name": "The Lost Pages",
@@ -1525,6 +2300,22 @@
     }
    ],
    "url": "https://forever.warcraftdb.com/data/quest/6561"
+  },
+  "65610": {
+   "id": 65610,
+   "name": "Wish You Were Here",
+   "level": 27,
+   "min": 20,
+   "xp": 2200,
+   "objectives": [
+    {
+     "type": 1,
+     "id": 190232,
+     "amount": 1,
+     "desc": "Withered Scarf"
+    }
+   ],
+   "url": "https://forever.warcraftdb.com/data/quest/65610"
   },
   "6571": {
    "id": 6571,
@@ -1814,6 +2605,221 @@
    "objectives": [],
    "url": "https://forever.warcraftdb.com/data/quest/770"
   },
+  "78124": {
+   "id": 78124,
+   "name": "Nar'thalas Almanac",
+   "level": 20,
+   "min": 1,
+   "xp": 155,
+   "objectives": [
+    {
+     "type": 1,
+     "id": 209843,
+     "amount": 1,
+     "desc": "Nar'thalas Almanac, Vol. 74"
+    }
+   ],
+   "url": "https://forever.warcraftdb.com/data/quest/78124"
+  },
+  "78127": {
+   "id": 78127,
+   "name": "The Dalaran Digest",
+   "level": 20,
+   "min": 1,
+   "xp": 155,
+   "endNpc": [
+    211033,
+    211022
+   ],
+   "ends": [
+    {
+     "uiMap": 1458,
+     "u": 0.737659,
+     "v": 0.333332,
+     "label": "Owen Thadd"
+    },
+    {
+     "uiMap": 1453,
+     "u": 0.490048,
+     "v": 0.866845,
+     "label": "Garion Wendell"
+    }
+   ],
+   "objectives": [
+    {
+     "type": 1,
+     "id": 209844,
+     "amount": 1,
+     "desc": "The Dalaran Digest, Vol. 23"
+    }
+   ],
+   "url": "https://forever.warcraftdb.com/data/quest/78127"
+  },
+  "78142": {
+   "id": 78142,
+   "name": "Bewitchments and Glamours",
+   "level": 20,
+   "min": 1,
+   "xp": 155,
+   "objectives": [
+    {
+     "type": 1,
+     "id": 209845,
+     "amount": 1,
+     "desc": "Bewitchments and Glamours"
+    }
+   ],
+   "url": "https://forever.warcraftdb.com/data/quest/78142"
+  },
+  "78143": {
+   "id": 78143,
+   "name": "Secrets of the Dreamers",
+   "level": 20,
+   "min": 1,
+   "xp": 155,
+   "endNpc": [
+    211022
+   ],
+   "ends": [
+    {
+     "uiMap": 1458,
+     "u": 0.737659,
+     "v": 0.333332,
+     "label": "Owen Thadd"
+    }
+   ],
+   "objectives": [
+    {
+     "type": 1,
+     "id": 209846,
+     "amount": 1,
+     "desc": "Secrets of the Dreamers"
+    }
+   ],
+   "url": "https://forever.warcraftdb.com/data/quest/78143"
+  },
+  "78145": {
+   "id": 78145,
+   "name": "Arcanic Systems Manual",
+   "level": 20,
+   "min": 1,
+   "xp": 155,
+   "objectives": [
+    {
+     "type": 1,
+     "id": 209847,
+     "amount": 1,
+     "desc": "Arcanic Systems Manual"
+    }
+   ],
+   "url": "https://forever.warcraftdb.com/data/quest/78145"
+  },
+  "78146": {
+   "id": 78146,
+   "name": "Goaz Scrolls",
+   "level": 20,
+   "min": 1,
+   "xp": 155,
+   "endNpc": [
+    211022
+   ],
+   "ends": [
+    {
+     "uiMap": 1458,
+     "u": 0.737659,
+     "v": 0.333332,
+     "label": "Owen Thadd"
+    }
+   ],
+   "objectives": [
+    {
+     "type": 1,
+     "id": 209848,
+     "amount": 1,
+     "desc": "Goaz Scrolls"
+    }
+   ],
+   "url": "https://forever.warcraftdb.com/data/quest/78146"
+  },
+  "78147": {
+   "id": 78147,
+   "name": "Crimes Against Anatomy",
+   "level": 20,
+   "min": 1,
+   "xp": 155,
+   "objectives": [
+    {
+     "type": 1,
+     "id": 209849,
+     "amount": 1,
+     "desc": "Crimes Against Anatomy"
+    }
+   ],
+   "url": "https://forever.warcraftdb.com/data/quest/78147"
+  },
+  "78148": {
+   "id": 78148,
+   "name": "Runes of the Sorcerer-Kings",
+   "level": 20,
+   "min": 1,
+   "xp": 155,
+   "objectives": [
+    {
+     "type": 1,
+     "id": 209850,
+     "amount": 1,
+     "desc": "Runes of the Sorcerer-Kings"
+    }
+   ],
+   "url": "https://forever.warcraftdb.com/data/quest/78148"
+  },
+  "78149": {
+   "id": 78149,
+   "name": "Fury of the Land",
+   "level": 20,
+   "min": 1,
+   "xp": 155,
+   "objectives": [
+    {
+     "type": 1,
+     "id": 209851,
+     "amount": 1,
+     "desc": "Fury of the Land"
+    }
+   ],
+   "url": "https://forever.warcraftdb.com/data/quest/78149"
+  },
+  "78150": {
+   "id": 78150,
+   "name": "Friend of the Library",
+   "level": 20,
+   "min": 1,
+   "xp": 155,
+   "objectives": [],
+   "url": "https://forever.warcraftdb.com/data/quest/78150"
+  },
+  "78261": {
+   "id": 78261,
+   "name": "The Horn of Xelthos",
+   "level": 23,
+   "min": 1,
+   "xp": 1850,
+   "objectives": [
+    {
+     "type": 1,
+     "id": 210183,
+     "amount": 1,
+     "desc": "Horn of Xelthos"
+    },
+    {
+     "type": 3,
+     "id": 4086,
+     "amount": 1,
+     "desc": "Find Veenix"
+    }
+   ],
+   "url": "https://forever.warcraftdb.com/data/quest/78261"
+  },
   "79008": {
    "id": 79008,
    "name": "... and that note you found",
@@ -1822,6 +2828,92 @@
    "xp": 1750,
    "objectives": [],
    "url": "https://forever.warcraftdb.com/data/quest/79008"
+  },
+  "79092": {
+   "id": 79092,
+   "name": "Archmage Theocritus' Research Journal",
+   "level": 20,
+   "min": 1,
+   "xp": 155,
+   "objectives": [
+    {
+     "type": 1,
+     "id": 203755,
+     "amount": 1,
+     "desc": "Archmage Theocritus' Research Journal"
+    }
+   ],
+   "url": "https://forever.warcraftdb.com/data/quest/79092"
+  },
+  "79093": {
+   "id": 79093,
+   "name": "Rumi of Gnomeregan: The Collected Works",
+   "level": 20,
+   "min": 1,
+   "xp": 155,
+   "objectives": [
+    {
+     "type": 1,
+     "id": 208860,
+     "amount": 1,
+     "desc": "Rumi of Gnomeregan: The Collected Works"
+    }
+   ],
+   "url": "https://forever.warcraftdb.com/data/quest/79093"
+  },
+  "79094": {
+   "id": 79094,
+   "name": "The Lessons of Ta'zo",
+   "level": 20,
+   "min": 1,
+   "xp": 155,
+   "endNpc": [
+    211022
+   ],
+   "ends": [
+    {
+     "uiMap": 1458,
+     "u": 0.737659,
+     "v": 0.333332,
+     "label": "Owen Thadd"
+    }
+   ],
+   "objectives": [
+    {
+     "type": 1,
+     "id": 207972,
+     "amount": 1,
+     "desc": "The Lessons of Ta'zo"
+    }
+   ],
+   "url": "https://forever.warcraftdb.com/data/quest/79094"
+  },
+  "79097": {
+   "id": 79097,
+   "name": "Baxtan: On Destructive Magics",
+   "level": 20,
+   "min": 1,
+   "xp": 155,
+   "endNpc": [
+    211022
+   ],
+   "ends": [
+    {
+     "uiMap": 1458,
+     "u": 0.737659,
+     "v": 0.333332,
+     "label": "Owen Thadd"
+    }
+   ],
+   "objectives": [
+    {
+     "type": 1,
+     "id": 208800,
+     "amount": 1,
+     "desc": "Baxtan: On Destructive Magics"
+    }
+   ],
+   "url": "https://forever.warcraftdb.com/data/quest/79097"
   },
   "79192": {
    "id": 79192,
@@ -1839,6 +2931,111 @@
    ],
    "objectives": [],
    "url": "https://forever.warcraftdb.com/data/quest/79192"
+  },
+  "79536": {
+   "id": 79536,
+   "name": "Greater Friend of the Library",
+   "level": 35,
+   "min": 20,
+   "xp": 275,
+   "objectives": [],
+   "url": "https://forever.warcraftdb.com/data/quest/79536"
+  },
+  "79947": {
+   "id": 79947,
+   "name": "Geomancy: The Stone-Cold Truth",
+   "level": 35,
+   "min": 1,
+   "xp": 275,
+   "objectives": [
+    {
+     "type": 1,
+     "id": 215683,
+     "amount": 1,
+     "desc": "Geomancy: The Stone-Cold Truth"
+    }
+   ],
+   "url": "https://forever.warcraftdb.com/data/quest/79947"
+  },
+  "79948": {
+   "id": 79948,
+   "name": "Defensive Magics 101",
+   "level": 35,
+   "min": 1,
+   "xp": 275,
+   "objectives": [
+    {
+     "type": 1,
+     "id": 215815,
+     "amount": 1,
+     "desc": "Defensive Magics 101"
+    }
+   ],
+   "url": "https://forever.warcraftdb.com/data/quest/79948"
+  },
+  "79949": {
+   "id": 79949,
+   "name": "A Web of Lies: Debunking Myths and Legends",
+   "level": 35,
+   "min": 1,
+   "xp": 275,
+   "objectives": [
+    {
+     "type": 1,
+     "id": 215816,
+     "amount": 1,
+     "desc": "A Web of Lies: Debunking Myths and Legends"
+    }
+   ],
+   "url": "https://forever.warcraftdb.com/data/quest/79949"
+  },
+  "79950": {
+   "id": 79950,
+   "name": "Demons and You",
+   "level": 35,
+   "min": 1,
+   "xp": 275,
+   "objectives": [
+    {
+     "type": 1,
+     "id": 215817,
+     "amount": 1,
+     "desc": "Demons and You"
+    }
+   ],
+   "url": "https://forever.warcraftdb.com/data/quest/79950"
+  },
+  "79951": {
+   "id": 79951,
+   "name": "Mummies: A Guide to the Unsavory Undead",
+   "level": 35,
+   "min": 1,
+   "xp": 275,
+   "objectives": [
+    {
+     "type": 1,
+     "id": 215820,
+     "amount": 1,
+     "desc": "Mummies: A Guide to the Unsavory Undead"
+    }
+   ],
+   "url": "https://forever.warcraftdb.com/data/quest/79951"
+  },
+  "79952": {
+   "id": 79952,
+   "name": "RwlRwlRwlRwl!",
+   "level": 35,
+   "min": 1,
+   "xp": 275,
+   "objectives": [
+    {
+     "type": 1,
+     "id": 215822,
+     "amount": 1,
+     "desc": "RwlRwlRwlRwl!"
+    }
+   ],
+   "url": "https://forever.warcraftdb.com/data/quest/79952"
   },
   "79975": {
    "id": 79975,
@@ -1914,6 +3111,118 @@
    ],
    "objectives": [],
    "url": "https://forever.warcraftdb.com/data/quest/79980"
+  },
+  "81947": {
+   "id": 81947,
+   "name": "Sanguine Sorcery",
+   "level": 45,
+   "min": 1,
+   "xp": 390,
+   "objectives": [
+    {
+     "type": 1,
+     "id": 220345,
+     "amount": 1,
+     "desc": "Sanguine Sorcery"
+    }
+   ],
+   "url": "https://forever.warcraftdb.com/data/quest/81947"
+  },
+  "81949": {
+   "id": 81949,
+   "name": "Legends of the Tidesages",
+   "level": 45,
+   "min": 1,
+   "xp": 390,
+   "objectives": [
+    {
+     "type": 1,
+     "id": 220346,
+     "amount": 1,
+     "desc": "Legends of the Tidesages"
+    }
+   ],
+   "url": "https://forever.warcraftdb.com/data/quest/81949"
+  },
+  "81952": {
+   "id": 81952,
+   "name": "Everyday Etiquette",
+   "level": 45,
+   "min": 1,
+   "xp": 390,
+   "objectives": [
+    {
+     "type": 1,
+     "id": 220348,
+     "amount": 1,
+     "desc": "Everyday Etiquette"
+    }
+   ],
+   "url": "https://forever.warcraftdb.com/data/quest/81952"
+  },
+  "81953": {
+   "id": 81953,
+   "name": "Stonewrought Design",
+   "level": 45,
+   "min": 1,
+   "xp": 390,
+   "objectives": [
+    {
+     "type": 1,
+     "id": 220349,
+     "amount": 1,
+     "desc": "Stonewrought Design"
+    }
+   ],
+   "url": "https://forever.warcraftdb.com/data/quest/81953"
+  },
+  "81954": {
+   "id": 81954,
+   "name": "Venomous Journeys",
+   "level": 45,
+   "min": 1,
+   "xp": 390,
+   "objectives": [
+    {
+     "type": 1,
+     "id": 220350,
+     "amount": 1,
+     "desc": "Venomous Journeys"
+    }
+   ],
+   "url": "https://forever.warcraftdb.com/data/quest/81954"
+  },
+  "81955": {
+   "id": 81955,
+   "name": "A Mind of Metal",
+   "level": 45,
+   "min": 1,
+   "xp": 390,
+   "objectives": [
+    {
+     "type": 1,
+     "id": 220352,
+     "amount": 1,
+     "desc": "A Mind of Metal"
+    }
+   ],
+   "url": "https://forever.warcraftdb.com/data/quest/81955"
+  },
+  "81956": {
+   "id": 81956,
+   "name": "Conjurer's Codex",
+   "level": 45,
+   "min": 1,
+   "xp": 390,
+   "objectives": [
+    {
+     "type": 1,
+     "id": 220353,
+     "amount": 1,
+     "desc": "Conjurer's Codex"
+    }
+   ],
+   "url": "https://forever.warcraftdb.com/data/quest/81956"
   },
   "862": {
    "id": 862,
@@ -2347,6 +3656,22 @@
    ],
    "url": "https://forever.warcraftdb.com/data/quest/91752"
   },
+  "91753": {
+   "id": 91753,
+   "name": "An Enchanting Lesson",
+   "level": 7,
+   "min": 5,
+   "xp": 475,
+   "objectives": [
+    {
+     "type": 1,
+     "id": 247884,
+     "amount": 3,
+     "desc": "Luminous Residue"
+    }
+   ],
+   "url": "https://forever.warcraftdb.com/data/quest/91753"
+  },
   "91758": {
    "id": 91758,
    "name": "Follow That Kobold!",
@@ -2552,6 +3877,22 @@
     }
    ],
    "url": "https://forever.warcraftdb.com/data/quest/91921"
+  },
+  "92110": {
+   "id": 92110,
+   "name": "My First Real Potion",
+   "level": 10,
+   "min": 10,
+   "xp": 420,
+   "objectives": [
+    {
+     "type": 1,
+     "id": 730,
+     "amount": 3,
+     "desc": "Murloc Eye"
+    }
+   ],
+   "url": "https://forever.warcraftdb.com/data/quest/92110"
   },
   "92124": {
    "id": 92124,
@@ -3745,6 +5086,44 @@
    ],
    "url": "https://forever.warcraftdb.com/data/quest/92598"
   },
+  "92646": {
+   "id": 92646,
+   "name": "Confront Lorthuna",
+   "level": 12,
+   "min": 7,
+   "xp": 455,
+   "startNpc": [
+    253590
+   ],
+   "endNpc": [
+    251968
+   ],
+   "starts": [
+    {
+     "uiMap": 2521,
+     "u": 0.652278,
+     "v": 0.503645,
+     "label": "Valennia Stormfist"
+    }
+   ],
+   "ends": [
+    {
+     "uiMap": 2521,
+     "u": 0.591264,
+     "v": 0.797225,
+     "label": "Ayessa Dawnsinger"
+    }
+   ],
+   "objectives": [
+    {
+     "type": 0,
+     "id": 256634,
+     "amount": 1,
+     "desc": "Confront Lorthuna"
+    }
+   ],
+   "url": "https://forever.warcraftdb.com/data/quest/92646"
+  },
   "92679": {
    "id": 92679,
    "name": "Blood Tithe",
@@ -4191,6 +5570,82 @@
    ],
    "url": "https://forever.warcraftdb.com/data/quest/92706"
   },
+  "92708": {
+   "id": 92708,
+   "name": "A Grand Adventure",
+   "level": 12,
+   "min": 7,
+   "xp": 90,
+   "startNpc": [
+    251968
+   ],
+   "endNpc": [
+    251968
+   ],
+   "starts": [
+    {
+     "uiMap": 2521,
+     "u": 0.591264,
+     "v": 0.797225,
+     "label": "Ayessa Dawnsinger"
+    }
+   ],
+   "ends": [
+    {
+     "uiMap": 2521,
+     "u": 0.591264,
+     "v": 0.797225,
+     "label": "Ayessa Dawnsinger"
+    }
+   ],
+   "objectives": [
+    {
+     "type": 0,
+     "id": 273972,
+     "amount": 1,
+     "desc": "Listen to Ayessa"
+    }
+   ],
+   "url": "https://forever.warcraftdb.com/data/quest/92708"
+  },
+  "92709": {
+   "id": 92709,
+   "name": "A Grand Adventure",
+   "level": 12,
+   "min": 7,
+   "xp": 90,
+   "startNpc": [
+    252475
+   ],
+   "endNpc": [
+    252475
+   ],
+   "starts": [
+    {
+     "uiMap": 2521,
+     "u": 0.665815,
+     "v": 0.799149,
+     "label": "Elaadrin Evengale"
+    }
+   ],
+   "ends": [
+    {
+     "uiMap": 2521,
+     "u": 0.665815,
+     "v": 0.799149,
+     "label": "Elaadrin Evengale"
+    }
+   ],
+   "objectives": [
+    {
+     "type": 0,
+     "id": 273972,
+     "amount": 1,
+     "desc": "Listen to Elaadrin"
+    }
+   ],
+   "url": "https://forever.warcraftdb.com/data/quest/92709"
+  },
   "92727": {
    "id": 92727,
    "name": "The Missing Scholar",
@@ -4302,6 +5757,40 @@
     }
    ],
    "url": "https://forever.warcraftdb.com/data/quest/92744"
+  },
+  "92749": {
+   "id": 92749,
+   "name": "A Dynamite Plan",
+   "level": 16,
+   "min": 9,
+   "xp": 580,
+   "endNpc": [
+    11026
+   ],
+   "starts": [
+    {
+     "uiMap": 1453,
+     "u": 0.6186575685581155,
+     "v": 0.30575651363157624
+    }
+   ],
+   "ends": [
+    {
+     "uiMap": 1453,
+     "u": 0.6186575685581155,
+     "v": 0.30575651363157624,
+     "label": "Sprite Jumpsprocket"
+    }
+   ],
+   "objectives": [
+    {
+     "type": 1,
+     "id": 4358,
+     "amount": 10,
+     "desc": "Rough Dynamite"
+    }
+   ],
+   "url": "https://forever.warcraftdb.com/data/quest/92749"
   },
   "92849": {
    "id": 92849,
@@ -4456,6 +5945,68 @@
    ],
    "objectives": [],
    "url": "https://forever.warcraftdb.com/data/quest/93036"
+  },
+  "93089": {
+   "id": 93089,
+   "name": "What Comes Next",
+   "level": 13,
+   "min": 7,
+   "xp": 90,
+   "startNpc": [
+    252476
+   ],
+   "endNpc": [
+    252475
+   ],
+   "starts": [
+    {
+     "uiMap": 2521,
+     "u": 0.661983,
+     "v": 0.765504,
+     "label": "Talaanis Shadowsong"
+    }
+   ],
+   "ends": [
+    {
+     "uiMap": 2521,
+     "u": 0.665815,
+     "v": 0.799149,
+     "label": "Elaadrin Evengale"
+    }
+   ],
+   "objectives": [],
+   "url": "https://forever.warcraftdb.com/data/quest/93089"
+  },
+  "93090": {
+   "id": 93090,
+   "name": "What Comes Next",
+   "level": 13,
+   "min": 7,
+   "xp": 455,
+   "startNpc": [
+    252476
+   ],
+   "endNpc": [
+    251968
+   ],
+   "starts": [
+    {
+     "uiMap": 2521,
+     "u": 0.661983,
+     "v": 0.765504,
+     "label": "Talaanis Shadowsong"
+    }
+   ],
+   "ends": [
+    {
+     "uiMap": 2521,
+     "u": 0.591264,
+     "v": 0.797225,
+     "label": "Ayessa Dawnsinger"
+    }
+   ],
+   "objectives": [],
+   "url": "https://forever.warcraftdb.com/data/quest/93090"
   },
   "93159": {
    "id": 93159,
@@ -4795,6 +6346,82 @@
    ],
    "url": "https://forever.warcraftdb.com/data/quest/93736"
   },
+  "93835": {
+   "id": 93835,
+   "name": "Confront Lorthuna",
+   "level": 12,
+   "min": 7,
+   "xp": 455,
+   "startNpc": [
+    253590
+   ],
+   "endNpc": [
+    252475
+   ],
+   "starts": [
+    {
+     "uiMap": 2521,
+     "u": 0.652278,
+     "v": 0.503645,
+     "label": "Valennia Stormfist"
+    }
+   ],
+   "ends": [
+    {
+     "uiMap": 2521,
+     "u": 0.665815,
+     "v": 0.799149,
+     "label": "Elaadrin Evengale"
+    }
+   ],
+   "objectives": [
+    {
+     "type": 0,
+     "id": 256634,
+     "amount": 1,
+     "desc": "Confront Lorthuna"
+    }
+   ],
+   "url": "https://forever.warcraftdb.com/data/quest/93835"
+  },
+  "93836": {
+   "id": 93836,
+   "name": "The Fate of Zephras",
+   "level": 12,
+   "min": 7,
+   "xp": 455,
+   "startNpc": [
+    251968
+   ],
+   "endNpc": [
+    252476
+   ],
+   "starts": [
+    {
+     "uiMap": 2521,
+     "u": 0.591264,
+     "v": 0.797225,
+     "label": "Ayessa Dawnsinger"
+    }
+   ],
+   "ends": [
+    {
+     "uiMap": 2521,
+     "u": 0.661983,
+     "v": 0.765504,
+     "label": "Talaanis Shadowsong"
+    }
+   ],
+   "objectives": [
+    {
+     "type": 3,
+     "id": 252476,
+     "amount": 1,
+     "desc": "Speak with Talaanis Shadowsong"
+    }
+   ],
+   "url": "https://forever.warcraftdb.com/data/quest/93836"
+  },
   "93926": {
    "id": 93926,
    "name": "The Western Watch",
@@ -5042,6 +6669,44 @@
    ],
    "objectives": [],
    "url": "https://forever.warcraftdb.com/data/quest/94050"
+  },
+  "94369": {
+   "id": 94369,
+   "name": "The Fate of Zephras",
+   "level": 12,
+   "min": 7,
+   "xp": 90,
+   "startNpc": [
+    252475
+   ],
+   "endNpc": [
+    252476
+   ],
+   "starts": [
+    {
+     "uiMap": 2521,
+     "u": 0.665815,
+     "v": 0.799149,
+     "label": "Elaadrin Evengale"
+    }
+   ],
+   "ends": [
+    {
+     "uiMap": 2521,
+     "u": 0.661983,
+     "v": 0.765504,
+     "label": "Talaanis Shadowsong"
+    }
+   ],
+   "objectives": [
+    {
+     "type": 3,
+     "id": 252476,
+     "amount": 1,
+     "desc": "Speak with Talaanis Shadowsong"
+    }
+   ],
+   "url": "https://forever.warcraftdb.com/data/quest/94369"
   },
   "94411": {
    "id": 94411,
@@ -5511,6 +7176,37 @@
    ],
    "url": "https://forever.warcraftdb.com/data/quest/94897"
   },
+  "94946": {
+   "id": 94946,
+   "name": "The Magical City of Dalaran",
+   "level": 13,
+   "min": 7,
+   "xp": 90,
+   "startNpc": [
+    252475
+   ],
+   "endNpc": [
+    259084
+   ],
+   "starts": [
+    {
+     "uiMap": 2521,
+     "u": 0.665815,
+     "v": 0.799149,
+     "label": "Elaadrin Evengale"
+    }
+   ],
+   "ends": [
+    {
+     "uiMap": 1416,
+     "u": 0.122206,
+     "v": 0.564431,
+     "label": "Denaaris Stargale"
+    }
+   ],
+   "objectives": [],
+   "url": "https://forever.warcraftdb.com/data/quest/94946"
+  },
   "94978": {
    "id": 94978,
    "name": "Taming the Beast",
@@ -5587,6 +7283,40 @@
    ],
    "url": "https://forever.warcraftdb.com/data/quest/94979"
   },
+  "95036": {
+   "id": 95036,
+   "name": "A Moon-Kissed Blade",
+   "level": 25,
+   "min": 20,
+   "xp": 1000,
+   "objectives": [
+    {
+     "type": 1,
+     "id": 267454,
+     "amount": 1,
+     "desc": "Collect the note from Trevan"
+    },
+    {
+     "type": 1,
+     "id": 6994,
+     "amount": 1,
+     "desc": "Whitestone Oak Lumber"
+    },
+    {
+     "type": 1,
+     "id": 267361,
+     "amount": 1,
+     "desc": "Enchanted Silver Ingot"
+    },
+    {
+     "type": 1,
+     "id": 272448,
+     "amount": 1,
+     "desc": "Purified Kor Gem"
+    }
+   ],
+   "url": "https://forever.warcraftdb.com/data/quest/95036"
+  },
   "95041": {
    "id": 95041,
    "name": "Data Hoarders",
@@ -5603,6 +7333,54 @@
    ],
    "url": "https://forever.warcraftdb.com/data/quest/95041"
   },
+  "95042": {
+   "id": 95042,
+   "name": "Seeking the Kor Gem",
+   "level": 25,
+   "min": 20,
+   "xp": 2000,
+   "objectives": [
+    {
+     "type": 1,
+     "id": 6995,
+     "amount": 1,
+     "desc": "Corrupted Kor Gem"
+    }
+   ],
+   "url": "https://forever.warcraftdb.com/data/quest/95042"
+  },
+  "951": {
+   "id": 951,
+   "name": "Mathystra Relics",
+   "level": 20,
+   "min": 12,
+   "xp": 1950,
+   "objectives": [
+    {
+     "type": 1,
+     "id": 5273,
+     "amount": 6,
+     "desc": "Mathystra Relic"
+    }
+   ],
+   "url": "https://forever.warcraftdb.com/data/quest/951"
+  },
+  "95189": {
+   "id": 95189,
+   "name": "Crest of Lordaeron",
+   "level": 22,
+   "min": 16,
+   "xp": 2600,
+   "objectives": [
+    {
+     "type": 1,
+     "id": 268579,
+     "amount": 1,
+     "desc": "Crest of Lordaeron"
+    }
+   ],
+   "url": "https://forever.warcraftdb.com/data/quest/95189"
+  },
   "95216": {
    "id": 95216,
    "name": "The New Plague",
@@ -5618,6 +7396,37 @@
     }
    ],
    "url": "https://forever.warcraftdb.com/data/quest/95216"
+  },
+  "95349": {
+   "id": 95349,
+   "name": "The Earthen Ring",
+   "level": 13,
+   "min": 7,
+   "xp": 90,
+   "startNpc": [
+    251968
+   ],
+   "endNpc": [
+    259119
+   ],
+   "starts": [
+    {
+     "uiMap": 2521,
+     "u": 0.591264,
+     "v": 0.797225,
+     "label": "Ayessa Dawnsinger"
+    }
+   ],
+   "ends": [
+    {
+     "uiMap": 1412,
+     "u": 0.334134,
+     "v": 0.225059,
+     "label": "Alaana Stormwalker"
+    }
+   ],
+   "objectives": [],
+   "url": "https://forever.warcraftdb.com/data/quest/95349"
   },
   "95350": {
    "id": 95350,
@@ -5767,6 +7576,23 @@
     }
    ],
    "url": "https://forever.warcraftdb.com/data/quest/95883"
+  },
+  "95884": {
+   "id": 95884,
+   "name": "The Offering Stone",
+   "level": 23,
+   "min": 20,
+   "xp": 185,
+   "ends": [
+    {
+     "uiMap": 1421,
+     "u": 0.580975,
+     "v": 0.69847,
+     "label": "Offering Stone"
+    }
+   ],
+   "objectives": [],
+   "url": "https://forever.warcraftdb.com/data/quest/95884"
   },
   "95885": {
    "id": 95885,
@@ -6518,6 +8344,28 @@
    ],
    "url": "https://forever.warcraftdb.com/data/quest/96874"
   },
+  "96875": {
+   "id": 96875,
+   "name": "Beasts of Thunder Ridge",
+   "level": 10,
+   "min": 6,
+   "xp": 840,
+   "objectives": [
+    {
+     "type": 1,
+     "id": 275720,
+     "amount": 5,
+     "desc": "Rough Lizard Hide"
+    },
+    {
+     "type": 1,
+     "id": 4231,
+     "amount": 2,
+     "desc": "Cured Light Hide"
+    }
+   ],
+   "url": "https://forever.warcraftdb.com/data/quest/96875"
+  },
   "96895": {
    "id": 96895,
    "name": "The Argent Emissary",
@@ -6852,6 +8700,34 @@
    ],
    "url": "https://forever.warcraftdb.com/data/quest/97253"
   },
+  "97257": {
+   "id": 97257,
+   "name": "Call of Fire",
+   "level": 10,
+   "min": 10,
+   "xp": 1050,
+   "objectives": [
+    {
+     "type": 1,
+     "id": 277329,
+     "amount": 1,
+     "desc": "Torch of Eternal Flame"
+    },
+    {
+     "type": 0,
+     "id": 268764,
+     "amount": 1,
+     "desc": "Complete the Ritual with Olariaan"
+    },
+    {
+     "type": 0,
+     "id": 268679,
+     "amount": 1,
+     "desc": "Light the Brazier of Eternal Flame"
+    }
+   ],
+   "url": "https://forever.warcraftdb.com/data/quest/97257"
+  },
   "97263": {
    "id": 97263,
    "name": "Your Package Has Arrived",
@@ -7056,6 +8932,64 @@
     }
    ],
    "url": "https://forever.warcraftdb.com/data/quest/97326"
+  },
+  "97485": {
+   "id": 97485,
+   "name": "Traditions of the Bluff",
+   "level": 10,
+   "min": 3,
+   "xp": 420,
+   "startNpc": [
+    269068
+   ],
+   "starts": [
+    {
+     "uiMap": 1456,
+     "u": 0.3828,
+     "v": 0.560671,
+     "label": "Eylah Sunhorn"
+    }
+   ],
+   "objectives": [
+    {
+     "type": 1,
+     "id": 278078,
+     "amount": 1,
+     "desc": "Incense created"
+    },
+    {
+     "type": 0,
+     "id": 269255,
+     "amount": 1,
+     "desc": "Spread incense"
+    }
+   ],
+   "url": "https://forever.warcraftdb.com/data/quest/97485"
+  },
+  "97583": {
+   "id": 97583,
+   "name": "WRIGGLE.",
+   "level": 1,
+   "min": 1,
+   "xp": 10,
+   "objectives": [
+    {
+     "type": 1,
+     "id": 278265,
+     "amount": 1,
+     "desc": "Nutritious Slime Sludge"
+    }
+   ],
+   "url": "https://forever.warcraftdb.com/data/quest/97583"
+  },
+  "976": {
+   "id": 976,
+   "name": "Supplies to Auberdine",
+   "level": 24,
+   "min": 19,
+   "xp": 2900,
+   "objectives": [],
+   "url": "https://forever.warcraftdb.com/data/quest/976"
   },
   "97891": {
    "id": 97891,
@@ -7468,6 +9402,56 @@
     }
    ],
    "url": "https://forever.warcraftdb.com/data/quest/98093"
+  },
+  "98095": {
+   "id": 98095,
+   "name": "Valuable Vantages",
+   "level": 25,
+   "min": 19,
+   "xp": 2000,
+   "startNpc": [
+    270438
+   ],
+   "endNpc": [
+    270438
+   ],
+   "starts": [
+    {
+     "uiMap": 1424,
+     "u": 0.640343,
+     "v": 0.538199,
+     "label": "Deathstalker Masoj"
+    }
+   ],
+   "ends": [
+    {
+     "uiMap": 1424,
+     "u": 0.640343,
+     "v": 0.538199,
+     "label": "Deathstalker Masoj"
+    }
+   ],
+   "objectives": [
+    {
+     "type": 0,
+     "id": 270575,
+     "amount": 1,
+     "desc": "Western vial placed"
+    },
+    {
+     "type": 0,
+     "id": 270574,
+     "amount": 1,
+     "desc": "Northern vial placed"
+    },
+    {
+     "type": 0,
+     "id": 270573,
+     "amount": 1,
+     "desc": "Southern vial placed"
+    }
+   ],
+   "url": "https://forever.warcraftdb.com/data/quest/98095"
   },
   "98189": {
    "id": 98189,
@@ -8330,6 +10314,44 @@
    ],
    "url": "https://forever.warcraftdb.com/data/quest/98389"
   },
+  "984": {
+   "id": 984,
+   "name": "How Big a Threat?",
+   "level": 14,
+   "min": 10,
+   "xp": 740,
+   "startNpc": [
+    3693
+   ],
+   "endNpc": [
+    3693
+   ],
+   "starts": [
+    {
+     "uiMap": 1439,
+     "u": 0.39323,
+     "v": 0.434402,
+     "label": "Terenthis"
+    }
+   ],
+   "ends": [
+    {
+     "uiMap": 1439,
+     "u": 0.39323,
+     "v": 0.434402,
+     "label": "Terenthis"
+    }
+   ],
+   "objectives": [
+    {
+     "type": 0,
+     "id": 277995,
+     "amount": 1,
+     "desc": "Find a corrupt furbolg camp"
+    }
+   ],
+   "url": "https://forever.warcraftdb.com/data/quest/984"
+  },
   "98407": {
    "id": 98407,
    "name": "Show of Force",
@@ -8368,6 +10390,22 @@
    ],
    "url": "https://forever.warcraftdb.com/data/quest/98407"
   },
+  "98423": {
+   "id": 98423,
+   "name": "The Treaty of Understanding",
+   "level": 16,
+   "min": 9,
+   "xp": 1150,
+   "objectives": [
+    {
+     "type": 1,
+     "id": 281030,
+     "amount": 1,
+     "desc": "Treaty of Understanding"
+    }
+   ],
+   "url": "https://forever.warcraftdb.com/data/quest/98423"
+  },
   "98461": {
    "id": 98461,
    "name": "Unrequited Love",
@@ -8383,6 +10421,66 @@
     }
    ],
    "url": "https://forever.warcraftdb.com/data/quest/98461"
+  },
+  "985": {
+   "id": 985,
+   "name": "How Big a Threat?",
+   "level": 14,
+   "min": 10,
+   "xp": 980,
+   "startNpc": [
+    3693
+   ],
+   "endNpc": [
+    3693
+   ],
+   "starts": [
+    {
+     "uiMap": 1439,
+     "u": 0.39323,
+     "v": 0.434402,
+     "label": "Terenthis"
+    }
+   ],
+   "ends": [
+    {
+     "uiMap": 1439,
+     "u": 0.39323,
+     "v": 0.434402,
+     "label": "Terenthis"
+    }
+   ],
+   "objectives": [
+    {
+     "type": 0,
+     "id": 2167,
+     "amount": 8,
+     "desc": "Blackwood Pathfinder"
+    },
+    {
+     "type": 0,
+     "id": 2324,
+     "amount": 5,
+     "desc": "Blackwood Windtalker"
+    }
+   ],
+   "url": "https://forever.warcraftdb.com/data/quest/985"
+  },
+  "986": {
+   "id": 986,
+   "name": "A Lost Master",
+   "level": 20,
+   "min": 10,
+   "xp": 1550,
+   "objectives": [
+    {
+     "type": 1,
+     "id": 5386,
+     "amount": 5,
+     "desc": "Fine Moonstalker Pelt"
+    }
+   ],
+   "url": "https://forever.warcraftdb.com/data/quest/986"
   },
   "98601": {
    "id": 98601,
@@ -8421,6 +10519,26 @@
     }
    ],
    "url": "https://forever.warcraftdb.com/data/quest/98601"
+  },
+  "990": {
+   "id": 990,
+   "name": "Trek to Ashenvale",
+   "level": 19,
+   "min": 15,
+   "xp": 365,
+   "startNpc": [
+    3694
+   ],
+   "starts": [
+    {
+     "uiMap": 1439,
+     "u": 0.392605,
+     "v": 0.43463,
+     "label": "Sentinel Selarin"
+    }
+   ],
+   "objectives": [],
+   "url": "https://forever.warcraftdb.com/data/quest/990"
   },
   "99046": {
    "id": 99046,
@@ -8908,6 +11026,22 @@
    ],
    "objectives": [],
    "url": "https://forever.warcraftdb.com/data/quest/99260"
+  },
+  "993": {
+   "id": 993,
+   "name": "A Lost Master",
+   "level": 20,
+   "min": 10,
+   "xp": 780,
+   "objectives": [
+    {
+     "type": 1,
+     "id": 5387,
+     "amount": 1,
+     "desc": "Enchanted Moonstalker Cloak"
+    }
+   ],
+   "url": "https://forever.warcraftdb.com/data/quest/993"
   }
  },
  "missing": [

@@ -8,6 +8,7 @@ import (
 	"sync"
 
 	"github.com/Battlefeld/ForeverRoutes/dataset"
+	"github.com/Battlefeld/ForeverRoutes/xp"
 )
 
 // PlanOptions steer the search.
@@ -55,7 +56,7 @@ type macro struct {
 // best found, not a proven optimum.
 func (w *World) Plan(po PlanOptions) (*Result, error) {
 	po = po.withDefaults()
-	if po.TargetLevel < 2 || po.TargetLevel > len(w.Data.LevelXP) {
+	if po.TargetLevel < 2 || po.TargetLevel > len(w.Data.LevelXP)+1 || po.Restarts < 1 || po.MaxSteps < 1 {
 		return nil, errors.New("target level out of range")
 	}
 	rng := rand.New(rand.NewSource(po.Seed))
@@ -290,8 +291,14 @@ func (w *World) bestSource(s *State, q *Quest, oi int) (Action, bool) {
 		if w.tooDangerous(s, src) {
 			continue
 		}
-		work := w.Opt.InteractSecs
-		if !src.Talk {
+		work := 0.0
+		if src.Talk || src.Duel {
+			_, t, ok := w.nonCombatWork(s, q, oi, src)
+			if !ok {
+				continue
+			}
+			work = t
+		} else {
 			work, _, _ = w.killSeconds(s, src.NPC, src.Site, left/src.Chance) // respawns included: a lone rare is slow
 		}
 		t := w.TravelTime(s, s.Pos, src.Site.Center) + work
@@ -309,7 +316,7 @@ func (w *World) bestSource(s *State, q *Quest, oi int) (Action, bool) {
 }
 
 // workLog works the unfinished objectives of the given quests, nearest first, until none is left or none can be done.
-func (w *World) workLog(s *State, acts *[]Action, quests []*Quest) bool {
+func (w *World) workLog(s *State, acts *[]Action, quests []*Quest, only ...int) bool {
 	for {
 		var next Action
 		bd, found := math.Inf(1), false
@@ -318,6 +325,9 @@ func (w *World) workLog(s *State, acts *[]Action, quests []*Quest) bool {
 				continue
 			}
 			for oi, o := range q.Objectives {
+				if len(only) > 0 && oi != only[0] {
+					continue
+				}
 				if s.Prog[q.Index][oi] >= float64(o.Count) {
 					continue
 				}
@@ -500,9 +510,13 @@ func (w *World) hubMacro(s0 *State, h hub) *macro {
 }
 
 // grindMacro: kill the best mobs nearby until the next level (at most 30 kills).
-func (w *World) grindMacro(s0 *State, target int) *macro {
+func (w *World) grindMacro(s0 *State, target int, xpCap ...int) *macro {
 	var best *macro
 	lvl := w.Level(s0)
+	if lvl >= target {
+		return nil
+	}
+	next := min(target, lvl+1)
 	for i := range w.Farms {
 		f := &w.Farms[i]
 		ml := mobLevel(f.NPC)
@@ -514,7 +528,20 @@ func (w *World) grindMacro(s0 *State, target int) *macro {
 		}
 		s := s0.clone()
 		var acts []Action
-		if !w.try(s, &acts, Action{Op: "grind", NPC: f.NPC.ID, Kills: 30, At: f.Site.Center}) {
+		preview := s0.clone()
+		w.camp(preview)
+		gain := w.bonusXP(preview, xp.Kill(lvl, ml, f.NPC.Rank == 1), preview.Time)
+		if gain <= 0 {
+			continue
+		}
+		goal := xp.Total(w.Data.LevelXP, next)
+		if len(xpCap) > 0 {
+			goal = min(goal, xpCap[0])
+		}
+		needed := float64(goal - preview.XP)
+		rested := math.Min(preview.Rested, needed/2)
+		kills := max(1, min(30, int(math.Ceil((needed-rested)/float64(gain)))))
+		if !w.try(s, &acts, Action{Op: "grind", NPC: f.NPC.ID, Kills: kills, At: f.Site.Center}) {
 			continue
 		}
 		m := w.finish(s0, s, acts, "grind")

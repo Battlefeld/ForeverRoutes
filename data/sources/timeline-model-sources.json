@@ -1,0 +1,29 @@
+{
+ "modelRevision": "foreverroutes.timeline-model.v2.1",
+ "reviewed": "2026-10-27",
+ "sleepingBag": {
+  "item": 211527,
+  "spell": 429959,
+  "sources": [
+   "https://www.wowhead.com/forever/item=211527/cozy-sleeping-bag",
+   "https://www.wowhead.com/forever/spell=429959/well-rested",
+   "https://www.wowhead.com/forever/guide/cozy-sleeping-bag-locations-rewards"
+  ],
+  "defaultPerStack": 0.01,
+  "maximumStacks": 3,
+  "stackSeconds": 60,
+  "defaultDurationSeconds": 7200,
+  "durationSensitivitySeconds": [3600, 7200],
+  "cooldownSeconds": 3600,
+  "placementSecondsEstimate": 10,
+  "confidence": "Beta tooltip model, not confirmed in game. Spell page gives two hours; guide also reports one hour. Tooltip says 1% per stack while the spell-effect table differs. Keep configurable; do not treat as calibrated."
+ },
+ "campingAndCrafting": {
+  "source": "Existing route/camp.go and route/wand.go cost profiles",
+  "confidence": "Estimated bundled procurement/training cost and profession readiness by level; not a full material, money, auction-house or profession-slot simulation."
+ },
+ "foreverSimFeedback": {
+  "default": "disabled",
+  "activation": "Requires releaseConfirmed AND explicit userConfirmedAfterRelease, releaseBuild, confirmedAt and enabled. Incoming data cannot activate feedback."
+ }
+}

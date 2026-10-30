@@ -2,22 +2,34 @@ package main
 
 import (
 	"encoding/json"
+	"flag"
 	"fmt"
 	"os"
 	"path/filepath"
 	"runtime/pprof"
+	"strings"
 	"sync"
 	"time"
 
+	"github.com/Battlefeld/ForeverRoutes/clientquests"
 	"github.com/Battlefeld/ForeverRoutes/dataset"
 	"github.com/Battlefeld/ForeverRoutes/route"
 )
 
 // loadWorld opens the dataset; profile is a kill profile written by ForeverCore ("" = the default estimate).
 func loadWorld(path, race, class, faction, profile string, dungeons ...bool) (*route.World, error) {
+	return loadWorldWithClientQuests(path, race, class, faction, profile, "", dungeons...)
+}
+
+func loadWorldWithClientQuests(path, race, class, faction, profile, observations string, dungeons ...bool) (*route.World, error) {
 	d, err := dataset.Load(path)
 	if err != nil {
 		return nil, err
+	}
+	if observations != "" {
+		if _, err := clientquests.Apply(observations, d); err != nil {
+			return nil, fmt.Errorf("client quest observations: %w", err)
+		}
 	}
 	c := route.Character{Race: race, Class: class, Faction: faction}
 	var opt route.Options
@@ -117,26 +129,87 @@ func cmdReplay(args []string) error {
 	profile := fs.String("profile", "", "kill profile from ForeverCore (job kill-profile); empty = default estimate")
 	file := fs.String("route", "", "route file (output of plan)")
 	fs.Parse(args)
-	w, err := loadWorld(*path, *race, *class, *faction, *profile)
-	if err != nil {
-		return err
-	}
 	raw, err := os.ReadFile(*file)
 	if err != nil {
 		return err
 	}
-	var r route.Result
-	if err := json.Unmarshal(raw, &r); err != nil {
+	var saved struct {
+		RouteModel
+		Character  route.Character    `json:"character"`
+		Target     int                `json:"target"`
+		Profile    string             `json:"killProfile"`
+		WandDetour float64            `json:"wandDetour"`
+		Steps      []route.Step       `json:"steps"`
+		Events     []route.GuideEvent `json:"events"`
+		Result     *route.Result      `json:"result"`
+	}
+	if err = json.Unmarshal(raw, &saved); err != nil {
 		return err
 	}
-	actions := make([]route.Action, len(r.Steps))
-	for i, s := range r.Steps {
-		actions[i] = s.Action
+	if saved.Character.Race != "" {
+		supplied := map[string]bool{}
+		fs.Visit(func(f *flag.Flag) { supplied[f.Name] = true })
+		if !supplied["race"] {
+			*race = saved.Character.Race
+		}
+		if !supplied["class"] {
+			*class = saved.Character.Class
+		}
+		if !supplied["faction"] {
+			*faction = saved.Character.Faction
+		}
+		if !route.SameCharacter(saved.Character, route.Character{Race: *race, Class: *class, Faction: *faction}) {
+			return fmt.Errorf("replay character does not match saved route")
+		}
 	}
-	res, err := w.Replay(actions)
+	if saved.Result != nil && len(saved.Steps) == 0 {
+		saved.Steps = saved.Result.Steps
+	}
+	if *profile == "" && strings.HasPrefix(saved.Profile, "MythicSim ") {
+		candidate := filepath.Join(filepath.Dir(*path), "profiles", strings.ToLower(*class)+".json")
+		if fileExists(candidate) {
+			*profile = candidate
+		}
+	}
+	group := hasDungeons(saved.Events)
+	for _, st := range saved.Steps {
+		group = group || st.Op == "dungeon"
+	}
+	w, err := loadWorld(*path, *race, *class, *faction, *profile, group)
 	if err != nil {
 		return err
 	}
+	if err = saved.RouteModel.apply(w); err != nil {
+		return err
+	}
+	w.SetWandDetour(saved.WandDetour)
+	var res *route.Result
+	if len(saved.Events) > 0 {
+		if saved.Target < 2 {
+			return fmt.Errorf("saved event route has no valid target")
+		}
+		g, err := w.FollowGuide(saved.Events, saved.Target)
+		if err != nil {
+			return err
+		}
+		if g.Level < saved.Target || len(g.Skipped) > 0 {
+			return fmt.Errorf("saved event route incomplete or contains skipped events")
+		}
+		res = g.Result
+	} else {
+		if len(saved.Steps) == 0 {
+			return fmt.Errorf("saved route has no events or steps")
+		}
+		actions := make([]route.Action, len(saved.Steps))
+		for i, st := range saved.Steps {
+			actions[i] = st.Action
+		}
+		res, err = w.Replay(actions)
+		if err != nil {
+			return err
+		}
+	}
+
 	res.Steps = nil
 	return printJSON(res)
 }

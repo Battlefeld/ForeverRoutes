@@ -45,7 +45,7 @@ QuestieDB, EverythingQuests und cmangos werden beim Bau in den festgeschriebenen
   Level, Volks- und Klassenmasken mit den Skyborne-Bits, Questgeber, Abgaben, Ziele mit Mengen, Voraussetzungen, was einen
   Gegenstand droppt, Spawnpunkte und Kartenrahmen. Wo Polestar eine Quest kennt, gelten seine Clientwerte vor allen
   Referenzen außer im Spiel beobachteten Werten; Quests, die nur Polestar kennt, kommen hinzu. Ereignisziele (Gebiet
-  erkunden, Eskorte) haben keinen Ort in den Daten und werden ohne sie geplant. Dungeonquests bleiben aus Solo-Routen
+  erkunden, Eskorte) brauchen einen belegten Ort; ohne diesen bleibt die Quest gesperrt. Ihre Dauer ist weiterhin eine Schätzung. Dungeonquests bleiben aus Solo-Routen
   draußen, außer alle Ziele liegen vor dem Instanzportal: Gegner oder Objekte in der offenen Welt, höchstens 450 Yards von
   einem Dungeoneingang (Polestars `data/codex/entrances.json`), keine Elite. So sind Red Silk Bandanas (Defias im Stollen
   vor den Todesminen) und The Essence of Aku'Mai (Saphire vor der Tiefschwarzen Grotte) solo planbar. Die Abreise der Skyborne von Zephras Isle
@@ -58,9 +58,10 @@ QuestieDB, EverythingQuests und cmangos werden beim Bau in den festgeschriebenen
   schließt: genannte Gegner werden Drops mit unbekannter Chance, Objekte Drops zu 100 %, sonst werden die Orte des Guides
   die Orte des Ziels; Gegner und Objekte ohne Spawnpunkt bekommen die Orte des Guideschritts. Polestar-Schritte ohne
   Koordinaten zählen über ihr Gebiet: die Gegner, die der Hinweis des Schritts nennt (nur in diesem Gebiet, keine
-  Questgeber, Händler oder Lehrer), oder die Orte der Gegner, die der Schritt ohnehin tötet. Lieferquests (ein einziger
-  Gegenstand, den nichts droppt und kein Guide suchen lässt, Geber und Abnehmer verschieden) gelten als vom Geber
-  übergeben; die Quest trägt dann den Vermerk „item assumed handed over by the giver“. RestedXPs Stand steht in
+  Questgeber, Händler oder Lehrer), oder die Orte der Gegner, die der Schritt ohnehin tötet. Bei Gesprächs-, Heilungs-, Emote- und Benutzungszielen werden belegte Aktionshinweise und Ziel-IDs ausgewertet:
+  Client-Creature-Credit bedeutet nicht automatisch einen Kill. Liefergegenstände gelten nur mit einem ausdrücklichen
+  Quellenbeleg als vom Questgeber übergeben; eine fehlende Dropquelle und verschiedene Geber/Abnehmer reichen nicht aus.
+  RestedXPs Stand steht in
   `data/sources/lock.json` (`rxp`), Polestars im selben Commit wie forever-db.
 - **Shortest Path Forever** (https://github.com/cjber/shortest-path-forever, GPL-3.0-or-later) von Cillian Berragan —
   Reisedaten: Flugzeiten zwischen benachbarten Flugpunkten (zu 93 % im Spiel gemessen, aus InFlight, MIT), Fahrpläne
@@ -109,3 +110,13 @@ Der Planer nimmt dafür einen ausdrücklich gekennzeichneten Planungswert an (30
 davon abhängen (`assumedDropSteps`). Echte Werte kommen aus dem Mitschreiben im Spiel.
 
 Nichts wird erfunden. Was keine Quelle kennt, bleibt im Datensatz als unbekannt markiert (`unsupported` mit Grund).
+
+## Vollprüfung bis Mindestlevel 20
+
+`go run ./cmd/foreverroutes check-quests -target 20 -out data/audits/quests-through-20.json`
+
+Der [Prüfbericht](audits/quests-through-20.json) führt jede Quest einschließlich ausgeschlossener und ungelöster Fälle auf.
+[Zusammenfassung, Reproduktion und Grenzen](audits/README.md). Aktuelle Clientziele ersetzen veraltete Referenzziele;
+im Spiel beobachtete Ziele haben Vorrang. Eine fehlende Menge wird aus einer passenden belegten Referenz übernommen,
+sonst bleibt das Ziel gesperrt. Gespräche und Interaktionen geben keine Kill-XP oder Beute; Duelle kosten Kampfzeit,
+aber ebenfalls keine Kill-XP. Ein Dungeonlauf darf unbekannte Mengen oder ungelöste Ziele außerhalb der Instanz nicht automatisch erfüllen.

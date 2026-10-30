@@ -15,10 +15,11 @@ import (
 // BundleManifest describes a bundle: its version, the zip's SHA-256 and every file in it with its SHA-256.
 // ForeverCore downloads the bundle of the latest release, checks both and only then replaces its ForeverRoutes folder.
 type BundleManifest struct {
-	Schema  string            `json:"schema"`
-	Version string            `json:"version"`
-	ZipSHA  string            `json:"zipSHA256"`
-	Files   map[string]string `json:"files"`
+	Features []string          `json:"features,omitempty"`
+	Schema   string            `json:"schema"`
+	Version  string            `json:"version"`
+	ZipSHA   string            `json:"zipSHA256"`
+	Files    map[string]string `json:"files"`
 }
 
 // cmdBundle packs what ForeverCore needs into dist/foreverroutes-bundle.zip and its manifest
@@ -29,6 +30,7 @@ func cmdBundle(args []string) error {
 	out := fs.String("out", "dist", "folder to write the bundle and its manifest to")
 	version := fs.String("version", "", "version (the release tag); default: the time")
 	exe := fs.String("exe", "", "foreverroutes.exe to include (built for Windows)")
+	addon := fs.String("addon", "", "exported addon Routes.lua to include")
 	fs.Parse(args)
 	if *version == "" {
 		*version = time.Now().UTC().Format("20060102-150405")
@@ -39,7 +41,7 @@ func cmdBundle(args []string) error {
 		"walktable.json.gz":   "data/walktable.json.gz",
 		"README-data.md":      "data/README.md",
 	}
-	for _, pat := range []string{"data/routes/*.json", "data/routes/README.md", "data/profiles/*.json"} {
+	for _, pat := range []string{"data/routes/*.json", "data/routes/README.md", "data/profiles/*.json", "data/fallbacks/*"} {
 		m, err := filepath.Glob(pat)
 		if err != nil {
 			return err
@@ -51,6 +53,9 @@ func cmdBundle(args []string) error {
 	}
 	if *exe != "" {
 		files["foreverroutes.exe"] = *exe
+	}
+	if *addon != "" {
+		files["addon/Routes.lua"] = *addon
 	}
 	names := make([]string, 0, len(files))
 	for n := range files {
@@ -65,7 +70,7 @@ func cmdBundle(args []string) error {
 	if err != nil {
 		return err
 	}
-	man := BundleManifest{Schema: "foreverroutes.bundle.v1", Version: *version, Files: map[string]string{}}
+	man := BundleManifest{Features: []string{"client-quests-v1"}, Schema: "foreverroutes.bundle.v1", Version: *version, Files: map[string]string{}}
 	zw := zip.NewWriter(zf)
 	for _, n := range names {
 		b, err := os.ReadFile(files[n])

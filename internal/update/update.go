@@ -366,6 +366,14 @@ func Rebuild(ctx context.Context, o Options, l *Lock, in Inputs) (*dataset.Datas
 		return nil, nil, err
 	}
 	bin := build.Inputs{Merged: mergedPath, CMangos: dump, CMangosRevision: l.CMangos, WarcraftDB: in.Overlay, WCLBox: in.WCLBox, ForeverChanges: in.FChanges}
+	// Locally imported captures are optional, versioned alongside the other source files.
+	if path := o.path("data/sources/client-quests.json"); path != "" {
+		if _, err := os.Stat(path); err == nil {
+			bin.ClientQuests = path
+		} else if !os.IsNotExist(err) {
+			return nil, nil, err
+		}
+	}
 	if _, err := os.Stat(in.Deathskips); in.Deathskips != "" && err == nil {
 		bin.Deathskips = in.Deathskips
 	}

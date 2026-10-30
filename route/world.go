@@ -25,6 +25,7 @@ type Source struct {
 	Chance float64 // 0..1 progress per kill/use
 	Site   Site
 	Talk   bool // talk to the NPC: no fight
+	Duel   bool // a scripted sparring fight: combat time, no kill XP or loot
 	// Assumed: the data gives no chance for this source; the model's AssumedDrop is used and the result says so
 	Assumed bool
 	// Gather: the items lie at the site (a guide's places, no creature or object known): picked up like using objects
@@ -69,27 +70,29 @@ type Farm struct {
 
 // World is the dataset seen by one character.
 type World struct {
-	Data      *dataset.Dataset
-	Char      Character
-	Faction   string
-	Opt       Options
-	Quests    []*Quest
-	ByID      map[int]*Quest
-	NPC       map[int]*dataset.NPC
-	Objects   map[int]*dataset.Object
-	Start     dataset.Point
-	Excluded  map[int]string // quest -> why this character cannot use it
-	Farms     []Farm
-	net       *network
-	walkGrids walks
-	walkTable walkTable // walks measured between the places routes go to (walktable.go)
-	deaths    *deaths
-	lifts     []dataset.Lift
-	danger    dangerMap
-	elites    dangerMap    // elite places: cell -> highest elite level
-	Dungeons  []*Dungeon   // dungeons a route with dungeons may run (Options.Dungeons)
-	required  map[int]bool // quests of the required class chains (keepClassQuest), for requiredTarget
-	tank      map[int]bool // quests that give the tank form or stance (tankGoals)
+	preparation PreparationPlan
+	feedback    *CombatFeedback
+	Data        *dataset.Dataset
+	Char        Character
+	Faction     string
+	Opt         Options
+	Quests      []*Quest
+	ByID        map[int]*Quest
+	NPC         map[int]*dataset.NPC
+	Objects     map[int]*dataset.Object
+	Start       dataset.Point
+	Excluded    map[int]string // quest -> why this character cannot use it
+	Farms       []Farm
+	net         *network
+	walkGrids   walks
+	walkTable   walkTable // walks measured between the places routes go to (walktable.go)
+	deaths      *deaths
+	lifts       []dataset.Lift
+	danger      dangerMap
+	elites      dangerMap    // elite places: cell -> highest elite level
+	Dungeons    []*Dungeon   // dungeons a route with dungeons may run (Options.Dungeons)
+	required    map[int]bool // quests of the required class chains (keepClassQuest), for requiredTarget
+	tank        map[int]bool // quests that give the tank form or stance (tankGoals)
 	// classOverride turns a class chain (by its goal) off ("off": not required) or on ("on": required) for a measure
 	classOverride map[int]string
 	// wandDetour: the most a visit to a capital for the wands may add to the way (seconds; 0: defaultWandDetour)
@@ -106,6 +109,14 @@ type World struct {
 
 // NewWorld prepares the dataset for one character.
 func NewWorld(d *dataset.Dataset, c Character, opt Options) (*World, error) {
+	if d == nil || len(d.LevelXP) == 0 {
+		return nil, fmt.Errorf("dataset or level XP table missing")
+	}
+	for _, n := range d.LevelXP {
+		if n <= 0 {
+			return nil, fmt.Errorf("invalid level XP table")
+		}
+	}
 	faction, race, ok := c.side()
 	cls := ClassBits[c.Class]
 	if !ok || cls == 0 {
@@ -113,6 +124,30 @@ func NewWorld(d *dataset.Dataset, c Character, opt Options) (*World, error) {
 	}
 	w := &World{Data: d, Char: c, Faction: faction, Opt: opt.withDefaults(), ByID: map[int]*Quest{}, NPC: map[int]*dataset.NPC{},
 		Objects: map[int]*dataset.Object{}, Excluded: map[int]string{}}
+	for _, v := range []float64{w.Opt.RunSpeed, w.Opt.PathFactor, w.Opt.InteractSecs, w.Opt.AssumedDrop, w.Opt.GroupSearch} {
+		if v <= 0 || math.IsNaN(v) || math.IsInf(v, 0) {
+			return nil, fmt.Errorf("invalid model option")
+		}
+	}
+	if w.Opt.AssumedDrop > 1 || w.Opt.QuestLogCap < 1 || w.Opt.MaxMobAbove < 0 {
+		return nil, fmt.Errorf("invalid model limit")
+	}
+	if !validMode(opt.Preparations.Camping) || !validMode(opt.Preparations.Wands) || !validMode(opt.Preparations.SleepingBag) {
+		return nil, fmt.Errorf("invalid preparation mode")
+	}
+	w.preparation = PreparationPlan{ForceWand: opt.Preparations.Wands == "on", ForceProfessions: opt.Preparations.Camping == "on", Camping: opt.Preparations.Camping != "off", Wands: wandClasses[c.Class] && opt.Preparations.Wands != "off", ProfessionLevel: 1, ProfessionDetour: profDetour}
+	for _, v := range []float64{w.Opt.SleepingBag.PerStack, w.Opt.SleepingBag.StackSeconds, w.Opt.SleepingBag.PlacementSeconds, w.Opt.SleepingBag.Duration, w.Opt.SleepingBag.Cooldown} {
+		if math.IsNaN(v) || math.IsInf(v, 0) {
+			return nil, fmt.Errorf("non-finite sleeping bag profile")
+		}
+	}
+	if w.Opt.SleepingBag.PerStack < 0 || w.Opt.SleepingBag.PerStack > .1 || w.Opt.SleepingBag.StackSeconds <= 0 || w.Opt.SleepingBag.PlacementSeconds < 0 || w.Opt.SleepingBag.Duration <= 0 || w.Opt.SleepingBag.Cooldown <= 0 {
+		return nil, fmt.Errorf("invalid sleeping bag model")
+	}
+	if opt.Preparations.Wands == "on" && !wandClasses[c.Class] {
+		return nil, fmt.Errorf("class cannot use wands")
+	}
+	w.SetWandDetour(defaultWandDetour)
 	w.classRules()
 	w.walkGrids = newWalks(w.Opt.Walks)
 	w.walkTable = newWalkTable(w.Opt.WalkTable)
@@ -131,9 +166,11 @@ func NewWorld(d *dataset.Dataset, c Character, opt Options) (*World, error) {
 		dp.EvenDmg = medianByLevel(d, func(n *dataset.NPC) float64 { return n.Dmg })
 		w.Opt.Profile = dp
 	}
-	if tp, ok := w.Opt.Profile.(*TableProfile); ok && tp.Fallback.EvenHP == nil {
-		tp.Fallback.EvenHP = medianByLevel(d, func(n *dataset.NPC) float64 { return float64(n.HP) })
-		tp.Fallback.EvenDmg = medianByLevel(d, func(n *dataset.NPC) float64 { return n.Dmg })
+	if tp, ok := w.Opt.Profile.(*TableProfile); ok {
+		if tp == nil || len(tp.byLevel) == 0 || !tp.Fits(c) {
+			return nil, fmt.Errorf("combat profile is uninitialized or belongs to another class")
+		}
+		w.Opt.Profile = tp.forWorld(d)
 	}
 	startNPC := w.NPC[StartNPC[c.Race]]
 	if startNPC == nil || len(startNPC.Spawns) == 0 {
@@ -245,19 +282,27 @@ func NewWorld(d *dataset.Dataset, c Character, opt Options) (*World, error) {
 }
 
 func (w *World) usable(q *dataset.Quest, race, cls int) string {
+	for _, o := range q.Objectives {
+		if o.Count <= 0 {
+			return "data: objective count must be positive"
+		}
+		switch o.Kind {
+		case "kill", "duel", "talk", "interact", "item", "object", "event", "skill", "run":
+		default:
+			return "data: unknown objective kind " + o.Kind
+		}
+	}
 	switch {
 	case q.Races != 0 && q.Races&race == 0:
 		return "other race"
 	case q.Classes != 0 && q.Classes&cls == 0:
 		return "other class"
-	case q.Repeatable && q.Classes == 0:
-		return "repeatable" // a class quest the data marks repeatable (its item can be had again) is done once
+	case q.Unsupported != "":
+		return "data: " + q.Unsupported
 	case q.Type == "dungeon" && w.Opt.Dungeons && q.Dungeon != "":
 		// a route with dungeons runs it
 	case q.Type != "":
 		return q.Type + " quest (not solo)"
-	case q.Unsupported != "":
-		return "data: " + q.Unsupported
 	}
 	return ""
 }
@@ -343,15 +388,29 @@ func (w *World) resolve(q *dataset.Quest) (*Quest, string) {
 	for _, o := range q.Objectives {
 		ro := Objective{Kind: o.Kind, ID: o.ID, Count: o.Count}
 		switch o.Kind {
-		case "talk":
-			if n := w.NPC[o.ID]; n != nil && len(n.Spawns) > 0 && w.friendly(n) {
-				ro.Sources = append(ro.Sources, Source{NPC: n, Chance: 1, Site: Site{Center: nearest(n.Spawns, w.Start), Spawns: 1}, Talk: true})
+		case "talk", "interact":
+			for _, id := range append([]int{o.ID}, o.Targets...) {
+				if n := w.NPC[id]; n != nil && w.friendly(n) {
+					places := n.Spawns
+					if len(o.Places) > 0 {
+						places = o.Places
+					}
+					for _, st := range w.sites(places) {
+						ro.Sources = append(ro.Sources, Source{NPC: n, Chance: 1, Site: st, Talk: true})
+					}
+				}
+			}
+		case "duel":
+			if n := w.NPC[o.ID]; n != nil && len(n.Spawns) > 0 {
+				for _, st := range w.sites(n.Spawns) {
+					ro.Sources = append(ro.Sources, Source{NPC: n, Chance: 1, Site: st, Duel: true})
+				}
 			}
 		case "kill":
-			if n := w.NPC[o.ID]; n != nil && len(n.Spawns) > 0 && q.Classes != 0 && (n.MaxLevel == 0 || n.MaxLevel >= q.Level+10) {
-				// a class quest's creature without a level or far above the quest is a spirit spoken to (the Great Bear
-				// Spirit, Lunaclaw's spirit): the credit comes from talking
-				ro.Sources = append(ro.Sources, Source{NPC: n, Chance: 1, Site: Site{Center: nearest(n.Spawns, w.Start), Spawns: 1}, Talk: true})
+			if n := w.NPC[o.ID]; n != nil && len(o.Places) > 0 {
+				for _, st := range w.sites(o.Places) {
+					ro.Sources = append(ro.Sources, Source{NPC: n, Chance: 1, Site: st, Class: q.Classes != 0})
+				}
 			} else if n != nil && len(n.Spawns) > 0 {
 				for _, st := range w.sites(n.Spawns) {
 					ro.Sources = append(ro.Sources, Source{NPC: n, Chance: 1, Site: st})

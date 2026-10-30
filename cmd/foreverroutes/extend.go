@@ -41,6 +41,10 @@ func cmdExtend(args []string) error {
 	if err != nil {
 		return err
 	}
+	if err := r.RouteModel.apply(w); err != nil {
+		return err
+	}
+	w.SetWandDetour(r.WandDetour)
 	t0 := time.Now()
 	base, err := w.FollowGuide(r.Events, r.Target)
 	if err != nil {
@@ -79,6 +83,7 @@ func cmdExtend(args []string) error {
 	fmt.Fprintf(os.Stderr, "%s %s: to %d %.1f h, then to %d %.1f h planned, %.1f h improved (%d dungeon runs, %s)\n",
 		r.Character.Race, r.Character.Class, r.Target, base.Seconds/3600, *target, full.Seconds/3600, fullBest.Seconds/3600, runs, time.Since(t0).Round(time.Second))
 	r.Target, r.Events = *target, improved
+	r.RouteModel = RouteModel{Preparations: &fullBest.Preparations, SleepingBagModel: &fullBest.BuffModel}
 	r.Hours = map[string]float64{"base": round2(base.Seconds / 3600), "planned": round2(full.Seconds / 3600), "improved": round2(fullBest.Seconds / 3600)}
 	r.Quests, r.Assumed, r.Dungeons = fullBest.Quests, fullBest.Assumed, runs
 	if *out == "" {
@@ -90,17 +95,19 @@ func cmdExtend(args []string) error {
 
 // routeFile is a route of data/routes.
 type routeFile struct {
-	Schema    string             `json:"schema"`
-	Character route.Character    `json:"character"`
-	Target    int                `json:"target"`
-	Winner    string             `json:"winner"`
-	Hours     map[string]float64 `json:"hours"`
-	Quests    int                `json:"quests"`
-	Profile   string             `json:"killProfile"`
-	Assumed   int                `json:"assumedDropSteps"`
-	Dungeons  int                `json:"dungeonRuns,omitempty"`
-	Basis     string             `json:"basis"`
-	Events    []route.GuideEvent `json:"events"`
+	RouteModel
+	Schema     string             `json:"schema"`
+	Character  route.Character    `json:"character"`
+	Target     int                `json:"target"`
+	Winner     string             `json:"winner"`
+	Hours      map[string]float64 `json:"hours"`
+	Quests     int                `json:"quests"`
+	Profile    string             `json:"killProfile"`
+	Assumed    int                `json:"assumedDropSteps"`
+	Dungeons   int                `json:"dungeonRuns,omitempty"`
+	Basis      string             `json:"basis"`
+	Events     []route.GuideEvent `json:"events"`
+	WandDetour float64            `json:"wandDetour,omitempty"`
 }
 
 // hasDungeons: the route runs dungeons (a route with dungeons).

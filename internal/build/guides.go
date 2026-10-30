@@ -333,19 +333,17 @@ func (b *builder) breadcrumbPrereqs() {
 }
 
 // rxpPrereqs takes out the prerequisites RestedXP's Forever guides show are not needed (trusted for levels 1-20): a
-// guide takes the quest while the prerequisite is still in its log, or no guide ever hands the prerequisite in. Class
+// guide takes the quest while the prerequisite is still in its log. Absence from a guide is not evidence. Class
 // quests keep theirs, also as prerequisites: the guides leave many class quests out.
 func (b *builder) rxpPrereqs() {
 	if len(b.rxpOrder) == 0 {
 		return
 	}
-	accepted, turned := map[int]bool{}, map[int]bool{}
+	accepted := map[int]bool{}
 	for _, steps := range b.rxpOrder {
 		for _, st := range steps {
 			if st.Op == "accept" {
 				accepted[st.Quest] = true
-			} else {
-				turned[st.Quest] = true
 			}
 		}
 	}
@@ -375,16 +373,23 @@ func (b *builder) rxpPrereqs() {
 		if q.Classes != 0 || !accepted[q.ID] || len(q.PreAll)+len(q.PreAny) == 0 {
 			continue
 		}
-		needless := func(x int) bool { return !class[x] && (!turned[x] || open(q.ID, x)) }
+		needless := func(x int) bool { return !class[x] && open(q.ID, x) }
 		var all, anyOf []int
 		for _, x := range q.PreAll {
 			if !needless(x) {
 				all = append(all, x)
 			}
 		}
-		for _, x := range q.PreAny {
-			if !needless(x) {
-				anyOf = append(anyOf, x)
+		// An alternative that was not required in one guide may still be a valid way to unlock the quest.
+		// Drop the OR requirement only when the guide demonstrates that none of its alternatives was handed in.
+		anyOf = q.PreAny
+		if len(q.PreAny) > 0 {
+			allOpen := true
+			for _, x := range q.PreAny {
+				allOpen = allOpen && needless(x)
+			}
+			if allOpen {
+				anyOf = nil
 			}
 		}
 		if len(all) != len(q.PreAll) || len(anyOf) != len(q.PreAny) {

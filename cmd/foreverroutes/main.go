@@ -30,6 +30,8 @@ func main() {
 		err = cmdPlan(os.Args[2:])
 	case "replay":
 		err = cmdReplay(os.Args[2:])
+	case "timeline":
+		err = cmdTimeline(os.Args[2:])
 	case "improve":
 		err = cmdImprove(os.Args[2:])
 	case "next":
@@ -44,6 +46,8 @@ func main() {
 		err = cmdExtend(os.Args[2:])
 	case "check-routes":
 		err = cmdCheckRoutes(os.Args[2:])
+	case "check-quests":
+		err = cmdCheckQuests(os.Args[2:])
 	default:
 		usage()
 		os.Exit(2)
@@ -65,12 +69,14 @@ func usage() {
   audit        what the dataset knows and what is missing
   plan         plan a route (-race Orc -class Warlock -target 30)
   replay       check a planned route step by step
+  timeline     optimize independent seeds, dungeon subsets and preparation policies; persist the best replay
   improve      a guide and our planned route, each improved by local edits; the faster wins
   next         the next stretch of route from the character's live state (-live state.json -horizon 3600)
   bundle       pack dataset, walk grid, routes, profiles (and the Windows planner) for ForeverCore's update
   extend       continue a route to a higher level (-route data/routes/orc-warrior.json -target 40 [-dungeons])
   export-addon write the routes as Lua data for the in-game addon
   check-routes replay every route file and report long steps, quests no guide does, assumed drops, deathskips
+  check-quests audit every quest and its prerequisites up to a target level, with explicit data gaps
   guide        walk a quest guide (list of accept/complete/turnin/level events) with the same model`)
 }
 

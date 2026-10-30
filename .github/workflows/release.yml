@@ -10,6 +10,12 @@ on:
       - "route/**"
       - "dataset/**"
       - "xp/**"
+      - "fallback/**"
+      - "internal/**"
+      - "data/fallbacks/**"
+      - "tools/release.sh"
+      - "tools/package_addon.py"
+      - "ForeverRoutes/**"
       - "data/routes/**"
       - "data/profiles/**"
       - "data/walks.json.gz"
@@ -33,11 +39,13 @@ jobs:
       - uses: actions/setup-go@v5
         with:
           go-version-file: go.mod
+          cache-dependency-path: go.mod
       - name: checks
         run: |
-          test -z "$(gofmt -l .)"
+          test -z "$(gofmt -l .)" || { gofmt -l .; exit 1; }
           go vet ./...
           go test -timeout 30m ./...
+          python3 tools/check_refs.py
       - name: publish
         env:
           GH_TOKEN: ${{ github.token }}

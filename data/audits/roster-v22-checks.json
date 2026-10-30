@@ -1,0 +1,47 @@
+{
+ "schema": "foreverroutes.validation-checks.v1",
+ "modelRevision": "foreverroutes.timeline-model.v2.2",
+ "contexts": 56,
+ "optimizedScenarios": 404,
+ "rxpQuestProjections": 112,
+ "shippedRoutes": 112,
+ "finalModelReplayCount": 404,
+ "datasetRebuildByteIdentical": true,
+ "sha256": {
+  "data/routes-data.json.gz": "77bc65167ba44d86e0b55f918ef56a49ffd0011d390e8de5fa47654514687db8",
+  "data/fallbacks/rxp.json.gz": "38f2c544eb30b135c751a286b87d84e290389f5feb1e0498451eeb184e459905",
+  "data/audits/roster-v22.json.gz": "bf30a06576de55784922ba4990f973a5b6b753ab250ffbb3793f7e5e2e17f175",
+  "data/profiles/druid.json": "a9412535ddc6f72a95dcf6222a1184478df83c8951b76f9c437be71dda61969d",
+  "data/profiles/hunter.json": "4a45a7121f6c1a18e068622fd1ac19c523f5a923009e6a5751bd544202ac9c4a",
+  "data/profiles/mage.json": "e892691c2a721af95967129f46d55900461e4bc17da51e27b32eb32033f5a92d",
+  "data/profiles/paladin.json": "06de61997aa860c3914b7a52f80ad27f2ed4422b21d626761328bc70142f8d65",
+  "data/profiles/priest.json": "1d7f34e19670a13fb3681ab16e5c5b0fb19c704be3cc2de7a2ba09ce093d579c",
+  "data/profiles/rogue.json": "c52cd315e88983b552318689864ac147ade7e96948165e9e2ac674769bf62f4d",
+  "data/profiles/shaman.json": "d0d275b71446c7a9a51c8c039df318faa0b69fb680c27765efcbc5e31bdfaa6f",
+  "data/profiles/warlock.json": "f363a96870f25a9502bce9c2d37d0075d997c536c0a6a227010e3c8879eae3b2",
+  "data/profiles/warrior.json": "5d75a0e04db1e7b222aa686aaf712be4a87eef8fb8addd9253cc3e9c8b1f5cb8"
+ },
+ "checks": {
+  "fullGoTests": "passed",
+  "allShippedRoutesExactReplay": "passed",
+  "allScenarioFinalModelReplay": "passed",
+  "noSkippedOptimizedEvents": "passed",
+  "freeChoiceRetainsFasterKnownVariants": "passed",
+  "optionalDungeonsRetainFasterSoloRoute": "passed",
+  "strictRouteChecker": "passed",
+  "luaExportAndFallbackSelection": "passed",
+  "windowsAMD64Build": "passed",
+  "bundleAll129FilesSHA256": "passed",
+  "pinnedRXPReproduction": "passed",
+  "vet": "passed",
+  "focusedRaceTests": "passed"
+ },
+ "foreverSimModified": false,
+ "liveFeedbackEnabled": false,
+ "limitations": [
+  "Model times remain partly uncalibrated",
+  "RXP quest projections do not execute every original instruction",
+  "The full original RXP chapters are preserved independently for the addon",
+  "No in-game UI or in-game validation is claimed"
+ ]
+}

@@ -117,15 +117,16 @@ func (w *World) dungeonQuest(q *dataset.Quest) (*Quest, string) {
 			}
 		}
 		if !o.Inside {
-			solo, _ := w.resolve(&dataset.Quest{ID: q.ID, Start: q.Start, End: q.End, StartAt: &rq.StartPos, EndAt: &rq.EndPos, Objectives: []dataset.Objective{o}})
-			if solo != nil {
-				ro.Sources = solo.Objectives[0].Sources
+			solo, why := w.resolve(&dataset.Quest{ID: q.ID, Classes: q.Classes, Start: q.Start, End: q.End, StartAt: &rq.StartPos, EndAt: &rq.EndPos, Objectives: []dataset.Objective{o}})
+			if solo == nil {
+				return nil, "outside dungeon: " + why
 			}
+			ro.Sources = solo.Objectives[0].Sources
 			near := len(ro.Sources) > 0
 			for _, src := range ro.Sources {
 				near = near && distance(src.Site.Center, d.Entrance) <= insideRadius
 			}
-			ro.Inside = len(ro.Sources) == 0 || near
+			ro.Inside = near
 		}
 		rq.Objectives = append(rq.Objectives, ro)
 	}
@@ -163,8 +164,8 @@ func (w *World) run(s *State, d *Dungeon) error {
 	if s.Runs&(1<<d.Index) != 0 {
 		return fail("%s already run", d.Name)
 	}
-	if l := w.Level(s); l < d.Min {
-		return fail("%s needs level %d", d.Name, d.Min)
+	if l := w.Level(s); l < d.Min || l > d.Max {
+		return fail("%s requires levels %d-%d", d.Name, d.Min, d.Max)
 	}
 	queued := s.Time - s.RunEnd // the group is searched while the character quests on, from the last run's end
 	if err := w.move(s, d.Entrance); err != nil {
@@ -175,11 +176,12 @@ func (w *World) run(s *State, d *Dungeon) error {
 	if !w.canTank(s) {
 		search = groupSearch // a druid without bear form, a warrior without defensive stance: queued as damage
 	}
+	started := s.Time
 	secs := d.Minutes*60 + math.Max(0, search-queued) // waited only for what the questing before did not cover
 	s.Time += secs
 	s.Combat += secs
 	trash := w.killXP(d, l)
-	s.XP += trash + restedGain(s, trash) // rested experience doubles the run's kills too
+	w.awardKillXP(s, trash, started+math.Max(0, search-queued), s.Time) // rested experience doubles the run's kills too
 	// collection quests: every member needs their own drops; the run's kills bring one share, the other four cost more
 	// kills (and bring their XP). A single item (a boss's) everyone loots.
 	extra := 0.0
@@ -199,7 +201,7 @@ func (w *World) run(s *State, d *Dungeon) error {
 		s.Time += extra * groupKill
 		s.Combat += extra * groupKill
 		if n := d.trashKills(); n > 0 {
-			s.XP += int(math.Round(float64(trash) / n * extra))
+			w.awardKillXP(s, int(math.Round(float64(trash)/n*extra)), s.Time-extra*groupKill, s.Time)
 		}
 	}
 	for changed := true; changed; {
@@ -221,8 +223,12 @@ func (w *World) run(s *State, d *Dungeon) error {
 					}
 				}
 				if q.EndInside && w.complete(s, q) {
-					s.XP += xp.Quest(q.XP, w.Level(s), q.Level)
+					s.XP += w.bonusXP(s, xp.Quest(q.XP, w.Level(s), q.Level), s.Time)
+					beforeWand := w.wandDPS(s)
 					s.Status[q.Index] = done
+					if w.wandDPS(s) > beforeWand {
+						s.EquipmentRevision = ""
+					}
 					s.Active--
 					delete(s.Prog, q.Index)
 					s.Time += w.Opt.InteractSecs

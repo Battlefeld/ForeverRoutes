@@ -22,6 +22,10 @@ func (w *World) Improve(events []GuideEvent, target int, budget time.Duration) (
 	}
 	cur := append([]GuideEvent(nil), events...)
 	deadline := time.Now().Add(budget)
+	cur = w.improveDungeonChains(cur, target, deadline)
+	if improved, issue := w.FollowGuide(cur, target); issue == nil {
+		best = improved
+	}
 	// the required class chains the route finishes stay finished: an edit that loses one is no improvement
 	var goals []int
 	for _, c := range w.ClassChains(target) {
@@ -61,8 +65,8 @@ func (w *World) Improve(events []GuideEvent, target int, budget time.Duration) (
 			}
 		}
 		for i := 0; i < len(cur) && time.Now().Before(deadline); i++ {
-			if cur[i].Op == "level" || (cur[i].Op == "dungeon" && Runs(cur) > 1) {
-				// a route with dungeons keeps at least one run: whoever asks for dungeons runs the one that costs least
+			if cur[i].Op == "level" || cur[i].Op == "dungeon" {
+				// Dungeons are optional unless an explicit optimization constraint requires a run.
 				if try(append(append([]GuideEvent(nil), cur[:i]...), cur[i+1:]...)) {
 					improved = true
 					i--
@@ -78,7 +82,7 @@ func (w *World) Improve(events []GuideEvent, target int, budget time.Duration) (
 			if time.Now().After(deadline) {
 				break
 			}
-			if in[q.ID] || q.MinLevel > target || q.Level > target+3 || q.Repeatable {
+			if in[q.ID] || q.MinLevel > target {
 				continue
 			}
 			i, d := w.closestStep(cur, q.StartPos)
@@ -100,8 +104,7 @@ func (w *World) Improve(events []GuideEvent, target int, budget time.Duration) (
 }
 
 // WithDungeons puts dungeon runs into a route (a guide has none): each dungeon at the one of twenty places spread over
-// the route that brings it fastest to the target, when one does. When none does, the run that costs least goes in:
-// a route with dungeons runs at least one. A run takes the dungeon's quests on the way and hands them in after, as
+// the route that brings it fastest to the target, when one does. When none does, the solo route stays. A run takes the dungeon's quests on the way and hands them in after, as
 // the planner's dungeon block.
 // runPlaces: the cheapest places of a run whose quests are then put where the route passes their givers.
 const runPlaces = 3
@@ -112,8 +115,7 @@ func (w *World) WithDungeons(events []GuideEvent, target int) []GuideEvent {
 		return events
 	}
 	cur := events
-	var least []GuideEvent
-	leastT := math.Inf(1)
+
 	// dungeon after dungeon, again while one more pays: each tried at every step of the route that has its level
 	// (up to dungeonWindow levels above its lowest), where it costs least
 	for changed := true; changed; {
@@ -160,9 +162,6 @@ func (w *World) WithDungeons(events []GuideEvent, target int) []GuideEvent {
 				if r.Seconds < best.Seconds-1 {
 					best, pick = r, cand
 				}
-				if r.Seconds < leastT {
-					least, leastT = cand, r.Seconds
-				}
 				places = append(places, place{cand, r})
 			}
 			sort.Slice(places, func(a, b int) bool { return places[a].r.Seconds < places[b].r.Seconds })
@@ -175,9 +174,6 @@ func (w *World) WithDungeons(events []GuideEvent, target int) []GuideEvent {
 				cur, changed = pick, true
 			}
 		}
-	}
-	if Runs(cur) == 0 && least != nil {
-		return least // no run made it faster: until then cur is the route given, least one run put into it
 	}
 	return w.MergeTrips(cur, target)
 }
@@ -607,23 +603,27 @@ func (w *World) closestStep(events []GuideEvent, p dataset.Point) (int, float64)
 // quests a level lower and grind at the end.
 func EventsOf(steps []Step) []GuideEvent {
 	var out []GuideEvent
-	done := map[int]bool{}
+	seen := map[[2]int]bool{}
 	for _, s := range steps {
 		switch s.Op {
 		case "accept", "turnin":
 			out = append(out, GuideEvent{Op: s.Op, Quest: s.Quest})
 		case "work":
-			if !done[s.Quest] {
-				done[s.Quest] = true
-				out = append(out, GuideEvent{Op: "complete", Quest: s.Quest})
+			key := [2]int{s.Quest, s.Obj}
+			if !seen[key] {
+				out = append(out, GuideEvent{Op: "complete", Quest: s.Quest, Objective: s.Obj + 1})
+				seen[key] = true
 			}
+		case "sleep":
+			out = append(out, GuideEvent{Op: "sleep", Stacks: s.Stacks})
 		case "dungeon":
 			out = append(out, GuideEvent{Op: "dungeon", Dungeon: s.Dungeon})
 		case "grind":
 			if n := len(out); n > 0 && out[n-1].Op == "level" {
 				out[n-1].Level = s.Level
+				out[n-1].TotalXP = s.XP
 			} else {
-				out = append(out, GuideEvent{Op: "level", Level: s.Level})
+				out = append(out, GuideEvent{Op: "level", Level: s.Level, TotalXP: s.XP})
 			}
 		}
 	}
@@ -828,6 +828,12 @@ func (w *World) setClassOverride(goal int, v string) {
 
 // ClassReport measures every class quest chain of this character (ClassChains) against a route.
 func (w *World) ClassReport(events []GuideEvent, target int) []ClassCost {
+	return w.ClassReportWithBudget(events, target, reportBudget)
+}
+
+// ClassReportWithBudget separates optional diagnostic searches from route verification.
+// Zero measures the route and each woven option without an eight-second search per comparison.
+func (w *World) ClassReportWithBudget(events []GuideEvent, target int, budget time.Duration) []ClassCost {
 	base, err := w.FollowGuide(events, target)
 	if err != nil {
 		return nil
@@ -842,7 +848,7 @@ func (w *World) ClassReport(events []GuideEvent, target int) []ClassCost {
 	}
 	// the route itself improved as briefly, so both sides of every measure had the same search
 	ref := base
-	if _, r, err := w.Improve(events, target, reportBudget); err == nil {
+	if _, r, err := w.Improve(events, target, budget); err == nil {
 		ref = r
 	}
 	var out []ClassCost
@@ -859,7 +865,7 @@ func (w *World) ClassReport(events []GuideEvent, target int) []ClassCost {
 		measure := func(evs []GuideEvent, override string) ([]GuideEvent, *GuideResult) {
 			w.setClassOverride(c.Goal.ID, override)
 			defer w.setClassOverride(c.Goal.ID, "")
-			if e, r, err := w.Improve(evs, target, reportBudget); err == nil {
+			if e, r, err := w.Improve(evs, target, budget); err == nil {
 				return e, r
 			}
 			return nil, nil

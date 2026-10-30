@@ -2,25 +2,32 @@ package route
 
 import (
 	"fmt"
+	"github.com/Battlefeld/ForeverRoutes/xp"
 	"math"
 )
 
 // GuideEvent is one step of a quest guide: accept, complete or turn in a quest, or reach a level.
 type GuideEvent struct {
-	Op      string `json:"op"` // accept, complete, turnin, level, dungeon (a group run)
-	Quest   int    `json:"quest,omitempty"`
-	Level   int    `json:"level,omitempty"`
-	Dungeon string `json:"dungeon,omitempty"`
+	Objective int    `json:"objective,omitempty"` // complete only: 1-based; zero means every objective
+	XP        int    `json:"xp,omitempty"`        // level only: XP into that level
+	TotalXP   int    `json:"totalXP,omitempty"`   // canonical replay projection: absolute XP threshold
+	Stacks    int    `json:"stacks,omitempty"`
+	Op        string `json:"op"` // accept, complete, turnin, level, dungeon (a group run)
+	Quest     int    `json:"quest,omitempty"`
+	Level     int    `json:"level,omitempty"`
+	Dungeon   string `json:"dungeon,omitempty"`
 }
 
 // GuideResult is a guide walked with this model, for comparing guides with planned routes on equal terms.
 type GuideResult struct {
 	*Result
-	Quests  int            `json:"guideQuests"`  // quests turned in
-	Grind   float64        `json:"grindSeconds"` // grinding the guide asks for (level steps) and to the target level
-	Skipped map[string]int `json:"skipped"`      // events that could not be followed, by reason
-	Missed  []GuideMiss    `json:"missed"`       // each skipped quest event with its reason
-	levels  []int          // the character's level as each event came up (the target after the walk ended)
+	Quests     int            `json:"guideQuests"`  // quests turned in
+	Grind      float64        `json:"grindSeconds"` // grinding the guide asks for (level steps) and to the target level
+	Skipped    map[string]int `json:"skipped"`      // events that could not be followed, by reason
+	Missed     []GuideMiss    `json:"missed"`       // each skipped quest event with its reason
+	eventTimes []float64
+	levels     []int  // the character's level as each event came up (the target after the walk ended)
+	used       []bool // events that produced physical actions, before automatic final grinding
 }
 
 // GuideMiss is a guide event that could not be followed.
@@ -63,12 +70,35 @@ func (w *World) walkFast(events []GuideEvent, target int, limit float64) (*Guide
 }
 
 func (w *World) follow(s *State, events []GuideEvent, target int, horizon float64, fast bool) (*GuideResult, error) {
+	if target < 1 || target > len(w.Data.LevelXP)+1 || horizon <= 0 || math.IsNaN(horizon) {
+		return nil, fmt.Errorf("invalid guide target or horizon")
+	}
+	for _, e := range events {
+		if e.Objective < 0 || e.XP < 0 || e.TotalXP < 0 {
+			return nil, fmt.Errorf("negative guide objective or XP")
+		}
+		switch e.Op {
+		case "accept", "complete", "turnin":
+			if e.Quest <= 0 {
+				return nil, fmt.Errorf("invalid quest event")
+			}
+		case "level":
+			if e.Level < 1 || e.Level > len(w.Data.LevelXP)+1 {
+				return nil, fmt.Errorf("invalid level event")
+			}
+		case "dungeon", "sleep":
+		default:
+			return nil, fmt.Errorf("unknown guide event %q", e.Op)
+		}
+	}
 	s0 := s.clone()
 	var acts []Action
 	res := &GuideResult{Skipped: map[string]int{}}
-	grindTo := func(level int) {
-		for w.Level(s) < level && s.Time-s0.Time < horizon {
-			m := w.grindMacro(s, target)
+	grindXP := func(goal int) {
+		goal = min(goal, xp.Total(w.Data.LevelXP, target))
+		for s.XP < goal && s.Time-s0.Time < horizon {
+			level, _ := xp.Level(w.Data.LevelXP, goal)
+			m := w.grindMacro(s, max(level, w.Level(s)+1), goal)
 			if m == nil {
 				res.Skipped["no grind spot"]++
 				return
@@ -78,19 +108,33 @@ func (w *World) follow(s *State, events []GuideEvent, target int, horizon float6
 			s = m.state
 		}
 	}
+	grindTo := func(level int) { grindXP(xp.Total(w.Data.LevelXP, level)) }
+	res.eventTimes = make([]float64, len(events))
 	res.levels = make([]int, len(events))
+	res.used = make([]bool, len(events))
+	starts := make([]int, len(events))
+	processed := 0
 	for i := range res.levels {
 		res.levels[i] = target
 	}
 	for i, e := range events {
+		if i > 0 {
+			res.used[i-1] = len(acts) > starts[i-1]
+		}
+		starts[i] = len(acts)
+		res.eventTimes[i] = s.Time - s0.Time
 		if w.Level(s) >= target || s.Time-s0.Time >= horizon {
 			break
+		}
+		processed = i + 1
+		if q := w.ByID[e.Quest]; q != nil && (s.Status[q.Index] == done || e.Op == "accept" && s.Status[q.Index] == active) {
+			continue
 		}
 		if p, ok := w.eventPos(e); ok {
 			if a := w.wandAction(s, p); a != nil {
 				w.try(s, &acts, *a) // a caster fetches its wands where a capital is on its way (wand.go)
 			}
-			if !wandClasses[w.Char.Class] {
+			if !wandClasses[w.Char.Class] || !s.Preparation.Wands || s.Wand {
 				if a := w.profAction(s, p); a != nil {
 					w.try(s, &acts, *a) // the trainers for Skinning, Cooking, Leatherworking on the way (camp.go)
 				}
@@ -100,8 +144,21 @@ func (w *World) follow(s *State, events []GuideEvent, target int, horizon float6
 		if q := w.ByID[e.Quest]; q != nil && s0.Status[q.Index] == done {
 			continue // done before this walk began
 		}
+		if e.Op == "sleep" {
+			if !w.try(s, &acts, Action{Op: "sleep", Stacks: e.Stacks, At: s.Pos}) {
+				res.Skipped["sleeping bag unavailable"]++
+			}
+			continue
+		}
 		if e.Op == "level" {
-			grindTo(e.Level)
+			if e.Level < 1 || e.Level > len(w.Data.LevelXP)+1 || e.XP < 0 || e.TotalXP < 0 {
+				return nil, fmt.Errorf("invalid level event")
+			}
+			goal := xp.Total(w.Data.LevelXP, e.Level) + e.XP
+			if e.TotalXP > 0 {
+				goal = e.TotalXP
+			}
+			grindXP(goal)
 			continue
 		}
 		if e.Op == "dungeon" {
@@ -171,16 +228,24 @@ func (w *World) follow(s *State, events []GuideEvent, target int, horizon float6
 			if w.Opt.QuestAtLevel && w.Level(s) < q.Level && q.Level <= target {
 				grindTo(q.Level) // a melee follower works a quest from its level on
 			}
-			if !w.workLog(s, &acts, []*Quest{q}) {
+			var only []int
+			if e.Op == "complete" && e.Objective > 0 {
+				if e.Objective > len(q.Objectives) {
+					miss("objective not available", "source objective exceeds resolved quest objectives")
+					continue
+				}
+				only = []int{e.Objective - 1}
+			}
+			if !w.workLog(s, &acts, []*Quest{q}, only...) {
 				// the guide comes too early for this character (a melee character fights at most one level up): it
 				// levels first, as a route that reaches the area later
-				n := w.levelFor(s, q, target)
+				n := w.levelFor(s, q, target, only...)
 				if n == 0 || (n > w.Level(s)+guideLevelUp && !w.keepClassQuest(q.ID, target)) { // a required class quest is always done
 					miss(e.Op+": objective not possible", "")
 					continue
 				}
 				grindTo(n)
-				if !w.workLog(s, &acts, []*Quest{q}) {
+				if !w.workLog(s, &acts, []*Quest{q}, only...) {
 					miss(e.Op+": objective not possible", "")
 					continue
 				}
@@ -196,14 +261,23 @@ func (w *World) follow(s *State, events []GuideEvent, target int, horizon float6
 			return nil, fmt.Errorf("unknown guide event %q", e.Op)
 		}
 	}
+	if processed > 0 {
+		res.used[processed-1] = len(acts) > starts[processed-1]
+	}
 	if s.Time-s0.Time < horizon {
 		grindTo(target)
 	}
 	if len(acts) == 0 {
 		return nil, fmt.Errorf("nothing left to do in this guide")
 	}
+	res.Quests = 0
+	for i, status := range s.Status {
+		if status == done && s0.Status[i] != done {
+			res.Quests++
+		}
+	}
 	if fast {
-		r := &Result{Character: w.Char, Seconds: round1(s.Time - s0.Time), Level: w.Level(s), XP: s.XP, Steps: make([]Step, len(acts))}
+		r := &Result{ProfessionsLearned: s.Prof, CraftedWand: s.Wand, Preparations: s.Preparation, BuffModel: w.Opt.SleepingBag, Character: w.Char, Seconds: round1(s.Time - s0.Time), Level: w.Level(s), XP: s.XP, Steps: make([]Step, len(acts))}
 		for i, a := range acts {
 			r.Steps[i].Action = a
 		}
@@ -220,10 +294,13 @@ func (w *World) follow(s *State, events []GuideEvent, target int, horizon float6
 
 // levelFor is the lowest level up to the target at which every open objective of an active quest has a source the
 // character may work, 0 when there is none.
-func (w *World) levelFor(s *State, q *Quest, target int) int {
+func (w *World) levelFor(s *State, q *Quest, target int, only ...int) int {
 	for n := w.Level(s) + 1; n <= target; n++ {
 		ok := true
 		for oi, o := range q.Objectives {
+			if len(only) > 0 && oi != only[0] {
+				continue
+			}
 			if s.Prog[q.Index][oi] >= float64(o.Count) {
 				continue
 			}
