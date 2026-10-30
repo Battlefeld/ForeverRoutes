@@ -13,6 +13,7 @@ parser.add_argument('results',type=pathlib.Path)
 args=parser.parse_args()
 doc=json.loads((args.results/'summary.json').read_text())
 revision=re.search(r'const TimelineModelRevision = "([^"]+)"',(ROOT/'route/checkpoint.go').read_text())[1]
+tag='roster-v'+revision.rsplit('.v',1)[1].replace('.','')  # roster-v23 for timeline-model.v2.3
 if doc['modelRevision']!=revision or doc['contexts']!=56:raise SystemExit('Model/roster differs')
 if doc.get('finalModelReplayCount')!=404:raise SystemExit('Final compiled-model replay has not completed')
 rows=doc['results'];optimized=[r for r in rows if not r.get('projectionOnly')]
@@ -32,11 +33,11 @@ for row in optimized:
 if len(winners)!=112 or len({n for n,_ in winners})!=112:raise SystemExit('Missing winner files')
 for name,b in winners:(ROOT/'data/routes'/name).write_bytes(b)
 # Full evidence includes events for every option, not only summary hours.
-out=ROOT/'data/audits/roster-v22.json.gz'
+out=ROOT/'data/audits'/(tag+'.json.gz')
 out.write_bytes(gzip.compress((json.dumps(doc,ensure_ascii=False,separators=(',',':'))+'\n').encode(),mtime=0))
 summary=dict(doc)
 summary['results']=[{k:v for k,v in row.items() if k not in ['events','missed','classQuests','basis','hours','character','search','sleepingBagModel','wandDetour','preparations','constraints','modelRevision']} for row in rows]
-(ROOT/'data/audits/roster-v22-summary.json').write_text(json.dumps(summary,ensure_ascii=False,indent=1)+'\n')
+(ROOT/'data/audits'/(tag+'-summary.json')).write_text(json.dumps(summary,ensure_ascii=False,indent=1)+'\n')
 print('Applied',len(winners),'verified winners; retained',len(rows),'scenario records')
 
 # One current table replaces historical hours in the shipped route directory.
@@ -47,7 +48,7 @@ free={r['key']+'|'+r['scenario'].split('_',1)[0]:r for r in optimized if r['scen
 short={'ragefire-chasm':'RF','wailing-caverns':'HDW','ruins-of-lordaeron':'RoL','deadmines':'DM','the-hall-of-thanes':'HdT','shadowfang-keep':'BSF'}
 text=['# Geprüfte Routen bis Level 20','',f'Modell: `{revision}`. Alle 56 unterstützten Kombinationen haben zwei geprüfte Ausgaben: Solo und optionale Dungeons. Die zweite Variante darf auch ohne Dungeon enden und behält eine bekannte schnellere Solo-Route.','',
       '**Modellzeiten, keine gemessenen Ingame-Zeiten.** Vorbereitungen, Kämpfe, Reisen und Dungeonläufe enthalten weiterhin Schätzungen. Gleiche Klassen verwenden dasselbe eingefrorene Kampfprofil.','',
-      '[Gesamtprüfung und Reproduktion](../audits/roster-v22.md) · [Variantenübersicht](../audits/roster-v22-summary.json) · [Normale RXP-Fallbacks](../../docs/rxp-fallback.md)','',
+      f'[Gesamtprüfung und Reproduktion](../audits/{tag}.md) · [Variantenübersicht](../audits/{tag}-summary.json) · [Normale RXP-Fallbacks](../../docs/rxp-fallback.md)','',
       '404 Optimierungsszenarien und 112 getrennte RXP-Questprojektionen. Alle optimierten Varianten wurden mit dem finalen Modell erneut nachgespielt. Originale RXP-Kapitel bleiben unverändert.','',
       '| Volk | Fraktion | Klasse | Solo | Optionale Dungeons | Gewählte Läufe |','|---|---|---|---|---|---|']
 for key in sorted({r['key'] for r in optimized}):
