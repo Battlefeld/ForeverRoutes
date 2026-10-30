@@ -1,6 +1,6 @@
 {
- "actionCount": 214,
- "bagFinished": false,
+ "actionCount": 228,
+ "bagFinished": true,
  "basis": "ForeverRoutes optimization of independent routes and ordinary RestedXP Forever quest projections (RestedXP/RXPGuides, CC BY-NC-SA 4.0)",
  "character": {
   "class": "Druid",
@@ -9,9 +9,9 @@
  "classQuests": [
   {
    "inRoute": true,
-   "level": 4,
+   "level": 3,
    "minLevel": 1,
-   "minutes": 0,
+   "minutes": 0.2,
    "name": "Verdant Sigil",
    "possible": true,
    "quest": 3120,
@@ -25,13 +25,17 @@
   {
    "events": [
     {
-     "level": 4,
+     "op": "accept",
+     "quest": 456
+    },
+    {
+     "level": 3,
      "op": "level",
-     "totalXP": 2716
+     "totalXP": 1324
     },
     {
      "op": "accept",
-     "quest": 456
+     "quest": 916
     },
     {
      "objective": 2,
@@ -39,31 +43,8 @@
      "quest": 456
     },
     {
-     "objective": 1,
-     "op": "complete",
-     "quest": 456
-    },
-    {
      "op": "turnin",
      "quest": 456
-    },
-    {
-     "op": "accept",
-     "quest": 457
-    },
-    {
-     "objective": 1,
-     "op": "complete",
-     "quest": 457
-    },
-    {
-     "objective": 2,
-     "op": "complete",
-     "quest": 457
-    },
-    {
-     "op": "turnin",
-     "quest": 457
     },
     {
      "op": "accept",
@@ -74,49 +55,64 @@
      "quest": 3120
     },
     {
-     "op": "accept",
-     "quest": 458
+     "objective": 1,
+     "op": "complete",
+     "quest": 916
     },
     {
      "op": "turnin",
-     "quest": 458
+     "quest": 916
     },
     {
      "op": "accept",
-     "quest": 97977
+     "quest": 917
     },
     {
      "objective": 1,
      "op": "complete",
-     "quest": 97977
+     "quest": 917
     },
     {
      "op": "turnin",
-     "quest": 97977
+     "quest": 917
     },
     {
      "op": "accept",
-     "quest": 475
+     "quest": 920
     },
     {
      "op": "turnin",
-     "quest": 475
+     "quest": 920
     },
     {
      "op": "accept",
-     "quest": 476
+     "quest": 921
+    },
+    {
+     "objective": 1,
+     "op": "complete",
+     "quest": 921
     },
     {
      "op": "turnin",
-     "quest": 476
+     "quest": 921
     },
     {
      "op": "accept",
-     "quest": 87288
+     "quest": 928
     },
     {
      "op": "accept",
-     "quest": 997
+     "quest": 99053
+    },
+    {
+     "objective": 1,
+     "op": "complete",
+     "quest": 99053
+    },
+    {
+     "op": "turnin",
+     "quest": 99053
     },
     {
      "op": "accept",
@@ -151,6 +147,48 @@
     },
     {
      "op": "turnin",
+     "quest": 928
+    },
+    {
+     "op": "accept",
+     "quest": 929
+    },
+    {
+     "objective": 1,
+     "op": "complete",
+     "quest": 929
+    },
+    {
+     "op": "turnin",
+     "quest": 929
+    },
+    {
+     "op": "accept",
+     "quest": 933
+    },
+    {
+     "objective": 1,
+     "op": "complete",
+     "quest": 933
+    },
+    {
+     "op": "turnin",
+     "quest": 933
+    },
+    {
+     "op": "accept",
+     "quest": 475
+    },
+    {
+     "op": "accept",
+     "quest": 997
+    },
+    {
+     "op": "turnin",
+     "quest": 475
+    },
+    {
+     "op": "turnin",
      "quest": 997
     },
     {
@@ -167,43 +205,9 @@
      "quest": 919
     },
     {
-     "op": "accept",
-     "quest": 932
-    },
-    {
-     "objective": 1,
-     "op": "complete",
-     "quest": 932
-    },
-    {
-     "op": "turnin",
-     "quest": 932
-    },
-    {
-     "objective": 1,
-     "op": "complete",
-     "quest": 87288
-    },
-    {
-     "op": "turnin",
-     "quest": 87288
-    },
-    {
-     "op": "accept",
-     "quest": 487
-    },
-    {
-     "objective": 1,
-     "op": "complete",
-     "quest": 487
-    },
-    {
-     "op": "turnin",
-     "quest": 487
-    },
-    {
-     "op": "accept",
-     "quest": 99053
+     "level": 7,
+     "op": "level",
+     "totalXP": 11273
     },
     {
      "op": "accept",
@@ -219,13 +223,17 @@
      "quest": 2541
     },
     {
+     "op": "accept",
+     "quest": 2561
+    },
+    {
      "objective": 1,
      "op": "complete",
-     "quest": 99053
+     "quest": 2561
     },
     {
      "op": "turnin",
-     "quest": 99053
+     "quest": 2561
     },
     {
      "op": "accept",
@@ -239,19 +247,6 @@
     {
      "op": "turnin",
      "quest": 918
-    },
-    {
-     "op": "accept",
-     "quest": 937
-    },
-    {
-     "objective": 1,
-     "op": "complete",
-     "quest": 937
-    },
-    {
-     "op": "turnin",
-     "quest": 937
     },
     {
      "op": "accept",
@@ -259,11 +254,11 @@
     },
     {
      "op": "accept",
-     "quest": 931
+     "quest": 938
     },
     {
      "op": "accept",
-     "quest": 938
+     "quest": 931
     },
     {
      "objective": 1,
@@ -273,6 +268,19 @@
     {
      "op": "turnin",
      "quest": 938
+    },
+    {
+     "op": "accept",
+     "quest": 937
+    },
+    {
+     "objective": 1,
+     "op": "complete",
+     "quest": 937
+    },
+    {
+     "op": "turnin",
+     "quest": 937
     },
     {
      "op": "accept",
@@ -290,7 +298,7 @@
     {
      "level": 10,
      "op": "level",
-     "totalXP": 27660
+     "totalXP": 27671
     },
     {
      "op": "accept",
@@ -349,14 +357,6 @@
     },
     {
      "op": "accept",
-     "quest": 930
-    },
-    {
-     "op": "turnin",
-     "quest": 930
-    },
-    {
-     "op": "accept",
      "quest": 941
     },
     {
@@ -365,31 +365,70 @@
     },
     {
      "op": "accept",
-     "quest": 983
+     "quest": 953
     },
     {
-     "op": "accept",
-     "quest": 98025
-    },
-    {
-     "objective": 1,
-     "op": "complete",
-     "quest": 983
-    },
-    {
-     "objective": 1,
-     "op": "complete",
-     "quest": 98025
-    },
-    {
-     "op": "turnin",
-     "quest": 98025
+     "level": 11,
+     "op": "level",
+     "totalXP": 35291
     },
     {
      "op": "accept",
      "quest": 954
     },
     {
+     "op": "accept",
+     "quest": 3524
+    },
+    {
+     "objective": 1,
+     "op": "complete",
+     "quest": 3524
+    },
+    {
+     "op": "turnin",
+     "quest": 3524
+    },
+    {
+     "op": "accept",
+     "quest": 4681
+    },
+    {
+     "objective": 1,
+     "op": "complete",
+     "quest": 4681
+    },
+    {
+     "op": "turnin",
+     "quest": 4681
+    },
+    {
+     "op": "accept",
+     "quest": 983
+    },
+    {
+     "op": "accept",
+     "quest": 98025
+    },
+    {
+     "objective": 1,
+     "op": "complete",
+     "quest": 98025
+    },
+    {
+     "op": "turnin",
+     "quest": 98025
+    },
+    {
+     "objective": 1,
+     "op": "complete",
+     "quest": 983
+    },
+    {
+     "op": "turnin",
+     "quest": 983
+    },
+    {
      "op": "turnin",
      "quest": 954
     },
@@ -407,374 +446,262 @@
      "quest": 955
     },
     {
-     "op": "turnin",
-     "quest": 983
-    },
-    {
      "op": "accept",
-     "quest": 953
+     "quest": 956
     },
     {
      "objective": 1,
      "op": "complete",
-     "quest": 953
-    },
-    {
-     "objective": 2,
-     "op": "complete",
-     "quest": 953
+     "quest": 956
     },
     {
      "op": "turnin",
-     "quest": 953
+     "quest": 956
     },
     {
      "level": 13,
      "op": "level",
-     "totalXP": 54246
-    },
-    {
-     "op": "accept",
-     "quest": 36
-    },
-    {
-     "op": "accept",
-     "quest": 64
-    },
-    {
-     "op": "accept",
-     "quest": 151
+     "totalXP": 54245
     },
     {
      "objective": 1,
      "op": "complete",
-     "quest": 151
-    },
-    {
-     "op": "turnin",
-     "quest": 151
-    },
-    {
-     "objective": 1,
-     "op": "complete",
-     "quest": 64
-    },
-    {
-     "op": "turnin",
-     "quest": 64
-    },
-    {
-     "op": "turnin",
-     "quest": 36
-    },
-    {
-     "op": "accept",
-     "quest": 92910
-    },
-    {
-     "op": "turnin",
-     "quest": 92910
-    },
-    {
-     "op": "accept",
-     "quest": 109
-    },
-    {
-     "op": "turnin",
-     "quest": 109
-    },
-    {
-     "op": "accept",
-     "quest": 92747
-    },
-    {
-     "objective": 1,
-     "op": "complete",
-     "quest": 92747
-    },
-    {
-     "op": "turnin",
-     "quest": 92747
-    },
-    {
-     "op": "accept",
-     "quest": 91740
-    },
-    {
-     "op": "turnin",
-     "quest": 91740
-    },
-    {
-     "op": "accept",
-     "quest": 244
-    },
-    {
-     "op": "turnin",
-     "quest": 244
-    },
-    {
-     "op": "accept",
-     "quest": 3741
-    },
-    {
-     "objective": 1,
-     "op": "complete",
-     "quest": 3741
-    },
-    {
-     "op": "turnin",
-     "quest": 3741
-    },
-    {
-     "level": 14,
-     "op": "level",
-     "totalXP": 65513
-    },
-    {
-     "op": "accept",
-     "quest": 65
-    },
-    {
-     "op": "turnin",
-     "quest": 65
-    },
-    {
-     "op": "accept",
-     "quest": 129
-    },
-    {
-     "op": "accept",
-     "quest": 132
-    },
-    {
-     "op": "turnin",
-     "quest": 129
-    },
-    {
-     "op": "turnin",
-     "quest": 132
-    },
-    {
-     "op": "accept",
-     "quest": 96408
-    },
-    {
-     "op": "turnin",
-     "quest": 96408
-    },
-    {
-     "op": "accept",
-     "quest": 96392
-    },
-    {
-     "objective": 1,
-     "op": "complete",
-     "quest": 96392
-    },
-    {
-     "op": "turnin",
-     "quest": 96392
-    },
-    {
-     "op": "accept",
-     "quest": 419
-    },
-    {
-     "level": 16,
-     "op": "level",
-     "totalXP": 92832
-    },
-    {
-     "op": "accept",
-     "quest": 29
-    },
-    {
-     "op": "complete",
-     "quest": 29
-    },
-    {
-     "op": "turnin",
-     "quest": 29
-    },
-    {
-     "op": "accept",
-     "quest": 272
-    },
-    {
-     "op": "complete",
-     "quest": 272
-    },
-    {
-     "op": "turnin",
-     "quest": 272
-    },
-    {
-     "op": "accept",
-     "quest": 5061
-    },
-    {
-     "op": "complete",
-     "quest": 5061
-    },
-    {
-     "op": "turnin",
-     "quest": 5061
-    },
-    {
-     "op": "accept",
-     "quest": 250
-    },
-    {
-     "op": "turnin",
-     "quest": 250
-    },
-    {
-     "op": "accept",
-     "quest": 199
-    },
-    {
-     "op": "turnin",
-     "quest": 199
-    },
-    {
-     "op": "turnin",
-     "quest": 419
-    },
-    {
-     "op": "accept",
-     "quest": 417
-    },
-    {
-     "objective": 1,
-     "op": "complete",
-     "quest": 417
-    },
-    {
-     "op": "turnin",
-     "quest": 417
-    },
-    {
-     "op": "accept",
-     "quest": 96391
-    },
-    {
-     "op": "turnin",
-     "quest": 96391
-    },
-    {
-     "op": "accept",
-     "quest": 97234
-    },
-    {
-     "op": "turnin",
-     "quest": 97234
-    },
-    {
-     "op": "accept",
-     "quest": 97222
-    },
-    {
-     "objective": 1,
-     "op": "complete",
-     "quest": 97222
-    },
-    {
-     "op": "turnin",
-     "quest": 97222
-    },
-    {
-     "op": "accept",
-     "quest": 130
-    },
-    {
-     "op": "turnin",
-     "quest": 130
-    },
-    {
-     "op": "accept",
-     "quest": 131
-    },
-    {
-     "op": "turnin",
-     "quest": 131
-    },
-    {
-     "op": "accept",
-     "quest": 125
-    },
-    {
-     "objective": 1,
-     "op": "complete",
-     "quest": 125
-    },
-    {
-     "op": "turnin",
-     "quest": 125
-    },
-    {
-     "op": "accept",
-     "quest": 89
-    },
-    {
-     "op": "accept",
-     "quest": 118
-    },
-    {
-     "objective": 1,
-     "op": "complete",
-     "quest": 89
-    },
-    {
-     "op": "turnin",
-     "quest": 89
-    },
-    {
-     "op": "turnin",
-     "quest": 118
-    },
-    {
-     "op": "accept",
-     "quest": 119
-    },
-    {
-     "op": "turnin",
-     "quest": 119
-    },
-    {
-     "op": "accept",
-     "quest": 122
-    },
-    {
-     "op": "accept",
-     "quest": 124
-    },
-    {
-     "objective": 1,
-     "op": "complete",
-     "quest": 124
+     "quest": 953
     },
     {
      "objective": 2,
      "op": "complete",
-     "quest": 124
+     "quest": 953
+    },
+    {
+     "op": "turnin",
+     "quest": 953
+    },
+    {
+     "op": "accept",
+     "quest": 151
     },
     {
      "objective": 1,
      "op": "complete",
-     "quest": 122
+     "quest": 151
     },
     {
      "op": "turnin",
-     "quest": 122
+     "quest": 151
+    },
+    {
+     "op": "accept",
+     "quest": 64
+    },
+    {
+     "op": "accept",
+     "quest": 36
+    },
+    {
+     "objective": 1,
+     "op": "complete",
+     "quest": 64
     },
     {
      "op": "turnin",
-     "quest": 124
+     "quest": 64
+    },
+    {
+     "op": "turnin",
+     "quest": 36
+    },
+    {
+     "op": "accept",
+     "quest": 92910
+    },
+    {
+     "op": "turnin",
+     "quest": 92910
+    },
+    {
+     "op": "accept",
+     "quest": 92747
+    },
+    {
+     "objective": 1,
+     "op": "complete",
+     "quest": 92747
+    },
+    {
+     "op": "turnin",
+     "quest": 92747
+    },
+    {
+     "op": "accept",
+     "quest": 91740
+    },
+    {
+     "op": "turnin",
+     "quest": 91740
+    },
+    {
+     "op": "accept",
+     "quest": 5545
+    },
+    {
+     "objective": 1,
+     "op": "complete",
+     "quest": 5545
+    },
+    {
+     "op": "turnin",
+     "quest": 5545
+    },
+    {
+     "level": 14,
+     "op": "level",
+     "totalXP": 65680
+    },
+    {
+     "op": "accept",
+     "quest": 65
+    },
+    {
+     "op": "turnin",
+     "quest": 65
+    },
+    {
+     "op": "accept",
+     "quest": 132
+    },
+    {
+     "op": "accept",
+     "quest": 3741
+    },
+    {
+     "objective": 1,
+     "op": "complete",
+     "quest": 3741
+    },
+    {
+     "op": "turnin",
+     "quest": 3741
+    },
+    {
+     "op": "accept",
+     "quest": 129
+    },
+    {
+     "op": "turnin",
+     "quest": 129
+    },
+    {
+     "op": "turnin",
+     "quest": 132
+    },
+    {
+     "op": "accept",
+     "quest": 79008
+    },
+    {
+     "op": "turnin",
+     "quest": 79008
+    },
+    {
+     "op": "accept",
+     "quest": 79192
+    },
+    {
+     "op": "turnin",
+     "quest": 79192
+    },
+    {
+     "op": "accept",
+     "quest": 79980
+    },
+    {
+     "op": "turnin",
+     "quest": 79980
+    },
+    {
+     "op": "accept",
+     "quest": 79974
+    },
+    {
+     "op": "accept",
+     "quest": 96408
+    },
+    {
+     "op": "turnin",
+     "quest": 96408
+    },
+    {
+     "op": "accept",
+     "quest": 96392
+    },
+    {
+     "objective": 1,
+     "op": "complete",
+     "quest": 96392
+    },
+    {
+     "op": "turnin",
+     "quest": 96392
+    },
+    {
+     "level": 17,
+     "op": "level",
+     "totalXP": 108912
+    },
+    {
+     "op": "accept",
+     "quest": 29
+    },
+    {
+     "op": "complete",
+     "quest": 29
+    },
+    {
+     "op": "turnin",
+     "quest": 29
+    },
+    {
+     "op": "accept",
+     "quest": 272
+    },
+    {
+     "op": "complete",
+     "quest": 272
+    },
+    {
+     "op": "turnin",
+     "quest": 272
+    },
+    {
+     "op": "accept",
+     "quest": 5061
+    },
+    {
+     "op": "complete",
+     "quest": 5061
+    },
+    {
+     "op": "turnin",
+     "quest": 5061
+    },
+    {
+     "op": "accept",
+     "quest": 125
+    },
+    {
+     "objective": 1,
+     "op": "complete",
+     "quest": 125
+    },
+    {
+     "op": "turnin",
+     "quest": 125
     },
     {
      "level": 18,
      "op": "level",
-     "totalXP": 126543
+     "totalXP": 126834
     },
     {
      "op": "accept",
@@ -788,15 +715,15 @@
      "objective": 1,
      "op": "complete",
      "quest": 20
-    },
-    {
-     "objective": 1,
-     "op": "complete",
-     "quest": 127
     },
     {
      "op": "turnin",
      "quest": 20
+    },
+    {
+     "objective": 1,
+     "op": "complete",
+     "quest": 127
     },
     {
      "op": "turnin",
@@ -842,7 +769,7 @@
     {
      "level": 19,
      "op": "level",
-     "totalXP": 146008
+     "totalXP": 146043
     },
     {
      "op": "accept",
@@ -858,15 +785,137 @@
      "quest": 219
     },
     {
-     "level": 20,
-     "op": "level",
-     "totalXP": 167288
+     "op": "accept",
+     "quest": 257
+    },
+    {
+     "objective": 1,
+     "op": "complete",
+     "quest": 257
+    },
+    {
+     "op": "turnin",
+     "quest": 257
+    },
+    {
+     "op": "accept",
+     "quest": 2038
+    },
+    {
+     "objective": 4,
+     "op": "complete",
+     "quest": 2038
+    },
+    {
+     "objective": 3,
+     "op": "complete",
+     "quest": 2038
+    },
+    {
+     "objective": 2,
+     "op": "complete",
+     "quest": 2038
+    },
+    {
+     "objective": 1,
+     "op": "complete",
+     "quest": 2038
+    },
+    {
+     "op": "turnin",
+     "quest": 2038
+    },
+    {
+     "op": "accept",
+     "quest": 297
+    },
+    {
+     "op": "accept",
+     "quest": 86613
+    },
+    {
+     "op": "turnin",
+     "quest": 86613
+    },
+    {
+     "objective": 1,
+     "op": "complete",
+     "quest": 297
+    },
+    {
+     "op": "turnin",
+     "quest": 297
+    },
+    {
+     "op": "accept",
+     "quest": 1339
+    },
+    {
+     "op": "accept",
+     "quest": 468
+    },
+    {
+     "op": "turnin",
+     "quest": 468
+    },
+    {
+     "op": "turnin",
+     "quest": 1339
+    },
+    {
+     "op": "accept",
+     "quest": 307
+    },
+    {
+     "objective": 1,
+     "op": "complete",
+     "quest": 307
+    },
+    {
+     "op": "turnin",
+     "quest": 307
+    },
+    {
+     "op": "accept",
+     "quest": 250
+    },
+    {
+     "op": "turnin",
+     "quest": 79974
+    },
+    {
+     "op": "turnin",
+     "quest": 250
+    },
+    {
+     "op": "accept",
+     "quest": 199
+    },
+    {
+     "op": "accept",
+     "quest": 79975
+    },
+    {
+     "op": "turnin",
+     "quest": 199
+    },
+    {
+     "op": "turnin",
+     "quest": 79975
+    },
+    {
+     "op": "accept",
+     "quest": 79976
+    },
+    {
+     "op": "turnin",
+     "quest": 79976
     }
    ],
    "inRoute": false,
-   "level": 16,
+   "level": 17,
    "minLevel": 16,
-   "minutes": 67.5,
+   "minutes": 59.3,
    "name": "Aquatic Form",
    "possible": true,
    "quest": 5061,
@@ -881,13 +930,17 @@
   {
    "events": [
     {
-     "level": 4,
+     "op": "accept",
+     "quest": 456
+    },
+    {
+     "level": 3,
      "op": "level",
-     "totalXP": 2716
+     "totalXP": 1324
     },
     {
      "op": "accept",
-     "quest": 456
+     "quest": 916
     },
     {
      "objective": 2,
@@ -895,31 +948,8 @@
      "quest": 456
     },
     {
-     "objective": 1,
-     "op": "complete",
-     "quest": 456
-    },
-    {
      "op": "turnin",
      "quest": 456
-    },
-    {
-     "op": "accept",
-     "quest": 457
-    },
-    {
-     "objective": 1,
-     "op": "complete",
-     "quest": 457
-    },
-    {
-     "objective": 2,
-     "op": "complete",
-     "quest": 457
-    },
-    {
-     "op": "turnin",
-     "quest": 457
     },
     {
      "op": "accept",
@@ -930,49 +960,64 @@
      "quest": 3120
     },
     {
-     "op": "accept",
-     "quest": 458
+     "objective": 1,
+     "op": "complete",
+     "quest": 916
     },
     {
      "op": "turnin",
-     "quest": 458
+     "quest": 916
     },
     {
      "op": "accept",
-     "quest": 97977
+     "quest": 917
     },
     {
      "objective": 1,
      "op": "complete",
-     "quest": 97977
+     "quest": 917
     },
     {
      "op": "turnin",
-     "quest": 97977
+     "quest": 917
     },
     {
      "op": "accept",
-     "quest": 475
+     "quest": 920
     },
     {
      "op": "turnin",
-     "quest": 475
+     "quest": 920
     },
     {
      "op": "accept",
-     "quest": 476
+     "quest": 921
+    },
+    {
+     "objective": 1,
+     "op": "complete",
+     "quest": 921
     },
     {
      "op": "turnin",
-     "quest": 476
+     "quest": 921
     },
     {
      "op": "accept",
-     "quest": 87288
+     "quest": 928
     },
     {
      "op": "accept",
-     "quest": 997
+     "quest": 99053
+    },
+    {
+     "objective": 1,
+     "op": "complete",
+     "quest": 99053
+    },
+    {
+     "op": "turnin",
+     "quest": 99053
     },
     {
      "op": "accept",
@@ -1007,6 +1052,48 @@
     },
     {
      "op": "turnin",
+     "quest": 928
+    },
+    {
+     "op": "accept",
+     "quest": 929
+    },
+    {
+     "objective": 1,
+     "op": "complete",
+     "quest": 929
+    },
+    {
+     "op": "turnin",
+     "quest": 929
+    },
+    {
+     "op": "accept",
+     "quest": 933
+    },
+    {
+     "objective": 1,
+     "op": "complete",
+     "quest": 933
+    },
+    {
+     "op": "turnin",
+     "quest": 933
+    },
+    {
+     "op": "accept",
+     "quest": 475
+    },
+    {
+     "op": "accept",
+     "quest": 997
+    },
+    {
+     "op": "turnin",
+     "quest": 475
+    },
+    {
+     "op": "turnin",
      "quest": 997
     },
     {
@@ -1023,43 +1110,9 @@
      "quest": 919
     },
     {
-     "op": "accept",
-     "quest": 932
-    },
-    {
-     "objective": 1,
-     "op": "complete",
-     "quest": 932
-    },
-    {
-     "op": "turnin",
-     "quest": 932
-    },
-    {
-     "objective": 1,
-     "op": "complete",
-     "quest": 87288
-    },
-    {
-     "op": "turnin",
-     "quest": 87288
-    },
-    {
-     "op": "accept",
-     "quest": 487
-    },
-    {
-     "objective": 1,
-     "op": "complete",
-     "quest": 487
-    },
-    {
-     "op": "turnin",
-     "quest": 487
-    },
-    {
-     "op": "accept",
-     "quest": 99053
+     "level": 7,
+     "op": "level",
+     "totalXP": 11273
     },
     {
      "op": "accept",
@@ -1075,13 +1128,17 @@
      "quest": 2541
     },
     {
+     "op": "accept",
+     "quest": 2561
+    },
+    {
      "objective": 1,
      "op": "complete",
-     "quest": 99053
+     "quest": 2561
     },
     {
      "op": "turnin",
-     "quest": 99053
+     "quest": 2561
     },
     {
      "op": "accept",
@@ -1095,19 +1152,6 @@
     {
      "op": "turnin",
      "quest": 918
-    },
-    {
-     "op": "accept",
-     "quest": 937
-    },
-    {
-     "objective": 1,
-     "op": "complete",
-     "quest": 937
-    },
-    {
-     "op": "turnin",
-     "quest": 937
     },
     {
      "op": "accept",
@@ -1115,11 +1159,11 @@
     },
     {
      "op": "accept",
-     "quest": 931
+     "quest": 938
     },
     {
      "op": "accept",
-     "quest": 938
+     "quest": 931
     },
     {
      "objective": 1,
@@ -1129,6 +1173,19 @@
     {
      "op": "turnin",
      "quest": 938
+    },
+    {
+     "op": "accept",
+     "quest": 937
+    },
+    {
+     "objective": 1,
+     "op": "complete",
+     "quest": 937
+    },
+    {
+     "op": "turnin",
+     "quest": 937
     },
     {
      "op": "accept",
@@ -1146,7 +1203,7 @@
     {
      "level": 10,
      "op": "level",
-     "totalXP": 27660
+     "totalXP": 27671
     },
     {
      "op": "accept",
@@ -1205,14 +1262,6 @@
     },
     {
      "op": "accept",
-     "quest": 930
-    },
-    {
-     "op": "turnin",
-     "quest": 930
-    },
-    {
-     "op": "accept",
      "quest": 941
     },
     {
@@ -1233,31 +1282,70 @@
     },
     {
      "op": "accept",
-     "quest": 983
+     "quest": 953
     },
     {
-     "op": "accept",
-     "quest": 98025
-    },
-    {
-     "objective": 1,
-     "op": "complete",
-     "quest": 983
-    },
-    {
-     "objective": 1,
-     "op": "complete",
-     "quest": 98025
-    },
-    {
-     "op": "turnin",
-     "quest": 98025
+     "level": 11,
+     "op": "level",
+     "totalXP": 35291
     },
     {
      "op": "accept",
      "quest": 954
     },
     {
+     "op": "accept",
+     "quest": 3524
+    },
+    {
+     "objective": 1,
+     "op": "complete",
+     "quest": 3524
+    },
+    {
+     "op": "turnin",
+     "quest": 3524
+    },
+    {
+     "op": "accept",
+     "quest": 4681
+    },
+    {
+     "objective": 1,
+     "op": "complete",
+     "quest": 4681
+    },
+    {
+     "op": "turnin",
+     "quest": 4681
+    },
+    {
+     "op": "accept",
+     "quest": 983
+    },
+    {
+     "op": "accept",
+     "quest": 98025
+    },
+    {
+     "objective": 1,
+     "op": "complete",
+     "quest": 98025
+    },
+    {
+     "op": "turnin",
+     "quest": 98025
+    },
+    {
+     "objective": 1,
+     "op": "complete",
+     "quest": 983
+    },
+    {
+     "op": "turnin",
+     "quest": 983
+    },
+    {
      "op": "turnin",
      "quest": 954
     },
@@ -1275,338 +1363,226 @@
      "quest": 955
     },
     {
-     "op": "turnin",
-     "quest": 983
-    },
-    {
      "op": "accept",
-     "quest": 953
+     "quest": 956
     },
     {
      "objective": 1,
      "op": "complete",
-     "quest": 953
-    },
-    {
-     "objective": 2,
-     "op": "complete",
-     "quest": 953
+     "quest": 956
     },
     {
      "op": "turnin",
-     "quest": 953
+     "quest": 956
     },
     {
      "level": 13,
      "op": "level",
-     "totalXP": 54246
-    },
-    {
-     "op": "accept",
-     "quest": 36
-    },
-    {
-     "op": "accept",
-     "quest": 64
-    },
-    {
-     "op": "accept",
-     "quest": 151
+     "totalXP": 54245
     },
     {
      "objective": 1,
      "op": "complete",
-     "quest": 151
-    },
-    {
-     "op": "turnin",
-     "quest": 151
-    },
-    {
-     "objective": 1,
-     "op": "complete",
-     "quest": 64
-    },
-    {
-     "op": "turnin",
-     "quest": 64
-    },
-    {
-     "op": "turnin",
-     "quest": 36
-    },
-    {
-     "op": "accept",
-     "quest": 92910
-    },
-    {
-     "op": "turnin",
-     "quest": 92910
-    },
-    {
-     "op": "accept",
-     "quest": 109
-    },
-    {
-     "op": "turnin",
-     "quest": 109
-    },
-    {
-     "op": "accept",
-     "quest": 92747
-    },
-    {
-     "objective": 1,
-     "op": "complete",
-     "quest": 92747
-    },
-    {
-     "op": "turnin",
-     "quest": 92747
-    },
-    {
-     "op": "accept",
-     "quest": 91740
-    },
-    {
-     "op": "turnin",
-     "quest": 91740
-    },
-    {
-     "op": "accept",
-     "quest": 244
-    },
-    {
-     "op": "turnin",
-     "quest": 244
-    },
-    {
-     "op": "accept",
-     "quest": 3741
-    },
-    {
-     "objective": 1,
-     "op": "complete",
-     "quest": 3741
-    },
-    {
-     "op": "turnin",
-     "quest": 3741
-    },
-    {
-     "level": 14,
-     "op": "level",
-     "totalXP": 65513
-    },
-    {
-     "op": "accept",
-     "quest": 65
-    },
-    {
-     "op": "turnin",
-     "quest": 65
-    },
-    {
-     "op": "accept",
-     "quest": 129
-    },
-    {
-     "op": "accept",
-     "quest": 132
-    },
-    {
-     "op": "turnin",
-     "quest": 129
-    },
-    {
-     "op": "turnin",
-     "quest": 132
-    },
-    {
-     "op": "accept",
-     "quest": 96408
-    },
-    {
-     "op": "turnin",
-     "quest": 96408
-    },
-    {
-     "op": "accept",
-     "quest": 96392
-    },
-    {
-     "objective": 1,
-     "op": "complete",
-     "quest": 96392
-    },
-    {
-     "op": "turnin",
-     "quest": 96392
-    },
-    {
-     "op": "accept",
-     "quest": 419
-    },
-    {
-     "level": 16,
-     "op": "level",
-     "totalXP": 92832
-    },
-    {
-     "op": "accept",
-     "quest": 250
-    },
-    {
-     "op": "turnin",
-     "quest": 250
-    },
-    {
-     "op": "accept",
-     "quest": 199
-    },
-    {
-     "op": "turnin",
-     "quest": 199
-    },
-    {
-     "op": "turnin",
-     "quest": 419
-    },
-    {
-     "op": "accept",
-     "quest": 417
-    },
-    {
-     "objective": 1,
-     "op": "complete",
-     "quest": 417
-    },
-    {
-     "op": "turnin",
-     "quest": 417
-    },
-    {
-     "op": "accept",
-     "quest": 96391
-    },
-    {
-     "op": "turnin",
-     "quest": 96391
-    },
-    {
-     "op": "accept",
-     "quest": 97234
-    },
-    {
-     "op": "turnin",
-     "quest": 97234
-    },
-    {
-     "op": "accept",
-     "quest": 97222
-    },
-    {
-     "objective": 1,
-     "op": "complete",
-     "quest": 97222
-    },
-    {
-     "op": "turnin",
-     "quest": 97222
-    },
-    {
-     "op": "accept",
-     "quest": 130
-    },
-    {
-     "op": "turnin",
-     "quest": 130
-    },
-    {
-     "op": "accept",
-     "quest": 131
-    },
-    {
-     "op": "turnin",
-     "quest": 131
-    },
-    {
-     "op": "accept",
-     "quest": 125
-    },
-    {
-     "objective": 1,
-     "op": "complete",
-     "quest": 125
-    },
-    {
-     "op": "turnin",
-     "quest": 125
-    },
-    {
-     "op": "accept",
-     "quest": 89
-    },
-    {
-     "op": "accept",
-     "quest": 118
-    },
-    {
-     "objective": 1,
-     "op": "complete",
-     "quest": 89
-    },
-    {
-     "op": "turnin",
-     "quest": 89
-    },
-    {
-     "op": "turnin",
-     "quest": 118
-    },
-    {
-     "op": "accept",
-     "quest": 119
-    },
-    {
-     "op": "turnin",
-     "quest": 119
-    },
-    {
-     "op": "accept",
-     "quest": 122
-    },
-    {
-     "op": "accept",
-     "quest": 124
-    },
-    {
-     "objective": 1,
-     "op": "complete",
-     "quest": 124
+     "quest": 953
     },
     {
      "objective": 2,
      "op": "complete",
-     "quest": 124
+     "quest": 953
+    },
+    {
+     "op": "turnin",
+     "quest": 953
+    },
+    {
+     "op": "accept",
+     "quest": 151
     },
     {
      "objective": 1,
      "op": "complete",
-     "quest": 122
+     "quest": 151
     },
     {
      "op": "turnin",
-     "quest": 122
+     "quest": 151
+    },
+    {
+     "op": "accept",
+     "quest": 64
+    },
+    {
+     "op": "accept",
+     "quest": 36
+    },
+    {
+     "objective": 1,
+     "op": "complete",
+     "quest": 64
     },
     {
      "op": "turnin",
-     "quest": 124
+     "quest": 64
+    },
+    {
+     "op": "turnin",
+     "quest": 36
+    },
+    {
+     "op": "accept",
+     "quest": 92910
+    },
+    {
+     "op": "turnin",
+     "quest": 92910
+    },
+    {
+     "op": "accept",
+     "quest": 92747
+    },
+    {
+     "objective": 1,
+     "op": "complete",
+     "quest": 92747
+    },
+    {
+     "op": "turnin",
+     "quest": 92747
+    },
+    {
+     "op": "accept",
+     "quest": 91740
+    },
+    {
+     "op": "turnin",
+     "quest": 91740
+    },
+    {
+     "op": "accept",
+     "quest": 5545
+    },
+    {
+     "objective": 1,
+     "op": "complete",
+     "quest": 5545
+    },
+    {
+     "op": "turnin",
+     "quest": 5545
+    },
+    {
+     "level": 14,
+     "op": "level",
+     "totalXP": 65680
+    },
+    {
+     "op": "accept",
+     "quest": 65
+    },
+    {
+     "op": "turnin",
+     "quest": 65
+    },
+    {
+     "op": "accept",
+     "quest": 132
+    },
+    {
+     "op": "accept",
+     "quest": 3741
+    },
+    {
+     "objective": 1,
+     "op": "complete",
+     "quest": 3741
+    },
+    {
+     "op": "turnin",
+     "quest": 3741
+    },
+    {
+     "op": "accept",
+     "quest": 129
+    },
+    {
+     "op": "turnin",
+     "quest": 129
+    },
+    {
+     "op": "turnin",
+     "quest": 132
+    },
+    {
+     "op": "accept",
+     "quest": 79008
+    },
+    {
+     "op": "turnin",
+     "quest": 79008
+    },
+    {
+     "op": "accept",
+     "quest": 79192
+    },
+    {
+     "op": "turnin",
+     "quest": 79192
+    },
+    {
+     "op": "accept",
+     "quest": 79980
+    },
+    {
+     "op": "turnin",
+     "quest": 79980
+    },
+    {
+     "op": "accept",
+     "quest": 79974
+    },
+    {
+     "op": "accept",
+     "quest": 96408
+    },
+    {
+     "op": "turnin",
+     "quest": 96408
+    },
+    {
+     "op": "accept",
+     "quest": 96392
+    },
+    {
+     "objective": 1,
+     "op": "complete",
+     "quest": 96392
+    },
+    {
+     "op": "turnin",
+     "quest": 96392
+    },
+    {
+     "level": 17,
+     "op": "level",
+     "totalXP": 108912
+    },
+    {
+     "op": "accept",
+     "quest": 125
+    },
+    {
+     "objective": 1,
+     "op": "complete",
+     "quest": 125
+    },
+    {
+     "op": "turnin",
+     "quest": 125
     },
     {
      "level": 18,
      "op": "level",
-     "totalXP": 126543
+     "totalXP": 126834
     },
     {
      "op": "accept",
@@ -1620,15 +1596,15 @@
      "objective": 1,
      "op": "complete",
      "quest": 20
-    },
-    {
-     "objective": 1,
-     "op": "complete",
-     "quest": 127
     },
     {
      "op": "turnin",
      "quest": 20
+    },
+    {
+     "objective": 1,
+     "op": "complete",
+     "quest": 127
     },
     {
      "op": "turnin",
@@ -1674,7 +1650,7 @@
     {
      "level": 19,
      "op": "level",
-     "totalXP": 146008
+     "totalXP": 146043
     },
     {
      "op": "accept",
@@ -1690,15 +1666,137 @@
      "quest": 219
     },
     {
-     "level": 20,
-     "op": "level",
-     "totalXP": 167288
+     "op": "accept",
+     "quest": 257
+    },
+    {
+     "objective": 1,
+     "op": "complete",
+     "quest": 257
+    },
+    {
+     "op": "turnin",
+     "quest": 257
+    },
+    {
+     "op": "accept",
+     "quest": 2038
+    },
+    {
+     "objective": 4,
+     "op": "complete",
+     "quest": 2038
+    },
+    {
+     "objective": 3,
+     "op": "complete",
+     "quest": 2038
+    },
+    {
+     "objective": 2,
+     "op": "complete",
+     "quest": 2038
+    },
+    {
+     "objective": 1,
+     "op": "complete",
+     "quest": 2038
+    },
+    {
+     "op": "turnin",
+     "quest": 2038
+    },
+    {
+     "op": "accept",
+     "quest": 297
+    },
+    {
+     "op": "accept",
+     "quest": 86613
+    },
+    {
+     "op": "turnin",
+     "quest": 86613
+    },
+    {
+     "objective": 1,
+     "op": "complete",
+     "quest": 297
+    },
+    {
+     "op": "turnin",
+     "quest": 297
+    },
+    {
+     "op": "accept",
+     "quest": 1339
+    },
+    {
+     "op": "accept",
+     "quest": 468
+    },
+    {
+     "op": "turnin",
+     "quest": 468
+    },
+    {
+     "op": "turnin",
+     "quest": 1339
+    },
+    {
+     "op": "accept",
+     "quest": 307
+    },
+    {
+     "objective": 1,
+     "op": "complete",
+     "quest": 307
+    },
+    {
+     "op": "turnin",
+     "quest": 307
+    },
+    {
+     "op": "accept",
+     "quest": 250
+    },
+    {
+     "op": "turnin",
+     "quest": 79974
+    },
+    {
+     "op": "turnin",
+     "quest": 250
+    },
+    {
+     "op": "accept",
+     "quest": 199
+    },
+    {
+     "op": "accept",
+     "quest": 79975
+    },
+    {
+     "op": "turnin",
+     "quest": 199
+    },
+    {
+     "op": "turnin",
+     "quest": 79975
+    },
+    {
+     "op": "accept",
+     "quest": 79976
+    },
+    {
+     "op": "turnin",
+     "quest": 79976
     }
    ],
    "inRoute": false,
    "level": 10,
    "minLevel": 10,
-   "minutes": 2.2,
+   "minutes": 3.6,
    "name": "Heeding the Call",
    "possible": true,
    "quest": 5923,
@@ -1712,7 +1810,7 @@
    "inRoute": true,
    "level": 10,
    "minLevel": 10,
-   "minutes": 17.2,
+   "minutes": 13.2,
    "name": "Body and Heart",
    "possible": true,
    "quest": 6001,
@@ -1728,13 +1826,17 @@
   {
    "events": [
     {
-     "level": 4,
+     "op": "accept",
+     "quest": 456
+    },
+    {
+     "level": 3,
      "op": "level",
-     "totalXP": 2716
+     "totalXP": 1324
     },
     {
      "op": "accept",
-     "quest": 456
+     "quest": 916
     },
     {
      "objective": 2,
@@ -1742,31 +1844,8 @@
      "quest": 456
     },
     {
-     "objective": 1,
-     "op": "complete",
-     "quest": 456
-    },
-    {
      "op": "turnin",
      "quest": 456
-    },
-    {
-     "op": "accept",
-     "quest": 457
-    },
-    {
-     "objective": 1,
-     "op": "complete",
-     "quest": 457
-    },
-    {
-     "objective": 2,
-     "op": "complete",
-     "quest": 457
-    },
-    {
-     "op": "turnin",
-     "quest": 457
     },
     {
      "op": "accept",
@@ -1777,49 +1856,64 @@
      "quest": 3120
     },
     {
-     "op": "accept",
-     "quest": 458
+     "objective": 1,
+     "op": "complete",
+     "quest": 916
     },
     {
      "op": "turnin",
-     "quest": 458
+     "quest": 916
     },
     {
      "op": "accept",
-     "quest": 97977
+     "quest": 917
     },
     {
      "objective": 1,
      "op": "complete",
-     "quest": 97977
+     "quest": 917
     },
     {
      "op": "turnin",
-     "quest": 97977
+     "quest": 917
     },
     {
      "op": "accept",
-     "quest": 475
+     "quest": 920
     },
     {
      "op": "turnin",
-     "quest": 475
+     "quest": 920
     },
     {
      "op": "accept",
-     "quest": 476
+     "quest": 921
+    },
+    {
+     "objective": 1,
+     "op": "complete",
+     "quest": 921
     },
     {
      "op": "turnin",
-     "quest": 476
+     "quest": 921
     },
     {
      "op": "accept",
-     "quest": 87288
+     "quest": 928
     },
     {
      "op": "accept",
-     "quest": 997
+     "quest": 99053
+    },
+    {
+     "objective": 1,
+     "op": "complete",
+     "quest": 99053
+    },
+    {
+     "op": "turnin",
+     "quest": 99053
     },
     {
      "op": "accept",
@@ -1854,6 +1948,48 @@
     },
     {
      "op": "turnin",
+     "quest": 928
+    },
+    {
+     "op": "accept",
+     "quest": 929
+    },
+    {
+     "objective": 1,
+     "op": "complete",
+     "quest": 929
+    },
+    {
+     "op": "turnin",
+     "quest": 929
+    },
+    {
+     "op": "accept",
+     "quest": 933
+    },
+    {
+     "objective": 1,
+     "op": "complete",
+     "quest": 933
+    },
+    {
+     "op": "turnin",
+     "quest": 933
+    },
+    {
+     "op": "accept",
+     "quest": 475
+    },
+    {
+     "op": "accept",
+     "quest": 997
+    },
+    {
+     "op": "turnin",
+     "quest": 475
+    },
+    {
+     "op": "turnin",
      "quest": 997
     },
     {
@@ -1870,43 +2006,9 @@
      "quest": 919
     },
     {
-     "op": "accept",
-     "quest": 932
-    },
-    {
-     "objective": 1,
-     "op": "complete",
-     "quest": 932
-    },
-    {
-     "op": "turnin",
-     "quest": 932
-    },
-    {
-     "objective": 1,
-     "op": "complete",
-     "quest": 87288
-    },
-    {
-     "op": "turnin",
-     "quest": 87288
-    },
-    {
-     "op": "accept",
-     "quest": 487
-    },
-    {
-     "objective": 1,
-     "op": "complete",
-     "quest": 487
-    },
-    {
-     "op": "turnin",
-     "quest": 487
-    },
-    {
-     "op": "accept",
-     "quest": 99053
+     "level": 7,
+     "op": "level",
+     "totalXP": 11273
     },
     {
      "op": "accept",
@@ -1922,13 +2024,17 @@
      "quest": 2541
     },
     {
+     "op": "accept",
+     "quest": 2561
+    },
+    {
      "objective": 1,
      "op": "complete",
-     "quest": 99053
+     "quest": 2561
     },
     {
      "op": "turnin",
-     "quest": 99053
+     "quest": 2561
     },
     {
      "op": "accept",
@@ -1942,19 +2048,6 @@
     {
      "op": "turnin",
      "quest": 918
-    },
-    {
-     "op": "accept",
-     "quest": 937
-    },
-    {
-     "objective": 1,
-     "op": "complete",
-     "quest": 937
-    },
-    {
-     "op": "turnin",
-     "quest": 937
     },
     {
      "op": "accept",
@@ -1962,11 +2055,11 @@
     },
     {
      "op": "accept",
-     "quest": 931
+     "quest": 938
     },
     {
      "op": "accept",
-     "quest": 938
+     "quest": 931
     },
     {
      "objective": 1,
@@ -1976,6 +2069,19 @@
     {
      "op": "turnin",
      "quest": 938
+    },
+    {
+     "op": "accept",
+     "quest": 937
+    },
+    {
+     "objective": 1,
+     "op": "complete",
+     "quest": 937
+    },
+    {
+     "op": "turnin",
+     "quest": 937
     },
     {
      "op": "accept",
@@ -1993,7 +2099,7 @@
     {
      "level": 10,
      "op": "level",
-     "totalXP": 27660
+     "totalXP": 27671
     },
     {
      "op": "accept",
@@ -2052,14 +2158,6 @@
     },
     {
      "op": "accept",
-     "quest": 930
-    },
-    {
-     "op": "turnin",
-     "quest": 930
-    },
-    {
-     "op": "accept",
      "quest": 941
     },
     {
@@ -2068,31 +2166,70 @@
     },
     {
      "op": "accept",
-     "quest": 983
+     "quest": 953
     },
     {
-     "op": "accept",
-     "quest": 98025
-    },
-    {
-     "objective": 1,
-     "op": "complete",
-     "quest": 983
-    },
-    {
-     "objective": 1,
-     "op": "complete",
-     "quest": 98025
-    },
-    {
-     "op": "turnin",
-     "quest": 98025
+     "level": 11,
+     "op": "level",
+     "totalXP": 35291
     },
     {
      "op": "accept",
      "quest": 954
     },
     {
+     "op": "accept",
+     "quest": 3524
+    },
+    {
+     "objective": 1,
+     "op": "complete",
+     "quest": 3524
+    },
+    {
+     "op": "turnin",
+     "quest": 3524
+    },
+    {
+     "op": "accept",
+     "quest": 4681
+    },
+    {
+     "objective": 1,
+     "op": "complete",
+     "quest": 4681
+    },
+    {
+     "op": "turnin",
+     "quest": 4681
+    },
+    {
+     "op": "accept",
+     "quest": 983
+    },
+    {
+     "op": "accept",
+     "quest": 98025
+    },
+    {
+     "objective": 1,
+     "op": "complete",
+     "quest": 98025
+    },
+    {
+     "op": "turnin",
+     "quest": 98025
+    },
+    {
+     "objective": 1,
+     "op": "complete",
+     "quest": 983
+    },
+    {
+     "op": "turnin",
+     "quest": 983
+    },
+    {
      "op": "turnin",
      "quest": 954
     },
@@ -2110,398 +2247,286 @@
      "quest": 955
     },
     {
-     "op": "turnin",
-     "quest": 983
-    },
-    {
      "op": "accept",
-     "quest": 953
+     "quest": 956
     },
     {
      "objective": 1,
      "op": "complete",
-     "quest": 953
-    },
-    {
-     "objective": 2,
-     "op": "complete",
-     "quest": 953
+     "quest": 956
     },
     {
      "op": "turnin",
-     "quest": 953
+     "quest": 956
     },
     {
      "level": 13,
      "op": "level",
-     "totalXP": 54246
-    },
-    {
-     "op": "accept",
-     "quest": 36
-    },
-    {
-     "op": "accept",
-     "quest": 64
-    },
-    {
-     "op": "accept",
-     "quest": 151
+     "totalXP": 54245
     },
     {
      "objective": 1,
      "op": "complete",
-     "quest": 151
-    },
-    {
-     "op": "turnin",
-     "quest": 151
-    },
-    {
-     "objective": 1,
-     "op": "complete",
-     "quest": 64
-    },
-    {
-     "op": "turnin",
-     "quest": 64
-    },
-    {
-     "op": "turnin",
-     "quest": 36
-    },
-    {
-     "op": "accept",
-     "quest": 92910
-    },
-    {
-     "op": "turnin",
-     "quest": 92910
-    },
-    {
-     "op": "accept",
-     "quest": 109
-    },
-    {
-     "op": "turnin",
-     "quest": 109
-    },
-    {
-     "op": "accept",
-     "quest": 92747
-    },
-    {
-     "objective": 1,
-     "op": "complete",
-     "quest": 92747
-    },
-    {
-     "op": "turnin",
-     "quest": 92747
-    },
-    {
-     "op": "accept",
-     "quest": 91740
-    },
-    {
-     "op": "turnin",
-     "quest": 91740
-    },
-    {
-     "op": "accept",
-     "quest": 244
-    },
-    {
-     "op": "turnin",
-     "quest": 244
-    },
-    {
-     "op": "accept",
-     "quest": 3741
-    },
-    {
-     "objective": 1,
-     "op": "complete",
-     "quest": 3741
-    },
-    {
-     "op": "turnin",
-     "quest": 3741
-    },
-    {
-     "level": 14,
-     "op": "level",
-     "totalXP": 65513
-    },
-    {
-     "op": "accept",
-     "quest": 6121
-    },
-    {
-     "op": "complete",
-     "quest": 6121
-    },
-    {
-     "op": "turnin",
-     "quest": 6121
-    },
-    {
-     "op": "accept",
-     "quest": 6122
-    },
-    {
-     "op": "complete",
-     "quest": 6122
-    },
-    {
-     "op": "turnin",
-     "quest": 6122
-    },
-    {
-     "op": "accept",
-     "quest": 6123
-    },
-    {
-     "op": "complete",
-     "quest": 6123
-    },
-    {
-     "op": "turnin",
-     "quest": 6123
-    },
-    {
-     "op": "accept",
-     "quest": 6124
-    },
-    {
-     "op": "complete",
-     "quest": 6124
-    },
-    {
-     "op": "turnin",
-     "quest": 6124
-    },
-    {
-     "op": "accept",
-     "quest": 6125
-    },
-    {
-     "op": "complete",
-     "quest": 6125
-    },
-    {
-     "op": "turnin",
-     "quest": 6125
-    },
-    {
-     "op": "accept",
-     "quest": 65
-    },
-    {
-     "op": "turnin",
-     "quest": 65
-    },
-    {
-     "op": "accept",
-     "quest": 129
-    },
-    {
-     "op": "accept",
-     "quest": 132
-    },
-    {
-     "op": "turnin",
-     "quest": 129
-    },
-    {
-     "op": "turnin",
-     "quest": 132
-    },
-    {
-     "op": "accept",
-     "quest": 96408
-    },
-    {
-     "op": "turnin",
-     "quest": 96408
-    },
-    {
-     "op": "accept",
-     "quest": 96392
-    },
-    {
-     "objective": 1,
-     "op": "complete",
-     "quest": 96392
-    },
-    {
-     "op": "turnin",
-     "quest": 96392
-    },
-    {
-     "op": "accept",
-     "quest": 419
-    },
-    {
-     "level": 16,
-     "op": "level",
-     "totalXP": 92832
-    },
-    {
-     "op": "accept",
-     "quest": 250
-    },
-    {
-     "op": "turnin",
-     "quest": 250
-    },
-    {
-     "op": "accept",
-     "quest": 199
-    },
-    {
-     "op": "turnin",
-     "quest": 199
-    },
-    {
-     "op": "turnin",
-     "quest": 419
-    },
-    {
-     "op": "accept",
-     "quest": 417
-    },
-    {
-     "objective": 1,
-     "op": "complete",
-     "quest": 417
-    },
-    {
-     "op": "turnin",
-     "quest": 417
-    },
-    {
-     "op": "accept",
-     "quest": 96391
-    },
-    {
-     "op": "turnin",
-     "quest": 96391
-    },
-    {
-     "op": "accept",
-     "quest": 97234
-    },
-    {
-     "op": "turnin",
-     "quest": 97234
-    },
-    {
-     "op": "accept",
-     "quest": 97222
-    },
-    {
-     "objective": 1,
-     "op": "complete",
-     "quest": 97222
-    },
-    {
-     "op": "turnin",
-     "quest": 97222
-    },
-    {
-     "op": "accept",
-     "quest": 130
-    },
-    {
-     "op": "turnin",
-     "quest": 130
-    },
-    {
-     "op": "accept",
-     "quest": 131
-    },
-    {
-     "op": "turnin",
-     "quest": 131
-    },
-    {
-     "op": "accept",
-     "quest": 125
-    },
-    {
-     "objective": 1,
-     "op": "complete",
-     "quest": 125
-    },
-    {
-     "op": "turnin",
-     "quest": 125
-    },
-    {
-     "op": "accept",
-     "quest": 89
-    },
-    {
-     "op": "accept",
-     "quest": 118
-    },
-    {
-     "objective": 1,
-     "op": "complete",
-     "quest": 89
-    },
-    {
-     "op": "turnin",
-     "quest": 89
-    },
-    {
-     "op": "turnin",
-     "quest": 118
-    },
-    {
-     "op": "accept",
-     "quest": 119
-    },
-    {
-     "op": "turnin",
-     "quest": 119
-    },
-    {
-     "op": "accept",
-     "quest": 122
-    },
-    {
-     "op": "accept",
-     "quest": 124
-    },
-    {
-     "objective": 1,
-     "op": "complete",
-     "quest": 124
+     "quest": 953
     },
     {
      "objective": 2,
      "op": "complete",
-     "quest": 124
+     "quest": 953
+    },
+    {
+     "op": "turnin",
+     "quest": 953
+    },
+    {
+     "op": "accept",
+     "quest": 151
     },
     {
      "objective": 1,
      "op": "complete",
-     "quest": 122
+     "quest": 151
     },
     {
      "op": "turnin",
-     "quest": 122
+     "quest": 151
+    },
+    {
+     "op": "accept",
+     "quest": 64
+    },
+    {
+     "op": "accept",
+     "quest": 36
+    },
+    {
+     "objective": 1,
+     "op": "complete",
+     "quest": 64
     },
     {
      "op": "turnin",
-     "quest": 124
+     "quest": 64
+    },
+    {
+     "op": "turnin",
+     "quest": 36
+    },
+    {
+     "op": "accept",
+     "quest": 92910
+    },
+    {
+     "op": "turnin",
+     "quest": 92910
+    },
+    {
+     "op": "accept",
+     "quest": 92747
+    },
+    {
+     "objective": 1,
+     "op": "complete",
+     "quest": 92747
+    },
+    {
+     "op": "turnin",
+     "quest": 92747
+    },
+    {
+     "op": "accept",
+     "quest": 91740
+    },
+    {
+     "op": "turnin",
+     "quest": 91740
+    },
+    {
+     "op": "accept",
+     "quest": 5545
+    },
+    {
+     "objective": 1,
+     "op": "complete",
+     "quest": 5545
+    },
+    {
+     "op": "turnin",
+     "quest": 5545
+    },
+    {
+     "level": 14,
+     "op": "level",
+     "totalXP": 65680
+    },
+    {
+     "op": "accept",
+     "quest": 65
+    },
+    {
+     "op": "turnin",
+     "quest": 65
+    },
+    {
+     "op": "accept",
+     "quest": 132
+    },
+    {
+     "op": "accept",
+     "quest": 3741
+    },
+    {
+     "objective": 1,
+     "op": "complete",
+     "quest": 3741
+    },
+    {
+     "op": "turnin",
+     "quest": 3741
+    },
+    {
+     "op": "accept",
+     "quest": 129
+    },
+    {
+     "op": "turnin",
+     "quest": 129
+    },
+    {
+     "op": "turnin",
+     "quest": 132
+    },
+    {
+     "op": "accept",
+     "quest": 79008
+    },
+    {
+     "op": "turnin",
+     "quest": 79008
+    },
+    {
+     "op": "accept",
+     "quest": 79192
+    },
+    {
+     "op": "turnin",
+     "quest": 79192
+    },
+    {
+     "op": "accept",
+     "quest": 79980
+    },
+    {
+     "op": "turnin",
+     "quest": 79980
+    },
+    {
+     "op": "accept",
+     "quest": 79974
+    },
+    {
+     "op": "accept",
+     "quest": 6121
+    },
+    {
+     "op": "complete",
+     "quest": 6121
+    },
+    {
+     "op": "turnin",
+     "quest": 6121
+    },
+    {
+     "op": "accept",
+     "quest": 6122
+    },
+    {
+     "op": "complete",
+     "quest": 6122
+    },
+    {
+     "op": "turnin",
+     "quest": 6122
+    },
+    {
+     "op": "accept",
+     "quest": 6123
+    },
+    {
+     "op": "complete",
+     "quest": 6123
+    },
+    {
+     "op": "turnin",
+     "quest": 6123
+    },
+    {
+     "op": "accept",
+     "quest": 6124
+    },
+    {
+     "op": "complete",
+     "quest": 6124
+    },
+    {
+     "op": "turnin",
+     "quest": 6124
+    },
+    {
+     "op": "accept",
+     "quest": 6125
+    },
+    {
+     "op": "complete",
+     "quest": 6125
+    },
+    {
+     "op": "turnin",
+     "quest": 6125
+    },
+    {
+     "op": "accept",
+     "quest": 96408
+    },
+    {
+     "op": "turnin",
+     "quest": 96408
+    },
+    {
+     "op": "accept",
+     "quest": 96392
+    },
+    {
+     "objective": 1,
+     "op": "complete",
+     "quest": 96392
+    },
+    {
+     "op": "turnin",
+     "quest": 96392
+    },
+    {
+     "level": 17,
+     "op": "level",
+     "totalXP": 108912
+    },
+    {
+     "op": "accept",
+     "quest": 125
+    },
+    {
+     "objective": 1,
+     "op": "complete",
+     "quest": 125
+    },
+    {
+     "op": "turnin",
+     "quest": 125
     },
     {
      "level": 18,
      "op": "level",
-     "totalXP": 126543
+     "totalXP": 126834
     },
     {
      "op": "accept",
@@ -2515,15 +2540,15 @@
      "objective": 1,
      "op": "complete",
      "quest": 20
-    },
-    {
-     "objective": 1,
-     "op": "complete",
-     "quest": 127
     },
     {
      "op": "turnin",
      "quest": 20
+    },
+    {
+     "objective": 1,
+     "op": "complete",
+     "quest": 127
     },
     {
      "op": "turnin",
@@ -2569,7 +2594,7 @@
     {
      "level": 19,
      "op": "level",
-     "totalXP": 146008
+     "totalXP": 146043
     },
     {
      "op": "accept",
@@ -2585,15 +2610,137 @@
      "quest": 219
     },
     {
-     "level": 20,
-     "op": "level",
-     "totalXP": 167288
+     "op": "accept",
+     "quest": 257
+    },
+    {
+     "objective": 1,
+     "op": "complete",
+     "quest": 257
+    },
+    {
+     "op": "turnin",
+     "quest": 257
+    },
+    {
+     "op": "accept",
+     "quest": 2038
+    },
+    {
+     "objective": 4,
+     "op": "complete",
+     "quest": 2038
+    },
+    {
+     "objective": 3,
+     "op": "complete",
+     "quest": 2038
+    },
+    {
+     "objective": 2,
+     "op": "complete",
+     "quest": 2038
+    },
+    {
+     "objective": 1,
+     "op": "complete",
+     "quest": 2038
+    },
+    {
+     "op": "turnin",
+     "quest": 2038
+    },
+    {
+     "op": "accept",
+     "quest": 297
+    },
+    {
+     "op": "accept",
+     "quest": 86613
+    },
+    {
+     "op": "turnin",
+     "quest": 86613
+    },
+    {
+     "objective": 1,
+     "op": "complete",
+     "quest": 297
+    },
+    {
+     "op": "turnin",
+     "quest": 297
+    },
+    {
+     "op": "accept",
+     "quest": 1339
+    },
+    {
+     "op": "accept",
+     "quest": 468
+    },
+    {
+     "op": "turnin",
+     "quest": 468
+    },
+    {
+     "op": "turnin",
+     "quest": 1339
+    },
+    {
+     "op": "accept",
+     "quest": 307
+    },
+    {
+     "objective": 1,
+     "op": "complete",
+     "quest": 307
+    },
+    {
+     "op": "turnin",
+     "quest": 307
+    },
+    {
+     "op": "accept",
+     "quest": 250
+    },
+    {
+     "op": "turnin",
+     "quest": 79974
+    },
+    {
+     "op": "turnin",
+     "quest": 250
+    },
+    {
+     "op": "accept",
+     "quest": 199
+    },
+    {
+     "op": "accept",
+     "quest": 79975
+    },
+    {
+     "op": "turnin",
+     "quest": 199
+    },
+    {
+     "op": "turnin",
+     "quest": 79975
+    },
+    {
+     "op": "accept",
+     "quest": 79976
+    },
+    {
+     "op": "turnin",
+     "quest": 79976
     }
    ],
    "inRoute": false,
    "level": 14,
    "minLevel": 14,
-   "minutes": 167.3,
+   "minutes": 153.9,
    "name": "Power over Poison",
    "possible": true,
    "quest": 6125,
@@ -2608,886 +2755,10 @@
    "tier": "optional"
   },
   {
-   "events": [
-    {
-     "level": 4,
-     "op": "level",
-     "totalXP": 2716
-    },
-    {
-     "op": "accept",
-     "quest": 456
-    },
-    {
-     "objective": 2,
-     "op": "complete",
-     "quest": 456
-    },
-    {
-     "objective": 1,
-     "op": "complete",
-     "quest": 456
-    },
-    {
-     "op": "turnin",
-     "quest": 456
-    },
-    {
-     "op": "accept",
-     "quest": 457
-    },
-    {
-     "objective": 1,
-     "op": "complete",
-     "quest": 457
-    },
-    {
-     "objective": 2,
-     "op": "complete",
-     "quest": 457
-    },
-    {
-     "op": "turnin",
-     "quest": 457
-    },
-    {
-     "op": "accept",
-     "quest": 3120
-    },
-    {
-     "op": "turnin",
-     "quest": 3120
-    },
-    {
-     "op": "accept",
-     "quest": 458
-    },
-    {
-     "op": "turnin",
-     "quest": 458
-    },
-    {
-     "op": "accept",
-     "quest": 97977
-    },
-    {
-     "objective": 1,
-     "op": "complete",
-     "quest": 97977
-    },
-    {
-     "op": "turnin",
-     "quest": 97977
-    },
-    {
-     "op": "accept",
-     "quest": 475
-    },
-    {
-     "op": "turnin",
-     "quest": 475
-    },
-    {
-     "op": "accept",
-     "quest": 476
-    },
-    {
-     "op": "turnin",
-     "quest": 476
-    },
-    {
-     "op": "accept",
-     "quest": 87288
-    },
-    {
-     "op": "accept",
-     "quest": 997
-    },
-    {
-     "op": "accept",
-     "quest": 96606
-    },
-    {
-     "objective": 2,
-     "op": "complete",
-     "quest": 96606
-    },
-    {
-     "objective": 1,
-     "op": "complete",
-     "quest": 96606
-    },
-    {
-     "op": "turnin",
-     "quest": 96606
-    },
-    {
-     "op": "accept",
-     "quest": 96634
-    },
-    {
-     "objective": 1,
-     "op": "complete",
-     "quest": 96634
-    },
-    {
-     "op": "turnin",
-     "quest": 96634
-    },
-    {
-     "op": "turnin",
-     "quest": 997
-    },
-    {
-     "op": "accept",
-     "quest": 919
-    },
-    {
-     "objective": 1,
-     "op": "complete",
-     "quest": 919
-    },
-    {
-     "op": "turnin",
-     "quest": 919
-    },
-    {
-     "op": "accept",
-     "quest": 932
-    },
-    {
-     "objective": 1,
-     "op": "complete",
-     "quest": 932
-    },
-    {
-     "op": "turnin",
-     "quest": 932
-    },
-    {
-     "objective": 1,
-     "op": "complete",
-     "quest": 87288
-    },
-    {
-     "op": "turnin",
-     "quest": 87288
-    },
-    {
-     "op": "accept",
-     "quest": 487
-    },
-    {
-     "objective": 1,
-     "op": "complete",
-     "quest": 487
-    },
-    {
-     "op": "turnin",
-     "quest": 487
-    },
-    {
-     "op": "accept",
-     "quest": 99053
-    },
-    {
-     "op": "accept",
-     "quest": 2541
-    },
-    {
-     "objective": 1,
-     "op": "complete",
-     "quest": 2541
-    },
-    {
-     "op": "turnin",
-     "quest": 2541
-    },
-    {
-     "objective": 1,
-     "op": "complete",
-     "quest": 99053
-    },
-    {
-     "op": "turnin",
-     "quest": 99053
-    },
-    {
-     "op": "accept",
-     "quest": 918
-    },
-    {
-     "objective": 1,
-     "op": "complete",
-     "quest": 918
-    },
-    {
-     "op": "turnin",
-     "quest": 918
-    },
-    {
-     "op": "accept",
-     "quest": 937
-    },
-    {
-     "objective": 1,
-     "op": "complete",
-     "quest": 937
-    },
-    {
-     "op": "turnin",
-     "quest": 937
-    },
-    {
-     "op": "accept",
-     "quest": 927
-    },
-    {
-     "op": "accept",
-     "quest": 931
-    },
-    {
-     "op": "accept",
-     "quest": 938
-    },
-    {
-     "objective": 1,
-     "op": "complete",
-     "quest": 938
-    },
-    {
-     "op": "turnin",
-     "quest": 938
-    },
-    {
-     "op": "accept",
-     "quest": 98392
-    },
-    {
-     "objective": 1,
-     "op": "complete",
-     "quest": 98392
-    },
-    {
-     "op": "turnin",
-     "quest": 98392
-    },
-    {
-     "level": 10,
-     "op": "level",
-     "totalXP": 27660
-    },
-    {
-     "op": "accept",
-     "quest": 5921
-    },
-    {
-     "op": "turnin",
-     "quest": 5921
-    },
-    {
-     "op": "accept",
-     "quest": 5929
-    },
-    {
-     "objective": 1,
-     "op": "complete",
-     "quest": 5929
-    },
-    {
-     "op": "turnin",
-     "quest": 5929
-    },
-    {
-     "op": "accept",
-     "quest": 5931
-    },
-    {
-     "op": "turnin",
-     "quest": 5931
-    },
-    {
-     "op": "accept",
-     "quest": 6001
-    },
-    {
-     "objective": 1,
-     "op": "complete",
-     "quest": 6001
-    },
-    {
-     "objective": 2,
-     "op": "complete",
-     "quest": 6001
-    },
-    {
-     "op": "turnin",
-     "quest": 6001
-    },
-    {
-     "op": "turnin",
-     "quest": 927
-    },
-    {
-     "op": "turnin",
-     "quest": 931
-    },
-    {
-     "op": "accept",
-     "quest": 930
-    },
-    {
-     "op": "turnin",
-     "quest": 930
-    },
-    {
-     "op": "accept",
-     "quest": 941
-    },
-    {
-     "op": "turnin",
-     "quest": 941
-    },
-    {
-     "op": "accept",
-     "quest": 983
-    },
-    {
-     "op": "accept",
-     "quest": 98025
-    },
-    {
-     "objective": 1,
-     "op": "complete",
-     "quest": 983
-    },
-    {
-     "objective": 1,
-     "op": "complete",
-     "quest": 98025
-    },
-    {
-     "op": "turnin",
-     "quest": 98025
-    },
-    {
-     "op": "accept",
-     "quest": 954
-    },
-    {
-     "op": "turnin",
-     "quest": 954
-    },
-    {
-     "op": "accept",
-     "quest": 955
-    },
-    {
-     "objective": 1,
-     "op": "complete",
-     "quest": 955
-    },
-    {
-     "op": "turnin",
-     "quest": 955
-    },
-    {
-     "op": "turnin",
-     "quest": 983
-    },
-    {
-     "op": "accept",
-     "quest": 953
-    },
-    {
-     "objective": 1,
-     "op": "complete",
-     "quest": 953
-    },
-    {
-     "objective": 2,
-     "op": "complete",
-     "quest": 953
-    },
-    {
-     "op": "turnin",
-     "quest": 953
-    },
-    {
-     "level": 13,
-     "op": "level",
-     "totalXP": 54246
-    },
-    {
-     "op": "accept",
-     "quest": 36
-    },
-    {
-     "op": "accept",
-     "quest": 64
-    },
-    {
-     "op": "accept",
-     "quest": 151
-    },
-    {
-     "objective": 1,
-     "op": "complete",
-     "quest": 151
-    },
-    {
-     "op": "turnin",
-     "quest": 151
-    },
-    {
-     "objective": 1,
-     "op": "complete",
-     "quest": 64
-    },
-    {
-     "op": "turnin",
-     "quest": 64
-    },
-    {
-     "op": "turnin",
-     "quest": 36
-    },
-    {
-     "op": "accept",
-     "quest": 92910
-    },
-    {
-     "op": "turnin",
-     "quest": 92910
-    },
-    {
-     "op": "accept",
-     "quest": 109
-    },
-    {
-     "op": "turnin",
-     "quest": 109
-    },
-    {
-     "op": "accept",
-     "quest": 92747
-    },
-    {
-     "objective": 1,
-     "op": "complete",
-     "quest": 92747
-    },
-    {
-     "op": "turnin",
-     "quest": 92747
-    },
-    {
-     "op": "accept",
-     "quest": 91740
-    },
-    {
-     "op": "turnin",
-     "quest": 91740
-    },
-    {
-     "op": "accept",
-     "quest": 244
-    },
-    {
-     "op": "turnin",
-     "quest": 244
-    },
-    {
-     "op": "accept",
-     "quest": 3741
-    },
-    {
-     "objective": 1,
-     "op": "complete",
-     "quest": 3741
-    },
-    {
-     "op": "turnin",
-     "quest": 3741
-    },
-    {
-     "level": 14,
-     "op": "level",
-     "totalXP": 65513
-    },
-    {
-     "op": "accept",
-     "quest": 65
-    },
-    {
-     "op": "turnin",
-     "quest": 65
-    },
-    {
-     "op": "accept",
-     "quest": 129
-    },
-    {
-     "op": "accept",
-     "quest": 132
-    },
-    {
-     "op": "turnin",
-     "quest": 129
-    },
-    {
-     "op": "turnin",
-     "quest": 132
-    },
-    {
-     "op": "accept",
-     "quest": 79008
-    },
-    {
-     "op": "complete",
-     "quest": 79008
-    },
-    {
-     "op": "turnin",
-     "quest": 79008
-    },
-    {
-     "op": "accept",
-     "quest": 79192
-    },
-    {
-     "op": "complete",
-     "quest": 79192
-    },
-    {
-     "op": "turnin",
-     "quest": 79192
-    },
-    {
-     "op": "accept",
-     "quest": 79980
-    },
-    {
-     "op": "complete",
-     "quest": 79980
-    },
-    {
-     "op": "turnin",
-     "quest": 79980
-    },
-    {
-     "op": "accept",
-     "quest": 79974
-    },
-    {
-     "op": "complete",
-     "quest": 79974
-    },
-    {
-     "op": "accept",
-     "quest": 96408
-    },
-    {
-     "op": "turnin",
-     "quest": 96408
-    },
-    {
-     "op": "accept",
-     "quest": 96392
-    },
-    {
-     "objective": 1,
-     "op": "complete",
-     "quest": 96392
-    },
-    {
-     "op": "turnin",
-     "quest": 96392
-    },
-    {
-     "op": "accept",
-     "quest": 419
-    },
-    {
-     "level": 16,
-     "op": "level",
-     "totalXP": 92832
-    },
-    {
-     "op": "accept",
-     "quest": 250
-    },
-    {
-     "op": "turnin",
-     "quest": 250
-    },
-    {
-     "op": "accept",
-     "quest": 199
-    },
-    {
-     "op": "turnin",
-     "quest": 79974
-    },
-    {
-     "op": "accept",
-     "quest": 79975
-    },
-    {
-     "op": "complete",
-     "quest": 79975
-    },
-    {
-     "op": "turnin",
-     "quest": 79975
-    },
-    {
-     "op": "accept",
-     "quest": 79976
-    },
-    {
-     "op": "complete",
-     "quest": 79976
-    },
-    {
-     "op": "turnin",
-     "quest": 79976
-    },
-    {
-     "op": "turnin",
-     "quest": 199
-    },
-    {
-     "op": "turnin",
-     "quest": 419
-    },
-    {
-     "op": "accept",
-     "quest": 417
-    },
-    {
-     "objective": 1,
-     "op": "complete",
-     "quest": 417
-    },
-    {
-     "op": "turnin",
-     "quest": 417
-    },
-    {
-     "op": "accept",
-     "quest": 96391
-    },
-    {
-     "op": "turnin",
-     "quest": 96391
-    },
-    {
-     "op": "accept",
-     "quest": 97234
-    },
-    {
-     "op": "turnin",
-     "quest": 97234
-    },
-    {
-     "op": "accept",
-     "quest": 97222
-    },
-    {
-     "objective": 1,
-     "op": "complete",
-     "quest": 97222
-    },
-    {
-     "op": "turnin",
-     "quest": 97222
-    },
-    {
-     "op": "accept",
-     "quest": 130
-    },
-    {
-     "op": "turnin",
-     "quest": 130
-    },
-    {
-     "op": "accept",
-     "quest": 131
-    },
-    {
-     "op": "turnin",
-     "quest": 131
-    },
-    {
-     "op": "accept",
-     "quest": 125
-    },
-    {
-     "objective": 1,
-     "op": "complete",
-     "quest": 125
-    },
-    {
-     "op": "turnin",
-     "quest": 125
-    },
-    {
-     "op": "accept",
-     "quest": 89
-    },
-    {
-     "op": "accept",
-     "quest": 118
-    },
-    {
-     "objective": 1,
-     "op": "complete",
-     "quest": 89
-    },
-    {
-     "op": "turnin",
-     "quest": 89
-    },
-    {
-     "op": "turnin",
-     "quest": 118
-    },
-    {
-     "op": "accept",
-     "quest": 119
-    },
-    {
-     "op": "turnin",
-     "quest": 119
-    },
-    {
-     "op": "accept",
-     "quest": 122
-    },
-    {
-     "op": "accept",
-     "quest": 124
-    },
-    {
-     "objective": 1,
-     "op": "complete",
-     "quest": 124
-    },
-    {
-     "objective": 2,
-     "op": "complete",
-     "quest": 124
-    },
-    {
-     "objective": 1,
-     "op": "complete",
-     "quest": 122
-    },
-    {
-     "op": "turnin",
-     "quest": 122
-    },
-    {
-     "op": "turnin",
-     "quest": 124
-    },
-    {
-     "level": 18,
-     "op": "level",
-     "totalXP": 126543
-    },
-    {
-     "op": "accept",
-     "quest": 20
-    },
-    {
-     "op": "accept",
-     "quest": 127
-    },
-    {
-     "objective": 1,
-     "op": "complete",
-     "quest": 20
-    },
-    {
-     "objective": 1,
-     "op": "complete",
-     "quest": 127
-    },
-    {
-     "op": "turnin",
-     "quest": 20
-    },
-    {
-     "op": "turnin",
-     "quest": 127
-    },
-    {
-     "op": "accept",
-     "quest": 90
-    },
-    {
-     "op": "accept",
-     "quest": 101
-    },
-    {
-     "op": "accept",
-     "quest": 164
-    },
-    {
-     "op": "accept",
-     "quest": 165
-    },
-    {
-     "op": "accept",
-     "quest": 96139
-    },
-    {
-     "op": "turnin",
-     "quest": 164
-    },
-    {
-     "op": "turnin",
-     "quest": 165
-    },
-    {
-     "objective": 1,
-     "op": "complete",
-     "quest": 96139
-    },
-    {
-     "op": "turnin",
-     "quest": 96139
-    },
-    {
-     "level": 19,
-     "op": "level",
-     "totalXP": 146008
-    },
-    {
-     "op": "accept",
-     "quest": 219
-    },
-    {
-     "objective": 1,
-     "op": "complete",
-     "quest": 219
-    },
-    {
-     "op": "turnin",
-     "quest": 219
-    },
-    {
-     "level": 20,
-     "op": "level",
-     "totalXP": 167288
-    }
-   ],
-   "inRoute": false,
-   "level": 16,
+   "inRoute": true,
+   "level": 20,
    "minLevel": 14,
-   "minutes": 19.1,
+   "minutes": -6.4,
    "name": "This Must Be The Place",
    "possible": true,
    "quest": 79976,
@@ -3510,13 +2781,17 @@
  },
  "events": [
   {
-   "level": 4,
+   "op": "accept",
+   "quest": 456
+  },
+  {
+   "level": 3,
    "op": "level",
-   "totalXP": 2716
+   "totalXP": 1324
   },
   {
    "op": "accept",
-   "quest": 456
+   "quest": 916
   },
   {
    "objective": 2,
@@ -3524,31 +2799,8 @@
    "quest": 456
   },
   {
-   "objective": 1,
-   "op": "complete",
-   "quest": 456
-  },
-  {
    "op": "turnin",
    "quest": 456
-  },
-  {
-   "op": "accept",
-   "quest": 457
-  },
-  {
-   "objective": 1,
-   "op": "complete",
-   "quest": 457
-  },
-  {
-   "objective": 2,
-   "op": "complete",
-   "quest": 457
-  },
-  {
-   "op": "turnin",
-   "quest": 457
   },
   {
    "op": "accept",
@@ -3559,49 +2811,64 @@
    "quest": 3120
   },
   {
-   "op": "accept",
-   "quest": 458
+   "objective": 1,
+   "op": "complete",
+   "quest": 916
   },
   {
    "op": "turnin",
-   "quest": 458
+   "quest": 916
   },
   {
    "op": "accept",
-   "quest": 97977
+   "quest": 917
   },
   {
    "objective": 1,
    "op": "complete",
-   "quest": 97977
+   "quest": 917
   },
   {
    "op": "turnin",
-   "quest": 97977
+   "quest": 917
   },
   {
    "op": "accept",
-   "quest": 475
+   "quest": 920
   },
   {
    "op": "turnin",
-   "quest": 475
+   "quest": 920
   },
   {
    "op": "accept",
-   "quest": 476
+   "quest": 921
+  },
+  {
+   "objective": 1,
+   "op": "complete",
+   "quest": 921
   },
   {
    "op": "turnin",
-   "quest": 476
+   "quest": 921
   },
   {
    "op": "accept",
-   "quest": 87288
+   "quest": 928
   },
   {
    "op": "accept",
-   "quest": 997
+   "quest": 99053
+  },
+  {
+   "objective": 1,
+   "op": "complete",
+   "quest": 99053
+  },
+  {
+   "op": "turnin",
+   "quest": 99053
   },
   {
    "op": "accept",
@@ -3636,6 +2903,48 @@
   },
   {
    "op": "turnin",
+   "quest": 928
+  },
+  {
+   "op": "accept",
+   "quest": 929
+  },
+  {
+   "objective": 1,
+   "op": "complete",
+   "quest": 929
+  },
+  {
+   "op": "turnin",
+   "quest": 929
+  },
+  {
+   "op": "accept",
+   "quest": 933
+  },
+  {
+   "objective": 1,
+   "op": "complete",
+   "quest": 933
+  },
+  {
+   "op": "turnin",
+   "quest": 933
+  },
+  {
+   "op": "accept",
+   "quest": 475
+  },
+  {
+   "op": "accept",
+   "quest": 997
+  },
+  {
+   "op": "turnin",
+   "quest": 475
+  },
+  {
+   "op": "turnin",
    "quest": 997
   },
   {
@@ -3652,43 +2961,9 @@
    "quest": 919
   },
   {
-   "op": "accept",
-   "quest": 932
-  },
-  {
-   "objective": 1,
-   "op": "complete",
-   "quest": 932
-  },
-  {
-   "op": "turnin",
-   "quest": 932
-  },
-  {
-   "objective": 1,
-   "op": "complete",
-   "quest": 87288
-  },
-  {
-   "op": "turnin",
-   "quest": 87288
-  },
-  {
-   "op": "accept",
-   "quest": 487
-  },
-  {
-   "objective": 1,
-   "op": "complete",
-   "quest": 487
-  },
-  {
-   "op": "turnin",
-   "quest": 487
-  },
-  {
-   "op": "accept",
-   "quest": 99053
+   "level": 7,
+   "op": "level",
+   "totalXP": 11273
   },
   {
    "op": "accept",
@@ -3704,13 +2979,17 @@
    "quest": 2541
   },
   {
+   "op": "accept",
+   "quest": 2561
+  },
+  {
    "objective": 1,
    "op": "complete",
-   "quest": 99053
+   "quest": 2561
   },
   {
    "op": "turnin",
-   "quest": 99053
+   "quest": 2561
   },
   {
    "op": "accept",
@@ -3724,19 +3003,6 @@
   {
    "op": "turnin",
    "quest": 918
-  },
-  {
-   "op": "accept",
-   "quest": 937
-  },
-  {
-   "objective": 1,
-   "op": "complete",
-   "quest": 937
-  },
-  {
-   "op": "turnin",
-   "quest": 937
   },
   {
    "op": "accept",
@@ -3744,11 +3010,11 @@
   },
   {
    "op": "accept",
-   "quest": 931
+   "quest": 938
   },
   {
    "op": "accept",
-   "quest": 938
+   "quest": 931
   },
   {
    "objective": 1,
@@ -3758,6 +3024,19 @@
   {
    "op": "turnin",
    "quest": 938
+  },
+  {
+   "op": "accept",
+   "quest": 937
+  },
+  {
+   "objective": 1,
+   "op": "complete",
+   "quest": 937
+  },
+  {
+   "op": "turnin",
+   "quest": 937
   },
   {
    "op": "accept",
@@ -3775,7 +3054,7 @@
   {
    "level": 10,
    "op": "level",
-   "totalXP": 27660
+   "totalXP": 27671
   },
   {
    "op": "accept",
@@ -3834,14 +3113,6 @@
   },
   {
    "op": "accept",
-   "quest": 930
-  },
-  {
-   "op": "turnin",
-   "quest": 930
-  },
-  {
-   "op": "accept",
    "quest": 941
   },
   {
@@ -3850,31 +3121,70 @@
   },
   {
    "op": "accept",
-   "quest": 983
+   "quest": 953
   },
   {
-   "op": "accept",
-   "quest": 98025
-  },
-  {
-   "objective": 1,
-   "op": "complete",
-   "quest": 983
-  },
-  {
-   "objective": 1,
-   "op": "complete",
-   "quest": 98025
-  },
-  {
-   "op": "turnin",
-   "quest": 98025
+   "level": 11,
+   "op": "level",
+   "totalXP": 35291
   },
   {
    "op": "accept",
    "quest": 954
   },
   {
+   "op": "accept",
+   "quest": 3524
+  },
+  {
+   "objective": 1,
+   "op": "complete",
+   "quest": 3524
+  },
+  {
+   "op": "turnin",
+   "quest": 3524
+  },
+  {
+   "op": "accept",
+   "quest": 4681
+  },
+  {
+   "objective": 1,
+   "op": "complete",
+   "quest": 4681
+  },
+  {
+   "op": "turnin",
+   "quest": 4681
+  },
+  {
+   "op": "accept",
+   "quest": 983
+  },
+  {
+   "op": "accept",
+   "quest": 98025
+  },
+  {
+   "objective": 1,
+   "op": "complete",
+   "quest": 98025
+  },
+  {
+   "op": "turnin",
+   "quest": 98025
+  },
+  {
+   "objective": 1,
+   "op": "complete",
+   "quest": 983
+  },
+  {
+   "op": "turnin",
+   "quest": 983
+  },
+  {
    "op": "turnin",
    "quest": 954
   },
@@ -3892,338 +3202,226 @@
    "quest": 955
   },
   {
-   "op": "turnin",
-   "quest": 983
-  },
-  {
    "op": "accept",
-   "quest": 953
+   "quest": 956
   },
   {
    "objective": 1,
    "op": "complete",
-   "quest": 953
-  },
-  {
-   "objective": 2,
-   "op": "complete",
-   "quest": 953
+   "quest": 956
   },
   {
    "op": "turnin",
-   "quest": 953
+   "quest": 956
   },
   {
    "level": 13,
    "op": "level",
-   "totalXP": 54246
-  },
-  {
-   "op": "accept",
-   "quest": 36
-  },
-  {
-   "op": "accept",
-   "quest": 64
-  },
-  {
-   "op": "accept",
-   "quest": 151
+   "totalXP": 54245
   },
   {
    "objective": 1,
    "op": "complete",
-   "quest": 151
-  },
-  {
-   "op": "turnin",
-   "quest": 151
-  },
-  {
-   "objective": 1,
-   "op": "complete",
-   "quest": 64
-  },
-  {
-   "op": "turnin",
-   "quest": 64
-  },
-  {
-   "op": "turnin",
-   "quest": 36
-  },
-  {
-   "op": "accept",
-   "quest": 92910
-  },
-  {
-   "op": "turnin",
-   "quest": 92910
-  },
-  {
-   "op": "accept",
-   "quest": 109
-  },
-  {
-   "op": "turnin",
-   "quest": 109
-  },
-  {
-   "op": "accept",
-   "quest": 92747
-  },
-  {
-   "objective": 1,
-   "op": "complete",
-   "quest": 92747
-  },
-  {
-   "op": "turnin",
-   "quest": 92747
-  },
-  {
-   "op": "accept",
-   "quest": 91740
-  },
-  {
-   "op": "turnin",
-   "quest": 91740
-  },
-  {
-   "op": "accept",
-   "quest": 244
-  },
-  {
-   "op": "turnin",
-   "quest": 244
-  },
-  {
-   "op": "accept",
-   "quest": 3741
-  },
-  {
-   "objective": 1,
-   "op": "complete",
-   "quest": 3741
-  },
-  {
-   "op": "turnin",
-   "quest": 3741
-  },
-  {
-   "level": 14,
-   "op": "level",
-   "totalXP": 65513
-  },
-  {
-   "op": "accept",
-   "quest": 65
-  },
-  {
-   "op": "turnin",
-   "quest": 65
-  },
-  {
-   "op": "accept",
-   "quest": 129
-  },
-  {
-   "op": "accept",
-   "quest": 132
-  },
-  {
-   "op": "turnin",
-   "quest": 129
-  },
-  {
-   "op": "turnin",
-   "quest": 132
-  },
-  {
-   "op": "accept",
-   "quest": 96408
-  },
-  {
-   "op": "turnin",
-   "quest": 96408
-  },
-  {
-   "op": "accept",
-   "quest": 96392
-  },
-  {
-   "objective": 1,
-   "op": "complete",
-   "quest": 96392
-  },
-  {
-   "op": "turnin",
-   "quest": 96392
-  },
-  {
-   "op": "accept",
-   "quest": 419
-  },
-  {
-   "level": 16,
-   "op": "level",
-   "totalXP": 92832
-  },
-  {
-   "op": "accept",
-   "quest": 250
-  },
-  {
-   "op": "turnin",
-   "quest": 250
-  },
-  {
-   "op": "accept",
-   "quest": 199
-  },
-  {
-   "op": "turnin",
-   "quest": 199
-  },
-  {
-   "op": "turnin",
-   "quest": 419
-  },
-  {
-   "op": "accept",
-   "quest": 417
-  },
-  {
-   "objective": 1,
-   "op": "complete",
-   "quest": 417
-  },
-  {
-   "op": "turnin",
-   "quest": 417
-  },
-  {
-   "op": "accept",
-   "quest": 96391
-  },
-  {
-   "op": "turnin",
-   "quest": 96391
-  },
-  {
-   "op": "accept",
-   "quest": 97234
-  },
-  {
-   "op": "turnin",
-   "quest": 97234
-  },
-  {
-   "op": "accept",
-   "quest": 97222
-  },
-  {
-   "objective": 1,
-   "op": "complete",
-   "quest": 97222
-  },
-  {
-   "op": "turnin",
-   "quest": 97222
-  },
-  {
-   "op": "accept",
-   "quest": 130
-  },
-  {
-   "op": "turnin",
-   "quest": 130
-  },
-  {
-   "op": "accept",
-   "quest": 131
-  },
-  {
-   "op": "turnin",
-   "quest": 131
-  },
-  {
-   "op": "accept",
-   "quest": 125
-  },
-  {
-   "objective": 1,
-   "op": "complete",
-   "quest": 125
-  },
-  {
-   "op": "turnin",
-   "quest": 125
-  },
-  {
-   "op": "accept",
-   "quest": 89
-  },
-  {
-   "op": "accept",
-   "quest": 118
-  },
-  {
-   "objective": 1,
-   "op": "complete",
-   "quest": 89
-  },
-  {
-   "op": "turnin",
-   "quest": 89
-  },
-  {
-   "op": "turnin",
-   "quest": 118
-  },
-  {
-   "op": "accept",
-   "quest": 119
-  },
-  {
-   "op": "turnin",
-   "quest": 119
-  },
-  {
-   "op": "accept",
-   "quest": 122
-  },
-  {
-   "op": "accept",
-   "quest": 124
-  },
-  {
-   "objective": 1,
-   "op": "complete",
-   "quest": 124
+   "quest": 953
   },
   {
    "objective": 2,
    "op": "complete",
-   "quest": 124
+   "quest": 953
+  },
+  {
+   "op": "turnin",
+   "quest": 953
+  },
+  {
+   "op": "accept",
+   "quest": 151
   },
   {
    "objective": 1,
    "op": "complete",
-   "quest": 122
+   "quest": 151
   },
   {
    "op": "turnin",
-   "quest": 122
+   "quest": 151
+  },
+  {
+   "op": "accept",
+   "quest": 64
+  },
+  {
+   "op": "accept",
+   "quest": 36
+  },
+  {
+   "objective": 1,
+   "op": "complete",
+   "quest": 64
   },
   {
    "op": "turnin",
-   "quest": 124
+   "quest": 64
+  },
+  {
+   "op": "turnin",
+   "quest": 36
+  },
+  {
+   "op": "accept",
+   "quest": 92910
+  },
+  {
+   "op": "turnin",
+   "quest": 92910
+  },
+  {
+   "op": "accept",
+   "quest": 92747
+  },
+  {
+   "objective": 1,
+   "op": "complete",
+   "quest": 92747
+  },
+  {
+   "op": "turnin",
+   "quest": 92747
+  },
+  {
+   "op": "accept",
+   "quest": 91740
+  },
+  {
+   "op": "turnin",
+   "quest": 91740
+  },
+  {
+   "op": "accept",
+   "quest": 5545
+  },
+  {
+   "objective": 1,
+   "op": "complete",
+   "quest": 5545
+  },
+  {
+   "op": "turnin",
+   "quest": 5545
+  },
+  {
+   "level": 14,
+   "op": "level",
+   "totalXP": 65680
+  },
+  {
+   "op": "accept",
+   "quest": 65
+  },
+  {
+   "op": "turnin",
+   "quest": 65
+  },
+  {
+   "op": "accept",
+   "quest": 132
+  },
+  {
+   "op": "accept",
+   "quest": 3741
+  },
+  {
+   "objective": 1,
+   "op": "complete",
+   "quest": 3741
+  },
+  {
+   "op": "turnin",
+   "quest": 3741
+  },
+  {
+   "op": "accept",
+   "quest": 129
+  },
+  {
+   "op": "turnin",
+   "quest": 129
+  },
+  {
+   "op": "turnin",
+   "quest": 132
+  },
+  {
+   "op": "accept",
+   "quest": 79008
+  },
+  {
+   "op": "turnin",
+   "quest": 79008
+  },
+  {
+   "op": "accept",
+   "quest": 79192
+  },
+  {
+   "op": "turnin",
+   "quest": 79192
+  },
+  {
+   "op": "accept",
+   "quest": 79980
+  },
+  {
+   "op": "turnin",
+   "quest": 79980
+  },
+  {
+   "op": "accept",
+   "quest": 79974
+  },
+  {
+   "op": "accept",
+   "quest": 96408
+  },
+  {
+   "op": "turnin",
+   "quest": 96408
+  },
+  {
+   "op": "accept",
+   "quest": 96392
+  },
+  {
+   "objective": 1,
+   "op": "complete",
+   "quest": 96392
+  },
+  {
+   "op": "turnin",
+   "quest": 96392
+  },
+  {
+   "level": 17,
+   "op": "level",
+   "totalXP": 108912
+  },
+  {
+   "op": "accept",
+   "quest": 125
+  },
+  {
+   "objective": 1,
+   "op": "complete",
+   "quest": 125
+  },
+  {
+   "op": "turnin",
+   "quest": 125
   },
   {
    "level": 18,
    "op": "level",
-   "totalXP": 126543
+   "totalXP": 126834
   },
   {
    "op": "accept",
@@ -4237,15 +3435,15 @@
    "objective": 1,
    "op": "complete",
    "quest": 20
-  },
-  {
-   "objective": 1,
-   "op": "complete",
-   "quest": 127
   },
   {
    "op": "turnin",
    "quest": 20
+  },
+  {
+   "objective": 1,
+   "op": "complete",
+   "quest": 127
   },
   {
    "op": "turnin",
@@ -4291,7 +3489,7 @@
   {
    "level": 19,
    "op": "level",
-   "totalXP": 146008
+   "totalXP": 146043
   },
   {
    "op": "accept",
@@ -4307,60 +3505,182 @@
    "quest": 219
   },
   {
-   "level": 20,
-   "op": "level",
-   "totalXP": 167288
+   "op": "accept",
+   "quest": 257
+  },
+  {
+   "objective": 1,
+   "op": "complete",
+   "quest": 257
+  },
+  {
+   "op": "turnin",
+   "quest": 257
+  },
+  {
+   "op": "accept",
+   "quest": 2038
+  },
+  {
+   "objective": 4,
+   "op": "complete",
+   "quest": 2038
+  },
+  {
+   "objective": 3,
+   "op": "complete",
+   "quest": 2038
+  },
+  {
+   "objective": 2,
+   "op": "complete",
+   "quest": 2038
+  },
+  {
+   "objective": 1,
+   "op": "complete",
+   "quest": 2038
+  },
+  {
+   "op": "turnin",
+   "quest": 2038
+  },
+  {
+   "op": "accept",
+   "quest": 297
+  },
+  {
+   "op": "accept",
+   "quest": 86613
+  },
+  {
+   "op": "turnin",
+   "quest": 86613
+  },
+  {
+   "objective": 1,
+   "op": "complete",
+   "quest": 297
+  },
+  {
+   "op": "turnin",
+   "quest": 297
+  },
+  {
+   "op": "accept",
+   "quest": 1339
+  },
+  {
+   "op": "accept",
+   "quest": 468
+  },
+  {
+   "op": "turnin",
+   "quest": 468
+  },
+  {
+   "op": "turnin",
+   "quest": 1339
+  },
+  {
+   "op": "accept",
+   "quest": 307
+  },
+  {
+   "objective": 1,
+   "op": "complete",
+   "quest": 307
+  },
+  {
+   "op": "turnin",
+   "quest": 307
+  },
+  {
+   "op": "accept",
+   "quest": 250
+  },
+  {
+   "op": "turnin",
+   "quest": 79974
+  },
+  {
+   "op": "turnin",
+   "quest": 250
+  },
+  {
+   "op": "accept",
+   "quest": 199
+  },
+  {
+   "op": "accept",
+   "quest": 79975
+  },
+  {
+   "op": "turnin",
+   "quest": 199
+  },
+  {
+   "op": "turnin",
+   "quest": 79975
+  },
+  {
+   "op": "accept",
+   "quest": 79976
+  },
+  {
+   "op": "turnin",
+   "quest": 79976
   }
  ],
  "finalModelReplayVerified": true,
- "finalXP": 167288,
+ "finalXP": 167331,
  "hours": {
-  "optimized": 16.93927777777778
+  "optimized": 16.47786111111111
  },
  "key": "nightelf-druid",
  "killProfile": "MythicSim druid launch (gear starter weapon, talents none; outside the table: default (uncalibrated) scaled to the table's edge)",
  "level": 20,
- "modelRevision": "foreverroutes.timeline-model.v2.2",
+ "modelRevision": "foreverroutes.timeline-model.v2.3",
  "preparations": {
   "bagStacks": 0,
   "camping": true,
   "forceProfessions": false,
   "forceWand": false,
   "professionDetour": 180,
-  "professionLevel": 1,
+  "professionLevel": 10,
   "wands": false
  },
- "quests": 68,
+ "quests": 71,
  "replayVerified": true,
  "requiredClassGoals": [
   3120,
   6001
  ],
- "resumedAndReverified": true,
+ "resumedAndReverified": false,
  "runs": null,
  "scenario": "solo_auto",
  "schema": "foreverroutes.route.v1",
  "search": {
-  "BestSeconds": 60946.1,
+  "BestSeconds": 59241.9,
   "Better": [
    0,
    1,
    0,
    0,
+   1,
    0,
    0,
    0,
-   0,
-   2,
-   0,
-   2
+   1,
+   1,
+   3
   ],
   "CheckpointLoaded": false,
   "DungeonChecks": [
    {
     "candidateFound": true,
     "keys": [],
-    "seconds": 62830.8
+    "seconds": 60227.7
    }
   ],
   "DungeonCombinationsAllowed": 1,
@@ -4368,37 +3688,37 @@
   "DungeonCombinationsTotal": 1,
   "DungeonEnumerationComplete": true,
   "Kept": [
-   11,
-   6,
-   0,
-   3,
-   1,
-   0,
-   0,
-   0,
+   24,
    14,
+   0,
+   9,
    7,
-   24
+   0,
+   0,
+   0,
+   32,
+   33,
+   144
   ],
-  "PreparationCandidates": 56,
-  "Restarts": 0,
+  "PreparationCandidates": 28,
+  "Restarts": 1,
   "SeedsEvaluated": 5,
   "Walks": [
-   30,
-   26,
-   32,
-   14,
-   13,
+   65,
+   82,
+   83,
+   56,
+   31,
    0,
+   3,
    0,
-   0,
-   33,
-   63,
-   69
+   68,
+   286,
+   264
   ]
  },
- "searchSeconds": 0.469225165,
- "seconds": 60981.4,
+ "searchSeconds": 34.914970807,
+ "seconds": 59320.3,
  "skipped": {},
  "sleepSteps": 0,
  "sleepingBagModel": {

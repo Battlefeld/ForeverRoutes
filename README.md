@@ -25,7 +25,7 @@ Die Routendaten werden beim Paketbau erzeugt; ein reiner Git-Checkout ist noch k
 
 - Datensatz mit 2922 Quests, 3751 NPCs, 630 Objekten, 59 Flugmeistern, 45 Gasthäusern, Zeppelinen und Schiffen, dazu das
   Skyborne-Startgebiet Zephras Isle mit der Abreise beider Fraktionen. Skyborne brauchen `-faction A` oder `-faction H`.
-- Alle 56 unterstützten Volk-/Klassenkontexte werden bis 20 geprüft; je Kontext werden Solo und optionale Dungeons sowie passende Zauberstab-/Schlafsackvarianten berechnet. [Gesamtprüfung](data/audits/roster-v22.md).
+- Alle 56 unterstützten Volk-/Klassenkontexte werden bis 20 geprüft; je Kontext werden Solo und optionale Dungeons sowie passende Zauberstab-/Schlafsackvarianten berechnet. [Gesamtprüfung](data/audits/roster-v23.md).
 - Orc Hexer und Mensch Magier bleiben zusätzliche Ausgangstests bis Level 30.
 - **Die Stundenangaben sind nicht kalibriert.** Ohne `-profile` gilt das eingebaute Kampfmodell (`DefaultProfile`), eine Schätzung. Es
   bewertet Grinden im Vergleich zu Quests etwa doppelt so gut wie die Wirklichkeit: Ein Guide-Ablauf (RestedXP) und
