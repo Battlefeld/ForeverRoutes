@@ -31,6 +31,10 @@ func TestUndeadQuestAuditBenchmark(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	walkTable, err := dataset.LoadWalkTable("../data/walktable.json.gz")
+	if err != nil {
+		t.Fatal(err)
+	}
 	pf, err := os.Open("../data/profiles/warlock.json")
 	if err != nil {
 		t.Fatal(err)
@@ -40,7 +44,7 @@ func TestUndeadQuestAuditBenchmark(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	w, err := NewWorld(data, Character{Race: "Undead", Class: "Warlock"}, Options{Dungeons: dungeons, Walks: walks, Profile: profile, Preparations: PreparationConstraints{Wands: func() string {
+	w, err := NewWorld(data, Character{Race: "Undead", Class: "Warlock"}, Options{Dungeons: dungeons, Walks: walks, WalkTable: walkTable, Profile: profile, Preparations: PreparationConstraints{Wands: func() string {
 		if wands {
 			return "on"
 		}

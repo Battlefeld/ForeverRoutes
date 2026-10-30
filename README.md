@@ -191,12 +191,19 @@ entsteht.
   oder als Belohnung einer anderen Quest (die wird dann Voraussetzung). Quests, die ein Gegenstand startet, beginnen
   dort, wo er droppt.
   Kills zählen für alle Quests im Log, Respawns werden abgewartet, geleerte Gruppen erholen sich über die Respawnzeit.
-- Reisen: Laufen (7 Yards/s, Wegfaktor 1,2), Flugmeister ab Entdeckung (im Vorbeigehen innerhalb 60 Yards), Zeppeline und
+- Reisen: Laufen (7 Yards/s) auf gemessenen Wegen (siehe „Laufwege“), Flugmeister ab Entdeckung (im Vorbeigehen innerhalb 60 Yards), Zeppeline und
   Schiffe mit Zeiten aus der cmangos-Transporttabelle, Ruhestein (10 s, 1 h Abklingzeit, gebunden am letzten Gasthaus).
 - Zauberstab: Magier, Priester und Hexenmeister bauen sich bei einem Besuch in der nächsten Hauptstadt
   (Verzauberkunst-Lehrer, -Händler, Auktionshaus) den Novice's Practice Wand (getragen bis Stufe 5) und den Geringen
   Zauberstab (ab Stufe 5), sofern diese Vorbereitung gewählt wurde; die Kampfwahl vergleicht Zauber und Zauberstab ohne Manakosten. Quest- und Dungeon-Zauberstäbe ersetzen ihn, wenn sie besser sind.
 - Lager: Die Optimierung vergleicht Kürschnern, Kochkunst und Lederverarbeitung mit dem Verzicht darauf. Gewählte Vorbereitungen bezahlen Trainerweg und die geschätzten Beschaffungskosten. Ab Stufe 10 können Lager mit Lagerzelt erholte XP geben; Ruhezeit und Abklingzeit werden bezahlt. Materialbeschaffung und Berufsplätze sind weiterhin ein vereinfachtes Kostenmodell.
+- Laufwege: Zwischen allen Orten, die Routen anlaufen (Questgeber, Ziele, Grindplätze, Flugmeister, Friedhöfe,
+  Eingänge, Lehrer; 5630 Orte), liegen 1,6 Millionen Wege bis 3000 Yards in `data/walktable.json.gz`, gemessen mit
+  der Wegsuche von Shortest Path Forever auf ihrem 8-Yard-Navigationsnetz mit Stockwerken, auf der Höhe der Orte
+  (Unterstadt unter den Ruinen, Minen unter dem Hügel): der Weg, den ein Spieler läuft, samt Steigungen, Schwimmen mit
+  eigenem Tempo. Sie decken 96,6 % der Laufwege der Routen ab. Alle anderen Wege (Live-Positionen, Todespunkte, Wege
+  durch einen Aufzug) gehen über das 200-Yard-Gitter, kalibriert an denselben Messungen; Aufzüge kosten ihre Fahrt
+  samt Warten. [Messung und Neuaufbau](tools/walktable/README.md).
 - Laufgitter: Ein Punkt auf einer abgeschnittenen Gitter-Insel (Dammkrone, Felsvorsprung) wird über die nächste
   verbundene Zelle erreicht statt mit dem Notwert (sechsfache Luftlinie).
 - Optionen: Klassenreihen, die nicht Pflicht sind, und Forever-Ziele wie der Gemütliche Schlafsack (ab Level 14) werden

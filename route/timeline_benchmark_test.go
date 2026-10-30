@@ -39,6 +39,10 @@ func TestTimelineShippedBenchmark(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	walkTable, err := dataset.LoadWalkTable("../data/walktable.json.gz")
+	if err != nil {
+		t.Fatal(err)
+	}
 	f, err := os.Open("../data/profiles/warlock.json")
 	if err != nil {
 		t.Fatal(err)
@@ -48,7 +52,7 @@ func TestTimelineShippedBenchmark(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	opt := Options{Dungeons: true, Walks: walks, Profile: profile, Preparations: policy}
+	opt := Options{Dungeons: true, Walks: walks, WalkTable: walkTable, Profile: profile, Preparations: policy}
 	if strings.HasSuffix(scenario, "_1h") {
 		opt.SleepingBag = DefaultSleepingBagModel()
 		opt.SleepingBag.Duration = 3600
@@ -155,6 +159,10 @@ func TestTimelinePoolAndDurationSensitivity(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	walkTable, err := dataset.LoadWalkTable("../data/walktable.json.gz")
+	if err != nil {
+		t.Fatal(err)
+	}
 	f, err := os.Open("../data/profiles/warlock.json")
 	if err != nil {
 		t.Fatal(err)
@@ -189,7 +197,7 @@ func TestTimelinePoolAndDurationSensitivity(t *testing.T) {
 			independentAuto = s.Seconds
 		}
 	}
-	opt := Options{Dungeons: true, Walks: walks, Profile: profile, Preparations: PreparationConstraints{Camping: "auto", Wands: "auto", SleepingBag: "auto"}}
+	opt := Options{Dungeons: true, Walks: walks, WalkTable: walkTable, Profile: profile, Preparations: PreparationConstraints{Camping: "auto", Wands: "auto", SleepingBag: "auto"}}
 	w, err := NewWorld(d, Character{Race: "Undead", Class: "Warlock"}, opt)
 	if err != nil {
 		t.Fatal(err)

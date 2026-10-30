@@ -21,6 +21,10 @@ func TestReviewExistingRoster(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	walkTable, err := dataset.LoadWalkTable("../data/walktable.json.gz")
+	if err != nil {
+		t.Fatal(err)
+	}
 	files, _ := filepath.Glob("../data/routes/*.json")
 	var rows []map[string]any
 	for _, path := range files {
@@ -48,7 +52,7 @@ func TestReviewExistingRoster(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		w, err := NewWorld(d, f.Character, Options{Profile: p, Walks: walks, Dungeons: strings.Contains(path, "-dungeons")})
+		w, err := NewWorld(d, f.Character, Options{Profile: p, Walks: walks, WalkTable: walkTable, Dungeons: strings.Contains(path, "-dungeons")})
 		if err != nil {
 			t.Fatal(err)
 		}

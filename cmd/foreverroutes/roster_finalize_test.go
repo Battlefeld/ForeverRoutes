@@ -43,6 +43,10 @@ func TestFinalizeRosterEvidence(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	walkTable, err := dataset.LoadWalkTable("../../data/walktable.json.gz")
+	if err != nil {
+		t.Fatal(err)
+	}
 	profiles := map[string]*route.TableProfile{}
 	count := 0
 	for _, row := range rows {
@@ -78,7 +82,7 @@ func TestFinalizeRosterEvidence(t *testing.T) {
 			}
 			profiles[saved.Character.Class] = profile
 		}
-		w, err := route.NewWorld(d, saved.Character, route.Options{Profile: profile, Walks: walks, Dungeons: strings.HasPrefix(saved.Scenario, "dungeons_"), Preparations: saved.Constraints, SleepingBag: saved.Bag})
+		w, err := route.NewWorld(d, saved.Character, route.Options{Profile: profile, Walks: walks, WalkTable: walkTable, Dungeons: strings.HasPrefix(saved.Scenario, "dungeons_"), Preparations: saved.Constraints, SleepingBag: saved.Bag})
 		if err != nil {
 			t.Fatal(err)
 		}

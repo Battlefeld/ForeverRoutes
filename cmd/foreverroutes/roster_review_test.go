@@ -68,6 +68,10 @@ func TestRebuildRoster(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	walkTable, err := dataset.LoadWalkTable("../../data/walktable.json.gz")
+	if err != nil {
+		t.Fatal(err)
+	}
 	var mu sync.Mutex
 	var rows []map[string]any
 	write := func(path string, v any) {
@@ -137,7 +141,7 @@ func TestRebuildRoster(t *testing.T) {
 					label = "dungeons"
 				}
 				makeWorld := func(policy route.PreparationConstraints) *route.World {
-					w, err := route.NewWorld(d, ch, route.Options{Walks: walks, Profile: profile, Dungeons: group, Preparations: policy})
+					w, err := route.NewWorld(d, ch, route.Options{Walks: walks, WalkTable: walkTable, Profile: profile, Dungeons: group, Preparations: policy})
 					if err != nil {
 						t.Fatal(err)
 					}
