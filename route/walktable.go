@@ -1,6 +1,9 @@
 package route
 
 import (
+	"crypto/sha256"
+	"encoding/binary"
+	"encoding/hex"
 	"math"
 	"sort"
 	"sync"
@@ -120,4 +123,27 @@ func (t walkTable) yards(a, b dataset.Point) (float64, bool) {
 		return 0, false
 	}
 	return float64(tm.yards[int(tm.off[i])+k]) + da + db, true
+}
+
+// digest names the table's content for a checkpoint's context ("" without one): a route found with other walks is
+// another route.
+func (t walkTable) digest() string {
+	if len(t) == 0 {
+		return ""
+	}
+	h := sha256.New()
+	maps := make([]int, 0, len(t))
+	for m := range t {
+		maps = append(maps, m)
+	}
+	sort.Ints(maps)
+	for _, m := range maps {
+		tm := t[m]
+		binary.Write(h, binary.LittleEndian, int64(m))
+		binary.Write(h, binary.LittleEndian, tm.x)
+		binary.Write(h, binary.LittleEndian, tm.y)
+		binary.Write(h, binary.LittleEndian, tm.to)
+		binary.Write(h, binary.LittleEndian, tm.yards)
+	}
+	return hex.EncodeToString(h.Sum(nil))
 }

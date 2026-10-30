@@ -140,7 +140,7 @@ type Options struct {
 	NoClassRules bool               // keep the options as given instead of the class's rules
 	AssumedDrop  float64            // chance per kill assumed where a source names the creature but no chance (0.3); reported in the result
 	Walks        *dataset.Walks     // walking costs measured on navigation maps (nil: straight lines times PathFactor)
-	WalkTable    *dataset.WalkTable // walks measured between the places routes go to (nil: the walk grid for all)
+	WalkTable    *dataset.WalkTable `json:"-"` // walks measured between the places routes go to (nil: the walk grid for all)
 	Dungeons     bool               // dungeon runs are allowed; the optimizer may choose none
 	GroupSearch  float64            // seconds to find a group for a dungeon run (600; tanks and healers 60)
 }

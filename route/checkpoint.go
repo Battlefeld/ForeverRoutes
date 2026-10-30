@@ -15,7 +15,7 @@ import (
 )
 
 // Bump this when simulation semantics change. Data, walks, full combat profiles, constraints and feedback are hashed too.
-const TimelineModelRevision = "foreverroutes.timeline-model.v2.2"
+const TimelineModelRevision = "foreverroutes.timeline-model.v2.3"
 const timelineModelRevision = TimelineModelRevision
 
 type OptimizationCheckpoint struct {
@@ -48,7 +48,8 @@ func (w *World) optimizationKey(o OptimizeOptions, goals []int) (string, error) 
 		Feedback                 *CombatFeedback
 		FeedbackActive           bool
 		ProfileType, ProfileName string
-	}{timelineModelRevision, w.Data, w.Char, w.Opt, o.Target, goals, required, excluded, overrides, w.feedback, w.Opt.Feedback.Active(), fmt.Sprintf("%T", w.Opt.Profile), w.Opt.Profile.Name()}
+		WalkTable                string
+	}{timelineModelRevision, w.Data, w.Char, w.Opt, o.Target, goals, required, excluded, overrides, w.feedback, w.Opt.Feedback.Active(), fmt.Sprintf("%T", w.Opt.Profile), w.Opt.Profile.Name(), w.walkTable.digest()}
 	b, err := json.Marshal(v)
 	if err != nil {
 		return "", fmt.Errorf("checkpoint context: %w", err)
