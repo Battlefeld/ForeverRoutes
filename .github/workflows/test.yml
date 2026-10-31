@@ -1,10 +1,8 @@
 name: test
 
-# Only main and pull requests to it: work in progress on other branches costs no Actions minutes (the free
-# plan has 2000 a month for private repositories). Documentation alone runs nothing.
+# Every branch (the repository is public: Actions minutes are free). Documentation alone runs nothing.
 on:
   push:
-    branches: [main]
     paths-ignore: ["**.md", "docs/**", "data/audits/**"]
   pull_request:
     branches: [main]

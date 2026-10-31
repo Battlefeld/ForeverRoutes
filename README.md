@@ -215,7 +215,8 @@ entsteht.
 
 ## Lizenz
 
-Code: MIT (siehe `LICENSE`). Daten: siehe [`data/README.md`](data/README.md); der Datensatz enthält aus cmangos
-classic-db, Polestars forever-db und NorgannonDB abgeleitete Werte (GPL-3.0).
+Code (Planer, Werkzeuge, Addon): MIT (siehe `LICENSE`). Daten: siehe [`data/README.md`](data/README.md); der Datensatz
+enthält aus cmangos classic-db, Polestars forever-db und NorgannonDB abgeleitete Werte, Laufgitter und Wegtabelle
+sind mit den Navigationskarten von Shortest Path Forever gemessen: diese Daten stehen unter GPL-3.0.
 
 Die normalen RXP-Kapitel und daraus abgeleitete Routensequenzen unterliegen CC BY-NC-SA 4.0; siehe [RXP-Lizenz](data/fallbacks/RXP-LICENSE.txt).

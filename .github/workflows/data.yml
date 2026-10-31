@@ -3,7 +3,6 @@ name: data
 # The shipped dataset must come out of the pinned sources (data/sources/lock.json) byte for byte.
 on:
   push:
-    branches: [main]
     paths: ["data/**", "dataset/**", "internal/**", "xp/**", "cmd/**", ".github/workflows/data.yml"]
   pull_request:
     branches: [main]
