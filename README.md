@@ -1,25 +1,47 @@
 # ForeverRoutes
 
-> **Datengrundlage:** ForeverRoutes nutzt Daten von **[ForeverDB.net](https://foreverdb.net)** (Data from ForeverDB.net),
-> QuestieDB Forever, EverythingQuests Forever, [WarcraftDB Forever](https://forever.warcraftdb.com), der Forever-Datenbank
-> von [Polestar](https://github.com/fitzforge/polestar) (forever-db), den Spieler-Traces von QuestieDB,
-> [NorgannonDB](https://github.com/zmarotrix/NorgannonDB) und der Weltdatenbank von
-> [cmangos classic-db](https://github.com/cmangos/classic-db). Herkunft und Revision jeder Quelle stehen
-> im Datensatz selbst (`sources`). ForeverDB ist nicht mit Blizzard Entertainment verbunden.
+Routenplaner für **WoW Forever**, Stufe 1–30: welche Quests du annimmst, wo du was tötest, wann du abgibst und wann
+Grinden schneller ist, für jede Volk-/Klassenkombination, solo oder mit Dungeons. Dazu ein Ingame-Addon, das die Route
+Schritt für Schritt anzeigt.
 
-Routenplaner für WoW Forever, Level 1–30: welche Quests annehmen, wo was töten, wann abgeben und wann Grinden schneller
-ist. Go-Modul ohne Fremdabhängigkeiten. Der Planer läuft offline als Kommandozeilenwerkzeug und ist als Bibliothek für
+ForeverRoutes ist ein inoffizielles Fan-Projekt und steht in keiner Verbindung zu Blizzard Entertainment.
+
+## Für Spieler
+
+**Empfohlen: über ForeverCore.** [ForeverCore.exe](https://github.com/Battlefeld/ForeverSim) (aus dem ForeverSim-Repository)
+installiert das Addon ForeverRoutes zusammen mit ForeverSim, hält Routen und Daten aktuell und rechnet beim Spielen ab
+deinem aktuellen Stand weiter.
+
+**Nur das Addon:** Im [neuesten Release](https://github.com/Battlefeld/ForeverRoutes/releases/latest) liegt
+`ForeverRoutes-addon.zip` mit allen Routen. Den Ordner `ForeverRoutes` daraus nach `World of Warcraft/_classic_/Interface/AddOns`
+(bzw. den AddOns-Ordner deines Forever-Clients) entpacken und im Spiel mit `/fr` öffnen.
+[HUD-Funktionen und Befehle](ForeverRoutes/README-HUD.md) · [Ingame-Testanleitung](docs/ingame-test.md)
+
+Was du bekommst:
+
+- je Volk und Klasse zwei fertige Routen bis Stufe 20: **solo** und **mit Dungeons** (Dungeonquests werden gezielt
+  vorher eingesammelt, die Gruppensuche läuft neben dem Questen)
+- Klassenquests (Pflicht und optional), Zauberstab-Vorbereitung für Stoffklassen, Forever-Ziele wie den Gemütlichen
+  Schlafsack, im Addon zuschaltbar
+- Laufzeiten aus gemessenen Wegen (1,6 Millionen Wege zwischen 5630 Orten, siehe „Laufwege“ unten)
+
+**Ehrlich:** Die Stundenangaben sind ein Modell, noch nicht im Spiel gemessen. Siehe „Stand“.
+
+## Datengrundlage
+
+Daten von **[ForeverDB.net](https://foreverdb.net)** (Data from ForeverDB.net), QuestieDB, EverythingQuests,
+[WarcraftDB Forever](https://forever.warcraftdb.com), [Polestar](https://github.com/fitzforge/polestar) (forever-db),
+[NorgannonDB](https://github.com/zmarotrix/NorgannonDB), [cmangos classic-db](https://github.com/cmangos/classic-db),
+[Shortest Path Forever](https://github.com/cjber/shortest-path-forever), [RestedXP](https://github.com/RestedXP/RXPGuides),
+[EG Link](https://efficient.games) und weiteren; alle Quellen mit Lizenz in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
+Herkunft und Revision jeder Quelle stehen im Datensatz selbst (`sources`).
+
+## Für Entwickler
+
+Go-Modul ohne Fremdabhängigkeiten. Der Planer läuft offline als Kommandozeilenwerkzeug und ist als Bibliothek für
 ForeverCore.exe gebaut (Paket `route`). Die Kampfzeiten kommen aus MythicSim (ForeverSim) über ForeverCores Auftrag
-`kill-profile` (siehe „Kampfprofil“).
-
-## Ingame-Addon
-
-Das eigenständige HUD liegt in `ForeverRoutes/`. Im aktuellen GitHub-Release enthält
-`ForeverRoutes-addon.zip` das vollständige Addon inklusive Grafiken und frisch exportierter Routen.
-Den enthaltenen Ordner `ForeverRoutes` nach `Interface/AddOns` entpacken und mit `/fr` öffnen.
-ForeverSim ist keine Abhängigkeit. [HUD-Funktionen und Befehle](ForeverRoutes/README-HUD.md).
-
-Die Routendaten werden beim Paketbau erzeugt; ein reiner Git-Checkout ist noch kein installierbares Addon.
+`kill-profile` (siehe „Kampfprofil“). Die Routendaten des Addons werden beim Paketbau erzeugt; ein reiner Git-Checkout
+ist noch kein installierbares Addon (`tools/release.sh`).
 
 ## Stand
 
@@ -215,8 +237,11 @@ entsteht.
 
 ## Lizenz
 
-Code (Planer, Werkzeuge, Addon): MIT (siehe `LICENSE`). Daten: siehe [`data/README.md`](data/README.md); der Datensatz
-enthält aus cmangos classic-db, Polestars forever-db und NorgannonDB abgeleitete Werte, Laufgitter und Wegtabelle
-sind mit den Navigationskarten von Shortest Path Forever gemessen: diese Daten stehen unter GPL-3.0.
+- **Code** (Planer, Werkzeuge, Addon, Grafiken): MIT, siehe [`LICENSE`](LICENSE).
+- **Daten** (Datensatz, Laufgitter, Wegtabelle, Routen, Profile, exportiertes `Routes.lua`): GPL-3.0, weil sie aus
+  GPL-3.0-Quellen abgeleitet sind (QuestieDB, cmangos classic-db, Polestar, NorgannonDB, Shortest Path Forever), siehe
+  [`LICENSES/GPL-3.0.txt`](LICENSES/GPL-3.0.txt).
+- **RestedXP-Kapitel** und daraus übernommene Routenabschnitte: CC BY-NC-SA 4.0, siehe
+  [RXP-Lizenz](data/fallbacks/RXP-LICENSE.txt).
 
-Die normalen RXP-Kapitel und daraus abgeleitete Routensequenzen unterliegen CC BY-NC-SA 4.0; siehe [RXP-Lizenz](data/fallbacks/RXP-LICENSE.txt).
+Alle Quellen, ihre Lizenzen und Hinweise: [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).

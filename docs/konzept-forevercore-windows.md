@@ -1,9 +1,11 @@
 # ForeverRoutes für ForeverCore 1.0 – Routengenerator, Timeline und bestehende Ingame-GUI
 
-> **STATUS: KONZEPT / UMBAU-SPEZIFIKATION, NICHT IMPLEMENTIERT.**
+> **STATUS: Ursprüngliches Konzept (29.10.2026), seitdem großteils umgesetzt.** ForeverCore.exe installiert,
+> aktualisiert und startet heute alles; der aktuelle Stand steht in der README von ForeverSim. Dieses Dokument bleibt als
+> Planungsgrundlage erhalten.
 >
 > Diese neue, ergänzende README ist die Routen-Seite der gemeinsamen ForeverCore-Windows-Planung. Der bestehende Code, die Routen, Tests, Workflows und die README.md werden hierdurch nicht geändert.
-> Gegenstück: [ForeverSim / ForeverCore – Windows-App, Installer und Bridge](https://github.com/Battlefeld/ForeverSim/blob/main/README-FOREVERCORE-WINDOWS.md).
+> Gegenstück: [ForeverSim / ForeverCore – Windows-App, Installer und Bridge](https://github.com/Battlefeld/ForeverSim/blob/main/docs/konzept-forevercore-windows.md).
 > **Produktregel:** Der Nutzer lädt/startet nur **ForeverCore.exe**; kein separates `foreverroutes.exe`-Fenster, keine Konsole, keine ZIP-/CMD-/PowerShell-Installation. Die Routes-Engine bleibt intern ein eigenständig getestetes Modul. Das ForeverRoutes-Ingame-Addon wird automatisch durch ForeverCore verwaltet.
 
 

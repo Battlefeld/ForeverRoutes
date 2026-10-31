@@ -36,10 +36,13 @@ func cmdBundle(args []string) error {
 		*version = time.Now().UTC().Format("20060102-150405")
 	}
 	files := map[string]string{ // name in the bundle -> source
-		"routes-data.json.gz": "data/routes-data.json.gz",
-		"walks.json.gz":       "data/walks.json.gz",
-		"walktable.json.gz":   "data/walktable.json.gz",
-		"README-data.md":      "data/README.md",
+		"routes-data.json.gz":    "data/routes-data.json.gz",
+		"walks.json.gz":          "data/walks.json.gz",
+		"walktable.json.gz":      "data/walktable.json.gz",
+		"README-data.md":         "data/README.md",
+		"LICENSE.txt":            "LICENSE",
+		"GPL-3.0.txt":            "LICENSES/GPL-3.0.txt",
+		"THIRD_PARTY_NOTICES.md": "THIRD_PARTY_NOTICES.md",
 	}
 	for _, pat := range []string{"data/routes/*.json", "data/routes/README.md", "data/profiles/*.json", "data/fallbacks/*"} {
 		m, err := filepath.Glob(pat)
