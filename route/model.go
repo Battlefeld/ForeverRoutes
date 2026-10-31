@@ -53,7 +53,7 @@ func (c Character) side() (faction string, race int, ok bool) {
 	return FactionOf(c.Race), race, race != 0
 }
 
-// KillProfile tells how long the character needs for one mob. ForeverCore supplies MythicSim's numbers; without it the
+// KillProfile tells how long the character needs for one mob. ForeverCore supplies the engine's numbers; without it the
 // default profile below is used, which is a rough estimate and marked as such in every result.
 type KillProfile interface {
 	// KillSeconds is the fight time and the rest time after it for one mob.
@@ -61,7 +61,7 @@ type KillProfile interface {
 	Name() string
 }
 
-// DefaultProfile is a stand-in until ForeverCore supplies MythicSim's numbers. A normal mob of the character's own
+// DefaultProfile is a stand-in until ForeverCore supplies the engine's numbers. A normal mob of the character's own
 // level takes 8 s at level 1 up to 15.5 s at level 30; other mobs scale with their health against the typical health
 // of a mob of the character's level, but never below 60 % of that (pulling and casting take their time), and mobs above
 // the character take 25 % longer per level (more misses and resists, more damage taken). Resting, looting and pulling

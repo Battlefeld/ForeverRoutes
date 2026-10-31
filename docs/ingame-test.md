@@ -1,7 +1,7 @@
 # Ingame-Test zum Release (ab 2.11.2026)
 
 Was am PC im echten Spiel zu prüfen ist, bevor die Routen als kalibriert gelten. Alles hier ist Modell, bis es im
-Spiel bestätigt ist: Laufwege sind gemessen (Shortest Path Forever), Kampfzeiten simuliert (MythicSim), Dungeonläufe
+Spiel bestätigt ist: Laufwege sind gemessen (Shortest Path Forever), Kampfzeiten simuliert (Engine), Dungeonläufe
 und Gruppensuche geschätzt.
 
 ## 1. Installation

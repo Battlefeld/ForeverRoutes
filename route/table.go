@@ -12,10 +12,10 @@ import (
 	"github.com/Battlefeld/ForeverRoutes/dataset"
 )
 
-// KillProfileSchema is the file ForeverCore writes (job "kill-profile"): MythicSim with ForeverCore's level overlay.
+// KillProfileSchema is the file ForeverCore writes (job "kill-profile"): the engine (wowsims/forever) with ForeverCore's level overlay.
 const KillProfileSchema = "foreverroutes.killprofile.v1"
 
-// TableProfile takes the fight from MythicSim: for every character level the damage dealt and the mana and health
+// TableProfile takes the fight from the engine (wowsims/forever): for every character level the damage dealt and the mana and health
 // spent after so many seconds of fighting a mob of the same level and one two levels above. The fight lasts until the
 // damage reaches the mob's health. The rest after it is eating and drinking back what the fight cost: the mob's melee
 // damage (cmangos' average hit, one swing per 2 s, for the share of the fight the mob reaches the character) plus the
@@ -122,7 +122,7 @@ func LoadTableProfile(r io.Reader) (*TableProfile, error) {
 func (p *TableProfile) Fits(c Character) bool { return strings.EqualFold(p.Class, c.Class) }
 
 func (p *TableProfile) Name() string {
-	s := fmt.Sprintf("MythicSim %s %s (gear %s, talents %s; outside the table: %s scaled to the table's edge)", p.Class, p.Rotation, p.Gear, p.Talents, p.Fallback.Name())
+	s := fmt.Sprintf("Engine %s %s (gear %s, talents %s; outside the table: %s scaled to the table's edge)", p.Class, p.Rotation, p.Gear, p.Talents, p.Fallback.Name())
 	if len(p.CurveWarnings) > 0 {
 		s += fmt.Sprintf("; %d conservative curve corrections", len(p.CurveWarnings))
 	}

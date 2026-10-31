@@ -165,7 +165,7 @@ func cmdReplay(args []string) error {
 	if saved.Result != nil && len(saved.Steps) == 0 {
 		saved.Steps = saved.Result.Steps
 	}
-	if *profile == "" && strings.HasPrefix(saved.Profile, "MythicSim ") {
+	if *profile == "" && isEngineProfile(saved.Profile) {
 		candidate := filepath.Join(filepath.Dir(*path), "profiles", strings.ToLower(*class)+".json")
 		if fileExists(candidate) {
 			*profile = candidate
@@ -248,6 +248,12 @@ func cmdGuide(args []string) error {
 		return os.WriteFile(*out, b, 0o644)
 	}
 	return nil
+}
+
+// isEngineProfile: a route made with a kill profile from ForeverCore says so in its profile text, "Engine ..." since the
+// engine is wowsims/forever.
+func isEngineProfile(profile string) bool {
+	return strings.HasPrefix(profile, "Engine ")
 }
 
 func fileExists(path string) bool {

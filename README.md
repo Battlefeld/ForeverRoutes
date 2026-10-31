@@ -39,7 +39,7 @@ Herkunft und Revision jeder Quelle stehen im Datensatz selbst (`sources`).
 ## Für Entwickler
 
 Go-Modul ohne Fremdabhängigkeiten. Der Planer läuft offline als Kommandozeilenwerkzeug und ist als Bibliothek für
-ForeverCore.exe gebaut (Paket `route`). Die Kampfzeiten kommen aus MythicSim (ForeverSim) über ForeverCores Auftrag
+ForeverCore.exe gebaut (Paket `route`). Die Kampfzeiten kommen aus Engine (ForeverSim) über ForeverCores Auftrag
 `kill-profile` (siehe „Kampfprofil“). Die Routendaten des Addons werden beim Paketbau erzeugt; ein reiner Git-Checkout
 ist noch kein installierbares Addon (`tools/release.sh`).
 
@@ -52,7 +52,7 @@ ist noch kein installierbares Addon (`tools/release.sh`).
 - **Die Stundenangaben sind nicht kalibriert.** Ohne `-profile` gilt das eingebaute Kampfmodell (`DefaultProfile`), eine Schätzung. Es
   bewertet Grinden im Vergleich zu Quests etwa doppelt so gut wie die Wirklichkeit: Ein Guide-Ablauf (RestedXP) und
   reines Grinden landen bis Level 21 im Modell fast gleichauf. Darum grinden die Routen heute zu viel. Klassenbezogene Simulationswerte kommen
-  über die eingefrorenen MythicSim-Profile (`KillProfile`); auch sie sind keine Ingame-Messung. Mit `guide` lassen sich Guides unter denselben Regeln nachgehen und so
+  über die eingefrorenen Engine-Profile (`KillProfile`); auch sie sind keine Ingame-Messung. Mit `guide` lassen sich Guides unter denselben Regeln nachgehen und so
   das Modell prüfen.
 - **Questprüfung bis 20:** [vollständiger Bericht](data/audits/quests-through-20.json), [Ergebnis und Grenzen](data/audits/README.md).
   Alle 1908 Quests mit Mindestlevel ≤20 werden über die 56 ausgelieferten Volk-/Klassenkombinationen geprüft.
@@ -85,7 +85,7 @@ go run ./cmd/foreverroutes timeline -seeds data/routes/undead-warlock.json,data/
 
 go run ./cmd/foreverroutes plan -race Orc -class Warlock -out orc.json
 go run ./cmd/foreverroutes plan -race Human -class Mage -target 30 -restarts 4 -out human.json
-go run ./cmd/foreverroutes plan -race Orc -class Warlock -profile data/profiles/warlock.json   # Kampfzeiten aus MythicSim
+go run ./cmd/foreverroutes plan -race Orc -class Warlock -profile data/profiles/warlock.json   # Kampfzeiten aus Engine
 go run ./cmd/foreverroutes replay -race Orc -class Warlock -route orc.json
 go run ./cmd/foreverroutes next -live state.json -profile data/profiles/warlock.json -horizon 3600   # ab Live-Stand
 go run ./cmd/foreverroutes guide -race Orc -class Warlock -events guide.json   # Guide unter denselben Regeln
@@ -147,7 +147,7 @@ jeder Quest-Änderung neu auf. So folgt die Route dem Charakter, statt ihn auf e
 
 ### Kampfprofil
 
-`-profile` (bei `plan`, `replay` und `guide`) nimmt die Kampfzeiten aus einem Profil, das ForeverCore mit MythicSim und
+`-profile` (bei `plan`, `replay` und `guide`) nimmt die Kampfzeiten aus einem Profil, das ForeverCore mit Engine und
 dem Level-Overlay rechnet (`kill-profile`, Schema `foreverroutes.killprofile.v1`). In `data/profiles` liegen die
 Profile aller neun Klassen (Level 10–40): synthetischer Charakter mit der weißen Startwaffe, ohne weitere Ausrüstung
 und Talente. Für alle Völker derselben Klasse wird dasselbe Vergleichsprofil verwendet; individuelle Volksfähigkeiten sind damit nicht separat kalibriert.

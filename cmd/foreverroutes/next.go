@@ -117,7 +117,7 @@ func cmdNext(args []string) error {
 	if file.Character.Race != "" && !route.SameCharacter(file.Character, character) {
 		return fmt.Errorf("route character does not match live character")
 	}
-	if *profile == "" && *routeFile == "auto" && strings.HasPrefix(file.Profile, "MythicSim ") {
+	if *profile == "" && *routeFile == "auto" && isEngineProfile(file.Profile) {
 		candidate := filepath.Join(filepath.Dir(*path), "profiles", strings.ToLower(req.Class)+".json")
 		if fileExists(candidate) {
 			*profile = candidate

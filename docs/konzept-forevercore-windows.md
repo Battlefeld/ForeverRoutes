@@ -165,9 +165,9 @@ Die folgenden Abschnitte präzisieren S0–S6. Die frühere A–H-Liste bezeichn
 
 ## 1. Zielbild und Zuständigkeiten
 
-- **ForeverCore (Windows):** zentrale grafische Anwendung mit Dashboard, Auto Route Builder, Drag-and-drop Timeline, Simulationsvergleichen, Profil-/Datenverwaltung, Installer, Update-Center und Integration zu MythicSim/ForeverSim.
+- **ForeverCore (Windows):** zentrale grafische Anwendung mit Dashboard, Auto Route Builder, Drag-and-drop Timeline, Simulationsvergleichen, Profil-/Datenverwaltung, Installer, Update-Center und Integration zu Engine/ForeverSim.
 - **ForeverRoutes (dieses Repo):** reine Engine/Bibliothek für Welt-/Questmodell, Routenplanung, Dungeon- und Berufsbausteine, Optimierung, Replay, Export, Tests sowie die bestehende eigenständige `ForeverRoutes`-GUI.
-- **ForeverSim / MythicSim:** liefern versionierte Kampfprofile und Auswirkungen geplanter Ausrüstung/Zauberstäbe/Talente auf Kampf- und Regenerationszeiten. **Nicht** aus dem Routes-Repositorium verändern.
+- **ForeverSim / Engine:** liefern versionierte Kampfprofile und Auswirkungen geplanter Ausrüstung/Zauberstäbe/Talente auf Kampf- und Regenerationszeiten. **Nicht** aus dem Routes-Repositorium verändern.
 - **ForeverCoreBridge:** transportiert nur zulässige Live-Zustandsinformationen, Antwort-/Route-Snapshots, Steuer- und Versionsmeldungen. Nicht den vollständigen offline optimierten Routenverlauf ständig über die Pixelstreifen senden.
 - **WoW:** zeigt Pfeil, Questlog-Anreicherung, aktuelle Aufgabe, wenige nächste Schritte, wichtige Side-Tasks und Ist-vs.-Soll-Fortschritt; keine schwere Routenberechnung.
 
@@ -277,7 +277,7 @@ Eine Route darf nicht aus frei erfundenen „XP/min“-Angaben oder geschönten 
 - **XP:** gültige Levelkurve, Quest-IDs/Quest-XP/Turn-ins, Voraussetzungsketten, Wiederholbarkeit, Levelabstände, Kill-XP/RestedXP/Buffs; kein doppelt gezählter Kill, keine Belohnung bei unbekanntem Ziel. Unbekannte XP als `unknown` markieren, keine implizite Gratis-Quest.
 - **Zeit:** Reise, Laufen/Transport/Wartezeit, Questkampf/Kills, Mana- und HP-Regeneration, Loot, Gruppensuche, Instanzzeit, Handwerk/Trainer/Bank/AH, Materialbeschaffung, Buff-Setup, Tod als optionales Risikoszenario. Konservative Schätzungen von bestätigten Messungen unterscheiden.
 - **Ressourcen:** echtes Inventar, Questloglimit, Gold- und Item-Bilanz, Berufsslots, Lehrergebühren, Materialien, zufällige Skillpunkte (erwartete Menge + Unsicherheit), Craft-/Disenchant-Verwertung; Kaufpreise regions-/marktbezogen als Annahmen mit Datum.
-- **Kampfprofile:** aus MythicSim/ForeverSim versionierte Level-/Gear-/Talent-/Rotation-Snapshots. Änderungen an Zauberstab/Ausrüstung invalidieren nachfolgende Kills; niemals ein Level-60- oder falsches Gegnerprofil still für Level 10 verwenden.
+- **Kampfprofile:** aus Engine/ForeverSim versionierte Level-/Gear-/Talent-/Rotation-Snapshots. Änderungen an Zauberstab/Ausrüstung invalidieren nachfolgende Kills; niemals ein Level-60- oder falsches Gegnerprofil still für Level 10 verwenden.
 - **Optimierung:** primär minimale **Gesamtabschlusszeit bis alle Pflichtziele erfüllt sind**, nicht nur „frühest Level 20“; Gold bei fehlendem Budget als Bericht, optional Preis-/Gold-Zeit-Pareto-Kurven. Deterministischer Seed, Suchbudget, Fortschritt und geprüfter Checkpoint; gefundene Beste statt behauptetes globales Optimum.
 - **Quellen:** QuestieDB, ForeverDB, WarcraftDB, cmangos, weitere belegte Quellen wie heute; Feldprovenienz, Stichtag/Spielbuild, Datenkollisionen und veraltete Modellannahmen in jedem Ergebnis. Patch/Blue-Post ist Auslöser zur Prüfung, kein automatischer Wahrheitsbeleg.
 
@@ -312,7 +312,7 @@ ForeverRoutes liefert an ForeverCore mindestens:
 3. **C – Baukasten:** Blockschema, Pflicht-/Verbotsregeln, Quest-/Dungeon-/Professions-Abhängigkeiten, Kosten- und Erreichbarkeitsmodell.
 4. **D – Zeitstrahl:** Replay eines manuell veränderten Plans, PreviewMove, Locks, Varianten-Historie, begrenzte Optimierung ohne Mutation von Originalguides.
 5. **E – Professionen:** vollständiges 1–225-Modell inkl. Levelgates, Craft-/Disenchant-Ketten, Sammeln/AH, Gold und Skillschwankungen; offene Daten explizit melden.
-6. **F – Kampfkopplung:** versionierte MythicSim-Killprofile und Segment-Recalculation, ohne vorzeitig die gesperrte Combat-Feedback-Funktion einzuschalten.
+6. **F – Kampfkopplung:** versionierte Engine-Killprofile und Segment-Recalculation, ohne vorzeitig die gesperrte Combat-Feedback-Funktion einzuschalten.
 7. **G – Export/HUD:** kompatible Addon-Pakete, aktuelle Schritte und Progress-vs.-Plan in HUD; Offline-Fallback und echte Clienttests.
 8. **H – Windows-Bundle:** gemeinsame CI von ForeverSim/ForeverRoutes, gepinntes Dataset, ein Endnutzer-`ForeverCore.exe`-Download, Erstinstall/Reparatur/Update/Offline ohne CMD.
 
@@ -357,7 +357,7 @@ Der Installer liegt beim **anderen** Repo. Dort dokumentiert `ForeverCore/setup/
 
 ## 14. Gemeinsamer technischer Datenvertrag (einmal definieren, überall verwenden)
 
-**Architekturregel:** ForeverCore-Windows-Host (ForeverSim-Repo) ist Eigentümer von Installationsmanagement, GUI, Bridge, MythicSim-Host und Auth. ForeverRoutes ist Eigentümer von Datenmodell, World-/Routen-/XP-Engine, Plan-/Optimierungslogik, Routenimporten und Routes-HUD. Eine **einzige** versionierte Schemaquelle (gepinnte JSON-Schemas oder generiertes DTO-Paket) ist notwendig; nicht in beiden Repos auseinanderlaufende Kopien manuell pflegen.
+**Architekturregel:** ForeverCore-Windows-Host (ForeverSim-Repo) ist Eigentümer von Installationsmanagement, GUI, Bridge, Engine-Host und Auth. ForeverRoutes ist Eigentümer von Datenmodell, World-/Routen-/XP-Engine, Plan-/Optimierungslogik, Routenimporten und Routes-HUD. Eine **einzige** versionierte Schemaquelle (gepinnte JSON-Schemas oder generiertes DTO-Paket) ist notwendig; nicht in beiden Repos auseinanderlaufende Kopien manuell pflegen.
 
 **Vorgeschlagene DTOs (Designnamen, nicht als implementiert ausgeben):**
 
