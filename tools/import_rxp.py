@@ -52,7 +52,10 @@ def main():
         if actual!=revision: raise ValueError('Source checkout does not match lock.json')
     files=sorted((args.source/'Guides/forever').glob('*.lua'))
     files=[p for p in files if 'Mage-' not in p.name and 'ADV-' not in p.name]
-    files += [args.source/'Guides/Forever/RestedXP-Skyborne.lua']
+    # older checkouts keep the Skyborne guide in a second folder (Guides/Forever); newer ones in Guides/forever
+    skyborne=args.source/'Guides/Forever/RestedXP-Skyborne.lua'
+    if skyborne.exists() and skyborne not in files and skyborne.name not in {p.name for p in files}: files.append(skyborne)
+    if not any(p.name=='RestedXP-Skyborne.lua' for p in files): raise ValueError('RestedXP-Skyborne.lua not found in the RXP checkout')
     chapters={}; sources=[]
     for path in files:
         raw=path.read_bytes(); text=raw.decode('utf-8-sig')

@@ -52,6 +52,14 @@ jobs:
           go run ./cmd/foreverroutes update $args
           if git diff --quiet -- data; then echo "changed=false" >> "$GITHUB_OUTPUT"; else echo "changed=true" >> "$GITHUB_OUTPUT"; fi
 
+      # the ordinary RXP chapters are part of what the routes are checked against: a new pinned revision rebuilds them
+      - name: regenerate the RXP fallback
+        if: steps.update.outputs.changed == 'true'
+        run: |
+          revision="$(python3 -c 'import json; print(json.load(open("data/sources/lock.json"))["rxp"])')"
+          python3 tools/import_rxp.py ".cache/rxp-$revision" --license ".cache/rxp-$revision/LICENSE"
+          python3 tools/import_rxp.py ".cache/rxp-$revision" --check
+
       # A routes file belongs to the data it was timed with: when the data changed, the shipped routes are recomputed
       # (all 56 contexts, 404 scenarios from the frozen inputs in data/audits/roster-inputs.json.gz) and verified
       # against the final model before the tests below look at them.
