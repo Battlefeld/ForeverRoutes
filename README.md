@@ -202,7 +202,6 @@ entsteht.
 | `cmd/foreverroutes/` | Kommandozeile |
 | `data/routes-data.json.gz` | der fertige Datensatz |
 | `data/sources/` | festgeschriebene Stände der Quellen (`lock.json`), ForeverDB-Stand, WarcraftDB-Ergänzung, einzeln belegte Werte |
-| `data/archive/` | aufbewahrte Daten für später (Dungeon-Journal), vom Planer noch nicht gelesen |
 
 ## Modell in Kürze
 

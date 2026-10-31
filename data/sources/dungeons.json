@@ -1,7 +1,7 @@
 {
  "schema": "foreverroutes.dungeons.v1",
  "note": "Dungeons for group routes. key: also the Polestar entrance key (entrance), unless entrance names another; areas: client area ids of quests that belong to the dungeon (Polestar zone_area); instance: the instance map (cmangos creature spawns give the trash); levels: the level range the dungeon is for; minutes: a usual group run with all quest bosses, at least 30 (players: 30 to 50), an estimate to calibrate in game; faction: A or H when only that side reaches it without a long detour; quests: quests that belong to it although their area says otherwise (they win over areas).",
- "sources": "levels: ForeverQuests Dungeon-Journal (data/archive/dungeon-journal/Dungeons.lua, Forever beta) where it has the dungeon, else the Classic ranges (warcraft.wiki.gg); run times: estimates",
+ "sources": "levels: as NorgannonDB gives them for its instances (Forever beta; GPL-3.0), else the Classic ranges (warcraft.wiki.gg); run times: estimates",
  "dungeons": [
   {"key": "ragefire-chasm", "name": "Ragefire Chasm", "instance": 389, "areas": [2437], "levels": [13, 18], "minutes": 30, "faction": "H"},
   {"key": "the-hall-of-thanes", "name": "Hall of Thanes", "instance": 3065, "areas": [16919], "levels": [13, 20], "minutes": 30, "faction": "A"},

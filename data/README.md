@@ -11,7 +11,6 @@
 | `sources/manual-facts.json` | einzeln belegte Werte (XP, Level, wiederholbar, Questziele mit Mengen) von WarcraftDB, OctoWow, ClassicDB, Wowhead Forever und Beobachtungen aus ForeverDB, jeweils mit Link; übernommen aus dem früheren Python-Werkzeug und dem früheren Addon ForeverQuests |
 | `sources/quest-fixes.json` | einzeln belegte Korrekturen (Voraussetzungen, Startobjekte, Orte, reine Gesprächsquests), jeweils mit Link |
 | `sources/dungeons.json` | Dungeons der Gruppenrouten: Stufen (Forever-Beta laut Dungeon-Journal, sonst Classic), übliche Laufzeit (Schätzung), Seite, Gebiets-IDs der Dungeonquests |
-| `archive/dungeon-journal/` | Dungeon-Daten des früheren Addons ForeverQuests (Bosse, Beute, Dungeonquests) mit Quellenliste; die Stufen sind in `sources/dungeons.json` übernommen |
 
 QuestieDB, EverythingQuests und cmangos werden beim Bau in den festgeschriebenen Commits geladen und nicht eingecheckt.
 
