@@ -57,7 +57,12 @@ jobs:
         if: steps.update.outputs.changed == 'true'
         run: |
           revision="$(python3 -c 'import json; print(json.load(open("data/sources/lock.json"))["rxp"])')"
-          python3 tools/import_rxp.py ".cache/rxp-$revision" --license ".cache/rxp-$revision/LICENSE"
+          # the cached checkout may hold only the guides: then the shipped licence text stays
+          license=""
+          for f in LICENSE LICENSE.md LICENSE.txt COPYING; do
+            if [ -f ".cache/rxp-$revision/$f" ]; then license="--license .cache/rxp-$revision/$f"; break; fi
+          done
+          python3 tools/import_rxp.py ".cache/rxp-$revision" $license
           python3 tools/import_rxp.py ".cache/rxp-$revision" --check
 
       # A routes file belongs to the data it was timed with: when the data changed, the shipped routes are recomputed
