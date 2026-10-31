@@ -10,13 +10,13 @@ Prüfung des Codes und des Simulationsmodells, keine Ingame-Kalibrierung.
 **56/56 Kombinationen**, **404/404 optimierte Szenarien**: Jede gewählte Route erreicht Level 20, schließt alle
 Pflicht-Klassenreihen ab, hält die gewählten Optionen ein, überspringt kein Ereignis, und ihr erneuter Aktionsnachgang
 mit dem finalen Modell stimmt in Zeit und XP. Je Suchlauf 30 Sekunden Suchbudget (v2.2: 12), Seed 20261027, auf 4
-Kernen. [Variantenübersicht](roster-v23-summary.json), [vollständige Evidenz](roster-v23.json.gz),
+Kernen; am 31.10.2026 mit den neuesten Quellständen vom Update-Workflow neu berechnet (er macht das bei jeder Datenänderung selbst). [Variantenübersicht](roster-v23-summary.json), [vollständige Evidenz](roster-v23.json.gz),
 [ausgelieferte Routen](../routes/README.md).
 
 | Mittelwert über 56 Kombinationen | v2.2 | v2.3 |
 |---|---:|---:|
-| Solo | 13,97 h | 13,71 h (−1,8 %) |
-| Optionale Dungeons | 12,63 h | 12,44 h (−1,5 %) |
+| Solo | 13,97 h | 13,74 h (−1,6 %) |
+| Optionale Dungeons | 12,63 h | 12,45 h (−1,4 %) |
 
 Einzelne Kombinationen weichen in beide Richtungen ab (bis 53 Minuten schneller, bis 56 Minuten langsamer): genauere
 Laufwege (Brücken, Stockwerke, Umwege um Berge kosten jetzt, was sie kosten; das 9 % zu lange Gitter ist korrigiert)
