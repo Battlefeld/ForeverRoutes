@@ -11,6 +11,9 @@ on:
         description: Rebuild even when no source changed
         type: boolean
         default: false
+      budget:
+        description: Search budget per route scenario when the data changed (the routes are recomputed)
+        default: 30s
   schedule:
     - cron: "17 4 * * *"
 
@@ -25,7 +28,7 @@ concurrency:
 jobs:
   update:
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 330
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
@@ -48,6 +51,20 @@ jobs:
           if [ "${{ inputs.force }}" = "true" ]; then args="$args -force"; fi
           go run ./cmd/foreverroutes update $args
           if git diff --quiet -- data; then echo "changed=false" >> "$GITHUB_OUTPUT"; else echo "changed=true" >> "$GITHUB_OUTPUT"; fi
+
+      # A routes file belongs to the data it was timed with: when the data changed, the shipped routes are recomputed
+      # (all 56 contexts, 404 scenarios from the frozen inputs in data/audits/roster-inputs.json.gz) and verified
+      # against the final model before the tests below look at them.
+      - name: recompute the routes
+        if: steps.update.outputs.changed == 'true'
+        env:
+          GOMAXPROCS: "4"
+        run: |
+          set -o pipefail
+          FR_ROSTER_REBUILD=/tmp/roster FR_ROSTER_BUDGET="${{ inputs.budget || '30s' }}" \
+            go test ./cmd/foreverroutes -run '^TestRebuildRoster$' -parallel 4 -count=1 -timeout 300m -v 2>&1 | tail -n 40
+          FR_ROSTER_FINALIZE=/tmp/roster go test ./cmd/foreverroutes -run '^TestFinalizeRosterEvidence$' -count=1 -v 2>&1 | tail -n 20
+          python3 tools/apply_roster_review.py /tmp/roster
 
       - name: checks before publishing
         if: steps.update.outputs.changed == 'true'
