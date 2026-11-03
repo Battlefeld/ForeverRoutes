@@ -97,6 +97,10 @@ func (w *World) Optimize(events []GuideEvent, o OptimizeOptions) ([]GuideEvent, 
 		if r == nil || r.Level < o.Target || !w.tankFirst(r) || !w.planAllowed(w.Preparations()) {
 			return false
 		}
+		// a grind the route asks for with no spot to grind at is no route: the level it reaches is not earned
+		if r.Skipped["no grind spot"] > 0 {
+			return false
+		}
 		for _, id := range goals {
 			if !handsIn(r, id) {
 				return false

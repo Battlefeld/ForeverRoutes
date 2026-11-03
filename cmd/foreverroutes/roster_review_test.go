@@ -243,7 +243,7 @@ func TestRebuildRoster(t *testing.T) {
 								t.Fatal(err)
 							}
 							w.SetWandDetour(candidate.WandDetour)
-							if replay, err := w.FollowGuide(candidate.Events, 20); err == nil && replay.Level >= 20 && len(replay.Skipped) == 0 && replay.Seconds < r.Seconds {
+							if replay, err := w.FollowGuide(candidate.Events, 20); err == nil && replay.Level >= 20 && len(replay.Skipped) == 0 && (replay.Seconds < r.Seconds || len(r.Skipped) > 0) {
 								bag := slices.ContainsFunc(replay.Steps, func(s route.Step) bool { return s.Op == "turnin" && s.Quest == 79976 })
 								if policy.SleepingBag == "on" && !bag || policy.SleepingBag == "off" && bag || policy.Wands == "on" && !replay.CraftedWand {
 									continue
