@@ -74,10 +74,29 @@ jobs:
           GOMAXPROCS: "4"
         run: |
           set -o pipefail
+          # the full output goes to a file; on a failure the failing scenarios and their messages are printed
+          # (and land in the failure issue), not only the last lines, which are mostly passing scenarios
+          failed() { grep -E -- '--- FAIL|_test\.go:[0-9]+:|^panic|timed out' "$1" | head -n 80 | tee -a /tmp/failures.txt; exit 1; }
           FR_ROSTER_REBUILD=/tmp/roster FR_ROSTER_BUDGET="${{ inputs.budget || '30s' }}" \
-            go test ./cmd/foreverroutes -run '^TestRebuildRoster$' -parallel 4 -count=1 -timeout 300m -v 2>&1 | tail -n 40
-          FR_ROSTER_FINALIZE=/tmp/roster go test ./cmd/foreverroutes -run '^TestFinalizeRosterEvidence$' -count=1 -v 2>&1 | tail -n 20
+            go test ./cmd/foreverroutes -run '^TestRebuildRoster$' -parallel 4 -count=1 -timeout 300m -v > /tmp/rebuild.log 2>&1 \
+            || failed /tmp/rebuild.log
+          tail -n 40 /tmp/rebuild.log
+          FR_ROSTER_FINALIZE=/tmp/roster go test ./cmd/foreverroutes -run '^TestFinalizeRosterEvidence$' -count=1 -v > /tmp/finalize.log 2>&1 \
+            || failed /tmp/finalize.log
+          tail -n 20 /tmp/finalize.log
           python3 tools/apply_roster_review.py /tmp/roster
+
+      - name: keep the roster logs
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: roster-logs
+          path: |
+            /tmp/rebuild.log
+            /tmp/finalize.log
+            /tmp/roster
+          if-no-files-found: ignore
+          retention-days: 14
 
       - name: checks before publishing
         if: steps.update.outputs.changed == 'true'
@@ -108,6 +127,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           body="The data update failed, main and the published data stay as they were. Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          if [ -s /tmp/failures.txt ]; then body="$body"$'\n\nFailing checks:\n\n```\n'"$(cat /tmp/failures.txt)"$'\n```'; fi
           if [ -s /tmp/report.md ]; then body="$body"$'\n\n'"$(cat /tmp/report.md)"; fi
           open="$(gh issue list --label data-update --state open --json number --jq '.[0].number')"
           if [ -n "$open" ]; then
