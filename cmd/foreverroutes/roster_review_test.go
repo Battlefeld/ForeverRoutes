@@ -207,7 +207,8 @@ func TestRebuildRoster(t *testing.T) {
 						for pass := 0; pass < 4; pass++ {
 							clean := route.EventsOf(r.Steps)
 							next, err := w.FollowGuide(clean, 20)
-							if err != nil || next.Level < 20 {
+							// a cleaner list that leaves a grind without a spot is no route: keep the searched one
+							if err != nil || next.Level < 20 || next.Skipped["no grind spot"] > 0 {
 								break
 							}
 							e, r = clean, next
