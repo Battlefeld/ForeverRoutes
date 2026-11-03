@@ -25,6 +25,9 @@ func TestRebuildRoster(t *testing.T) {
 		t.Skip("opt-in complete roster recalculation")
 	}
 	budget := 12 * time.Second
+	// FR_ROSTER_TOLERATE: a scenario that still fails is recorded with its error instead of failing the run;
+	// TestRepairRosterScenarios then replaces it with a verified route before the final audit.
+	tolerate := os.Getenv("FR_ROSTER_TOLERATE") != ""
 	if s := os.Getenv("FR_ROSTER_BUDGET"); s != "" {
 		var err error
 		budget, err = time.ParseDuration(s)
@@ -198,8 +201,33 @@ func TestRebuildRoster(t *testing.T) {
 							}
 						}
 					}
+					// A search that ends without a usable route is run again from another random start before the
+					// scenario counts as failed: the search is randomized and time-limited, a rare start ends badly.
+					reproject := func() {
+						for pass := 0; pass < 4; pass++ {
+							clean := route.EventsOf(r.Steps)
+							next, err := w.FollowGuide(clean, 20)
+							if err != nil || next.Level < 20 {
+								break
+							}
+							e, r = clean, next
+							if len(r.Skipped) == 0 {
+								break
+							}
+						}
+					}
+					attempts := 0
 					if !resumed {
-						e, r, err = w.Optimize(pool[0].Events, route.OptimizeOptions{Target: 20, Seeds: pool[1:], Budget: budget, Seed: 20261027, Stats: stats})
+						for attempt := int64(0); attempt < 3; attempt++ {
+							attempts++
+							e, r, err = w.Optimize(pool[0].Events, route.OptimizeOptions{Target: 20, Seeds: pool[1:], Budget: budget, Seed: 20261027 + 7919*attempt, Stats: stats})
+							if err == nil {
+								reproject()
+								if len(r.Skipped) == 0 {
+									break
+								}
+							}
+						}
 					}
 					row := map[string]any{"key": ch.RouteKey(), "character": ch, "scenario": label + "_" + mode, "searchSeconds": time.Since(start).Seconds(), "constraints": policy}
 					row["resumedAndReverified"], row["modelRevision"] = resumed, route.TimelineModelRevision
@@ -212,22 +240,13 @@ func TestRebuildRoster(t *testing.T) {
 					if err != nil {
 						row["error"] = err.Error()
 						record()
-						t.Errorf("%s %s: %v", label, mode, err)
+						scenarioFail(t, tolerate, "%s %s: %v", label, mode, err)
 						continue
 					}
 					// Publish an executable event list. Source files remain frozen independently.
 					// Re-project actual actions until no stale/duplicate event remains.
-					for pass := 0; pass < 4; pass++ {
-						clean := route.EventsOf(r.Steps)
-						next, err := w.FollowGuide(clean, 20)
-						if err != nil || next.Level < 20 {
-							break
-						}
-						e, r = clean, next
-						if len(r.Skipped) == 0 {
-							break
-						}
-					}
+					reproject()
+					row["searchAttempts"] = attempts
 					{
 						chosen := w.Preparations()
 						detour := w.WandDetour()
@@ -274,7 +293,7 @@ func TestRebuildRoster(t *testing.T) {
 					}
 					replay, err := w.Replay(acts)
 					if err != nil || replay.Level < 20 || math.Abs(replay.Seconds-r.Seconds) > .11 {
-						t.Errorf("%s %s: action replay mismatch: %v", label, mode, err)
+						scenarioFail(t, tolerate, "%s %s: action replay mismatch: %v", label, mode, err)
 						row["error"] = "action replay mismatch"
 					}
 					var goals []int
@@ -282,13 +301,13 @@ func TestRebuildRoster(t *testing.T) {
 						if c.Tier == "required" {
 							goals = append(goals, c.Goal.ID)
 							if !slices.ContainsFunc(r.Steps, func(s route.Step) bool { return s.Op == "turnin" && s.Quest == c.Goal.ID }) {
-								t.Errorf("%s %s: missing required quest %d", label, mode, c.Goal.ID)
+								scenarioFail(t, tolerate, "%s %s: missing required quest %d", label, mode, c.Goal.ID)
 								row["error"] = "missing required class quest"
 							}
 						}
 					}
 					if len(r.Skipped) > 0 {
-						t.Errorf("%s %s has skipped events: %v", label, mode, r.Skipped)
+						scenarioFail(t, tolerate, "%s %s has skipped events: %v", label, mode, r.Skipped)
 						row["error"] = "skipped events remain"
 					}
 					var runs []string
@@ -297,7 +316,8 @@ func TestRebuildRoster(t *testing.T) {
 					prev := 0.0
 					for _, step := range r.Steps {
 						if step.Time < prev || math.IsNaN(step.Time) || math.IsInf(step.Time, 0) {
-							t.Error("non-monotone/non-finite timeline")
+							scenarioFail(t, tolerate, "non-monotone/non-finite timeline")
+							row["error"] = "non-monotone/non-finite timeline"
 						}
 						prev = step.Time
 						if step.Op == "dungeon" {
@@ -314,11 +334,11 @@ func TestRebuildRoster(t *testing.T) {
 						}
 					}
 					if !group && len(runs) > 0 || policy.Wands == "on" && wands == 0 || policy.Wands == "off" && wands > 0 || policy.SleepingBag == "on" && !bag || policy.SleepingBag == "off" && bag {
-						t.Errorf("%s %s: selected option lost", label, mode)
+						scenarioFail(t, tolerate, "%s %s: selected option lost", label, mode)
 						row["error"] = "selected option lost"
 					}
 					if mode == "auto" && r.Seconds > bestSeconds+.11 {
-						t.Errorf("free search lost fixed-policy winner %.1f > %.1f", r.Seconds, bestSeconds)
+						scenarioFail(t, tolerate, "free search lost fixed-policy winner %.1f > %.1f", r.Seconds, bestSeconds)
 						row["error"] = "free search worsened known feasible winner"
 					}
 					if r.Seconds < bestSeconds {
@@ -358,4 +378,15 @@ func TestRebuildRoster(t *testing.T) {
 		})
 	}
 	fmt.Println("All roster cases scheduled; each owns its World and outputs.")
+}
+
+// scenarioFail reports one scenario's problem: a failure normally, a log line in tolerant mode, where the row
+// carries the error and the repair step replaces the scenario.
+func scenarioFail(t *testing.T, tolerate bool, format string, args ...any) {
+	t.Helper()
+	if tolerate {
+		t.Logf("scenario problem (repair follows): "+format, args...)
+		return
+	}
+	t.Errorf(format, args...)
 }

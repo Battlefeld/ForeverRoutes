@@ -42,6 +42,19 @@ jobs:
           key: sources-${{ github.run_id }}
           restore-keys: sources-
 
+      # The kill profiles follow the engine ForeverSim ships: when its engine changed, they are computed again here
+      # (all nine or none). A failure keeps the profiles as they were and is noted; it stops nothing.
+      - name: kill profiles from the current engine
+        id: profiles
+        continue-on-error: true
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq protobuf-compiler lua5.1
+          go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
+          export PATH="$(go env GOPATH)/bin:$PATH"
+          state="$(tools/kill_profiles.sh)"
+          echo "state=$state" >> "$GITHUB_OUTPUT"
+          if [ "$state" = changed ]; then echo "- kill profiles recomputed from the engine ForeverSim ships" >> /tmp/profiles.md; fi
+
       - name: check sources and rebuild
         id: update
         env:
@@ -50,7 +63,18 @@ jobs:
           args="-require-foreverdb -report /tmp/report.md"
           if [ "${{ inputs.force }}" = "true" ]; then args="$args -force"; fi
           go run ./cmd/foreverroutes update $args
-          if git diff --quiet -- data; then echo "changed=false" >> "$GITHUB_OUTPUT"; else echo "changed=true" >> "$GITHUB_OUTPUT"; fi
+          if [ "${{ steps.profiles.outcome }}" = failure ]; then echo "- kill profiles could not be recomputed; the last ones stay" >> /tmp/report.md; fi
+          if [ -s /tmp/profiles.md ]; then cat /tmp/profiles.md >> /tmp/report.md; fi
+          # the routes are recomputed when the data changed, when asked to, or when the shipped routes no longer
+          # replay under the current model (new kill profiles, a corrected quest)
+          changed=false
+          git diff --quiet -- data || changed=true
+          if [ "${{ inputs.force }}" = "true" ]; then changed=true; fi
+          if [ "$changed" = false ] && ! go test ./cmd/foreverroutes -run '^TestShippedRoutesMatchCurrentModel$' -count=1 > /tmp/stale.log 2>&1; then
+            changed=true
+            echo "- shipped routes no longer replay under the current model; recomputed" >> /tmp/report.md
+          fi
+          echo "changed=$changed" >> "$GITHUB_OUTPUT"
 
       # the ordinary RXP chapters are part of what the routes are checked against: a new pinned revision rebuilds them
       - name: regenerate the RXP fallback
@@ -77,10 +101,18 @@ jobs:
           # the full output goes to a file; on a failure the failing scenarios and their messages are printed
           # (and land in the failure issue), not only the last lines, which are mostly passing scenarios
           failed() { grep -E -- '--- FAIL|_test\.go:[0-9]+:|^panic|timed out' "$1" | head -n 80 | tee -a /tmp/failures.txt; exit 1; }
-          FR_ROSTER_REBUILD=/tmp/roster FR_ROSTER_BUDGET="${{ inputs.budget || '30s' }}" \
+          # tolerant: a scenario that still fails after its retries is marked, not fatal; the repair step replaces
+          # it with a verified route that keeps its options (or stops the update when it cannot, or when too many
+          # scenarios need it: then something broke for everyone)
+          FR_ROSTER_TOLERATE=1 FR_ROSTER_REBUILD=/tmp/roster FR_ROSTER_BUDGET="${{ inputs.budget || '30s' }}" \
             go test ./cmd/foreverroutes -run '^TestRebuildRoster$' -parallel 4 -count=1 -timeout 300m -v > /tmp/rebuild.log 2>&1 \
             || failed /tmp/rebuild.log
           tail -n 40 /tmp/rebuild.log
+          FR_ROSTER_REPAIR=/tmp/roster FR_ROSTER_REPAIR_LIMIT=40 go test ./cmd/foreverroutes -run '^TestRepairRosterScenarios$' -count=1 -v > /tmp/repair.log 2>&1 \
+            || failed /tmp/repair.log
+          if [ -s /tmp/roster/repairs.txt ] && grep -q . /tmp/roster/repairs.txt; then
+            { echo; echo "Scenarios replaced by a verified route:"; echo; sed 's/^/- /' /tmp/roster/repairs.txt; } >> /tmp/report.md
+          fi
           FR_ROSTER_FINALIZE=/tmp/roster go test ./cmd/foreverroutes -run '^TestFinalizeRosterEvidence$' -count=1 -v > /tmp/finalize.log 2>&1 \
             || failed /tmp/finalize.log
           tail -n 20 /tmp/finalize.log
@@ -93,6 +125,7 @@ jobs:
           name: roster-logs
           path: |
             /tmp/rebuild.log
+            /tmp/repair.log
             /tmp/finalize.log
             /tmp/roster
           if-no-files-found: ignore
@@ -116,6 +149,7 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add data
+          if git diff --cached --quiet; then echo "nothing changed"; exit 0; fi
           { echo "Data update $stamp"; echo; cat /tmp/report.md; } > /tmp/message.txt
           git commit -q -F /tmp/message.txt
           git push origin HEAD:main
