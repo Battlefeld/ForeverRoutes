@@ -25,7 +25,7 @@
    "inRoute": true,
    "level": 10,
    "minLevel": 10,
-   "minutes": -12.6,
+   "minutes": -12.7,
    "name": "The Binding",
    "possible": true,
    "quest": 1471,
@@ -636,6 +636,10 @@
     },
     {
      "op": "accept",
+     "quest": 5722
+    },
+    {
+     "op": "accept",
      "quest": 5723
     },
     {
@@ -645,10 +649,6 @@
     {
      "op": "turnin",
      "quest": 775
-    },
-    {
-     "op": "accept",
-     "quest": 5722
     },
     {
      "op": "accept",
@@ -1579,6 +1579,10 @@
     },
     {
      "op": "accept",
+     "quest": 5722
+    },
+    {
+     "op": "accept",
      "quest": 5723
     },
     {
@@ -1588,10 +1592,6 @@
     {
      "op": "turnin",
      "quest": 775
-    },
-    {
-     "op": "accept",
-     "quest": 5722
     },
     {
      "op": "accept",
@@ -2589,6 +2589,10 @@
   },
   {
    "op": "accept",
+   "quest": 5722
+  },
+  {
+   "op": "accept",
    "quest": 5723
   },
   {
@@ -2598,10 +2602,6 @@
   {
    "op": "turnin",
    "quest": 775
-  },
-  {
-   "op": "accept",
-   "quest": 5722
   },
   {
    "op": "accept",
@@ -2919,7 +2919,7 @@
  "finalModelReplayVerified": true,
  "finalXP": 167272,
  "hours": {
-  "optimized": 11.116194444444446
+  "optimized": 11.101527777777777
  },
  "key": "undead-warlock",
  "killProfile": "Engine warlock sm_ruin (gear starter weapon, talents none; outside the table: default (uncalibrated) scaled to the table's edge)",
@@ -2950,7 +2950,7 @@
  "scenario": "dungeons_auto",
  "schema": "foreverroutes.route.v1",
  "search": {
-  "BestSeconds": 40018.3,
+  "BestSeconds": 39965.5,
   "Better": [
    0,
    1,
@@ -2960,7 +2960,7 @@
    0,
    0,
    0,
-   3,
+   4,
    1,
    1
   ],
@@ -2969,21 +2969,21 @@
    {
     "candidateFound": true,
     "keys": [],
-    "seconds": 56980.9
+    "seconds": 56982.3
    },
    {
     "candidateFound": true,
     "keys": [
      "ragefire-chasm"
     ],
-    "seconds": 52938.5
+    "seconds": 52939.8
    },
    {
     "candidateFound": true,
     "keys": [
      "wailing-caverns"
     ],
-    "seconds": 50276.9
+    "seconds": 50278.3
    },
    {
     "candidateFound": true,
@@ -2991,14 +2991,14 @@
      "ragefire-chasm",
      "wailing-caverns"
     ],
-    "seconds": 46760.1
+    "seconds": 46761.5
    },
    {
     "candidateFound": true,
     "keys": [
      "ruins-of-lordaeron"
     ],
-    "seconds": 48396.6
+    "seconds": 48397.9
    },
    {
     "candidateFound": true,
@@ -3006,7 +3006,7 @@
      "ragefire-chasm",
      "ruins-of-lordaeron"
     ],
-    "seconds": 44193.5
+    "seconds": 44194.9
    },
    {
     "candidateFound": true,
@@ -3014,7 +3014,7 @@
      "wailing-caverns",
      "ruins-of-lordaeron"
     ],
-    "seconds": 44375.1
+    "seconds": 44376.5
    },
    {
     "candidateFound": true,
@@ -3023,7 +3023,7 @@
      "wailing-caverns",
      "ruins-of-lordaeron"
     ],
-    "seconds": 40442.8
+    "seconds": 40444.2
    },
    {
     "candidateFound": false,
@@ -3037,7 +3037,7 @@
      "ragefire-chasm",
      "deadmines"
     ],
-    "seconds": 56641.7
+    "seconds": 56643.1
    },
    {
     "candidateFound": true,
@@ -3045,7 +3045,7 @@
      "wailing-caverns",
      "deadmines"
     ],
-    "seconds": 53298.5
+    "seconds": 53299.9
    },
    {
     "candidateFound": true,
@@ -3054,7 +3054,7 @@
      "wailing-caverns",
      "deadmines"
     ],
-    "seconds": 49533.1
+    "seconds": 49534.5
    },
    {
     "candidateFound": true,
@@ -3062,7 +3062,7 @@
      "ruins-of-lordaeron",
      "deadmines"
     ],
-    "seconds": 50324.5
+    "seconds": 50325.9
    },
    {
     "candidateFound": true,
@@ -3071,7 +3071,7 @@
      "ruins-of-lordaeron",
      "deadmines"
     ],
-    "seconds": 46342.3
+    "seconds": 46343.7
    },
    {
     "candidateFound": true,
@@ -3080,7 +3080,7 @@
      "ruins-of-lordaeron",
      "deadmines"
     ],
-    "seconds": 46349.3
+    "seconds": 46350.7
    },
    {
     "candidateFound": true,
@@ -3090,7 +3090,7 @@
      "ruins-of-lordaeron",
      "deadmines"
     ],
-    "seconds": 42678.5
+    "seconds": 42679.9
    }
   ],
   "DungeonCombinationsAllowed": 16,
@@ -3101,35 +3101,35 @@
    36,
    15,
    1,
-   11,
+   12,
    5,
    0,
    0,
    9,
-   48,
+   52,
    4,
-   102
+   103
   ],
   "PreparationCandidates": 168,
   "Restarts": 0,
   "SeedsEvaluated": 26,
   "Walks": [
-   106,
+   109,
+   104,
    102,
-   100,
-   66,
-   47,
-   50,
+   68,
+   48,
+   52,
    1,
    18,
-   111,
-   315,
-   207
+   115,
+   324,
+   210
   ]
  },
  "searchAttempts": 1,
- "searchSeconds": 32.282066338,
- "seconds": 40018.3,
+ "searchSeconds": 32.246423786,
+ "seconds": 39965.5,
  "skipped": {},
  "sleepSteps": 0,
  "sleepingBagModel": {
