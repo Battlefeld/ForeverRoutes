@@ -152,7 +152,13 @@ jobs:
           if git diff --cached --quiet; then echo "nothing changed"; exit 0; fi
           { echo "Data update $stamp"; echo; cat /tmp/report.md; } > /tmp/message.txt
           git commit -q -F /tmp/message.txt
-          git push origin HEAD:main
+          # GitHub answers a push with a server error now and then: try again, with the newest main underneath
+          for wait in 0 10 30 60 120; do
+            sleep "$wait"
+            if git push origin HEAD:main; then pushed=1; break; fi
+            git pull -q --rebase origin main || true
+          done
+          [ -n "${pushed:-}" ] || { echo "push failed after retries"; exit 1; }
           tools/release.sh /tmp/report.md
 
       - name: report a failure
