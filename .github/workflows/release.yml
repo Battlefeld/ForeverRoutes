@@ -9,6 +9,12 @@ on:
     branches: [main]
     paths:
       - "ForeverRoutes/**"
+      # the bundle ships the Windows planner: its code is part of the release too
+      - "route/**"
+      - "cmd/foreverroutes/**"
+      - "dataset/**"
+      - "xp/**"
+      - "go.mod"
       - "data/routes/**"
       - "data/profiles/**"
       - "data/fallbacks/**"
