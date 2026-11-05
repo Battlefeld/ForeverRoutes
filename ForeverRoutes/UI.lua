@@ -81,7 +81,7 @@ local function makeFrame()
  frame.back=button(frame,'Zurück',66,function()FR.Back();refresh()end);frame.back:SetPoint('BOTTOMLEFT',28,32)
  frame.skip=button(frame,'Überspringen',105,function()FR.Skip();refresh()end);frame.skip:SetPoint('LEFT',frame.back,'RIGHT',3,0)
  frame.confirm=button(frame,'Erledigt',76,function()FR.Confirm();refresh()end);frame.confirm:SetPoint('LEFT',frame.skip,'RIGHT',3,0)
- tip(frame.confirm,'Schritt bestätigen','Nur für manuelle Aufgaben. Quests werden durch den tatsächlichen Questfortschritt abgeschlossen.')
+ tip(frame.confirm,'Schritt erledigt','Markiert den Schritt als fertig. Bei einer Quest, die es im Spiel nicht gibt oder die du nicht annehmen kannst, nimmt es die ganze Quest aus der Planung. Zurück macht es rückgängig.')
  frame.options=button(frame,'...',32,function()FR.ToggleMenu()end);frame.options:SetPoint('LEFT',frame.confirm,'RIGHT',3,0)
  tip(frame.skip,'Schritt überspringen','Mit Zurück den letzten übersprungenen Schritt wiederherstellen. Die Quest wird nicht als erledigt markiert.')
  return frame
@@ -120,12 +120,13 @@ end
 local arrow
 local function makeArrow()
  if arrow then return end
+ -- just the arrow, distance and target under it; no panel behind
  arrow=CreateFrame('Frame','ForeverRoutesArrow',UIParent);FR.arrow=arrow;arrow:SetSize(184,108);arrow:SetClampedToScreen(true)
- UI.Style(arrow,'note');movable(arrow,'arrow');position(arrow,'arrow','TOP',0,-110)
- arrow.tex=arrow:CreateTexture(nil,'ARTWORK');arrow.tex:SetSize(42,42);arrow.tex:SetPoint('TOP',0,-8)
+ movable(arrow,'arrow');position(arrow,'arrow','TOP',0,-110)
+ arrow.tex=arrow:CreateTexture(nil,'ARTWORK');arrow.tex:SetSize(56,56);arrow.tex:SetPoint('TOP',0,-2)
  arrow.tex:SetTexture('Interface\\Minimap\\MinimapArrow')
- arrow.distance=label(arrow,14,C.gold);arrow.distance:SetJustifyH('CENTER');arrow.distance:SetPoint('TOP',0,-50);arrow.distance:SetWidth(158)
- arrow.target=label(arrow,11,C.text);arrow.target:SetPoint('TOP',0,-70);arrow.target:SetWidth(156);arrow.target:SetHeight(24);arrow.target:SetJustifyH('CENTER')
+ arrow.distance=label(arrow,14,C.gold);arrow.distance:SetJustifyH('CENTER');arrow.distance:SetPoint('TOP',0,-60);arrow.distance:SetWidth(158)
+ arrow.target=label(arrow,11,C.text);arrow.target:SetPoint('TOP',0,-78);arrow.target:SetWidth(156);arrow.target:SetHeight(24);arrow.target:SetJustifyH('CENTER')
  arrow:Hide()
 end
 local function updateArrow(step)

@@ -49,7 +49,7 @@ function FR.Text(step)
  return text(step)
 end
 local confirm=FR.CanConfirm
-function FR.CanConfirm(st)return not FR.Paused(st)and((st and st.op=='note')or confirm(st))end
+function FR.CanConfirm(st)return confirm(st)end
 function FR.Meta(q)return ForeverRoutesData and ForeverRoutesData.quests and ForeverRoutesData.quests[q]end
 function FR.Blocked(step)
  if not step then return nil end

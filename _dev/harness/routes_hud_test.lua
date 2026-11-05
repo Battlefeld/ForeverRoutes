@@ -38,7 +38,7 @@ accepted[1]=true;objectives[1]={{text='Wolves: 1/2',type='monster',numFulfilled=
 FR.Refresh();check(FR.TaskView().step.op=='w','accepted quest advances')
 check(FR.frame.current.text:GetText():find('töte',1,true),'current task visible')
 check(FR.frame.rows[1].text:GetText():find('1/2',1,true),'real objective progress visible')
-check(not FR.CanConfirm(FR.TaskView().step),'cannot falsely confirm quest')
+check(FR.CanConfirm(FR.TaskView().step),'any step can be marked done by hand (Erledigt)')
 FR.Skip();check(FR.TaskView().step.op=='t','skip work')
 FR.Back();check(FR.TaskView().step.op=='w','undo skip work')
 objectives[1][1].finished=true;FR.Refresh();check(FR.TaskView().step.op=='t','finished objective advances')
@@ -109,6 +109,13 @@ check(#FR.live==1 and FR.live[1].q==96873,'restoring skipped steps lets the ques
 FR.Skip();FR.Back();FR.SetLive({steps={{op='accept',quest=96873,at={m=1,x=0,y=0}}}})
 check(#FR.live==1 and FR.live[1].q==96873,'taking the skip back lets the quest in again')
 FR.live=nil;FR.CharDB().skipQuests=nil
+-- "Erledigt" on an accept of a quest not in the log takes the quest out of the live plan and later ones.
+FR.live=nil;FR.CharDB().skipQuests=nil;FR.CharDB().confirmed={}
+FR.SetLive({steps={{op='accept',quest=96873,at={m=1,x=0,y=0}},{op='work',quest=96873,obj=0,at={m=1,x=0,y=0}},{op='accept',quest=4641,at={m=1,x=0,y=0}}}})
+check(FR.Confirm()and FR.Advance().q==4641,'done accept of a missing quest moves past all its steps')
+FR.SetLive({steps={{op='accept',quest=96873,at={m=1,x=0,y=0}},{op='accept',quest=4641,at={m=1,x=0,y=0}}}})
+check(#FR.live==1 and FR.live[1].q==4641,'later live plans leave it out')
+FR.live=nil;FR.CharDB().skipQuests=nil;FR.CharDB().confirmed={}
 -- Data-driven shopping never invents item quantities.
 local shop={op='buy',items={{id=9001,count=3}}};bags=2
 check(not FR.Done(shop),'shopping awaits all items');bags=3;check(FR.Done(shop),'shopping completes from bags')

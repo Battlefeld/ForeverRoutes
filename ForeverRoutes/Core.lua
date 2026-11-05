@@ -406,14 +406,22 @@ end
 
 
 -- Explicit completion is distinct from skipping; quest steps always follow the game quest log.
+-- Every step can be marked done by hand ("Erledigt"): the route may know a step the game does not offer (a quest
+-- behind a profession, a changed quest). An "accept" marked done for a quest not in the log takes the whole quest out
+-- of this and every later live plan, like a skip.
 function FR.CanConfirm(step)
- return step and(step.op=='d'or step.op=='sleep'or step.op=='p'or step.op=='z')and not FR.Paused(step)
+ return step~=nil and not FR.Paused(step)
 end
 function FR.Confirm()
  local step=FR.Advance()
  if not FR.CanConfirm(step)then return false end
  FR.undo={step=step,index=FR.index or 1,live=FR.live~=nil}
- charDB().confirmed[FR.StepKey(step)]=true
+ local c=charDB()
+ c.confirmed[FR.StepKey(step)]=true
+ if step.op=='a'and step.q and not onQuest(step.q)then c.skipQuests=c.skipQuests or{};c.skipQuests[step.q]=true end
+ if FR.live and step.q and(c.skipQuests or{})[step.q]then
+  for i=#FR.live,1,-1 do if FR.live[i].q==step.q then table.remove(FR.live,i)end end
+ end
  FR.Advance();return true
 end
 function FR.Objectives(step)
