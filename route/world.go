@@ -102,6 +102,7 @@ type World struct {
 	landMemo       sync.Map // landKey -> landResult
 	landN          atomic.Int64
 	inns           []dataset.Point
+	innNodes       []dataset.Node // the innkeepers of inns, same order
 	siteKeys       int
 	siteMemo       map[*dataset.Point][]Site
 	maps           map[int]bool

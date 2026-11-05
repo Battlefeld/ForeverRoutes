@@ -97,6 +97,7 @@ func (w *World) buildNetwork() {
 	for _, in := range w.Data.Travel.Inns {
 		if in.Faction == "" || in.Faction == w.Faction {
 			w.inns = append(w.inns, in.At)
+			w.innNodes = append(w.innNodes, in)
 		}
 	}
 }

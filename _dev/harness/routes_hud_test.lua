@@ -158,6 +158,22 @@ do
  SlashCmdList.FOREVERROUTES('show')
  C_QuestLog.GetNumQuestLogEntries=nil;GetQuestLogSpecialItemInfo=nil;accepted[7]=nil;FR.Refresh()
 end
+-- The hearthstone: the window says where to bind it when a later hearthstone trip of the route needs that bind.
+do
+ local hs={{op='a',q=31,n='At the inn',m=0,x=0,y=0,bn='Innkeeper Farley',bm=0,bx=10,by=10,bu=true},{op='a',q=32,n='Far away',m=0,x=900,y=900},{op='t',q=31,n='Back at the inn',m=0,x=0,y=0,v='h'}}
+ data(hs);px,py,pm=0,0,0;FR.Show();FR.Refresh()
+ local line,now=FR.BindLine(FR.TaskView())
+ check(line and line:find('hier binden: Innkeeper Farley',1,true)and now,'bind asked at the inn step')
+ accepted[31]=true;FR.Refresh();line=FR.BindLine(FR.TaskView())
+ check(line and line:find('später per Ruhestein',1,true),'bind still asked after the step while a hearthstone trip needs it')
+ local found=false;for _,r in ipairs(FR.frame.rows)do if r:IsShown()and r.text:GetText():find('Innkeeper Farley',1,true)then found=true end end
+ check(found,'bind line shown in the window')
+ GetBindLocation=function()return'Goldshire'end;FR.HearthBound()
+ check(FR.BindLine(FR.TaskView())==nil,'no bind line once bound there')
+ check(FR.TravelHint(hs[3]):find('→ Innkeeper Farley',1,true),'hearthstone step says where it leads')
+ px,py=500,500;FR.HearthBound();check(FR.BindLine(FR.TaskView())~=nil,'bound elsewhere: asked again')
+ FR.CharDB().bound=nil;accepted[31]=nil;px,py=0,0;GetBindLocation=nil
+end
 -- Exercise events/timers, option window, slash commands and saved visibility.
 FR.ToggleMenu();FR.ToggleMenu()
 for _,cmd in ipairs({'compact','scale 1.1','lock','position','arrow','show','hide','show'})do SlashCmdList.FOREVERROUTES(cmd)end

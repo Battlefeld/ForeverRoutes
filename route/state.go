@@ -49,6 +49,7 @@ type State struct {
 	Camps                       int                        // camps made
 	via                         string                     // how the last action travelled when not on foot (hearth, teleport, network, deathskip: <graveyard>)
 	viaAt                       *dataset.Point             // where to die for that deathskip
+	bound                       *dataset.Node              // the innkeeper the last action bound the hearthstone at
 }
 
 // dead counts the mobs of one creature killed at its site, as of a time. They come back over the respawn time.
@@ -152,9 +153,10 @@ func (w *World) move(s *State, to dataset.Point) error {
 
 // bindNear binds the hearthstone at an inn within reach of the character, as routes do in each new quest hub.
 func (w *World) bindNear(s *State) {
-	for _, in := range w.inns {
+	for i, in := range w.inns {
 		if distance(s.Pos, in) <= bindRadius && distance(s.Bind, in) > 1 {
 			s.Bind = in
+			s.bound = &w.innNodes[i]
 			s.Time += w.Opt.InteractSecs
 			s.Talk += w.Opt.InteractSecs
 			return
@@ -568,10 +570,14 @@ type Step struct {
 	Action
 	Via   string         `json:"via,omitempty"`   // how the step travelled when not on foot: hearth, teleport (a druid's to Moonglade), network, deathskip: <graveyard>
 	ViaAt *dataset.Point `json:"viaAt,omitempty"` // where to die for a deathskip
-	Name  string         `json:"name"`
-	Time  float64        `json:"time"`
-	Level int            `json:"level"`
-	XP    int            `json:"xp"`
+	// Bind: the innkeeper the step binds the hearthstone at (the model binds at an inn next to a quest giver);
+	// BindUsed: a later step travels by hearthstone to it, so the bind matters for the route.
+	Bind     *dataset.Node `json:"bind,omitempty"`
+	BindUsed bool          `json:"bindUsed,omitempty"`
+	Name     string        `json:"name"`
+	Time     float64       `json:"time"`
+	Level    int           `json:"level"`
+	XP       int           `json:"xp"`
 }
 
 // Result of a replay.
@@ -606,12 +612,13 @@ func (w *World) replayFrom(s0 *State, actions []Action) (*Result, error) {
 	res := &Result{Character: w.Char, Profile: w.Opt.Profile.Name(), Preparations: s.Preparation, BuffModel: w.Opt.SleepingBag}
 	d0 := s.Deathskips
 	for i, a := range actions {
-		s.via, s.viaAt = "", nil
+		s.via, s.viaAt, s.bound = "", nil, nil
 		if err := w.Apply(s, a); err != nil {
 			return nil, fmt.Errorf("step %d (%s %d): %w", i+1, a.Op, a.Quest, err)
 		}
-		res.Steps = append(res.Steps, Step{Action: a, Via: s.via, ViaAt: s.viaAt, Name: w.describe(a), Time: round1(s.Time - t0), Level: w.Level(s), XP: s.XP})
+		res.Steps = append(res.Steps, Step{Action: a, Via: s.via, ViaAt: s.viaAt, Bind: s.bound, Name: w.describe(a), Time: round1(s.Time - t0), Level: w.Level(s), XP: s.XP})
 	}
+	markUsedBinds(res.Steps)
 	res.Deaths = s.Deathskips - d0
 	res.Seconds, res.Travel, res.Combat, res.Talk = round1(s.Time-t0), round1(s.Travel-tr0), round1(s.Combat-c0), round1(s.Talk-tk0)
 	res.Level, res.XP, res.Assumed = w.Level(s), s.XP, s.Assumed
@@ -658,4 +665,17 @@ func (w *World) describe(a Action) string {
 		return "Skinning, Cooking and Leatherworking (trainers)"
 	}
 	return ""
+}
+
+// markUsedBinds marks each bind a later hearthstone trip leads back to.
+func markUsedBinds(steps []Step) {
+	last := -1
+	for i := range steps {
+		if steps[i].Via == "hearth" && last >= 0 {
+			steps[last].BindUsed = true
+		}
+		if steps[i].Bind != nil {
+			last = i
+		}
+	}
 }

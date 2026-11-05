@@ -330,6 +330,8 @@ function FR.SetLive(result)
   out[#out+1]={op=OP[s.op]or s.op,q=s.quest,n=name,m=at.m,x=at.x,y=at.y,l=s.level,o=s.obj and(s.obj+1),npc=s.npc,object=s.object,items=s.items,stacks=s.stacks,kills=tonumber(s.kills),
    v=(via:find('^deathskip')and'd')or(via=='hearth'and'h')or(via=='teleport'and't')or nil,gy=via:match('^deathskip: (.+)$'),
    dm=s.viaAt and s.viaAt.m,dx=s.viaAt and s.viaAt.x,dy=s.viaAt and s.viaAt.y,live=true}
+  local bind=type(s.bind)=='table'and s.bind or nil
+  if bind and type(bind.at)=='table'then local st=out[#out];st.bn,st.bm,st.bx,st.by,st.bu=bind.name,bind.at.m,bind.at.x,bind.at.y,s.bindUsed==true or nil end
   local st=out[#out]
   if st.q and(charDB().skipQuests or{})[st.q]then out[#out]=nil;st={}end
   if st.op=='d'then local known=storedDungeon(st.n);if known then st.ii,st.qi=known.ii,known.qi end end
@@ -385,7 +387,7 @@ function FR.Hint(step)
 end
 function FR.TravelHint(step)
  if step.v=='d'then return'Death Skip: hier sterben, beim Geistheiler wiederbeleben'..(step.gy and(' ('..step.gy..')')or'')end
- if step.v=='h'then return'Ruhestein benutzen'end
+ if step.v=='h'then local to=FR.HearthTarget and FR.HearthTarget(step);return'Ruhestein benutzen'..(to and(' → '..to)or'')end
  if step.v=='t'then return'Teleportieren: Mondlichtung'end
  return nil
 end

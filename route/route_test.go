@@ -361,3 +361,12 @@ func TestDruidTeleportsToMoonglade(t *testing.T) {
 		t.Errorf("teleport: how %d, %.0f s", how, tt)
 	}
 }
+
+func TestMarkUsedBinds(t *testing.T) {
+	inn := &dataset.Node{Name: "Innkeeper"}
+	steps := []Step{{Bind: inn}, {Via: "hearth"}, {Bind: inn}, {}, {Bind: inn}, {Via: "hearth"}}
+	markUsedBinds(steps)
+	if !steps[0].BindUsed || steps[2].BindUsed || !steps[4].BindUsed {
+		t.Fatalf("used binds: %v %v %v", steps[0].BindUsed, steps[2].BindUsed, steps[4].BindUsed)
+	}
+}

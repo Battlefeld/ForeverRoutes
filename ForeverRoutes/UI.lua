@@ -308,6 +308,7 @@ function FR.Refresh()
  end
  for _,line in ipairs(FR.GrindProgress(view.step)or{})do add(line,C.text)end
  for _,it in ipairs(view.items)do add(it.text,it.done and C.good or C.text,nil,nil,it.id)end
+ local bindText,bindNow=FR.BindLine(view);if bindText then add(bindText,bindNow and C.gold or C.muted)end
  local bag=FR.BagHint();if bag then add(bag,C.gold)end
  if not FR.Config().compact then
   local _,camp=FR.CampStatus();if camp then add(camp,C.muted)end
@@ -338,12 +339,13 @@ function FR.Refresh()
 end
 function FR.Show()makeFrame():Show();FR.Config().hidden=nil;FR.Refresh()end
 local driver=CreateFrame('Frame');local elapsed=0;local pending=false;local full=0
-local events={'PLAYER_LOGIN','PLAYER_ENTERING_WORLD','QUEST_ACCEPTED','QUEST_TURNED_IN','QUEST_REMOVED','QUEST_LOG_UPDATE','PLAYER_LEVEL_UP','PLAYER_DEAD','PLAYER_UNGHOST','PLAYER_ALIVE','UNIT_AURA','BAG_UPDATE_DELAYED','GET_ITEM_INFO_RECEIVED','PLAYER_REGEN_ENABLED','ADDON_LOADED'}
+local events={'PLAYER_LOGIN','PLAYER_ENTERING_WORLD','QUEST_ACCEPTED','QUEST_TURNED_IN','QUEST_REMOVED','QUEST_LOG_UPDATE','PLAYER_LEVEL_UP','PLAYER_DEAD','PLAYER_UNGHOST','PLAYER_ALIVE','UNIT_AURA','BAG_UPDATE_DELAYED','GET_ITEM_INFO_RECEIVED','PLAYER_REGEN_ENABLED','ADDON_LOADED','HEARTHSTONE_BOUND'}
 for _,e in ipairs(events)do pcall(driver.RegisterEvent,driver,e)end
 driver:SetScript('OnEvent',function(_,event,unit)
  if event=='UNIT_AURA'and unit~='player'then return end
  if event=='PLAYER_LOGIN'then if not FR.Config().hidden then FR.Show()end;FR.ScanQuestTracker();return end
  if event=='PLAYER_DEAD'then FR.Died()end
+ if event=='HEARTHSTONE_BOUND'then FR.HearthBound()end
  pending=true
 end)
 driver:SetScript('OnUpdate',function(_,dt)

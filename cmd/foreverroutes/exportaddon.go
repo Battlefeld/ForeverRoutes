@@ -45,7 +45,7 @@ func cmdExportAddon(args []string) error {
 	b.WriteString("-- CC BY-NC-SA 4.0) and shared under the same licence; the rest are ForeverRoutes' own.\n")
 	b.WriteString("-- A step: op a(ccept) w(ork) t(urnin) g(rind) d(ungeon run; ii instance map id, qi quests taken inside); q quest, n name; o objective (1-based, route order), k kind, c count,\n")
 	b.WriteString("-- tg target; m continent, x y world yards (x north, y west); l level reached by then; v d(eathskip) or h(earth)\n")
-	b.WriteString("-- with dm dx dy the place to die and gy the graveyard.\n")
+	b.WriteString("-- with dm dx dy the place to die and gy the graveyard; bn bm bx by the innkeeper the hearthstone is bound at, bu when a later hearthstone trip uses it.\n")
 	b.WriteString("ForeverRoutesData = ForeverRoutesData or {}\nForeverRoutesData.routes = {}\n")
 	var ds *dataset.Dataset
 	for _, f := range files {
@@ -212,6 +212,13 @@ func writeStep(b *strings.Builder, w *route.World, res *route.GuideResult, st ro
 		b.WriteString(`, v = "h"`)
 	case st.Via == "teleport":
 		b.WriteString(`, v = "t"`)
+	}
+	if st.Bind != nil {
+		// the hearthstone is bound here: bn the innkeeper, bm bx by where, bu a later hearthstone trip comes back to it
+		fmt.Fprintf(b, ", bn = %s, bm = %d, bx = %.1f, by = %.1f", luaStr(st.Bind.Name), st.Bind.At.Map, st.Bind.At.X, st.Bind.At.Y)
+		if st.BindUsed {
+			b.WriteString(", bu = true")
+		}
 	}
 }
 
