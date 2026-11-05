@@ -424,45 +424,13 @@ FR.Completed=completed
 FR.QuestDone=questDone
 
 
--- Grind progress. Kills of the player and the pet (killing blow, combat log PARTY_KILL) are counted per creature id
--- and per name for the character; a grind step counts from where it began, so the route's planned kills can be
--- checked against the XP they bring.
-local function creatureID(guid)
- if type(guid)~='string'then return nil end
- local kind,_,_,_,_,id=strsplit('-',guid);if kind~='Creature'then return nil end
- return tonumber(id)
-end
-function FR.CountKill(dst,dstName)
- local c=charDB();c.kills=c.kills or{}
- local id=creatureID(dst);if id then c.kills[id]=(c.kills[id]or 0)+1 end
- if type(dstName)=='string'and dstName~=''then local k='n:'..dstName:lower();c.kills[k]=(c.kills[k]or 0)+1 end
-end
-local kills=CreateFrame('Frame')
-pcall(kills.RegisterEvent,kills,'COMBAT_LOG_EVENT_UNFILTERED')
-kills:SetScript('OnEvent',function()
- if not CombatLogGetCurrentEventInfo then return end
- local _,sub,_,src,_,_,_,dst,dstName=CombatLogGetCurrentEventInfo()
- if sub~='PARTY_KILL'then return end
- if src~=call(UnitGUID,'player')and src~=call(UnitGUID,'pet')then return end
- FR.CountKill(dst,dstName)
-end)
--- The lines a grind step shows: "Mottled Boar: 3/16" (or "3 getötet" without a planned number) and the XP.
+-- Grind progress: the XP towards the step's level. (Kills are not counted: the combat log is closed to addons in
+-- this client, and registering for it got the addon blocked.)
+-- The lines a grind step shows: the planned kills and the XP.
 function FR.GrindProgress(step)
  if not step or step.op~='g'then return nil end
- local c=charDB();c.kills=c.kills or{};c.grindFrom=c.grindFrom or{}
  local lines={}
- local now
- if step.npc then now=c.kills[step.npc]or 0 elseif step.tg then now=c.kills['n:'..step.tg:lower()]or 0 end
- if now then
-  local key=FR.StepKey(step)
-  if c.grindFrom[key]==nil then
-   local n=0;for _ in pairs(c.grindFrom)do n=n+1 end;if n>200 then c.grindFrom={} end
-   c.grindFrom[key]=now
-  end
-  local done=math.max(0,now-c.grindFrom[key])
-  local who=step.tg or'Kills'
-  lines[#lines+1]=step.kills and string.format('%s: %d/%d',who,done,step.kills)or string.format('%s: %d getötet',who,done)
- end
+ if step.kills and step.tg then lines[#lines+1]=string.format('Geplant: %d × %s',step.kills,step.tg)end
  local level,xp,max=call(UnitLevel,'player'),call(UnitXP,'player'),call(UnitXPMax,'player')
  if level and xp and max and max>0 then
   if step.l and level<step.l then
@@ -474,14 +442,3 @@ function FR.GrindProgress(step)
  return lines
 end
 
--- When Blizzard blocks a protected call of this addon, say which one (event argument 2) in the chat and keep it, so
--- the cause can be found without a taint log.
-local guard=CreateFrame('Frame')
-for _,e in ipairs({'ADDON_ACTION_BLOCKED','ADDON_ACTION_FORBIDDEN'})do pcall(guard.RegisterEvent,guard,e)end
-guard:SetScript('OnEvent',function(_,event,addon,fn)
- if addon~='ForeverRoutes'then return end
- local inCombat=InCombatLockdown and InCombatLockdown()and' (im Kampf)'or''
- local text=string.format('%s: %s%s',event=='ADDON_ACTION_FORBIDDEN'and'verboten'or'blockiert',tostring(fn),inCombat)
- local c=charDB();c.blocked=c.blocked or{};table.insert(c.blocked,1,date and date('%H:%M ')..text or text);while #c.blocked>10 do table.remove(c.blocked)end
- if DEFAULT_CHAT_FRAME then DEFAULT_CHAT_FRAME:AddMessage('|cffff6060ForeverRoutes: Blizzard hat '..tostring(fn)..' '..(event=='ADDON_ACTION_FORBIDDEN'and'verboten'or'blockiert')..inCombat..'. Bitte diese Zeile melden.|r')end
-end)

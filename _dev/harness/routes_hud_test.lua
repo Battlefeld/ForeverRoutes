@@ -73,18 +73,11 @@ instance=true;check(FR.Navigation(FR.live[2])==nil,'no navigation in dungeon');F
 instance=false
 check(FR.Done({op='g',l=20}),'level-only grind completes at target level')
 check(not FR.Done({op='g',l=20,xp=6000}),'grind waits for target xp')
--- A live grind step counts the planned kills from where it began, and shows the XP.
+-- A live grind step shows the planned kills and the XP (no combat log: closed to addons in this client).
 FR.SetLive({steps={{op='grind',name='16 × Mottled Boar',npc=3098,kills=16,level=3,at={m=1,x=0,y=0}}}})
 local g=FR.live[1];check(g.op=='g'and g.kills==16 and g.tg=='Mottled Boar','live grind keeps kills and mob')
-local lines=FR.GrindProgress(g);check(lines[1]=='Mottled Boar: 0/16','grind starts at 0/16: '..tostring(lines[1]))
+local lines=FR.GrindProgress(g);check(lines[1]=='Geplant: 16 × Mottled Boar','planned kills: '..tostring(lines[1]))
 check(lines[2]:find('XP: 5000/14000',1,true)~=nil,'grind shows XP: '..tostring(lines[2]))
-local fire=function(dst,name)CombatLogGetCurrentEventInfo=function()return 0,'PARTY_KILL',false,'Player-1-0000001',nil,0,0,dst,name end;M.Fire('COMBAT_LOG_EVENT_UNFILTERED')end
-fire('Creature-0-1-1-1-3098-000001','Mottled Boar');fire('Creature-0-1-1-1-3098-000002','Mottled Boar');fire('Creature-0-1-1-1-9999-000003','Other')
-check(FR.GrindProgress(g)[1]=='Mottled Boar: 2/16','two boars counted: '..tostring(FR.GrindProgress(g)[1]))
-CombatLogGetCurrentEventInfo=function()return 0,'PARTY_KILL',false,'Player-1-9999999',nil,0,0,'Creature-0-1-1-1-3098-000004','Mottled Boar'end;M.Fire('COMBAT_LOG_EVENT_UNFILTERED')
-check(FR.GrindProgress(g)[1]=='Mottled Boar: 2/16','kills of others do not count')
-check(FR.GrindProgress({op='g',l=3,tg='Mottled Boar'})[1]=='Mottled Boar: 0 getötet','stored grind step without a planned number')
-CombatLogGetCurrentEventInfo=nil
 -- In combat the map pin and the quest log stay untouched (Blizzard blocks them there); after combat the pin follows.
 do
  local sets=0;local old=C_Map.SetUserWaypoint;C_Map.SetUserWaypoint=function(...)sets=sets+1;if old then return old(...)end end
