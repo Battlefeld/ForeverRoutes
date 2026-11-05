@@ -112,6 +112,7 @@ function FR.ObjectiveMeta(q,index)
  return nil -- ambiguity deliberately has no invented target/model
 end
 function FR.OpenQuest(q)
+ if InCombatLockdown and InCombatLockdown()then return end -- the quest log does not open in combat
  if QuestMapFrame_OpenToQuestDetails then call(QuestMapFrame_OpenToQuestDetails,q);return end
  local i=C_QuestLog and call(C_QuestLog.GetLogIndexForQuestID,q)or call(GetQuestLogIndexByID,q)
  if i and i>0 then if QuestLogFrame then call(ShowUIPanel,QuestLogFrame)end;call(QuestLog_SetSelection,i)end

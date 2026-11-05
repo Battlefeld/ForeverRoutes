@@ -85,6 +85,16 @@ CombatLogGetCurrentEventInfo=function()return 0,'PARTY_KILL',false,'Player-1-999
 check(FR.GrindProgress(g)[1]=='Mottled Boar: 2/16','kills of others do not count')
 check(FR.GrindProgress({op='g',l=3,tg='Mottled Boar'})[1]=='Mottled Boar: 0 getötet','stored grind step without a planned number')
 CombatLogGetCurrentEventInfo=nil
+-- In combat the map pin and the quest log stay untouched (Blizzard blocks them there); after combat the pin follows.
+do
+ local sets=0;local old=C_Map.SetUserWaypoint;C_Map.SetUserWaypoint=function(...)sets=sets+1;if old then return old(...)end end
+ FR.ClearWaypoint();local step={op='note',n='combat pin',m=1,x=100,y=100}
+ InCombatLockdown=function()return true end
+ FR.UpdateWaypoint(step,FR.Navigation(step));FR.OpenQuest(1)
+ check(sets==0,'no map pin set in combat')
+ InCombatLockdown=function()return false end
+ C_Map.SetUserWaypoint=old
+end
 -- Data-driven shopping never invents item quantities.
 local shop={op='buy',items={{id=9001,count=3}}};bags=2
 check(not FR.Done(shop),'shopping awaits all items');bags=3;check(FR.Done(shop),'shopping completes from bags')

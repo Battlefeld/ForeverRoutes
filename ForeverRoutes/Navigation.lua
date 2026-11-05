@@ -2,6 +2,7 @@
 local FR=ForeverRoutes
 local call=FR.Call
 function FR.ClearWaypoint()
+ if InCombatLockdown and InCombatLockdown()then return end -- after combat the refresh puts the right pin
  if FR.tomtom and TomTom then call(TomTom.RemoveWaypoint,TomTom,FR.tomtom)end
  FR.tomtom=nil
  if FR.ownsPin and C_Map then call(C_Map.ClearUserWaypoint)end
@@ -44,6 +45,9 @@ function FR.Navigation(step)
  return nav
 end
 function FR.UpdateWaypoint(step,nav)
+ -- the map pin and its tracking are not touched in combat (Blizzard blocks them there); the refresh after combat
+ -- (PLAYER_REGEN_ENABLED) sets the pin of the step then current
+ if InCombatLockdown and InCombatLockdown()then return end
  if not nav then if FR.pinned or FR.ownsPin or FR.tomtom then FR.ClearWaypoint()end;return end
  if FR.pinned==nav.key then return end
  FR.ClearWaypoint()
