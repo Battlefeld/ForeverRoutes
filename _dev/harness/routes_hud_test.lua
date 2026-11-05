@@ -97,6 +97,18 @@ do
  InCombatLockdown=function()return false end
  C_Map.SetUserWaypoint=old
 end
+-- A quest skipped in a live plan stays out of the next live plans, until the skip is taken back.
+FR.live=nil;FR.CharDB().skipQuests=nil
+FR.SetLive({steps={{op='accept',quest=96873,at={m=1,x=0,y=0}},{op='accept',quest=4641,at={m=1,x=0,y=0}}}})
+check(FR.Advance().q==96873,'live plan starts with the quest')
+FR.Skip();check(FR.Advance().q==4641,'skip moves on')
+FR.SetLive({steps={{op='accept',quest=96873,at={m=1,x=0,y=0}},{op='work',quest=96873,obj=0,at={m=1,x=0,y=0}},{op='accept',quest=4641,at={m=1,x=0,y=0}}}})
+check(#FR.live==1 and FR.live[1].q==4641,'replanned live plan leaves the skipped quest out')
+FR.RestoreSkipped();FR.SetLive({steps={{op='accept',quest=96873,at={m=1,x=0,y=0}}}})
+check(#FR.live==1 and FR.live[1].q==96873,'restoring skipped steps lets the quest in again')
+FR.Skip();FR.Back();FR.SetLive({steps={{op='accept',quest=96873,at={m=1,x=0,y=0}}}})
+check(#FR.live==1 and FR.live[1].q==96873,'taking the skip back lets the quest in again')
+FR.live=nil;FR.CharDB().skipQuests=nil
 -- Data-driven shopping never invents item quantities.
 local shop={op='buy',items={{id=9001,count=3}}};bags=2
 check(not FR.Done(shop),'shopping awaits all items');bags=3;check(FR.Done(shop),'shopping completes from bags')

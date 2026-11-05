@@ -284,14 +284,21 @@ function FR.Advance()
  return steps[i],i
 end
 
+-- A skipped quest stays skipped: every live plan that comes after it leaves its steps out (skipQuests), until the
+-- player takes the skip back or restores the skipped steps.
+local function skipQuest(c,q,on)
+ if not q then return end
+ c.skipQuests=c.skipQuests or{};c.skipQuests[q]=on or nil
+end
 function FR.Skip()
  local st,i=FR.Advance();local _,live=FR.Steps();local c=charDB();if not st then return end
  FR.undo={step=st,index=i,live=live,removed=live}
+ if st.op=='a'then skipQuest(c,st.q,true)end
  if live then table.remove(FR.live,i)else c.skipped[i]=true;c.index=i+1 end
  return FR.Advance()
 end
 function FR.Back()
- local c=charDB();if FR.undo then local u=FR.undo;FR.undo=nil;if u.live and FR.live then if u.removed then table.insert(FR.live,u.index,u.step)end;c.confirmed[FR.StepKey(u.step)]=nil else c.skipped[u.index]=nil;c.confirmed[FR.StepKey(u.step)]=nil;c.index=u.index end;return FR.Advance()end;if FR.live then return FR.Advance()end
+ local c=charDB();if FR.undo then local u=FR.undo;FR.undo=nil;if u.step and u.step.op=='a'then skipQuest(c,u.step.q,false)end;if u.live and FR.live then if u.removed then table.insert(FR.live,u.index,u.step)end;c.confirmed[FR.StepKey(u.step)]=nil else c.skipped[u.index]=nil;c.confirmed[FR.StepKey(u.step)]=nil;c.index=u.index end;return FR.Advance()end;if FR.live then return FR.Advance()end
  local i=math.max(1,c.index-1);c.skipped[i]=nil;c.index=i;local st=FR.Steps()[i];if st then c.confirmed[FR.StepKey(st)]=nil end
  return FR.Steps()[i],i
 end
@@ -324,6 +331,7 @@ function FR.SetLive(result)
    v=(via:find('^deathskip')and'd')or(via=='hearth'and'h')or(via=='teleport'and't')or nil,gy=via:match('^deathskip: (.+)$'),
    dm=s.viaAt and s.viaAt.m,dx=s.viaAt and s.viaAt.x,dy=s.viaAt and s.viaAt.y,live=true}
   local st=out[#out]
+  if st.q and(charDB().skipQuests or{})[st.q]then out[#out]=nil;st={}end
   if st.op=='d'then local known=storedDungeon(st.n);if known then st.ii,st.qi=known.ii,known.qi end end
   if st.op=='g'and type(st.n)=='string'then st.tg=st.n:match('^%d+ × (.+)$')or st.n end
   if st.op=='z'then st.it,st.cl=FR.LESSER_WAND,FR.CAMP_LEVEL end
@@ -414,7 +422,7 @@ function FR.Objectives(step)
  return type(list)=='table'and list or{}
 end
 function FR.RestoreSkipped()
- local c=charDB();c.skipped={};c.index=1;FR.pinned=nil;return FR.Advance()
+ local c=charDB();c.skipped={};c.skipQuests=nil;c.index=1;FR.pinned=nil;return FR.Advance()
 end
 
 FR.Call=call
