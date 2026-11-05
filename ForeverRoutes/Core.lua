@@ -320,11 +320,12 @@ function FR.SetLive(result)
   local at=type(s.at)=='table'and s.at or{}
   local via=type(s.via)=='string'and s.via or''
   local name=type(s.name)=='string'and s.name:gsub(' %(dungeon run%)$','')or s.name
-  out[#out+1]={op=OP[s.op]or s.op,q=s.quest,n=name,m=at.m,x=at.x,y=at.y,l=s.level,o=s.obj and(s.obj+1),npc=s.npc,object=s.object,items=s.items,stacks=s.stacks,
+  out[#out+1]={op=OP[s.op]or s.op,q=s.quest,n=name,m=at.m,x=at.x,y=at.y,l=s.level,o=s.obj and(s.obj+1),npc=s.npc,object=s.object,items=s.items,stacks=s.stacks,kills=tonumber(s.kills),
    v=(via:find('^deathskip')and'd')or(via=='hearth'and'h')or(via=='teleport'and't')or nil,gy=via:match('^deathskip: (.+)$'),
    dm=s.viaAt and s.viaAt.m,dx=s.viaAt and s.viaAt.x,dy=s.viaAt and s.viaAt.y,live=true}
   local st=out[#out]
   if st.op=='d'then local known=storedDungeon(st.n);if known then st.ii,st.qi=known.ii,known.qi end end
+  if st.op=='g'and type(st.n)=='string'then st.tg=st.n:match('^%d+ × (.+)$')or st.n end
   if st.op=='z'then st.it,st.cl=FR.LESSER_WAND,FR.CAMP_LEVEL end
   if st.op=='p'then st.cl=FR.CAMP_LEVEL end
  end
@@ -422,3 +423,53 @@ FR.OnQuest=onQuest
 FR.Completed=completed
 FR.QuestDone=questDone
 
+
+-- Grind progress. Kills of the player and the pet (killing blow, combat log PARTY_KILL) are counted per creature id
+-- and per name for the character; a grind step counts from where it began, so the route's planned kills can be
+-- checked against the XP they bring.
+local function creatureID(guid)
+ if type(guid)~='string'then return nil end
+ local kind,_,_,_,_,id=strsplit('-',guid);if kind~='Creature'then return nil end
+ return tonumber(id)
+end
+function FR.CountKill(dst,dstName)
+ local c=charDB();c.kills=c.kills or{}
+ local id=creatureID(dst);if id then c.kills[id]=(c.kills[id]or 0)+1 end
+ if type(dstName)=='string'and dstName~=''then local k='n:'..dstName:lower();c.kills[k]=(c.kills[k]or 0)+1 end
+end
+local kills=CreateFrame('Frame')
+pcall(kills.RegisterEvent,kills,'COMBAT_LOG_EVENT_UNFILTERED')
+kills:SetScript('OnEvent',function()
+ if not CombatLogGetCurrentEventInfo then return end
+ local _,sub,_,src,_,_,_,dst,dstName=CombatLogGetCurrentEventInfo()
+ if sub~='PARTY_KILL'then return end
+ if src~=call(UnitGUID,'player')and src~=call(UnitGUID,'pet')then return end
+ FR.CountKill(dst,dstName)
+end)
+-- The lines a grind step shows: "Mottled Boar: 3/16" (or "3 getötet" without a planned number) and the XP.
+function FR.GrindProgress(step)
+ if not step or step.op~='g'then return nil end
+ local c=charDB();c.kills=c.kills or{};c.grindFrom=c.grindFrom or{}
+ local lines={}
+ local now
+ if step.npc then now=c.kills[step.npc]or 0 elseif step.tg then now=c.kills['n:'..step.tg:lower()]or 0 end
+ if now then
+  local key=FR.StepKey(step)
+  if c.grindFrom[key]==nil then
+   local n=0;for _ in pairs(c.grindFrom)do n=n+1 end;if n>200 then c.grindFrom={} end
+   c.grindFrom[key]=now
+  end
+  local done=math.max(0,now-c.grindFrom[key])
+  local who=step.tg or'Kills'
+  lines[#lines+1]=step.kills and string.format('%s: %d/%d',who,done,step.kills)or string.format('%s: %d getötet',who,done)
+ end
+ local level,xp,max=call(UnitLevel,'player'),call(UnitXP,'player'),call(UnitXPMax,'player')
+ if level and xp and max and max>0 then
+  if step.l and level<step.l then
+   lines[#lines+1]=string.format('XP: %d/%d (Level %d, Ziel Level %d)',xp,max,level,step.l)
+  else
+   lines[#lines+1]=string.format('XP: %d/%d (Level %d)',xp,max,level)
+  end
+ end
+ return lines
+end

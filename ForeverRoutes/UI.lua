@@ -162,6 +162,7 @@ function FR.Refresh()
    add((o.finished and'|cff50df6eOK|r 'or'- ')..(o.text or string.format('%d/%d',o.numFulfilled or 0,o.numRequired or 0)),o.finished and C.good or C.text,view.step.q,i)
   end
  end
+ for _,line in ipairs(FR.GrindProgress(view.step)or{})do add(line,C.text)end
  for _,it in ipairs(view.items)do add(it.text,it.done and C.good or C.text,nil,nil,it.id)end
  local bag=FR.BagHint();if bag then add(bag,C.gold)end
  if not FR.Config().compact then

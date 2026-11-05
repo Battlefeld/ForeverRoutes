@@ -73,6 +73,18 @@ instance=true;check(FR.Navigation(FR.live[2])==nil,'no navigation in dungeon');F
 instance=false
 check(FR.Done({op='g',l=20}),'level-only grind completes at target level')
 check(not FR.Done({op='g',l=20,xp=6000}),'grind waits for target xp')
+-- A live grind step counts the planned kills from where it began, and shows the XP.
+FR.SetLive({steps={{op='grind',name='16 × Mottled Boar',npc=3098,kills=16,level=3,at={m=1,x=0,y=0}}}})
+local g=FR.live[1];check(g.op=='g'and g.kills==16 and g.tg=='Mottled Boar','live grind keeps kills and mob')
+local lines=FR.GrindProgress(g);check(lines[1]=='Mottled Boar: 0/16','grind starts at 0/16: '..tostring(lines[1]))
+check(lines[2]:find('XP: 5000/14000',1,true)~=nil,'grind shows XP: '..tostring(lines[2]))
+local fire=function(dst,name)CombatLogGetCurrentEventInfo=function()return 0,'PARTY_KILL',false,'Player-1-0000001',nil,0,0,dst,name end;M.Fire('COMBAT_LOG_EVENT_UNFILTERED')end
+fire('Creature-0-1-1-1-3098-000001','Mottled Boar');fire('Creature-0-1-1-1-3098-000002','Mottled Boar');fire('Creature-0-1-1-1-9999-000003','Other')
+check(FR.GrindProgress(g)[1]=='Mottled Boar: 2/16','two boars counted: '..tostring(FR.GrindProgress(g)[1]))
+CombatLogGetCurrentEventInfo=function()return 0,'PARTY_KILL',false,'Player-1-9999999',nil,0,0,'Creature-0-1-1-1-3098-000004','Mottled Boar'end;M.Fire('COMBAT_LOG_EVENT_UNFILTERED')
+check(FR.GrindProgress(g)[1]=='Mottled Boar: 2/16','kills of others do not count')
+check(FR.GrindProgress({op='g',l=3,tg='Mottled Boar'})[1]=='Mottled Boar: 0 getötet','stored grind step without a planned number')
+CombatLogGetCurrentEventInfo=nil
 -- Data-driven shopping never invents item quantities.
 local shop={op='buy',items={{id=9001,count=3}}};bags=2
 check(not FR.Done(shop),'shopping awaits all items');bags=3;check(FR.Done(shop),'shopping completes from bags')
