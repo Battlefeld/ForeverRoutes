@@ -21,6 +21,11 @@ on:
       - "data/walks.json.gz"
       - "data/walktable.json.gz"
   workflow_dispatch:
+    inputs:
+      interim:
+        description: Interim release before a recompute (shipped routes may not match the data yet)
+        type: boolean
+        default: false
 
 permissions:
   contents: write
@@ -44,11 +49,16 @@ jobs:
         run: |
           test -z "$(gofmt -l .)" || { gofmt -l .; exit 1; }
           go vet ./...
-          go test -timeout 30m ./...
+          if [ "${{ inputs.interim }}" = "true" ]; then
+            go test -timeout 30m -skip 'TestShippedRoutesMatchCurrentModel' ./...
+          else
+            go test -timeout 30m ./...
+          fi
           python3 tools/check_refs.py
       - name: publish
         env:
           GH_TOKEN: ${{ github.token }}
+          FR_STALE_OK: ${{ inputs.interim && '1' || '' }}
         run: |
           git log -1 --format=%B > /tmp/notes.md
           tools/release.sh /tmp/notes.md

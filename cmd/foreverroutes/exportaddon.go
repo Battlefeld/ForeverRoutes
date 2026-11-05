@@ -23,6 +23,7 @@ func cmdExportAddon(args []string) error {
 	profiles := fs.String("profiles", "data/profiles", "kill profiles (<class>.json)")
 	fallbackFile := fs.String("fallbacks", "", "ordinary pinned RXP fallback catalog; default beside dataset")
 	out := fs.String("out", "", "Lua file to write (the addon's Data/Routes.lua)")
+	stale := fs.Bool("stale-ok", false, "interim release before a recompute: a route with events the data no longer allows is exported without them")
 	fs.Parse(args)
 	if *fallbackFile == "" {
 		*fallbackFile = filepath.Join(filepath.Dir(*path), "fallbacks", "rxp.json.gz")
@@ -87,7 +88,10 @@ func cmdExportAddon(args []string) error {
 			continue
 		}
 		if res.Level < r.Target || len(res.Skipped) > 0 {
-			return fmt.Errorf("%s: incomplete route or skipped events; regenerate routes", f)
+			if !*stale {
+				return fmt.Errorf("%s: incomplete route or skipped events; regenerate routes", f)
+			}
+			fmt.Fprintf(os.Stderr, "%s: stale route exported without %d skipped events\n", key, len(res.Missed))
 		}
 		fmt.Fprintf(&b, "ForeverRoutesData.routes[%s] = {race = %s, class = %s, faction = %s, target = %d, hours = %.1f, basis = %s, s = {\n",
 			luaStr(key), luaStr(r.Character.Race), luaStr(r.Character.Class), luaStr(r.Character.Faction), r.Target, res.Seconds/3600, luaStr(r.Winner))

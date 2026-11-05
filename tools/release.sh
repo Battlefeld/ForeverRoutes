@@ -6,7 +6,7 @@ notes="${1:-/dev/null}"
 stamp="$(date -u +%Y%m%d-%H%M%S)"
 out="$(mktemp -d)"
 GOOS=windows GOARCH=amd64 CGO_ENABLED=0 go build -trimpath -o "$out/foreverroutes.exe" ./cmd/foreverroutes
-go run ./cmd/foreverroutes export-addon -out "$out/Routes.lua"
+go run ./cmd/foreverroutes export-addon ${FR_STALE_OK:+-stale-ok} -out "$out/Routes.lua"
 go run ./cmd/foreverroutes bundle -out "$out" -version "$stamp" -exe "$out/foreverroutes.exe" -addon "$out/Routes.lua"
 python3 tools/package_addon.py --routes "$out/Routes.lua" --out "$out/ForeverRoutes-addon.zip"
 cp data/routes-data.json.gz "$out/routes-data.json.gz"
