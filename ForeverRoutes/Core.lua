@@ -424,13 +424,44 @@ FR.Completed=completed
 FR.QuestDone=questDone
 
 
--- Grind progress: the XP towards the step's level. (Kills are not counted: the combat log is closed to addons in
--- this client, and registering for it got the addon blocked.)
--- The lines a grind step shows: the planned kills and the XP.
+-- Grind progress. Kills are counted from the XP (no combat log: it is closed to addons in this client): every XP gain
+-- that does not come with a quest turned in counts as one kill. Discovering an area gives XP too and is counted as
+-- well; which creature died is not known, the grind step is about its creature anyway.
+local xpLast,levelLast,maxLast,turnedIn
+local function readXP()return call(UnitXP,'player'),call(UnitLevel,'player'),call(UnitXPMax,'player')end
+function FR.OnXP()
+ local xp,level,max=readXP()
+ if not(xp and level and max)then return end
+ if xpLast and levelLast then
+  local gain=level>levelLast and(maxLast or 0)-xpLast+xp or xp-xpLast
+  local now=GetTime and GetTime()or 0
+  if gain>0 and not(turnedIn and now-turnedIn<2)then
+   local c=charDB();c.xpKills=(c.xpKills or 0)+1;c.lastKillXP=gain
+  end
+ end
+ xpLast,levelLast,maxLast=xp,level,max
+end
+local xpFrame=CreateFrame('Frame')
+for _,e in ipairs({'PLAYER_ENTERING_WORLD','PLAYER_XP_UPDATE','QUEST_TURNED_IN'})do pcall(xpFrame.RegisterEvent,xpFrame,e)end
+xpFrame:SetScript('OnEvent',function(_,event)
+ if event=='QUEST_TURNED_IN'then turnedIn=GetTime and GetTime()or 0;return end
+ if event=='PLAYER_ENTERING_WORLD'then xpLast,levelLast,maxLast=readXP();return end
+ FR.OnXP()
+end)
+-- The lines a grind step shows: the kills against the planned number ("Mottled Boar: 3/16") and the XP.
 function FR.GrindProgress(step)
  if not step or step.op~='g'then return nil end
+ local c=charDB();c.grindFrom=c.grindFrom or{}
  local lines={}
- if step.kills and step.tg then lines[#lines+1]=string.format('Geplant: %d × %s',step.kills,step.tg)end
+ local key=FR.StepKey(step)
+ if c.grindFrom[key]==nil then
+  local n=0;for _ in pairs(c.grindFrom)do n=n+1 end;if n>200 then c.grindFrom={} end
+  c.grindFrom[key]=c.xpKills or 0
+ end
+ local done=math.max(0,(c.xpKills or 0)-c.grindFrom[key])
+ local who=step.tg or'Kills'
+ local last=c.lastKillXP and done>0 and string.format(' (zuletzt +%d XP)',c.lastKillXP)or''
+ lines[#lines+1]=step.kills and string.format('%s: %d/%d%s',who,done,step.kills,last)or string.format('%s: %d getötet%s',who,done,last)
  local level,xp,max=call(UnitLevel,'player'),call(UnitXP,'player'),call(UnitXPMax,'player')
  if level and xp and max and max>0 then
   if step.l and level<step.l then

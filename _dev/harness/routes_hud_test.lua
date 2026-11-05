@@ -73,11 +73,20 @@ instance=true;check(FR.Navigation(FR.live[2])==nil,'no navigation in dungeon');F
 instance=false
 check(FR.Done({op='g',l=20}),'level-only grind completes at target level')
 check(not FR.Done({op='g',l=20,xp=6000}),'grind waits for target xp')
--- A live grind step shows the planned kills and the XP (no combat log: closed to addons in this client).
+-- A live grind step counts kills from the XP: each gain without a quest turned in is one kill.
 FR.SetLive({steps={{op='grind',name='16 × Mottled Boar',npc=3098,kills=16,level=3,at={m=1,x=0,y=0}}}})
 local g=FR.live[1];check(g.op=='g'and g.kills==16 and g.tg=='Mottled Boar','live grind keeps kills and mob')
-local lines=FR.GrindProgress(g);check(lines[1]=='Geplant: 16 × Mottled Boar','planned kills: '..tostring(lines[1]))
+local lines=FR.GrindProgress(g);check(lines[1]=='Mottled Boar: 0/16','grind starts at 0/16: '..tostring(lines[1]))
 check(lines[2]:find('XP: 5000/14000',1,true)~=nil,'grind shows XP: '..tostring(lines[2]))
+local xpNow,levelNow=5000,2;UnitXP=function()return xpNow end;UnitLevel=function()return levelNow end
+M.Fire('PLAYER_ENTERING_WORLD')
+xpNow=5045;M.Fire('PLAYER_XP_UPDATE');xpNow=5090;M.Fire('PLAYER_XP_UPDATE')
+check(FR.GrindProgress(g)[1]=='Mottled Boar: 2/16 (zuletzt +45 XP)','two kills from XP: '..tostring(FR.GrindProgress(g)[1]))
+M.Fire('QUEST_TURNED_IN',1);xpNow=5500;M.Fire('PLAYER_XP_UPDATE')
+check(FR.GrindProgress(g)[1]:find('2/16',1,true)~=nil,'quest XP is no kill')
+xpNow,levelNow=30,3;M.Advance(3);M.Fire('PLAYER_XP_UPDATE')
+check(FR.GrindProgress(g)[1]:find('3/16',1,true)~=nil,'a kill across the level up counts')
+UnitXP=function()return 5000 end;UnitLevel=function()return 2 end
 -- In combat the map pin and the quest log stay untouched (Blizzard blocks them there); after combat the pin follows.
 do
  local sets=0;local old=C_Map.SetUserWaypoint;C_Map.SetUserWaypoint=function(...)sets=sets+1;if old then return old(...)end end
