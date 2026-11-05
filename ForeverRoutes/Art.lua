@@ -31,8 +31,7 @@ function UI.Text(parent,size,color,kind,justify,layer)
  local ok=pcall(fs.SetFont,fs,path,size or 12,'')
  if not ok or fs.GetFont and not fs:GetFont()then pcall(fs.SetFont,fs,UI.FONT.body,size or 12,'')end
  local c=color or UI.COLOR.text;fs:SetTextColor(c[1],c[2],c[3],c[4]or 1)
- -- a soft shadow: readable on any background without the hard black edge
- fs:SetShadowColor(0,0,0,.65);fs:SetShadowOffset(1,-1)
+ fs:SetShadowColor(0,0,0,1);fs:SetShadowOffset(1,-1)
  fs:SetJustifyH(justify or'LEFT');fs:SetJustifyV('MIDDLE')
  return fs
 end
@@ -77,7 +76,7 @@ UI.STYLE={
  panel={'panel_square_medium',{50,34,34,34},{34,24,26,24}},
 }
 -- Frames are drawn a little muted (edges and middle slightly darker and translucent): softer than the raw pack art.
-local SOFT={panel={edge={.86,.86,.92,.94},mid={.72,.78,.9,.9}},button={edge={.9,.9,.95,.95},mid={.85,.88,.95,.95}},note={edge={.86,.86,.92,.9},mid={.7,.76,.88,.85}}}
+local SOFT={panel={edge={.9,.9,.95,1},mid={.8,.84,.94,1}},button={edge={.92,.92,.96,1},mid={.9,.92,.98,1}},note={edge={.9,.9,.95,1},mid={.8,.84,.94,1}}}
 function UI.Style(frame,name,layer,sublevel)
  local s=UI.STYLE[name];if not s then return nil end
  local pieces=UI.NineSlice(frame,s[1],s[2],s[3],layer,sublevel)

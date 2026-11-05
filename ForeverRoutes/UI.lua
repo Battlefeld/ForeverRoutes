@@ -17,7 +17,7 @@ local function tip(button,title,body)
  button:SetScript('OnLeave',function()GameTooltip:Hide()end)
 end
 local function button(parent,text,width,fn)
- local b=CreateFrame('Button',nil,parent);b:SetSize(width,25)
+ local b=CreateFrame('Button',nil,parent);b:SetSize(width,28)
  UI.Style(b,'button');b.label=label(b,12);b.label:SetPoint('CENTER');b.label:SetText(text)
  b:SetScript('OnClick',fn);return b
 end
@@ -73,19 +73,21 @@ local function makeFrame()
  if frame then return frame end
  frame=CreateFrame('Frame','ForeverRoutesFrame',UIParent);FR.frame=frame
  frame:SetSize(400,300);frame:SetClampedToScreen(true);frame:SetFrameStrata('MEDIUM');UI.Style(frame,'panel')
- movable(frame,'window');position(frame,'window','LEFT',40,120)
- -- without a place of its own the window docks next to the quest tracker
- if FR.Config().docked~=false and not FR.Config().window then dock(frame)end
+ movable(frame,'window')
+ -- layout 2: the window docks next to the quest tracker; a place saved before that is dropped once
+ if FR.Config().layout~=2 then FR.Config().layout=2;FR.Config().window=nil;FR.Config().docked=true end
+ position(frame,'window','LEFT',40,120)
+ if FR.Config().docked~=false and not FR.Config().window then frame.docked=dock(frame)end
  frame:SetScale(math.max(.65,math.min(1.5,tonumber(FR.Config().scale)or 1)))
- frame.crystal=CreateFrame('Button',nil,frame);frame.crystal:SetSize(30,30);frame.crystal:SetPoint('TOPLEFT',19,-15)
+ frame.crystal=CreateFrame('Button',nil,frame);frame.crystal:SetSize(28,28);frame.crystal:SetPoint('TOPLEFT',26,-34)
  frame.crystal.tex=frame.crystal:CreateTexture(nil,'ARTWORK');frame.crystal.tex:SetAllPoints()
  tip(frame.crystal,'ForeverCore','Blau: ForeverCore hat in dieser Sitzung geantwortet. Ohne Verbindung folgt ForeverRoutes der gespeicherten Route.')
- local title=UI.Text(frame,17,C.gold,'title');title:SetPoint('TOPLEFT',56,-21);title:SetText('ForeverRoutes')
- local close=button(frame,'X',25,hide);close:SetPoint('TOPRIGHT',-18,-17)
+ local title=UI.Text(frame,16,C.gold,'title');title:SetPoint('LEFT',frame.crystal,'RIGHT',8,0);title:SetText('ForeverRoutes')
+ local close=button(frame,'X',26,hide);close:SetPoint('TOPRIGHT',-26,-35)
  local collapse=button(frame,'-',25,function()FR.Config().compact=not FR.Config().compact;refresh()end);collapse:SetPoint('RIGHT',close,'LEFT',-2,0)
  tip(collapse,'Kompaktansicht','Nur den aktuellen Schritt mit Fortschritt zeigen.')
- frame.status=label(frame,11,C.muted);frame.status:SetPoint('TOPLEFT',30,-54);frame.status:SetWidth(340)
- frame.current=CreateFrame('Button',nil,frame);frame.current:SetPoint('TOPLEFT',30,-76);frame.current:SetWidth(340)
+ frame.status=label(frame,11,C.muted);frame.status:SetPoint('TOPLEFT',30,-70);frame.status:SetWidth(340)
+ frame.current=CreateFrame('Button',nil,frame);frame.current:SetPoint('TOPLEFT',30,-90);frame.current:SetWidth(340)
  frame.current.text=label(frame.current,15,C.gold);frame.current.text:SetPoint('TOPLEFT');frame.current.text:SetWidth(340);frame.current.text:SetWordWrap(true)
  frame.current:SetScript('OnClick',function()if view and view.step and view.step.q then FR.OpenQuest(view.step.q)end end)
  frame.current:SetScript('OnEnter',function(self)if view and view.step and view.step.q then FR.ShowQuestTooltip(self,view.step.q)end end)
@@ -94,11 +96,12 @@ local function makeFrame()
  frame.rows={};for i=1,24 do frame.rows[i]=row(frame)end
  frame.nextLabel=label(frame,11,C.muted)
  frame.nextRows={};for i=1,3 do frame.nextRows[i]=row(frame)end
- frame.back=button(frame,'Zurück',66,function()FR.Back();refresh()end);frame.back:SetPoint('BOTTOMLEFT',36,40)
- frame.skip=button(frame,'Überspringen',105,function()FR.Skip();refresh()end);frame.skip:SetPoint('LEFT',frame.back,'RIGHT',3,0)
- frame.confirm=button(frame,'Erledigt',76,function()FR.Confirm();refresh()end);frame.confirm:SetPoint('LEFT',frame.skip,'RIGHT',3,0)
+ frame.skip=button(frame,'Überspringen',124,function()FR.Skip();refresh()end);frame.skip:SetPoint('BOTTOM',0,40)
+ frame.back=button(frame,'Zurück',90,function()FR.Back();refresh()end);frame.back:SetPoint('RIGHT',frame.skip,'LEFT',-6,0)
+  frame.confirm=button(frame,'Erledigt',90,function()FR.Confirm();refresh()end);frame.confirm:SetPoint('LEFT',frame.skip,'RIGHT',6,0)
  tip(frame.confirm,'Schritt erledigt','Markiert den Schritt als fertig. Bei einer Quest, die es im Spiel nicht gibt oder die du nicht annehmen kannst, nimmt es die ganze Quest aus der Planung. Zurück macht es rückgängig.')
- frame.options=button(frame,'...',32,function()FR.ToggleMenu()end);frame.options:SetPoint('LEFT',frame.confirm,'RIGHT',3,0)
+ frame.options=button(frame,'...',32,function()FR.ToggleMenu()end);frame.options:SetPoint('RIGHT',collapse,'LEFT',-2,0)
+ tip(frame.options,'Routenoptionen','Mit oder ohne Dungeons, Zusatzziele, Position.')
  for _,child in ipairs({frame.current,frame.back,frame.skip,frame.confirm,frame.options})do passDrag(child,frame)end
  for _,r in ipairs(frame.rows)do passDrag(r,frame)end;for _,r in ipairs(frame.nextRows)do passDrag(r,frame)end
  tip(frame.skip,'Schritt überspringen','Mit Zurück den letzten übersprungenen Schritt wiederherstellen. Die Quest wird nicht als erledigt markiert.')
@@ -142,12 +145,10 @@ local function makeArrow()
  -- just the arrow, distance and target under it; no panel behind
  arrow=CreateFrame('Frame','ForeverRoutesArrow',UIParent);FR.arrow=arrow;arrow:SetSize(184,108);arrow:SetClampedToScreen(true)
  movable(arrow,'arrow');position(arrow,'arrow','TOP',0,-110)
- arrow.glow=arrow:CreateTexture(nil,'BACKGROUND');arrow.glow:SetSize(96,96);arrow.glow:SetPoint('CENTER',arrow,'TOP',0,-30)
- arrow.glow:SetTexture('Interface\\Cooldown\\star4');arrow.glow:SetBlendMode('ADD');arrow.glow:SetVertexColor(1,.8,.4,.28)
- arrow.tex=arrow:CreateTexture(nil,'ARTWORK');arrow.tex:SetSize(56,56);arrow.tex:SetPoint('TOP',0,-2);arrow.tex:SetVertexColor(1,.86,.5,1)
- arrow.tex:SetTexture('Interface\\Minimap\\MinimapArrow')
- arrow.distance=UI.Text(arrow,16,C.gold,'title','CENTER');arrow.distance:SetJustifyH('CENTER');arrow.distance:SetPoint('TOP',0,-60);arrow.distance:SetWidth(158)
- arrow.target=label(arrow,11,C.text);arrow.target:SetPoint('TOP',0,-78);arrow.target:SetWidth(156);arrow.target:SetHeight(24);arrow.target:SetJustifyH('CENTER')
+ arrow.tex=arrow:CreateTexture(nil,'ARTWORK');arrow.tex:SetSize(64,64);arrow.tex:SetPoint('TOP',0,0)
+ if not UI.SetArt(arrow.tex,'route_arrow')then arrow.tex:SetTexture('Interface\\Minimap\\MinimapArrow')end
+ arrow.distance=UI.Text(arrow,16,C.gold,'title','CENTER');arrow.distance:SetJustifyH('CENTER');arrow.distance:SetPoint('TOP',0,-66);arrow.distance:SetWidth(158)
+ arrow.target=label(arrow,11,C.text);arrow.target:SetPoint('TOP',0,-86);arrow.target:SetWidth(156);arrow.target:SetHeight(24);arrow.target:SetJustifyH('CENTER')
  arrow:Hide()
 end
 local function updateArrow(step)
@@ -163,13 +164,15 @@ end
 function FR.Refresh()
  view=FR.TaskView();updateArrow(view.step)
  if not frame or not frame:IsShown()then return view.step end
+ -- the quest tracker comes up after login: dock as soon as it is there
+ if not frame.docked and FR.Config().docked~=false and not FR.Config().window then frame.docked=dock(frame)end
  local connected=FR.Connected();UI.SetArt(frame.crystal.tex,connected and'crystal_on'or'crystal_off')
  local mode=view.live and'Live geplant'or(view.kind=='rxp-fallback'and'Guide-Fallback'or'Gespeicherte Route')
  frame.status:SetText(view.paused and'Route pausiert · Dungeon'or string.format('%s · Schritt %d/%d',mode,math.min(view.index,view.total),view.total))
  if FR.dataStatus and (FR.dataStatus.status=='warning' or FR.dataStatus.status=='error') then frame.status:SetText(frame.status:GetText()..' · Datenprüfung ausstehend')end
  frame.current.text:SetText(view.text)
  local ch=math.max(26,frame.current.text:GetStringHeight()+6);frame.current:SetHeight(ch)
- local y=76+ch
+ local y=90+ch
  frame.hint:ClearAllPoints();frame.hint:SetPoint('TOPLEFT',30,-y)
  frame.hint:SetText(view.paused and'Nach dem Dungeon geht es beim nächsten offenen Schritt weiter.'or(view.hint or''))
  if frame.hint:GetText()~=''then y=y+frame.hint:GetStringHeight()+9 end
@@ -209,7 +212,7 @@ function FR.Refresh()
  end
  frame.confirm:SetEnabled(FR.CanConfirm(view.step)and true or false)
  frame.skip:SetEnabled(view.step~=nil and not view.paused);frame.back:SetEnabled(not view.paused and(FR.undo~=nil or not view.live))
- frame:SetHeight(math.max(195,y+88))
+ frame:SetHeight(math.max(210,y+92))
  return view.step
 end
 function FR.Show()makeFrame():Show();FR.Config().hidden=nil;FR.Refresh()end
