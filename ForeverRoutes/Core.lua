@@ -473,3 +473,15 @@ function FR.GrindProgress(step)
  end
  return lines
 end
+
+-- When Blizzard blocks a protected call of this addon, say which one (event argument 2) in the chat and keep it, so
+-- the cause can be found without a taint log.
+local guard=CreateFrame('Frame')
+for _,e in ipairs({'ADDON_ACTION_BLOCKED','ADDON_ACTION_FORBIDDEN'})do pcall(guard.RegisterEvent,guard,e)end
+guard:SetScript('OnEvent',function(_,event,addon,fn)
+ if addon~='ForeverRoutes'then return end
+ local inCombat=InCombatLockdown and InCombatLockdown()and' (im Kampf)'or''
+ local text=string.format('%s: %s%s',event=='ADDON_ACTION_FORBIDDEN'and'verboten'or'blockiert',tostring(fn),inCombat)
+ local c=charDB();c.blocked=c.blocked or{};table.insert(c.blocked,1,date and date('%H:%M ')..text or text);while #c.blocked>10 do table.remove(c.blocked)end
+ if DEFAULT_CHAT_FRAME then DEFAULT_CHAT_FRAME:AddMessage('|cffff6060ForeverRoutes: Blizzard hat '..tostring(fn)..' '..(event=='ADDON_ACTION_FORBIDDEN'and'verboten'or'blockiert')..inCombat..'. Bitte diese Zeile melden.|r')end
+end)
