@@ -108,3 +108,68 @@ func TestLivePlanning(t *testing.T) {
 		t.Error("missing position accepted")
 	}
 }
+
+// A live walk takes a later quest of the route where the character stands now instead of coming back for it.
+func TestLiveWalkPullsNearbyQuestsForward(t *testing.T) {
+	d, err := dataset.Load("../data/routes-data.json.gz")
+	if err != nil {
+		t.Skip("dataset not available:", err)
+	}
+	w, err := NewWorld(d, Character{Race: "Orc", Class: "Warrior"}, Options{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	s := w.NewState()
+	// two quests taken at the same place right away, and one far from there
+	var open []*Quest
+	for _, q := range w.Quests {
+		if w.CanAccept(s, q) == nil && len(q.StartSources) == 0 && q.Dungeon == nil && q.StartPos.Map == s.Pos.Map {
+			open = append(open, q)
+		}
+	}
+	var near []*Quest
+	var far *Quest
+	for _, a := range open {
+		for _, b := range open {
+			if a.ID != b.ID && distance(a.StartPos, b.StartPos) < pullRadius/2 && len(near) == 0 {
+				near = []*Quest{a, b}
+			}
+		}
+	}
+	for _, c := range open {
+		if len(near) == 2 && far == nil && distance(c.StartPos, near[0].StartPos) > 300 {
+			far = c
+		}
+	}
+	if len(near) < 2 || far == nil {
+		t.Skip("no fitting quests at the start")
+	}
+	events := []GuideEvent{{Op: "accept", Quest: near[0].ID}, {Op: "accept", Quest: far.ID}, {Op: "accept", Quest: near[1].ID}}
+	live, err := w.FollowGuideFrom(s, events, 60, 600)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var order []int
+	for _, st := range live.Steps {
+		if st.Op == "accept" {
+			order = append(order, st.Quest)
+		}
+	}
+	if len(order) < 3 || order[0] != near[0].ID || order[1] != near[1].ID || order[2] != far.ID {
+		t.Fatalf("live accepts %v, want %d and %d before %d", order, near[0].ID, near[1].ID, far.ID)
+	}
+	// the stored route keeps its own order
+	stored, err := w.FollowGuide(events, 2)
+	if err != nil {
+		t.Fatal(err)
+	}
+	order = nil
+	for _, st := range stored.Steps {
+		if st.Op == "accept" {
+			order = append(order, st.Quest)
+		}
+	}
+	if len(order) < 2 || order[1] != far.ID {
+		t.Fatalf("stored route reordered: %v", order)
+	}
+}

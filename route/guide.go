@@ -55,21 +55,49 @@ func (w *World) FollowGuide(events []GuideEvent, target int) (*GuideResult, erro
 // already is skipped (its accepts fail silently, its objectives are complete), the rest follows the guide's order.
 // The result's times count from s.
 func (w *World) FollowGuideFrom(s *State, events []GuideEvent, target int, horizon float64) (*GuideResult, error) {
-	return w.followFrom(s.clone(), events, target, horizon)
+	return w.follow(s.clone(), events, target, horizon, false, true)
 }
 
 func (w *World) followFrom(s *State, events []GuideEvent, target int, horizon float64) (*GuideResult, error) {
-	return w.follow(s, events, target, horizon, false)
+	return w.follow(s, events, target, horizon, false, false)
 }
 
 // walkFast walks a guide as FollowGuide does without replaying it for the time line: the result has the time, the
 // level, the levels per event and the steps' actions only (enough to weigh a route, as Optimize does).
 // It stops once the walk takes longer than limit (then the level is below the target).
 func (w *World) walkFast(events []GuideEvent, target int, limit float64) (*GuideResult, error) {
-	return w.follow(w.NewState(), events, target, limit, true)
+	return w.follow(w.NewState(), events, target, limit, true, false)
 }
 
-func (w *World) follow(s *State, events []GuideEvent, target int, horizon float64, fast bool) (*GuideResult, error) {
+// pullRadius: in a live walk, a later accept or hand-in this close to where the character stands is done right away.
+const pullRadius = 60.0
+
+// pullForward does, in a live walk, the later accepts and hand-ins of the guide that are possible where the character
+// stands now. A live character is often ahead of the route (higher level, quests done in another order); without this
+// the walk leaves a town and comes back for a quest it could have taken while there. Item-started and dungeon quests
+// stay where the guide has them.
+func (w *World) pullForward(s *State, acts *[]Action, later []GuideEvent) {
+	for _, e := range later {
+		if e.Op != "accept" && e.Op != "turnin" {
+			continue
+		}
+		q := w.ByID[e.Quest]
+		if q == nil || q.Dungeon != nil {
+			continue
+		}
+		if p, ok := w.eventPos(e); !ok || p.Map != s.Pos.Map || distance(s.Pos, p) > pullRadius {
+			continue
+		}
+		switch {
+		case e.Op == "accept" && s.Status[q.Index] == notTaken && len(q.StartSources) == 0 && w.CanAccept(s, q) == nil:
+			w.try(s, acts, Action{Op: "accept", Quest: q.ID, At: w.startAt(s, q)})
+		case e.Op == "turnin" && s.Status[q.Index] == active && w.complete(s, q) && !q.EndInside:
+			w.try(s, acts, Action{Op: "turnin", Quest: q.ID, At: q.EndPos})
+		}
+	}
+}
+
+func (w *World) follow(s *State, events []GuideEvent, target int, horizon float64, fast, live bool) (*GuideResult, error) {
 	if target < 1 || target > len(w.Data.LevelXP)+1 || horizon <= 0 || math.IsNaN(horizon) {
 		return nil, fmt.Errorf("invalid guide target or horizon")
 	}
@@ -119,6 +147,9 @@ func (w *World) follow(s *State, events []GuideEvent, target int, horizon float6
 	}
 	for i, e := range events {
 		if i > 0 {
+			if live && len(acts) > starts[i-1] {
+				w.pullForward(s, &acts, events[i:])
+			}
 			res.used[i-1] = len(acts) > starts[i-1]
 		}
 		starts[i] = len(acts)
