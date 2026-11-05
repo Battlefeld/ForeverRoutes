@@ -22,10 +22,13 @@ type questFix struct {
 	// Instant: taken and handed in at the same NPC with nothing to do between (a talk quest that teaches a spell)
 	Instant bool `json:"instant,omitempty"`
 	// ObjectiveKinds maps NPC credit IDs to a sourced action (talk or interact), preserving counts and positions.
-	ObjectiveKinds   map[int]string      `json:"objectiveKinds,omitempty"`
-	ObjectiveTargets map[int][]int       `json:"objectiveTargets,omitempty"`
-	AddFight         int                 `json:"addFight,omitempty"`
-	Objectives       []dataset.Objective `json:"objectives,omitempty"`
+	ObjectiveKinds   map[int]string `json:"objectiveKinds,omitempty"`
+	ObjectiveTargets map[int][]int  `json:"objectiveTargets,omitempty"`
+	// ObjectiveDrops: the only creatures an item objective drops from (item ID to NPC IDs); a source that names
+	// another creature is wrong and would send the route there
+	ObjectiveDrops map[int][]int       `json:"objectiveDrops,omitempty"`
+	AddFight       int                 `json:"addFight,omitempty"`
+	Objectives     []dataset.Objective `json:"objectives,omitempty"`
 	// Profession: the quest is offered only to characters with this profession (the routes learn Skinning, Cooking
 	// and Leatherworking; any other one leaves the quest out, OtherProfession)
 	Profession string `json:"profession,omitempty"`
@@ -123,6 +126,21 @@ func (b *builder) applyQuestFixes() {
 				if kind, ok := f.ObjectiveKinds[o.ID]; ok && o.Kind == "kill" {
 					o.Kind, o.Source = kind, f.Source
 					q.Sources["objectiveAction"] = f.Source
+				}
+				if npcs, ok := f.ObjectiveDrops[o.ID]; ok && o.Kind == "item" {
+					var drops []dataset.Drop
+					for _, id := range npcs {
+						drop := dataset.Drop{NPC: id, Unknown: true}
+						for _, d := range o.Drops {
+							if d.NPC == id {
+								drop = d
+							}
+						}
+						drops = append(drops, drop)
+						b.npcWanted[id] = true
+					}
+					o.Drops, o.Source = drops, f.Source
+					q.Sources["objectiveDrops"] = f.Source
 				}
 				if targets, ok := f.ObjectiveTargets[o.ID]; ok {
 					o.Targets = targets
