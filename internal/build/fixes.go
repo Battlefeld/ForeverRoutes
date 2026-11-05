@@ -16,6 +16,8 @@ type questFix struct {
 	Quest           int   `json:"quest"`
 	MinLevel        *int  `json:"minLevel,omitempty"`
 	PreAll          []int `json:"preAll,omitempty"`
+	PreActive       []int `json:"preActive,omitempty"`
+	EndAfter        []int `json:"endAfter,omitempty"`
 	AddStartObjects []int `json:"addStartObjects,omitempty"`
 	// PlacesFromObjects: the start and end places a source gives are wrong, they follow from the objects
 	PlacesFromObjects bool `json:"placesFromObjects,omitempty"`
@@ -99,6 +101,14 @@ func (b *builder) applyQuestFixes() {
 			if f.PreAll != nil {
 				q.PreAll, q.PreAny = f.PreAll, nil
 				q.Sources["pre"] = f.Source
+			}
+			if f.PreActive != nil {
+				q.PreActive = f.PreActive
+				q.Sources["preActive"] = f.Source
+			}
+			if f.EndAfter != nil {
+				q.EndAfter = f.EndAfter
+				q.Sources["endAfter"] = f.Source
 			}
 			for _, o := range f.AddStartObjects {
 				if !slices.ContainsFunc(q.Start, func(r dataset.Ref) bool { return r.Kind == "object" && r.ID == o }) {

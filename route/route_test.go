@@ -370,3 +370,42 @@ func TestMarkUsedBinds(t *testing.T) {
 		t.Fatalf("used binds: %v %v %v", steps[0].BindUsed, steps[2].BindUsed, steps[4].BindUsed)
 	}
 }
+
+// Finding the Antidote is offered while Need for a Cure is in the log, and Need for a Cure is handed in after it.
+func TestQuestOfferedWhileAnotherIsInTheLog(t *testing.T) {
+	d, err := dataset.Load("../data/routes-data.json.gz")
+	if err != nil {
+		t.Skip("dataset not available:", err)
+	}
+	w, err := NewWorld(d, Character{Race: "Troll", Class: "Warrior"}, Options{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	cure, antidote := w.ByID[812], w.ByID[813]
+	if cure == nil || antidote == nil {
+		t.Skip("quests not plannable for this character")
+	}
+	s := w.NewState()
+	s.XP = totalXP(w, 9)
+	if w.CanAccept(s, antidote) == nil {
+		t.Fatal("Finding the Antidote offered without Need for a Cure")
+	}
+	if err := w.Apply(s, Action{Op: "accept", Quest: 812, At: cure.StartPos}); err != nil {
+		t.Fatal(err)
+	}
+	if w.Apply(s, Action{Op: "turnin", Quest: 812, At: cure.EndPos}) == nil {
+		t.Fatal("Need for a Cure handed in without the antidote")
+	}
+	if err := w.Apply(s, Action{Op: "accept", Quest: 813, At: antidote.StartPos}); err != nil {
+		t.Fatal(err)
+	}
+	a, ok := w.bestSource(s, antidote, 0)
+	if !ok {
+		t.Fatal("no source for the poison sacs")
+	}
+	for _, act := range []Action{a, {Op: "turnin", Quest: 813, At: antidote.EndPos}, {Op: "turnin", Quest: 812, At: cure.EndPos}} {
+		if err := w.Apply(s, act); err != nil {
+			t.Fatalf("%s %d: %v", act.Op, act.Quest, err)
+		}
+	}
+}

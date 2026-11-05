@@ -60,20 +60,24 @@ const (
 
 // Quest is one quest with everything the route engine needs.
 type Quest struct {
-	ID          int               `json:"id"`
-	Name        string            `json:"name"`
-	Level       int               `json:"lvl"`               // quest level (XP decay)
-	MinLevel    int               `json:"min"`               // level needed to accept
-	Races       int               `json:"races,omitempty"`   // bit mask, 0 = all
-	Classes     int               `json:"classes,omitempty"` // bit mask, 0 = all
-	XP          int               `json:"xp"`
-	Start       []Ref             `json:"start"`
-	End         []Ref             `json:"end"`
-	StartAt     *Point            `json:"startAt,omitempty"`
-	StartDrops  []Drop            `json:"startDrops,omitempty"` // started by an item: where the item drops
-	EndAt       *Point            `json:"endAt,omitempty"`
-	PreAll      []int             `json:"preAll,omitempty"`
-	PreAny      []int             `json:"preAny,omitempty"`
+	ID         int    `json:"id"`
+	Name       string `json:"name"`
+	Level      int    `json:"lvl"`               // quest level (XP decay)
+	MinLevel   int    `json:"min"`               // level needed to accept
+	Races      int    `json:"races,omitempty"`   // bit mask, 0 = all
+	Classes    int    `json:"classes,omitempty"` // bit mask, 0 = all
+	XP         int    `json:"xp"`
+	Start      []Ref  `json:"start"`
+	End        []Ref  `json:"end"`
+	StartAt    *Point `json:"startAt,omitempty"`
+	StartDrops []Drop `json:"startDrops,omitempty"` // started by an item: where the item drops
+	EndAt      *Point `json:"endAt,omitempty"`
+	PreAll     []int  `json:"preAll,omitempty"`
+	PreAny     []int  `json:"preAny,omitempty"`
+	// PreActive: offered only while these quests are in the log (Finding the Antidote while Need for a Cure is);
+	// EndAfter: handed in only once these quests are done (Need for a Cure after Finding the Antidote)
+	PreActive   []int             `json:"preActive,omitempty"`
+	EndAfter    []int             `json:"endAfter,omitempty"`
 	Exclusive   int               `json:"excl,omitempty"` // exclusive group: only one quest of a positive group
 	Breadcrumb  int               `json:"breadcrumb,omitempty"`
 	Repeatable  bool              `json:"repeat,omitempty"`

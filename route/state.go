@@ -179,6 +179,11 @@ func (w *World) CanAccept(s *State, q *Quest) error {
 			return fail("quest %d needs quest %d first", q.ID, p)
 		}
 	}
+	for _, p := range q.PreActive {
+		if pq := w.ByID[p]; pq == nil || s.Status[pq.Index] != active {
+			return fail("quest %d is offered while quest %d is in the log", q.ID, p)
+		}
+	}
 	if len(q.PreAny) > 0 {
 		ok := false
 		for _, p := range q.PreAny {
@@ -206,6 +211,11 @@ func (w *World) CanAccept(s *State, q *Quest) error {
 }
 
 func (w *World) complete(s *State, q *Quest) bool {
+	for _, e := range q.EndAfter {
+		if eq := w.ByID[e]; eq == nil || s.Status[eq.Index] != done {
+			return false
+		}
+	}
 	p := s.Prog[q.Index]
 	for i, o := range q.Objectives {
 		if p == nil || p[i] < float64(o.Count)-1e-9 {
