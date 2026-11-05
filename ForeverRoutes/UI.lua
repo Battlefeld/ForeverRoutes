@@ -362,7 +362,8 @@ SlashCmdList.FOREVERROUTES=function(msg)
  elseif msg=='done'then FR.Confirm()elseif msg=='reset'then FR.Reset()
  elseif msg=='dungeon'or msg=='dungeons'or msg=='mit'or msg=='gruppe'then FR.SetDungeons(true)
  elseif msg=='solo'or msg=='ohne'then FR.SetDungeons(false)
- elseif msg=='lager'or msg=='camp'then FR.Camped()
+ elseif msg=='lager'then FR.Camped()
+ elseif msg=='camp'or msg=='lagercheck'then FR.CampReport();return
  elseif msg=='optionen'or msg=='options'or msg=='option'then FR.ToggleMenu();return
  elseif msg:match('^option%s+%d+$')then FR.SetOption(msg:match('(%d+)$'))
  elseif msg=='restore'then FR.RestoreSkipped();FR.RestoreTasks()

@@ -174,6 +174,20 @@ do
  px,py=500,500;FR.HearthBound();check(FR.BindLine(FR.TaskView())~=nil,'bound elsewhere: asked again')
  FR.CharDB().bound=nil;accepted[31]=nil;px,py=0,0;GetBindLocation=nil
 end
+-- The camp items are found by their names in the bags, whatever their ids.
+do
+ local bag={[1]=500001,[2]=500002}
+ local names={[500001]='Camp Tent',[500002]='Basic Campfire Kit'}
+ local oldInfo,oldCount=GetItemInfo,GetItemCount
+ C_Container.GetContainerNumSlots=function(b)return b==0 and 2 or 0 end
+ C_Container.GetContainerItemID=function(b,s)return b==0 and bag[s]or nil end
+ GetItemInfo=function(id)return names[id]or('Item '..id)end
+ GetItemCount=function(id)return names[id]and 1 or 0 end
+ local m=FR.CampMaterials()
+ check(m.tent and m.fire,'tent and campfire recognized by name')
+ FR.CampReport()
+ GetItemInfo,GetItemCount=oldInfo,oldCount;C_Container.GetContainerNumSlots=nil;C_Container.GetContainerItemID=nil
+end
 -- Exercise events/timers, option window, slash commands and saved visibility.
 FR.ToggleMenu();FR.ToggleMenu()
 for _,cmd in ipairs({'compact','scale 1.1','lock','position','arrow','show','hide','show'})do SlashCmdList.FOREVERROUTES(cmd)end

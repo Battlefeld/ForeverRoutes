@@ -169,16 +169,60 @@ function FR.CampLeft()
  if left then return math.max(0,left)end
  return math.max(0,3600-((call(time)or 0)-(c.camp or -1e9)))
 end
+-- The bags by item name (the client's English names): the camp items are found by name, not only by their ids,
+-- since Forever's ids are not all known. Each entry: name, id, count.
+FR.CAMP_NAMES={tent={'tent','zelt'},fire={'campfire','lagerfeuer','firewood','kindling','brennholz'}}
+function FR.BagItems()
+ local out={}
+ local slots=C_Container and C_Container.GetContainerNumSlots or GetContainerNumSlots
+ local idOf=C_Container and C_Container.GetContainerItemID or GetContainerItemID
+ if not slots or not idOf then return out end
+ for bag=0,NUM_BAG_SLOTS or 4 do
+  for slot=1,tonumber(call(slots,bag))or 0 do
+   local id=call(idOf,bag,slot)
+   if id then
+    local name=call(GetItemInfo,id)
+    if type(name)=='string'then out[#out+1]={name=name,id=id,count=call(GetItemCount,id)or 1}end
+   end
+  end
+ end
+ return out
+end
+local function bagHas(kind)
+ for _,it in ipairs(FR.BagItems())do
+  local n=it.name:lower()
+  for _,w in ipairs(FR.CAMP_NAMES[kind])do if n:find(w,1,true)then return it end end
+ end
+end
 -- What a camp needs that the bags lack: tent (or leather for one), fire.
 function FR.CampMaterials()
  local leather=call(GetItemCount,FR.LIGHT_LEATHER)or 0
- local tent=(call(GetItemCount,FR.TENT_ITEM)or 0)>0 or leather>=FR.TENT_LEATHER
- local fire=(call(GetItemCount,FR.FIRE_KIT)or 0)>0
+ local tent=(call(GetItemCount,FR.TENT_ITEM)or 0)>0 or leather>=FR.TENT_LEATHER or bagHas('tent')~=nil
+ local fire=(call(GetItemCount,FR.FIRE_KIT)or 0)>0 or bagHas('fire')~=nil
  if not fire then
   fire=true
   for _,r in ipairs(FR.FIRE)do if(call(GetItemCount,r[1])or 0)<r[2]then fire=false end end
  end
  return{tent=tent,leather=leather,fire=fire}
+end
+-- /fr camp: what the addon sees of the camp (for a report when it is not recognized)
+function FR.CampReport()
+ local m=FR.CampMaterials();local left=FR.CampLeft()
+ print(string.format('ForeverRoutes Lager: Zelt %s, Lagerfeuer %s, Leichtes Leder %d, Lager-Buff %s, Rested %.1f %%',
+  m.tent and'ja'or'nein',m.fire and'ja'or'nein',m.leather,left and string.format('%d s',left)or'(Lager noch nicht aktiv)',FR.RestedShare()*100))
+ for _,it in ipairs(FR.BagItems())do
+  local n=it.name:lower()
+  if n:find('tent',1,true)or n:find('camp',1,true)or n:find('fire',1,true)or n:find('wood',1,true)or n:find('flint',1,true)or n:find('leather',1,true)then
+   print(string.format('  Tasche: %s (Item %d) x%d',it.name,it.id,it.count))
+  end
+ end
+ for _,fn in ipairs({UnitBuff,UnitDebuff})do
+  for i=1,40 do
+   local name,_,_,_,duration,_,_,_,_,spell=call(fn,'player',i)
+   if not name then break end
+   print(string.format('  Aura: %s (Zauber %s, %s s)',tostring(name),tostring(spell),tostring(duration)))
+  end
+ end
 end
 -- Rested experience left, as a share of the level (the tent raises it to 5 %: with more left a camp brings nothing).
 function FR.RestedShare()
