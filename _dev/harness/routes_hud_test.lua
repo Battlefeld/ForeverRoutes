@@ -129,6 +129,35 @@ check(native==2 and not ForeverRoutesQuestTooltip:IsShown(),'recycled native blo
 -- Ambiguous equal-count objectives never invent an NPC/model.
 ForeverRoutesData.quests={[2]={objectives={{kind='kill',id=12,count=1},{kind='kill',id=13,count=1}}}}
 check(FR.ObjectiveMeta(2,1)==nil,'ambiguous objective has no target')
+-- One quest display: the window lists the quest log with each quest's place in the route and hides the game's tracker.
+do
+ data(steps);complete[1]=nil;accepted[1]=true;accepted[7]=true;objectives[1]={{text='Wolves: 1/2',numFulfilled=1,numRequired=2,finished=false}}
+ objectives[7]={{text='Boars: 0/5',numFulfilled=0,numRequired=5,finished=false},{text='Done thing',finished=true}}
+ local log={{questID=0,title='Elwynn',isHeader=true},{questID=1,title='First'},{questID=7,title='Side quest'}}
+ C_QuestLog.GetNumQuestLogEntries=function()return #log end;C_QuestLog.GetInfo=function(i)return log[i]end
+ GetQuestLogSpecialItemInfo=function(i)if i==3 then return '|cffffffff|Hitem:555::|h[Horn]|h|r','horn'end end
+ local tracker=CreateFrame('Frame','ObjectiveTrackerFrame',UIParent);tracker:Show()
+ FR.Config().blizzTracker=nil;FR.Config().compact=nil;FR.Show();FR.Refresh()
+ check(not tracker:IsShown(),'game quest tracker hidden while our window shows the quests')
+ local texts={};for _,r in ipairs(FR.frame.questRows)do if r:IsShown()then texts[#texts+1]=r.text:GetText()end end
+ local all=table.concat(texts,'\n')
+ check(FR.frame.questLabel:GetText()=='QUESTS (2)','quest list counts quests, not headers')
+ check(all:find('First',1,true)and all:find('jetzt',1,true),'route quest marked as current')
+ check(all:find('Side quest',1,true)and all:find('nicht in der Route',1,true),'quest outside the route marked')
+ check(all:find('Boars: 0/5',1,true)and not all:find('Done thing',1,true),'open objectives listed, finished ones not')
+ check(not all:find('Wolves',1,true)or FR.frame.rows[1].text:GetText():find('Wolves',1,true),'current quest objectives not repeated in the list')
+ local b=ForeverRoutesQuestItem1
+ check(b and b:IsShown()and b:GetAttribute('item')=='item:555'and b:GetAttribute('type')=='item','quest item button set up')
+ check(b:GetParent()==ForeverRoutesQuestItems and ForeverRoutesQuestItems:GetParent()==UIParent,'item button not anchored to the window')
+ tracker:Show();check(not tracker:IsShown(),'tracker shown by the game is hidden again')
+ InCombatLockdown=function()return true end;tracker:Show();check(tracker:IsShown(),'tracker left alone in combat')
+ InCombatLockdown=function()return false end;FR.Refresh();check(not tracker:IsShown(),'tracker hidden after combat')
+ SlashCmdList.FOREVERROUTES('tracker');check(tracker:IsShown()and not FR.frame.questLabel:IsShown(),'/fr tracker brings the game tracker back')
+ SlashCmdList.FOREVERROUTES('tracker');check(not tracker:IsShown()and FR.frame.questLabel:IsShown(),'/fr tracker hides it again')
+ SlashCmdList.FOREVERROUTES('hide');check(tracker:IsShown()and not ForeverRoutesQuestItems:IsShown(),'hiding our window gives the quests back to the game')
+ SlashCmdList.FOREVERROUTES('show')
+ C_QuestLog.GetNumQuestLogEntries=nil;GetQuestLogSpecialItemInfo=nil;accepted[7]=nil;FR.Refresh()
+end
 -- Exercise events/timers, option window, slash commands and saved visibility.
 FR.ToggleMenu();FR.ToggleMenu()
 for _,cmd in ipairs({'compact','scale 1.1','lock','position','arrow','show','hide','show'})do SlashCmdList.FOREVERROUTES(cmd)end

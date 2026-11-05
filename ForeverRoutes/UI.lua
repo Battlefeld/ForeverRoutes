@@ -40,15 +40,41 @@ local function passDrag(child,win)
  child:SetScript('OnDragStart',function()local f=win:GetScript('OnDragStart');if f then f(win)end end)
  child:SetScript('OnDragStop',function()local f=win:GetScript('OnDragStop');if f then f(win)end end)
 end
--- Docked: the window sits left of the game's quest tracker instead of over it (only our frame is moved).
+-- One quest display: the window takes the place of the game's quest tracker and lists every quest itself.
+-- Config().blizzTracker=true brings the game's tracker back; the window then sits left of it.
+local trackerFrame
+local hiddenTrackers,hookedTrackers={},{}
+local function replacing()return FR.Config().blizzTracker~=true end
+local function trackers()return{ObjectiveTrackerFrame,QuestWatchFrame,WatchFrame}end
 local function tracker()
- for _,f in ipairs({ObjectiveTrackerFrame,QuestWatchFrame,WatchFrame})do if f and f.IsShown and f:IsShown()then return f end end
+ if trackerFrame then return trackerFrame end
+ for _,f in ipairs(trackers())do if f and f.IsShown and f:IsShown()then trackerFrame=f;return f end end
+end
+-- hide the game's tracker while our window shows the quests; out of combat only, Blizzard shows it again on its own
+local function applyTracker()
+ if call(InCombatLockdown)==true then return end
+ local replace=replacing()and frame and frame:IsShown()
+ for _,f in ipairs(trackers())do
+  if f and f.Hide then
+   if not hookedTrackers[f]then
+    hookedTrackers[f]=true
+    f:HookScript('OnShow',function(self)
+     if replacing()and frame and frame:IsShown()and call(InCombatLockdown)~=true then hiddenTrackers[self]=true;self:Hide()end
+    end)
+   end
+   if replace and f:IsShown()then trackerFrame=trackerFrame or f;hiddenTrackers[f]=true;f:Hide()
+   elseif not replace and hiddenTrackers[f]then hiddenTrackers[f]=nil;f:Show()end
+  end
+ end
 end
 local function dock(f)
  local t=tracker();if not t then return false end
- f:ClearAllPoints();f:SetPoint('TOPRIGHT',t,'TOPLEFT',-14,0);return true
+ f:ClearAllPoints()
+ if replacing()then f:SetPoint('TOPRIGHT',t,'TOPRIGHT',0,0)else f:SetPoint('TOPRIGHT',t,'TOPLEFT',-14,0)end
+ return true
 end
-local function hide()frame:Hide();if menu then menu:Hide()end;FR.Config().hidden=true end
+local items,placeItems,questList
+local function hide()frame:Hide();if menu then menu:Hide()end;FR.Config().hidden=true;applyTracker();if items and call(InCombatLockdown)~=true then items:Hide()end end
 local function refresh()FR.Refresh()end
 local function row(parent)
  local r=CreateFrame('Button',nil,parent);r:SetWidth(340);r:SetHeight(25);r:RegisterForClicks('LeftButtonUp','RightButtonUp')
@@ -74,8 +100,8 @@ local function makeFrame()
  frame=CreateFrame('Frame','ForeverRoutesFrame',UIParent);FR.frame=frame
  frame:SetSize(400,300);frame:SetClampedToScreen(true);frame:SetFrameStrata('MEDIUM');UI.Style(frame,'panel')
  movable(frame,'window')
- -- layout 2: the window docks next to the quest tracker; a place saved before that is dropped once
- if FR.Config().layout~=2 then FR.Config().layout=2;FR.Config().window=nil;FR.Config().docked=true end
+ -- layout 3: the window takes the quest tracker's place; a place saved before that is dropped once
+ if FR.Config().layout~=3 then FR.Config().layout=3;FR.Config().window=nil;FR.Config().docked=true end
  position(frame,'window','LEFT',40,120)
  if FR.Config().docked~=false and not FR.Config().window then frame.docked=dock(frame)end
  frame:SetScale(math.max(.65,math.min(1.5,tonumber(FR.Config().scale)or 1)))
@@ -96,6 +122,8 @@ local function makeFrame()
  frame.rows={};for i=1,24 do frame.rows[i]=row(frame)end
  frame.nextLabel=label(frame,11,C.muted)
  frame.nextRows={};for i=1,3 do frame.nextRows[i]=row(frame)end
+ frame.questLabel=label(frame,11,C.muted)
+ frame.questRows={};for i=1,60 do frame.questRows[i]=row(frame)end
  frame.skip=button(frame,'Überspringen',124,function()FR.Skip();refresh()end);frame.skip:SetPoint('BOTTOM',0,40)
  frame.back=button(frame,'Zurück',90,function()FR.Back();refresh()end);frame.back:SetPoint('RIGHT',frame.skip,'LEFT',-6,0)
   frame.confirm=button(frame,'Erledigt',90,function()FR.Confirm();refresh()end);frame.confirm:SetPoint('LEFT',frame.skip,'RIGHT',6,0)
@@ -104,12 +132,13 @@ local function makeFrame()
  tip(frame.options,'Routenoptionen','Mit oder ohne Dungeons, Zusatzziele, Position.')
  for _,child in ipairs({frame.current,frame.back,frame.skip,frame.confirm,frame.options})do passDrag(child,frame)end
  for _,r in ipairs(frame.rows)do passDrag(r,frame)end;for _,r in ipairs(frame.nextRows)do passDrag(r,frame)end
+ for _,r in ipairs(frame.questRows)do passDrag(r,frame)end
  tip(frame.skip,'Schritt überspringen','Mit Zurück den letzten übersprungenen Schritt wiederherstellen. Die Quest wird nicht als erledigt markiert.')
  return frame
 end
 local function optionMenu()
  if menu then return menu end
- menu=CreateFrame('Frame','ForeverRoutesOptions',UIParent);menu:SetSize(360,360);menu:SetFrameStrata('DIALOG');menu:SetClampedToScreen(true);UI.Style(menu,'panel')
+ menu=CreateFrame('Frame','ForeverRoutesOptions',UIParent);menu:SetSize(360,388);menu:SetFrameStrata('DIALOG');menu:SetClampedToScreen(true);UI.Style(menu,'panel')
  local title=label(menu,15,C.gold);title:SetPoint('TOPLEFT',24,-20);title:SetText('Routenoptionen')
  local close=button(menu,'X',25,function()menu:Hide()end);close:SetPoint('TOPRIGHT',-18,-15)
  local actions={
@@ -117,10 +146,11 @@ local function optionMenu()
   {'Nebenaufgaben wieder anzeigen',function()FR.RestoreTasks();refresh()end},
   {'Übersprungene wiederherstellen',function()FR.RestoreSkipped();refresh()end},
   {'Position sperren / entsperren',function()FR.Config().locked=not FR.Config().locked end},
-  {'Neben den Questtracker setzen',function()SlashCmdList.FOREVERROUTES('dock')end},
+  {'An den Platz des Questtrackers setzen',function()SlashCmdList.FOREVERROUTES('dock')end},
+  {'Blizzard-Questtracker zeigen / ausblenden',function()SlashCmdList.FOREVERROUTES('tracker')end},
  }
  for i,a in ipairs(actions)do local b=button(menu,a[1],305,a[2]);b:SetPoint('TOPLEFT',25,-45-(i-1)*28)end
- menu.scroll=CreateFrame('ScrollFrame',nil,menu,'UIPanelScrollFrameTemplate');menu.scroll:SetPoint('TOPLEFT',25,-195);menu.scroll:SetSize(283,136)
+ menu.scroll=CreateFrame('ScrollFrame',nil,menu,'UIPanelScrollFrameTemplate');menu.scroll:SetPoint('TOPLEFT',25,-223);menu.scroll:SetSize(283,136)
  menu.child=CreateFrame('Frame',nil,menu.scroll);menu.child:SetSize(280,136);menu.scroll:SetScrollChild(menu.child);menu.rows={}
  menu:Hide();return menu
 end
@@ -161,9 +191,98 @@ local function updateArrow(step)
  if nav.rotation and not nav.arrived then arrow.tex:SetRotation(nav.rotation);arrow.tex:Show()else arrow.tex:Hide()end
  arrow:Show()
 end
+-- The quest log as the game's tracker would show it, each quest with its place in the route.
+local function questLog()
+ local out={}
+ local n=C_QuestLog and C_QuestLog.GetNumQuestLogEntries and call(C_QuestLog.GetNumQuestLogEntries)or 0
+ for i=1,tonumber(n)or 0 do
+  local info=call(C_QuestLog.GetInfo,i)
+  if type(info)=='table'and type(info.questID)=='number'and info.questID>0 and not info.isHeader and not info.isHidden then
+   out[#out+1]={q=info.questID,title=info.title,index=i}
+  end
+ end
+ return out
+end
+local function role(q)
+ if view.step and view.step.q==q then return'jetzt',C.gold end
+ local steps=FR.Steps();local ahead=0
+ for i=view.index+1,#steps do
+  local s=steps[i]
+  if not FR.Done(s)and(view.live or not FR.CharDB().skipped[i])then
+   ahead=ahead+1
+   if s.q==q then
+    local what=s.op=='t'and'abgeben'or(s.op=='a'and'annehmen'or'Ziele')
+    return ahead==1 and(what..' als Nächstes')or string.format('%s in %d Schritten',what,ahead),C.text
+   end
+  end
+ end
+ return'nicht in der Route',C.muted
+end
+-- Quest items (the tracker's use button): secure buttons on UIParent, never anchored to our window, so the window
+-- stays free to move and resize in combat. They are only set and placed out of combat.
+local wanted={}
+local function itemButton(i)
+ items=items or CreateFrame('Frame','ForeverRoutesQuestItems',UIParent)
+ items.buttons=items.buttons or{}
+ local b=items.buttons[i];if b then return b end
+ b=CreateFrame('Button','ForeverRoutesQuestItem'..i,items,'SecureActionButtonTemplate');b:SetSize(22,22);b:SetFrameStrata('HIGH')
+ b:RegisterForClicks('AnyUp','AnyDown');b:SetAttribute('type','item')
+ b.icon=b:CreateTexture(nil,'ARTWORK');b.icon:SetAllPoints()
+ b:SetScript('OnEnter',function(self)if self.link then GameTooltip:SetOwner(self,'ANCHOR_RIGHT');GameTooltip:SetHyperlink(self.link);GameTooltip:Show()end end)
+ b:SetScript('OnLeave',function()GameTooltip:Hide()end)
+ items.buttons[i]=b;return b
+end
+placeItems=function()
+ if call(InCombatLockdown)==true then return end
+ local show=frame and frame:IsShown()and #wanted>0
+ if items then items:SetShown(show and true or false)end
+ if not show then return end
+ items=items or CreateFrame('Frame','ForeverRoutesQuestItems',UIParent);items:Show()
+ local scale=(frame:GetEffectiveScale()or 1)/(UIParent:GetEffectiveScale()or 1)
+ for i,w in ipairs(wanted)do
+  local b=itemButton(i);local left,top=w.row:GetLeft(),w.row:GetTop()
+  if left and top then
+   if b.link~=w.link then b.link=w.link;b:SetAttribute('item',w.item);b.icon:SetTexture(w.icon)end
+   b:ClearAllPoints();b:SetPoint('TOPLEFT',UIParent,'BOTTOMLEFT',left*scale,top*scale);b:Show()
+  else b:Hide()end
+ end
+ for i=#wanted+1,#(items.buttons or{})do items.buttons[i]:Hide()end
+end
+questList=function(y)
+ wanted={}
+ for _,r in ipairs(frame.questRows)do r:Hide()end
+ frame.questLabel:Hide()
+ if FR.Config().compact or not replacing()then return y end
+ local list=questLog();if #list==0 then return y end
+ frame.questLabel:ClearAllPoints();frame.questLabel:SetPoint('TOPLEFT',30,-y-6);frame.questLabel:SetText(string.format('QUESTS (%d)',#list));frame.questLabel:Show();y=y+25
+ local ri=0
+ local function add(text,color,q,objective,indent)
+  ri=ri+1;local r=frame.questRows[ri];if not r then return end
+  r.q,r.objective,r.item,r.task=q,objective,nil,nil
+  r.text:ClearAllPoints();r.text:SetPoint('TOPLEFT',indent or 0,-2);r.text:SetWidth(340-(indent or 0))
+  y=setRow(r,text,y,color);return r
+ end
+ for _,quest in ipairs(list)do
+  local tag,color=role(quest.q)
+  local link,icon,_,showDone=call(GetQuestLogSpecialItemInfo,quest.index)
+  local done=FR.QuestDone(quest.q)
+  local hasItem=type(link)=='string'and(not done or showDone)
+  local title=quest.title or(C_QuestLog.GetTitleForQuestID and call(C_QuestLog.GetTitleForQuestID,quest.q))or('Quest '..quest.q)
+  local r=add(string.format('%s  |cff9aa9c0· %s|r',title,tag),color,quest.q,nil,hasItem and 28 or 0)
+  if r and hasItem then wanted[#wanted+1]={row=r,link=link,icon=icon,item=link:match('item:%d+')or link} end
+  if done then add('Bereit zum Abgeben',C.good,quest.q,nil,14)
+  elseif not(view.step and view.step.q==quest.q)then
+   for i,o in ipairs(call(C_QuestLog.GetQuestObjectives,quest.q)or{})do
+    if type(o)=='table'and not o.finished then add('- '..(o.text or string.format('%d/%d',o.numFulfilled or 0,o.numRequired or 0)),C.muted,quest.q,i,14)end
+   end
+  end
+ end
+ return y
+end
 function FR.Refresh()
  view=FR.TaskView();updateArrow(view.step)
- if not frame or not frame:IsShown()then return view.step end
+ -- hidden window: give the quests back to the game (also when it was hidden in combat)
+ if not frame or not frame:IsShown()then if frame then applyTracker();placeItems()end;return view.step end
  -- the quest tracker comes up after login: dock as soon as it is there
  if not frame.docked and FR.Config().docked~=false and not FR.Config().window then frame.docked=dock(frame)end
  local connected=FR.Connected();UI.SetArt(frame.crystal.tex,connected and'crystal_on'or'crystal_off')
@@ -210,9 +329,11 @@ function FR.Refresh()
    end
   end
  end
+ y=questList(y)
  frame.confirm:SetEnabled(FR.CanConfirm(view.step)and true or false)
  frame.skip:SetEnabled(view.step~=nil and not view.paused);frame.back:SetEnabled(not view.paused and(FR.undo~=nil or not view.live))
  frame:SetHeight(math.max(210,y+92))
+ applyTracker();placeItems()
  return view.step
 end
 function FR.Show()makeFrame():Show();FR.Config().hidden=nil;FR.Refresh()end
@@ -228,7 +349,7 @@ end)
 driver:SetScript('OnUpdate',function(_,dt)
  elapsed=elapsed+dt;full=full+dt;if elapsed<.15 then return end;elapsed=0
  if pending or full>=1 then pending=false;full=0;FR.Refresh();FR.ScanQuestTracker()
- else updateArrow(view and view.step)end
+ else updateArrow(view and view.step);placeItems()end
 end)
 SLASH_FOREVERROUTES1='/fr'
 SlashCmdList.FOREVERROUTES=function(msg)
@@ -248,9 +369,10 @@ SlashCmdList.FOREVERROUTES=function(msg)
  elseif msg=='arrow'then FR.Config().arrowHidden=not FR.Config().arrowHidden
  elseif msg:match('^scale%s+[%d%.]+$')then
   FR.Config().scale=math.max(.65,math.min(1.5,tonumber(msg:match('([%d%.]+)$'))or 1));if frame then frame:SetScale(FR.Config().scale)end
+ elseif msg=='tracker'or msg=='questtracker'then FR.Config().blizzTracker=not FR.Config().blizzTracker or nil;FR.Config().window=nil;FR.Config().docked=true;if frame then frame.docked=dock(frame)end;applyTracker()
  elseif msg=='dock'or msg=='andocken'then FR.Config().window=nil;FR.Config().docked=true;if frame and not dock(frame)then position(frame,'window','LEFT',40,120)end
  elseif msg=='position'then FR.Config().window=nil;FR.Config().arrow=nil;if frame then position(frame,'window','LEFT',40,120)end;if arrow then position(arrow,'arrow','TOP',0,-110)end
- elseif msg~='show'then print('ForeverRoutes: /fr · show · hide · skip · back · done · options · compact · lock · arrow · scale 1 · position · restore');return end
+ elseif msg~='show'then print('ForeverRoutes: /fr · show · hide · skip · back · done · options · compact · tracker · lock · arrow · scale 1 · position · restore');return end
  FR.Show()
 end
 
