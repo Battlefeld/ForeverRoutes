@@ -157,11 +157,28 @@ function FR.BindLine(view)
   return d>=1000 and string.format(' (%.1f km)',d/1000)or string.format(' (%d m)',math.floor(d+.5))
  end
  if last and trip and(not nextAt or trip<=nextAt)and boundAt(last)~=true then
-  return'Ruhestein binden: '..last.bn..dist(last)..' – die Route reist später per Ruhestein dorthin',true,last
+  return'Ruhestein binden: '..last.bn..dist(last)..' - die Route reist später per Ruhestein dorthin',true,last
  end
  if nextBind and boundAt(nextBind)~=true then
   if nextAt==index then return'Ruhestein hier binden: '..nextBind.bn..dist(nextBind),true,nextBind end
   if nextAt-index<=3 then return string.format('Gleich Ruhestein binden: %s (in %d Schritten)',nextBind.bn,nextAt-index),false,nextBind end
  end
  return nil
+end
+
+-- The hints for the window as separate highlighted lines: {icon, text, tone} (tone gold, warn or info).
+function FR.Callouts(view)
+ local out={};local step=view.step
+ local function add(icon,text,tone)if text and text~=''then out[#out+1]={icon=icon,text=text,tone=tone or'info'}end end
+ if view.paused then add('d','Nach dem Dungeon geht es beim nächsten offenen Schritt weiter.','info');return out end
+ if step then
+  add('blocked',FR.Blocked(step),'warn')
+  local travel=FR.TravelHint(step)
+  if step.v=='h'then add('hearth',travel,'gold')elseif step.v=='d'then add('deathskip',travel,'gold')elseif step.v=='t'then add('teleport',travel,'gold')end
+  if step.opt then add('option','Option: '..step.opt,'info')end
+ end
+ local camp=FR.CampStatus();add('camp',camp,'gold')
+ local bind,now=FR.BindLine(view);add('hearth',bind,now and'gold'or'info')
+ add('bag',FR.BagHint(),'warn')
+ return out
 end

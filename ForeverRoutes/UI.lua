@@ -76,8 +76,29 @@ end
 local items,placeItems,questList
 local function hide()frame:Hide();if menu then menu:Hide()end;FR.Config().hidden=true;applyTracker();if items and call(InCombatLockdown)~=true then items:Hide()end end
 local function refresh()FR.Refresh()end
+-- Icons: each step and hint shows what it is at a glance (the game's own icons).
+local ICON={
+ a='Interface\\GossipFrame\\AvailableQuestIcon',t='Interface\\GossipFrame\\ActiveQuestIcon',
+ kill='Interface\\Icons\\Ability_DualWield',item='Interface\\Icons\\INV_Misc_Bag_10',object='Interface\\Icons\\INV_Misc_Gear_01',
+ talk='Interface\\GossipFrame\\GossipGossipIcon',g='Interface\\Icons\\Ability_Warrior_BattleShout',d='Interface\\Icons\\INV_Misc_Key_03',
+ sleep='Interface\\Icons\\Spell_Nature_Sleep',p='Interface\\Icons\\INV_Misc_Pelt_Wolf_01',z='Interface\\Icons\\INV_Wand_07',
+ buy='Interface\\Icons\\INV_Misc_Coin_01',collect='Interface\\Icons\\INV_Misc_Bag_10',travel='Interface\\Icons\\Ability_Mount_Wyvern_01',
+ note='Interface\\Icons\\INV_Misc_Note_01',hearth='Interface\\Icons\\INV_Misc_Rune_01',deathskip='Interface\\Icons\\Spell_Holy_Resurrection',
+ teleport='Interface\\Icons\\Spell_Arcane_TeleportMoonglade',camp='Interface\\Icons\\Spell_Fire_Fire',bag='Interface\\Icons\\INV_Misc_Bag_08',
+ option='Interface\\Icons\\INV_Misc_Note_02',blocked='Interface\\DialogFrame\\UI-Dialog-Icon-AlertNew',
+ done='Interface\\RaidFrame\\ReadyCheck-Ready',open='Interface\\RaidFrame\\ReadyCheck-Waiting',
+}
+function FR.StepIcon(step)
+ if not step then return nil end
+ if step.op=='w'then return ICON[step.k]or ICON.kill end
+ return ICON[step.op]or ICON.note
+end
+-- callout colors: a band behind the hint, the text in the same tone
+local CALLOUT={gold={.95,.75,.3,.16},warn={.9,.3,.25,.2},info={.4,.6,.95,.14}}
 local function row(parent)
  local r=CreateFrame('Button',nil,parent);r:SetWidth(340);r:SetHeight(25);r:RegisterForClicks('LeftButtonUp','RightButtonUp')
+ r.bg=r:CreateTexture(nil,'BACKGROUND');r.bg:SetPoint('TOPLEFT',-4,1);r.bg:SetPoint('BOTTOMRIGHT',4,-1);r.bg:Hide()
+ r.icon=r:CreateTexture(nil,'ARTWORK');r.icon:SetSize(18,18);r.icon:SetPoint('TOPLEFT',0,-1);r.icon:Hide()
  r.text=label(r,13);r.text:SetPoint('TOPLEFT',0,-2);r.text:SetWidth(340);r.text:SetWordWrap(true)
  r:SetScript('OnClick',function(self,which)
   if which=='RightButton'and self.task then FR.HideTask(self.task);refresh()
@@ -91,9 +112,17 @@ local function row(parent)
  r:SetScript('OnLeave',function()GameTooltip:Hide();FR.HideQuestTooltip()end)
  r:Hide();return r
 end
-local function setRow(r,text,y,color)
+-- opts: icon (texture path), indent (pixels), callout (a CALLOUT tone: the line as a highlighted band)
+local function setRow(r,text,y,color,opts)
+ opts=opts or{}
+ local x=(opts.indent or 0)+(opts.icon and 24 or 0)
+ if opts.icon then r.icon:SetTexture(opts.icon);r.icon:ClearAllPoints();r.icon:SetPoint('TOPLEFT',opts.indent or 0,opts.callout and -3 or -1);r.icon:Show()else r.icon:Hide()end
+ r.text:ClearAllPoints();r.text:SetPoint('TOPLEFT',x,opts.callout and -4 or -2);r.text:SetWidth(340-x)
+ local tone=opts.callout and CALLOUT[opts.callout]
+ if tone then r.bg:SetColorTexture(tone[1],tone[2],tone[3],tone[4]);r.bg:Show()else r.bg:Hide()end
  r.text:SetText(text);r.text:SetTextColor(unpack(color or C.text));r:ClearAllPoints();r:SetPoint('TOPLEFT',frame,'TOPLEFT',30,-y)
- local h=math.max(20,r.text:GetStringHeight()+6);r:SetHeight(h);r:Show();return y+h
+ local h=math.max(opts.callout and 26 or 20,r.text:GetStringHeight()+(opts.callout and 10 or 6));r:SetHeight(h);r:Show()
+ return y+h+(opts.callout and 4 or 0)
 end
 local function makeFrame()
  if frame then return frame end
@@ -114,11 +143,11 @@ local function makeFrame()
  tip(collapse,'Kompaktansicht','Nur den aktuellen Schritt mit Fortschritt zeigen.')
  frame.status=label(frame,11,C.muted);frame.status:SetPoint('TOPLEFT',30,-70);frame.status:SetWidth(340)
  frame.current=CreateFrame('Button',nil,frame);frame.current:SetPoint('TOPLEFT',30,-90);frame.current:SetWidth(340)
- frame.current.text=label(frame.current,15,C.gold);frame.current.text:SetPoint('TOPLEFT');frame.current.text:SetWidth(340);frame.current.text:SetWordWrap(true)
+ frame.current.icon=frame.current:CreateTexture(nil,'ARTWORK');frame.current.icon:SetSize(26,26);frame.current.icon:SetPoint('TOPLEFT',0,2)
+ frame.current.text=label(frame.current,15,C.gold);frame.current.text:SetPoint('TOPLEFT',32,0);frame.current.text:SetWidth(308);frame.current.text:SetWordWrap(true)
  frame.current:SetScript('OnClick',function()if view and view.step and view.step.q then FR.OpenQuest(view.step.q)end end)
  frame.current:SetScript('OnEnter',function(self)if view and view.step and view.step.q then FR.ShowQuestTooltip(self,view.step.q)end end)
  frame.current:SetScript('OnLeave',FR.HideQuestTooltip)
- frame.hint=label(frame,12,C.muted);frame.hint:SetWidth(340);frame.hint:SetWordWrap(true)
  frame.rows={};for i=1,24 do frame.rows[i]=row(frame)end
  frame.nextLabel=label(frame,11,C.muted)
  frame.nextRows={};for i=1,3 do frame.nextRows[i]=row(frame)end
@@ -259,8 +288,7 @@ questList=function(y)
  local function add(text,color,q,objective,indent)
   ri=ri+1;local r=frame.questRows[ri];if not r then return end
   r.q,r.objective,r.item,r.task=q,objective,nil,nil
-  r.text:ClearAllPoints();r.text:SetPoint('TOPLEFT',indent or 0,-2);r.text:SetWidth(340-(indent or 0))
-  y=setRow(r,text,y,color);return r
+  y=setRow(r,text,y,color,{indent=indent});return r
  end
  for _,quest in ipairs(list)do
   local tag,color=role(quest.q)
@@ -290,29 +318,28 @@ function FR.Refresh()
  frame.status:SetText(view.paused and'Route pausiert · Dungeon'or string.format('%s · Schritt %d/%d',mode,math.min(view.index,view.total),view.total))
  if FR.dataStatus and (FR.dataStatus.status=='warning' or FR.dataStatus.status=='error') then frame.status:SetText(frame.status:GetText()..' · Datenprüfung ausstehend')end
  frame.current.text:SetText(view.text)
- local ch=math.max(26,frame.current.text:GetStringHeight()+6);frame.current:SetHeight(ch)
+ local icon=FR.StepIcon(view.step);frame.current.icon:SetShown(icon~=nil);if icon then frame.current.icon:SetTexture(icon)end
+ local ch=math.max(28,frame.current.text:GetStringHeight()+8);frame.current:SetHeight(ch)
  local y=90+ch
- frame.hint:ClearAllPoints();frame.hint:SetPoint('TOPLEFT',30,-y)
- frame.hint:SetText(view.paused and'Nach dem Dungeon geht es beim nächsten offenen Schritt weiter.'or(view.hint or''))
- if frame.hint:GetText()~=''then y=y+frame.hint:GetStringHeight()+9 end
  local ri=0
- local function add(text,color,q,objective,item,task)
+ local function add(text,color,q,objective,item,task,opts)
   ri=ri+1;local r=frame.rows[ri];if not r then return end
-  r.q,r.objective,r.item,r.task=q,objective,item,task;y=setRow(r,text,y,color)
+  r.q,r.objective,r.item,r.task=q,objective,item,task;y=setRow(r,text,y,color,opts)
  end
+ -- What to do first, as highlighted lines with their icon: travel (hearthstone, deathskip, teleport), the camp,
+ -- binding the hearthstone, full bags, a blocked step.
+ for _,c in ipairs(FR.Callouts(view))do add(c.text,c.tone=='warn'and{1,.55,.5}or(c.tone=='gold'and C.gold or C.text),nil,nil,nil,nil,{icon=ICON[c.icon],callout=c.tone})end
  -- Quest progress comes from the game, not from the route's estimated counts.
  if view.step and view.step.q then
   for i,o in ipairs(FR.Objectives(view.step))do
-   add((o.finished and'|cff50df6eOK|r 'or'- ')..(o.text or string.format('%d/%d',o.numFulfilled or 0,o.numRequired or 0)),o.finished and C.good or C.text,view.step.q,i)
+   add(o.text or string.format('%d/%d',o.numFulfilled or 0,o.numRequired or 0),o.finished and C.good or C.text,view.step.q,i,nil,nil,{icon=o.finished and ICON.done or ICON.open})
   end
  end
- for _,line in ipairs(FR.GrindProgress(view.step)or{})do add(line,C.text)end
- for _,it in ipairs(view.items)do add(it.text,it.done and C.good or C.text,nil,nil,it.id)end
- local bindText,bindNow=FR.BindLine(view);if bindText then add(bindText,bindNow and C.gold or C.muted)end
- local bag=FR.BagHint();if bag then add(bag,C.gold)end
+ for _,line in ipairs(FR.GrindProgress(view.step)or{})do add(line,C.text,nil,nil,nil,nil,{icon=ICON.kill})end
+ for _,it in ipairs(view.items)do add(it.text,it.done and C.good or C.text,nil,nil,it.id,nil,{icon=it.icon or ICON.item})end
  if not FR.Config().compact then
-  local _,camp=FR.CampStatus();if camp then add(camp,C.muted)end
-  for _,task in ipairs(view.parallel)do add('Nebenbei: '..FR.Text(task),C.muted,nil,nil,nil,task)end
+  local _,camp=FR.CampStatus();if camp then add(camp,C.muted,nil,nil,nil,nil,{icon=ICON.p})end
+  for _,task in ipairs(view.parallel)do add('Nebenbei: '..FR.Text(task),C.muted,nil,nil,nil,task,{icon=FR.StepIcon(task)})end
  end
  for i=ri+1,#frame.rows do frame.rows[i]:Hide()end
  frame.nextLabel:Hide();for _,r in ipairs(frame.nextRows)do r:Hide()end
@@ -326,7 +353,7 @@ function FR.Refresh()
     count=count+1
     if count==1 then frame.nextLabel:ClearAllPoints();frame.nextLabel:SetPoint('TOPLEFT',30,-y-6);frame.nextLabel:SetText('DANACH');frame.nextLabel:Show();y=y+25 end
     local r=frame.nextRows[count];r.q,r.task,r.item,r.objective=s.q,nil,nil,nil
-    y=setRow(r,FR.Text(s),y,C.muted);if count==3 then break end
+    y=setRow(r,FR.Text(s),y,C.muted,{icon=FR.StepIcon(s)});if count==3 then break end
    end
   end
  end

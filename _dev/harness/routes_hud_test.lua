@@ -170,7 +170,7 @@ do
  check(found,'bind line shown in the window')
  GetBindLocation=function()return'Goldshire'end;FR.HearthBound()
  check(FR.BindLine(FR.TaskView())==nil,'no bind line once bound there')
- check(FR.TravelHint(hs[3]):find('→ Innkeeper Farley',1,true),'hearthstone step says where it leads')
+ check(FR.TravelHint(hs[3]):find('(nach Innkeeper Farley)',1,true),'hearthstone step says where it leads')
  px,py=500,500;FR.HearthBound();check(FR.BindLine(FR.TaskView())~=nil,'bound elsewhere: asked again')
  FR.CharDB().bound=nil;accepted[31]=nil;px,py=0,0;GetBindLocation=nil
 end

@@ -285,12 +285,12 @@ function FR.CampStatus()
  local rested=FR.RestedShare()
  if rested>=FR.CAMP_SOON or(left<=0 and rested>=FR.CAMP_EMPTY)then return nil,nil end -- rested experience left: no camp yet
  local m=FR.CampMaterials()
- local farm=not m.tent and string.format('Nebenbei: Leder farmen – Wildtiere kürschnern (%d/%d Leichtes Leder für ein Lagerzelt)',m.leather,FR.TENT_LEATHER)or nil
+ local farm=not m.tent and string.format('Nebenbei: Leder farmen - Wildtiere kürschnern (%d/%d Leichtes Leder für ein Lagerzelt)',m.leather,FR.TENT_LEATHER)or nil
  if left<=0 then
   return'Lager aufschlagen: Lagerfeuer, Lagerzelt, 1 Minute rasten (/fr lager)',farm
  end
  if left<=300 then
-  return string.format('Lager-Buff endet in %d Min – Zelt: %s, Lagerfeuer: %s',math.ceil(left/60),m.tent and'bereit'or'fehlt',m.fire and'bereit'or'fehlt'),farm
+  return string.format('Lager-Buff endet in %d Min - Zelt: %s, Lagerfeuer: %s',math.ceil(left/60),m.tent and'bereit'or'fehlt',m.fire and'bereit'or'fehlt'),farm
  end
  if left<=600 then return nil,farm end
  return nil,nil
@@ -444,22 +444,22 @@ function FR.Text(step)
  if step.op=='a'then return'Annehmen: '..n end
  if step.op=='t'then return'Abgeben: '..n end
  if step.op=='sleep'then return'Rasten: Schlafsack verwenden und den vorgesehenen Buff aufbauen'end
- if step.op=='p'then return'Berufe: Kürschnern, Kochkunst und Lederverarbeitung lernen – Wildtiere kürschnern, Lederverarbeitung mit dem Leder auf 20 (Lagerzelt)'end
+ if step.op=='p'then return'Berufe: Kürschnern, Kochkunst und Lederverarbeitung lernen - Wildtiere kürschnern, Lederverarbeitung mit dem Leder auf 20 (Lagerzelt)'end
  if step.op=='z'then
   local t="Zauberstäbe: Verzauberkunst lernen, Novice's Practice Wand herstellen (Einfaches Holz, Mote of Magic vom Händler), mit Übungszauberstäben auf 10, Geringe Magische Essenz im Auktionshaus, Geringen Zauberstab herstellen"
-  if(step.l or 0)<5 then t=t..' – den Übungszauberstab tragen, ab Level 5 den Geringen'end
+  if(step.l or 0)<5 then t=t..' - den Übungszauberstab tragen, ab Level 5 den Geringen'end
   if step.cl then t=t..'. Danach Verzauberkunst verlernen; Kürschnern, Kochkunst und Lederverarbeitung lernen (Lagerzelt)'end
   return t
  end
  if step.op=='g'then return string.format('Grinden bis Level %d%s%s',step.l or 0,step.xp and(' + '..step.xp..' XP')or'',step.tg and(': '..step.tg)or'')end
  if step.op=='d'then
   local t='Dungeon laufen: '..(step.n or'?')..' (Gruppe suchen, alle Quests im Log erledigen)'
-  if type(step.qi)=='table'and #step.qi>0 then t=t..' – im Dungeon annehmen: '..table.concat(step.qi,', ')end
+  if type(step.qi)=='table'and #step.qi>0 then t=t..' - im Dungeon annehmen: '..table.concat(step.qi,', ')end
   return t
  end
  if step.op=='w'then
   local c,tg=step.c or 1,step.tg
-  if step.k=='kill'then return string.format('%s: töte %d × %s',n,c,tg or'?')end
+  if step.k=='kill'then return string.format('%s: töte %d x %s',n,c,tg or'?')end
   if step.k=='item'then return string.format('%s: sammle %d%s',n,c,tg and(' von '..tg)or'')end
   if step.k=='object'then return string.format('%s: benutze %s',n,tg or'das Objekt')end
   if step.k=='talk'then return string.format('%s: sprich mit %s',n,tg or'?')end
@@ -478,7 +478,7 @@ function FR.Hint(step)
 end
 function FR.TravelHint(step)
  if step.v=='d'then return'Death Skip: hier sterben, beim Geistheiler wiederbeleben'..(step.gy and(' ('..step.gy..')')or'')end
- if step.v=='h'then local to=FR.HearthTarget and FR.HearthTarget(step);return'Ruhestein benutzen'..(to and(' → '..to)or'')end
+ if step.v=='h'then local to=FR.HearthTarget and FR.HearthTarget(step);return'Ruhestein benutzen'..(to and(' (nach '..to..')')or'')end
  if step.v=='t'then return'Teleportieren: Mondlichtung'end
  return nil
 end
