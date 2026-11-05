@@ -49,6 +49,7 @@ func cmdNext(args []string) error {
 	fallbackFile := fs.String("fallbacks", "", "ordinary RXP fallback catalog; default beside dataset")
 	out := fs.String("out", "", "write the reply here instead of standard output")
 	group := fs.Bool("dungeons", false, "route with dungeons: dungeon runs with their quests may be planned (also when the route runs dungeons)")
+	window := fs.Duration("optimize", 3*time.Second, "time to re-order the plan's next quest steps from the live state (0: keep the route's order)")
 	feedbackPolicy := fs.String("feedback-policy", "", "optional locally approved post-release ForeverSim feedback settings; disabled by default")
 	fs.Parse(args)
 	if *routesDir == "" {
@@ -206,6 +207,12 @@ func cmdNext(args []string) error {
 	if res == nil {
 		if res, err = w.PlanAhead(s, route.PlanOptions{TargetLevel: 60}, *horizon); err != nil {
 			return err
+		}
+	}
+	if *window > 0 && mode != "plan" {
+		if better, changed := w.ImproveLive(s, res, *window); changed {
+			notes = append(notes, fmt.Sprintf("next steps re-ordered from the live state: %.0f s faster", res.Seconds-better.Seconds))
+			res = better
 		}
 	}
 	reply := nextReply{Schema: "foreverroutes.next.v1", Mode: mode, Level: req.Live.Level, Horizon: *horizon, Seconds: res.Seconds, ToLevel: res.Level,
