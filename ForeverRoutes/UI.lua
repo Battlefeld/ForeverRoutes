@@ -31,14 +31,28 @@ local function movable(f,key)
  f:SetScript('OnDragStart',function(self)if not FR.Config().locked then self:StartMoving()end end)
  f:SetScript('OnDragStop',function(self)
   self:StopMovingOrSizing();local x,y=self:GetCenter();local ux,uy=UIParent:GetCenter()
-  if x and ux then local s=self:GetScale();FR.Config()[key]={x=x-ux/s,y=y-uy/s}end
+  if x and ux then local s=self:GetScale();FR.Config()[key]={x=x-ux/s,y=y-uy/s};if key=='window'then FR.Config().docked=false end end
  end)
+end
+-- children (rows, buttons) take the mouse; a drag on them moves the window all the same
+local function passDrag(child,win)
+ child:RegisterForDrag('LeftButton')
+ child:SetScript('OnDragStart',function()local f=win:GetScript('OnDragStart');if f then f(win)end end)
+ child:SetScript('OnDragStop',function()local f=win:GetScript('OnDragStop');if f then f(win)end end)
+end
+-- Docked: the window sits left of the game's quest tracker instead of over it (only our frame is moved).
+local function tracker()
+ for _,f in ipairs({ObjectiveTrackerFrame,QuestWatchFrame,WatchFrame})do if f and f.IsShown and f:IsShown()then return f end end
+end
+local function dock(f)
+ local t=tracker();if not t then return false end
+ f:ClearAllPoints();f:SetPoint('TOPRIGHT',t,'TOPLEFT',-14,0);return true
 end
 local function hide()frame:Hide();if menu then menu:Hide()end;FR.Config().hidden=true end
 local function refresh()FR.Refresh()end
 local function row(parent)
- local r=CreateFrame('Button',nil,parent);r:SetWidth(330);r:SetHeight(25);r:RegisterForClicks('LeftButtonUp','RightButtonUp')
- r.text=label(r,13);r.text:SetPoint('TOPLEFT',0,-2);r.text:SetWidth(330);r.text:SetWordWrap(true)
+ local r=CreateFrame('Button',nil,parent);r:SetWidth(340);r:SetHeight(25);r:RegisterForClicks('LeftButtonUp','RightButtonUp')
+ r.text=label(r,13);r.text:SetPoint('TOPLEFT',0,-2);r.text:SetWidth(340);r.text:SetWordWrap(true)
  r:SetScript('OnClick',function(self,which)
   if which=='RightButton'and self.task then FR.HideTask(self.task);refresh()
   elseif self.q then FR.OpenQuest(self.q)end
@@ -52,14 +66,16 @@ local function row(parent)
  r:Hide();return r
 end
 local function setRow(r,text,y,color)
- r.text:SetText(text);r.text:SetTextColor(unpack(color or C.text));r:ClearAllPoints();r:SetPoint('TOPLEFT',frame,'TOPLEFT',25,-y)
+ r.text:SetText(text);r.text:SetTextColor(unpack(color or C.text));r:ClearAllPoints();r:SetPoint('TOPLEFT',frame,'TOPLEFT',30,-y)
  local h=math.max(20,r.text:GetStringHeight()+6);r:SetHeight(h);r:Show();return y+h
 end
 local function makeFrame()
  if frame then return frame end
  frame=CreateFrame('Frame','ForeverRoutesFrame',UIParent);FR.frame=frame
- frame:SetSize(380,300);frame:SetClampedToScreen(true);frame:SetFrameStrata('MEDIUM');UI.Style(frame,'panel')
+ frame:SetSize(400,300);frame:SetClampedToScreen(true);frame:SetFrameStrata('MEDIUM');UI.Style(frame,'panel')
  movable(frame,'window');position(frame,'window','LEFT',40,120)
+ -- without a place of its own the window docks next to the quest tracker
+ if FR.Config().docked~=false and not FR.Config().window then dock(frame)end
  frame:SetScale(math.max(.65,math.min(1.5,tonumber(FR.Config().scale)or 1)))
  frame.crystal=CreateFrame('Button',nil,frame);frame.crystal:SetSize(30,30);frame.crystal:SetPoint('TOPLEFT',19,-15)
  frame.crystal.tex=frame.crystal:CreateTexture(nil,'ARTWORK');frame.crystal.tex:SetAllPoints()
@@ -68,27 +84,29 @@ local function makeFrame()
  local close=button(frame,'X',25,hide);close:SetPoint('TOPRIGHT',-18,-17)
  local collapse=button(frame,'-',25,function()FR.Config().compact=not FR.Config().compact;refresh()end);collapse:SetPoint('RIGHT',close,'LEFT',-2,0)
  tip(collapse,'Kompaktansicht','Nur den aktuellen Schritt mit Fortschritt zeigen.')
- frame.status=label(frame,11,C.muted);frame.status:SetPoint('TOPLEFT',25,-54);frame.status:SetWidth(330)
- frame.current=CreateFrame('Button',nil,frame);frame.current:SetPoint('TOPLEFT',25,-76);frame.current:SetWidth(330)
- frame.current.text=label(frame.current,15,C.gold);frame.current.text:SetPoint('TOPLEFT');frame.current.text:SetWidth(330);frame.current.text:SetWordWrap(true)
+ frame.status=label(frame,11,C.muted);frame.status:SetPoint('TOPLEFT',30,-54);frame.status:SetWidth(340)
+ frame.current=CreateFrame('Button',nil,frame);frame.current:SetPoint('TOPLEFT',30,-76);frame.current:SetWidth(340)
+ frame.current.text=label(frame.current,15,C.gold);frame.current.text:SetPoint('TOPLEFT');frame.current.text:SetWidth(340);frame.current.text:SetWordWrap(true)
  frame.current:SetScript('OnClick',function()if view and view.step and view.step.q then FR.OpenQuest(view.step.q)end end)
  frame.current:SetScript('OnEnter',function(self)if view and view.step and view.step.q then FR.ShowQuestTooltip(self,view.step.q)end end)
  frame.current:SetScript('OnLeave',FR.HideQuestTooltip)
- frame.hint=label(frame,12,C.muted);frame.hint:SetWidth(330);frame.hint:SetWordWrap(true)
+ frame.hint=label(frame,12,C.muted);frame.hint:SetWidth(340);frame.hint:SetWordWrap(true)
  frame.rows={};for i=1,24 do frame.rows[i]=row(frame)end
  frame.nextLabel=label(frame,11,C.muted)
  frame.nextRows={};for i=1,3 do frame.nextRows[i]=row(frame)end
- frame.back=button(frame,'Zurück',66,function()FR.Back();refresh()end);frame.back:SetPoint('BOTTOMLEFT',28,32)
+ frame.back=button(frame,'Zurück',66,function()FR.Back();refresh()end);frame.back:SetPoint('BOTTOMLEFT',36,40)
  frame.skip=button(frame,'Überspringen',105,function()FR.Skip();refresh()end);frame.skip:SetPoint('LEFT',frame.back,'RIGHT',3,0)
  frame.confirm=button(frame,'Erledigt',76,function()FR.Confirm();refresh()end);frame.confirm:SetPoint('LEFT',frame.skip,'RIGHT',3,0)
  tip(frame.confirm,'Schritt erledigt','Markiert den Schritt als fertig. Bei einer Quest, die es im Spiel nicht gibt oder die du nicht annehmen kannst, nimmt es die ganze Quest aus der Planung. Zurück macht es rückgängig.')
  frame.options=button(frame,'...',32,function()FR.ToggleMenu()end);frame.options:SetPoint('LEFT',frame.confirm,'RIGHT',3,0)
+ for _,child in ipairs({frame.current,frame.back,frame.skip,frame.confirm,frame.options})do passDrag(child,frame)end
+ for _,r in ipairs(frame.rows)do passDrag(r,frame)end;for _,r in ipairs(frame.nextRows)do passDrag(r,frame)end
  tip(frame.skip,'Schritt überspringen','Mit Zurück den letzten übersprungenen Schritt wiederherstellen. Die Quest wird nicht als erledigt markiert.')
  return frame
 end
 local function optionMenu()
  if menu then return menu end
- menu=CreateFrame('Frame','ForeverRoutesOptions',UIParent);menu:SetSize(360,330);menu:SetFrameStrata('DIALOG');menu:SetClampedToScreen(true);UI.Style(menu,'panel')
+ menu=CreateFrame('Frame','ForeverRoutesOptions',UIParent);menu:SetSize(360,360);menu:SetFrameStrata('DIALOG');menu:SetClampedToScreen(true);UI.Style(menu,'panel')
  local title=label(menu,15,C.gold);title:SetPoint('TOPLEFT',24,-20);title:SetText('Routenoptionen')
  local close=button(menu,'X',25,function()menu:Hide()end);close:SetPoint('TOPRIGHT',-18,-15)
  local actions={
@@ -96,9 +114,10 @@ local function optionMenu()
   {'Nebenaufgaben wieder anzeigen',function()FR.RestoreTasks();refresh()end},
   {'Übersprungene wiederherstellen',function()FR.RestoreSkipped();refresh()end},
   {'Position sperren / entsperren',function()FR.Config().locked=not FR.Config().locked end},
+  {'Neben den Questtracker setzen',function()SlashCmdList.FOREVERROUTES('dock')end},
  }
  for i,a in ipairs(actions)do local b=button(menu,a[1],305,a[2]);b:SetPoint('TOPLEFT',25,-45-(i-1)*28)end
- menu.scroll=CreateFrame('ScrollFrame',nil,menu,'UIPanelScrollFrameTemplate');menu.scroll:SetPoint('TOPLEFT',25,-165);menu.scroll:SetSize(283,136)
+ menu.scroll=CreateFrame('ScrollFrame',nil,menu,'UIPanelScrollFrameTemplate');menu.scroll:SetPoint('TOPLEFT',25,-195);menu.scroll:SetSize(283,136)
  menu.child=CreateFrame('Frame',nil,menu.scroll);menu.child:SetSize(280,136);menu.scroll:SetScrollChild(menu.child);menu.rows={}
  menu:Hide();return menu
 end
@@ -123,9 +142,11 @@ local function makeArrow()
  -- just the arrow, distance and target under it; no panel behind
  arrow=CreateFrame('Frame','ForeverRoutesArrow',UIParent);FR.arrow=arrow;arrow:SetSize(184,108);arrow:SetClampedToScreen(true)
  movable(arrow,'arrow');position(arrow,'arrow','TOP',0,-110)
- arrow.tex=arrow:CreateTexture(nil,'ARTWORK');arrow.tex:SetSize(56,56);arrow.tex:SetPoint('TOP',0,-2)
+ arrow.glow=arrow:CreateTexture(nil,'BACKGROUND');arrow.glow:SetSize(96,96);arrow.glow:SetPoint('CENTER',arrow,'TOP',0,-30)
+ arrow.glow:SetTexture('Interface\\Cooldown\\star4');arrow.glow:SetBlendMode('ADD');arrow.glow:SetVertexColor(1,.8,.4,.28)
+ arrow.tex=arrow:CreateTexture(nil,'ARTWORK');arrow.tex:SetSize(56,56);arrow.tex:SetPoint('TOP',0,-2);arrow.tex:SetVertexColor(1,.86,.5,1)
  arrow.tex:SetTexture('Interface\\Minimap\\MinimapArrow')
- arrow.distance=label(arrow,14,C.gold);arrow.distance:SetJustifyH('CENTER');arrow.distance:SetPoint('TOP',0,-60);arrow.distance:SetWidth(158)
+ arrow.distance=UI.Text(arrow,16,C.gold,'title','CENTER');arrow.distance:SetJustifyH('CENTER');arrow.distance:SetPoint('TOP',0,-60);arrow.distance:SetWidth(158)
  arrow.target=label(arrow,11,C.text);arrow.target:SetPoint('TOP',0,-78);arrow.target:SetWidth(156);arrow.target:SetHeight(24);arrow.target:SetJustifyH('CENTER')
  arrow:Hide()
 end
@@ -149,7 +170,7 @@ function FR.Refresh()
  frame.current.text:SetText(view.text)
  local ch=math.max(26,frame.current.text:GetStringHeight()+6);frame.current:SetHeight(ch)
  local y=76+ch
- frame.hint:ClearAllPoints();frame.hint:SetPoint('TOPLEFT',25,-y)
+ frame.hint:ClearAllPoints();frame.hint:SetPoint('TOPLEFT',30,-y)
  frame.hint:SetText(view.paused and'Nach dem Dungeon geht es beim nächsten offenen Schritt weiter.'or(view.hint or''))
  if frame.hint:GetText()~=''then y=y+frame.hint:GetStringHeight()+9 end
  local ri=0
@@ -180,7 +201,7 @@ function FR.Refresh()
    if not FR.Done(s)and(view.live or not FR.CharDB().skipped[i])and FR.Text(s)~=last then
     last=FR.Text(s)
     count=count+1
-    if count==1 then frame.nextLabel:ClearAllPoints();frame.nextLabel:SetPoint('TOPLEFT',25,-y-6);frame.nextLabel:SetText('DANACH');frame.nextLabel:Show();y=y+25 end
+    if count==1 then frame.nextLabel:ClearAllPoints();frame.nextLabel:SetPoint('TOPLEFT',30,-y-6);frame.nextLabel:SetText('DANACH');frame.nextLabel:Show();y=y+25 end
     local r=frame.nextRows[count];r.q,r.task,r.item,r.objective=s.q,nil,nil,nil
     y=setRow(r,FR.Text(s),y,C.muted);if count==3 then break end
    end
@@ -188,7 +209,7 @@ function FR.Refresh()
  end
  frame.confirm:SetEnabled(FR.CanConfirm(view.step)and true or false)
  frame.skip:SetEnabled(view.step~=nil and not view.paused);frame.back:SetEnabled(not view.paused and(FR.undo~=nil or not view.live))
- frame:SetHeight(math.max(185,y+76))
+ frame:SetHeight(math.max(195,y+88))
  return view.step
 end
 function FR.Show()makeFrame():Show();FR.Config().hidden=nil;FR.Refresh()end
@@ -224,6 +245,7 @@ SlashCmdList.FOREVERROUTES=function(msg)
  elseif msg=='arrow'then FR.Config().arrowHidden=not FR.Config().arrowHidden
  elseif msg:match('^scale%s+[%d%.]+$')then
   FR.Config().scale=math.max(.65,math.min(1.5,tonumber(msg:match('([%d%.]+)$'))or 1));if frame then frame:SetScale(FR.Config().scale)end
+ elseif msg=='dock'or msg=='andocken'then FR.Config().window=nil;FR.Config().docked=true;if frame and not dock(frame)then position(frame,'window','LEFT',40,120)end
  elseif msg=='position'then FR.Config().window=nil;FR.Config().arrow=nil;if frame then position(frame,'window','LEFT',40,120)end;if arrow then position(arrow,'arrow','TOP',0,-110)end
  elseif msg~='show'then print('ForeverRoutes: /fr · show · hide · skip · back · done · options · compact · lock · arrow · scale 1 · position · restore');return end
  FR.Show()

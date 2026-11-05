@@ -23,6 +23,7 @@ Quest rows open the quest log when clicked and show objective details on hover. 
 | `/fr arrow` | Toggle the independent arrow |
 | `/fr scale 1.1` | Set panel scale, clamped to 0.65–1.5 |
 | `/fr position` | Restore default panel and arrow positions |
+| `/fr dock` | Place the panel left of the game's quest tracker (the default without a saved position) |
 | `/fr restore` | Restore skipped steps and hidden side tasks |
 
 Right-click an authored side task to hide it; restore it through the options menu. Movement, scale and panel visibility persist across reloads.

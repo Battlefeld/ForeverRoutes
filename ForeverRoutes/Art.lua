@@ -3,7 +3,7 @@
 -- _dev/tools/build_media.py); a texture that is missing there simply stays empty instead of raising an error.
 ForeverRoutes.UI=ForeverRoutes.UI or{}
 local UI=ForeverRoutes.UI
-UI.COLOR={gold={.953,.78,.357},gold2={.788,.604,.235},text={.91,.933,.969},muted={.557,.635,.761},dim={.365,.435,.557},
+UI.COLOR={gold={.96,.82,.5},gold2={.788,.604,.235},text={.88,.9,.94},muted={.6,.67,.78},dim={.365,.435,.557},
  good={.31,.89,.431},bad={1,.42,.353},blue={.231,.549,1},white={1,1,1},epic={.753,.396,1},rare={.239,.584,1},fire={1,.541,.239},
  frost={.373,.769,1},arcane={.706,.608,1},line={.47,.63,.9}}
 UI.FONT={body=STANDARD_TEXT_FONT or'Fonts\\FRIZQT__.TTF',title='Fonts\\MORPHEUS.TTF',num='Fonts\\ARIALN.TTF'}
@@ -31,7 +31,8 @@ function UI.Text(parent,size,color,kind,justify,layer)
  local ok=pcall(fs.SetFont,fs,path,size or 12,'')
  if not ok or fs.GetFont and not fs:GetFont()then pcall(fs.SetFont,fs,UI.FONT.body,size or 12,'')end
  local c=color or UI.COLOR.text;fs:SetTextColor(c[1],c[2],c[3],c[4]or 1)
- fs:SetShadowColor(0,0,0,1);fs:SetShadowOffset(1,-1)
+ -- a soft shadow: readable on any background without the hard black edge
+ fs:SetShadowColor(0,0,0,.65);fs:SetShadowOffset(1,-1)
  fs:SetJustifyH(justify or'LEFT');fs:SetJustifyV('MIDDLE')
  return fs
 end
@@ -75,9 +76,14 @@ UI.STYLE={
  note={'notification_panel',{16,22,16,22},{10,14,10,14}},
  panel={'panel_square_medium',{50,34,34,34},{34,24,26,24}},
 }
+-- Frames are drawn a little muted (edges and middle slightly darker and translucent): softer than the raw pack art.
+local SOFT={panel={edge={.86,.86,.92,.94},mid={.72,.78,.9,.9}},button={edge={.9,.9,.95,.95},mid={.85,.88,.95,.95}},note={edge={.86,.86,.92,.9},mid={.7,.76,.88,.85}}}
 function UI.Style(frame,name,layer,sublevel)
  local s=UI.STYLE[name];if not s then return nil end
- return UI.NineSlice(frame,s[1],s[2],s[3],layer,sublevel)
+ local pieces=UI.NineSlice(frame,s[1],s[2],s[3],layer,sublevel)
+ local soft=pieces and SOFT[name]
+ if soft then for key,tex in pairs(pieces)do local c=key=='m'and soft.mid or soft.edge;tex:SetVertexColor(c[1],c[2],c[3],c[4])end end
+ return pieces
 end
 function UI.Show(region,on)if on then region:Show()else region:Hide()end end
 
