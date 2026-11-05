@@ -92,7 +92,8 @@ function FR.Connected()
  local c=ForeverCoreClient;local ui=c and c.UI
  if not(ui and ui.State)then return false,'Gespeicherte Route'end
  local state=call(ui.State)
- return ui.lastOk~=nil and(state=='ok'or state=='busy'),'ForeverCore'
+ -- a pending data check (warning) is no lost connection: only an error or the strip switched off are
+ return ui.lastOk~=nil and state~='error'and state~='off'and state~='idle','ForeverCore'
 end
 -- Adapter for native quest-line objectives: require identity, not just matching counts.
 function FR.ObjectiveMeta(q,index)
