@@ -26,8 +26,11 @@ type questFix struct {
 	ObjectiveTargets map[int][]int       `json:"objectiveTargets,omitempty"`
 	AddFight         int                 `json:"addFight,omitempty"`
 	Objectives       []dataset.Objective `json:"objectives,omitempty"`
-	Source           string              `json:"source"`
-	Note             string              `json:"note"`
+	// Profession: the quest is offered only to characters with this profession (the routes learn Skinning, Cooking
+	// and Leatherworking; any other one leaves the quest out, OtherProfession)
+	Profession string `json:"profession,omitempty"`
+	Source     string `json:"source"`
+	Note       string `json:"note"`
 }
 
 func readQuestFixes(path string) ([]questFix, error) {
@@ -70,6 +73,13 @@ func (b *builder) applyQuestFixes() {
 			if f.MinLevel != nil {
 				q.MinLevel = *f.MinLevel
 				q.Sources["minLevel"] = f.Source
+			}
+			if f.Profession != "" && !routeProfessions[strings.ToLower(f.Profession)] {
+				if q.Unsupported == "" {
+					b.stats["quests_unsupported"]++
+				}
+				q.Unsupported = OtherProfession
+				q.Sources["unsupported"] = f.Source
 			}
 			if f.AddFight > 0 {
 				b.npcWanted[f.AddFight] = true
@@ -161,6 +171,9 @@ const NotLeveling = "not a leveling quest (holiday, battleground or event)"
 // OtherProfession is the reason of a profession's tutorial quest the routes do not take: the routes learn Skinning,
 // Cooking and Leatherworking (route/camp.go).
 const OtherProfession = "a profession's quest (the routes learn Skinning, Cooking and Leatherworking)"
+
+// routeProfessions: the professions the routes learn (route/camp.go).
+var routeProfessions = map[string]bool{"skinning": true, "cooking": true, "leatherworking": true}
 
 var campingOther = regexp.MustCompile(`^Camping 101: (Alchemy|Blacksmithing|Enchanting|Engineering|First Aid|Fishing|Herbalism|Mining|Tailoring)$`)
 
