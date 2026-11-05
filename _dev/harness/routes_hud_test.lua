@@ -188,6 +188,24 @@ do
  FR.CampReport()
  GetItemInfo,GetItemCount=oldInfo,oldCount;C_Container.GetContainerNumSlots=nil;C_Container.GetContainerItemID=nil
 end
+-- Forever's client: only the C_ functions (no GetItemCount, GetItemInfo, UnitBuff, GetSkillLineInfo).
+do
+ local oldCount,oldInfo,oldBuff,oldLines=GetItemCount,GetItemInfo,UnitBuff,GetNumSkillLines
+ GetItemCount,GetItemInfo,UnitBuff,UnitDebuff,UnitAura,GetNumSkillLines=nil,nil,nil,nil,nil,nil
+ local oldC=C_Item.GetItemCount
+ C_Item.GetItemCount=function(id)return({[279978]=1,[279981]=2,[2318]=7})[id]or 0 end
+ C_UnitAuras={GetAuraDataByIndex=function(u,i,f)if f=='HELPFUL'and i==1 then return{name='Well Rested Shelter',spellId=1,duration=3600,expirationTime=GetTime()+1200}end end}
+ GetProfessions=function()return 1,2,nil,nil,5 end
+ GetProfessionInfo=function(i)return({'Skinning','Leatherworking',nil,nil,'Cooking'})[i],nil,({30,25,nil,nil,5})[i],75,0,0,({393,165,nil,nil,185})[i]end
+ local m=FR.CampMaterials()
+ check(m.tent and m.fire and m.leather==7,'camp items counted with C_Item only')
+ check(FR.HasProfessions(),'professions from GetProfessions')
+ FR.CharDB().campLevel=nil;UnitLevel=function()return 12 end
+ local left=FR.CampLeft();check(left and left>1000 and left<=1201,'camp buff read from C_UnitAuras')
+ FR.CampReport()
+ GetItemCount,GetItemInfo,UnitBuff,GetNumSkillLines=oldCount,oldInfo,oldBuff,oldLines;C_Item.GetItemCount=oldC
+ C_UnitAuras=nil;GetProfessions=nil;GetProfessionInfo=nil;UnitLevel=function()return 2 end;FR.CharDB().campLevel=nil
+end
 -- Exercise events/timers, option window, slash commands and saved visibility.
 FR.ToggleMenu();FR.ToggleMenu()
 for _,cmd in ipairs({'compact','scale 1.1','lock','position','arrow','show','hide','show'})do SlashCmdList.FOREVERROUTES(cmd)end

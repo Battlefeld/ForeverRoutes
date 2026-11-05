@@ -5,15 +5,11 @@ function FR.Config()
  ForeverRoutesDB=ForeverRoutesDB or{}
  return ForeverRoutesDB
 end
-function FR.ItemCount(id)
- local fn=C_Item and C_Item.GetItemCount or GetItemCount
- return tonumber(call(fn,id,false,false))or 0 -- bags/equipment, never inaccessible bank stock
-end
 function FR.Items(step)
  local rows={}
  for _,v in ipairs(step and step.items or{})do
   if type(v.id)=='number'and type(v.count)=='number'and v.count>0 then
-   local name,link,_,_,_,_,_,_,_,icon=call(GetItemInfo,v.id)
+   local name,link,icon=FR.ItemInfo(v.id)
    if not name and C_Item and C_Item.RequestLoadItemDataByID then call(C_Item.RequestLoadItemDataByID,v.id)end
    local owned=FR.ItemCount(v.id)
    rows[#rows+1]={id=v.id,text=string.format('%s %d/%d',name or v.name or('Gegenstand '..v.id),owned,v.count),icon=icon,link=link,done=owned>=v.count}
@@ -107,7 +103,7 @@ function FR.ObjectiveMeta(q,index)
  end
  -- Counts alone are not identity, even when only one candidate survived.
  for _,o in ipairs(candidates)do
-  local localized=o.item and call(GetItemInfo,o.item)or o.name
+  local localized=o.item and FR.ItemInfo(o.item)or o.name
   if localized and obj.text and obj.text:lower():find(localized:lower(),1,true)then return o end
  end
  return nil -- ambiguity deliberately has no invented target/model

@@ -7,6 +7,40 @@ ForeverRoutes=FR
 local function pass(ok,...)if not ok then return nil end;return ... end
 local function call(fn,...)if type(fn)~='function'then return nil end;return pass(pcall(fn,...))end
 
+-- Game API across clients: Forever's client has the C_Item/C_Container/C_UnitAuras functions; the old globals
+-- (GetItemCount, GetItemInfo, UnitBuff, ...) may be missing there. Each helper takes whichever exists.
+local function api(ns,name)local t=_G[ns];return(type(t)=='table'and type(t[name])=='function')and t[name]or _G[name]end
+function FR.ItemCount(id)
+ return tonumber(call(api('C_Item','GetItemCount'),id,false,false))or 0 -- bags/equipment, never inaccessible bank stock
+end
+function FR.ItemInfo(id)
+ local name,link,_,_,_,_,_,_,_,icon=call(api('C_Item','GetItemInfo'),id)
+ if not name then name=call(C_Item and C_Item.GetItemNameByID,id)end
+ return name,link,icon
+end
+-- the player's auras: {name, spell, duration, expires}
+function FR.Auras()
+ local out={}
+ if C_UnitAuras and C_UnitAuras.GetAuraDataByIndex then
+  for _,filter in ipairs({'HELPFUL','HARMFUL'})do
+   for i=1,40 do
+    local a=call(C_UnitAuras.GetAuraDataByIndex,'player',i,filter)
+    if type(a)~='table'then break end
+    out[#out+1]={name=a.name,spell=a.spellId,duration=a.duration,expires=a.expirationTime}
+   end
+  end
+  return out
+ end
+ for _,filter in ipairs({'HELPFUL','HARMFUL'})do
+  for i=1,40 do
+   local name,_,_,_,duration,expires,_,_,_,spell=call(UnitAura,'player',i,filter)
+   if not name then break end
+   out[#out+1]={name=name,spell=spell,duration=duration,expires=expires}
+  end
+ end
+ return out
+end
+
 -- The route's key: race and class as the route files name them; the Skyborne by side.
 local RACE={Scourge='undead',Undead='undead',NightElf='nightelf',Human='human',Dwarf='dwarf',Gnome='gnome',Orc='orc',Troll='troll',Tauren='tauren'}
 function FR.Key()
@@ -116,7 +150,7 @@ function FR.Done(step)
   if not step.l then return false end
   return l>step.l or(l==step.l and(step.xp==nil or(call(UnitXP,'player')or 0)>=step.xp))
  end
- if step.op=='z'then return(call(GetItemCount,step.it)or 0)>0 or call(IsEquippedItem,step.it)==true end
+ if step.op=='z'then return FR.ItemCount(step.it)>0 or call(api('C_Item','IsEquippedItem'),step.it)==true end
  if step.op=='p'then return FR.HasProfessions()end
  -- Dungeon, sleep and other unobservable tasks require explicit confirmation in the tracker.
 
@@ -125,15 +159,31 @@ end
 
 -- Skinning and Leatherworking learned (by the skill lines, English or German).
 local SKILL={skin={Skinning=true,['Kürschnerei']=true},leather={Leatherworking=true,Lederverarbeitung=true},cook={Cooking=true,Kochkunst=true}}
-function FR.HasProfessions()
- local n=call(GetNumSkillLines)or 0;local skin,leather,cook=false,false,false
+-- the profession skill lines by id (also the newer API without GetSkillLineInfo): Skinning, Leatherworking, Cooking
+local SKILL_LINE={[393]='skin',[165]='leather',[185]='cook'}
+function FR.Professions()
+ local have={}
+ local function add(kind,rank)if kind then have[kind]=math.max(have[kind]or 0,tonumber(rank)or 0)end end
+ local n=call(GetNumSkillLines)or 0
  for i=1,n do
   local name,_,_,rank=call(GetSkillLineInfo,i)
-  if SKILL.skin[name]then skin=true end
-  if SKILL.leather[name]and(tonumber(rank)or 0)>=20 then leather=true end
-  if SKILL.cook[name]then cook=true end
+  for kind,names in pairs(SKILL)do if names[name]then add(kind,rank)end end
  end
- return skin and leather and cook
+ if GetProfessions and GetProfessionInfo then
+  local list={call(GetProfessions)}
+  for _,idx in pairs(list)do
+   if idx then
+    local name,_,rank,_,_,_,line=call(GetProfessionInfo,idx)
+    add(SKILL_LINE[line],rank)
+    for kind,names in pairs(SKILL)do if names[name]then add(kind,rank)end end
+   end
+  end
+ end
+ return have
+end
+function FR.HasProfessions()
+ local p=FR.Professions()
+ return p.skin~=nil and(p.leather or 0)>=20 and p.cook~=nil
 end
 
 -- The camp, coupled to the camp buff (an hour; all camp objects share that cooldown). The buff is found among the
@@ -150,20 +200,18 @@ FR.TENT_ITEM=279978
 FR.FIRE_KIT=279981;FR.FIRE={{4470,1},{4471,1}}     -- Basic Campfire Kit (item 279981): Simple Wood, Flint and Tinder
 local function campAura()
  local now=call(GetTime)or 0
- for _,fn in ipairs({UnitBuff,UnitDebuff})do
-  for i=1,40 do
-   local name,_,_,_,duration,expires,_,_,_,spell=call(fn,'player',i)
-   if not name then break end
-   local ours=FR.CAMP_AURA_IDS[spell]
-   for _,k in ipairs(FR.CAMP_AURAS)do ours=ours or tostring(name)==k end
-   if ours and(duration or 0)>0 and expires then return expires-now end
-  end
+ for _,a in ipairs(FR.Auras())do
+  local ours=FR.CAMP_AURA_IDS[a.spell]
+  for _,k in ipairs(FR.CAMP_AURAS)do ours=ours or tostring(a.name)==k end
+  if ours and(a.duration or 0)>0 and a.expires then return a.expires-now end
  end
  return nil
 end
 -- Seconds the camp buff has left (0: none or run out); nil before the camps start.
 function FR.CampLeft()
  local c=charDB()
+ -- the camps start with the professions, however they were learned (also off the route)
+ if not c.campLevel and FR.HasProfessions()then c.campLevel=FR.CAMP_LEVEL end
  if not c.campLevel or(call(UnitLevel,'player')or 0)<c.campLevel then return nil end
  local left=campAura()
  if left then return math.max(0,left)end
@@ -174,15 +222,15 @@ end
 FR.CAMP_NAMES={tent={'tent','zelt'},fire={'campfire','lagerfeuer','firewood','kindling','brennholz'}}
 function FR.BagItems()
  local out={}
- local slots=C_Container and C_Container.GetContainerNumSlots or GetContainerNumSlots
- local idOf=C_Container and C_Container.GetContainerItemID or GetContainerItemID
+ local slots=api('C_Container','GetContainerNumSlots')
+ local idOf=api('C_Container','GetContainerItemID')
  if not slots or not idOf then return out end
  for bag=0,NUM_BAG_SLOTS or 4 do
   for slot=1,tonumber(call(slots,bag))or 0 do
    local id=call(idOf,bag,slot)
    if id then
-    local name=call(GetItemInfo,id)
-    if type(name)=='string'then out[#out+1]={name=name,id=id,count=call(GetItemCount,id)or 1}end
+    local name=FR.ItemInfo(id)
+    if type(name)=='string'then out[#out+1]={name=name,id=id,count=FR.ItemCount(id)}end
    end
   end
  end
@@ -196,12 +244,12 @@ local function bagHas(kind)
 end
 -- What a camp needs that the bags lack: tent (or leather for one), fire.
 function FR.CampMaterials()
- local leather=call(GetItemCount,FR.LIGHT_LEATHER)or 0
- local tent=(call(GetItemCount,FR.TENT_ITEM)or 0)>0 or leather>=FR.TENT_LEATHER or bagHas('tent')~=nil
- local fire=(call(GetItemCount,FR.FIRE_KIT)or 0)>0 or bagHas('fire')~=nil
+ local leather=FR.ItemCount(FR.LIGHT_LEATHER)
+ local tent=FR.ItemCount(FR.TENT_ITEM)>0 or leather>=FR.TENT_LEATHER or bagHas('tent')~=nil
+ local fire=FR.ItemCount(FR.FIRE_KIT)>0 or bagHas('fire')~=nil
  if not fire then
   fire=true
-  for _,r in ipairs(FR.FIRE)do if(call(GetItemCount,r[1])or 0)<r[2]then fire=false end end
+  for _,r in ipairs(FR.FIRE)do if FR.ItemCount(r[1])<r[2]then fire=false end end
  end
  return{tent=tent,leather=leather,fire=fire}
 end
@@ -209,20 +257,19 @@ end
 function FR.CampReport()
  local m=FR.CampMaterials();local left=FR.CampLeft()
  print(string.format('ForeverRoutes Lager: Zelt %s, Lagerfeuer %s, Leichtes Leder %d, Lager-Buff %s, Rested %.1f %%',
-  m.tent and'ja'or'nein',m.fire and'ja'or'nein',m.leather,left and string.format('%d s',left)or'(Lager noch nicht aktiv)',FR.RestedShare()*100))
+  m.tent and'ja'or'nein',m.fire and'ja'or'nein',math.floor(m.leather),left and string.format('%.0f s',left)or'(Lager noch nicht aktiv)',FR.RestedShare()*100))
  for _,it in ipairs(FR.BagItems())do
   local n=it.name:lower()
   if n:find('tent',1,true)or n:find('camp',1,true)or n:find('fire',1,true)or n:find('wood',1,true)or n:find('flint',1,true)or n:find('leather',1,true)then
    print(string.format('  Tasche: %s (Item %d) x%d',it.name,it.id,it.count))
   end
  end
- for _,fn in ipairs({UnitBuff,UnitDebuff})do
-  for i=1,40 do
-   local name,_,_,_,duration,_,_,_,_,spell=call(fn,'player',i)
-   if not name then break end
-   print(string.format('  Aura: %s (Zauber %s, %s s)',tostring(name),tostring(spell),tostring(duration)))
-  end
+ for _,a in ipairs(FR.Auras())do
+  print(string.format('  Aura: %s (Zauber %s, %s s)',tostring(a.name),tostring(a.spell),tostring(a.duration)))
  end
+ local p=FR.Professions()
+ print(string.format('  Berufe: Kürschnern %s, Lederverarbeitung %s, Kochkunst %s',tostring(p.skin or'-'),tostring(p.leather or'-'),tostring(p.cook or'-')))
+ print(string.format('  Taschen gelesen: %d Gegenstände; Stufe %s, Lager ab Stufe %s',#FR.BagItems(),tostring(call(UnitLevel,'player')),tostring(charDB().campLevel)))
 end
 -- Rested experience left, as a share of the level (the tent raises it to 5 %: with more left a camp brings nothing).
 function FR.RestedShare()
