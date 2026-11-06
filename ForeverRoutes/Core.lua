@@ -432,6 +432,25 @@ function FR.SetLive(result)
   if st.op=='z'then st.it,st.cl=FR.LESSER_WAND,FR.CAMP_LEVEL end
   if st.op=='p'then st.cl=FR.CAMP_LEVEL end
  end
+ -- Stay on the step being done: a new plan (one comes after every bit of quest progress) may put another step first,
+ -- often an accept the character walks past. The current step stays first until it is done; an accept the new plan
+ -- wants right here becomes a hint beside it (FR.nearbyAccept).
+ FR.nearbyAccept=nil
+ local old=FR.live and FR.Advance()
+ if old and not FR.Done(old)then
+  for i=2,#out do
+   local s=out[i]
+   if s.op==old.op and s.q==old.q and s.o==old.o and(s.q or s.n==old.n)then
+    local first=out[1]
+    table.remove(out,i);table.insert(out,1,s)
+    if first.op=='a'and not first.sk then
+     local x,y,_,m=call(UnitPosition,'player')
+     if m==first.m and type(x)=='number'and type(first.x)=='number'and(x-first.x)^2+(y-first.y)^2<=80^2 then FR.nearbyAccept=first end
+    end
+    break
+   end
+  end
+ end
  FR.live=out;FR.undo=nil;FR.pinned=nil
 end
 

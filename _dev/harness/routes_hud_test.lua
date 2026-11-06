@@ -215,6 +215,21 @@ do
  FR.SetLive({steps={{op='accept',quest=96877,name="Halikor's Hoof",at={m=1,x=0,y=0},startBy={npc=266852,name='Halikor',level=12,elite=true,item=275723}}}})
  check(FR.live[1].sk=='Halikor'and FR.live[1].se,'live step carries the creature');FR.live=nil
 end
+-- A new live plan keeps the step being done first; an accept right here becomes a hint.
+do
+ FR.live=nil;FR.CharDB().skipQuests=nil;accepted[501]=true;objectives[501]={{text='Boars: 2/8',type='monster',numFulfilled=2,numRequired=8,finished=false}}
+ px,py,pm=0,0,1
+ FR.SetLive({steps={{op='work',quest=501,obj=0,at={m=1,x=300,y=0}},{op='accept',quest=502,at={m=1,x=10,y=0}}}})
+ check(FR.Advance().q==501,'working on the boars')
+ FR.SetLive({steps={{op='accept',quest=502,at={m=1,x=10,y=0}},{op='work',quest=501,obj=0,at={m=1,x=300,y=0}}}})
+ check(FR.Advance().q==501,'replanned with an accept first: the boars stay the step')
+ local hint=false;for _,c in ipairs(FR.Callouts(FR.TaskView()))do if c.text:find('Nebenbei hier annehmen',1,true)then hint=true end end
+ check(hint,'the accept here shows as a hint')
+ objectives[501][1].finished=true;objectives[501][1].numFulfilled=8
+ FR.SetLive({steps={{op='accept',quest=502,at={m=1,x=10,y=0}},{op='turnin',quest=501,at={m=1,x=0,y=0}}}})
+ check(FR.Advance().op=='a','a finished step does not hold the plan')
+ FR.live=nil;FR.nearbyAccept=nil;accepted[501]=nil;objectives[501]=nil;pm=0
+end
 -- Exercise events/timers, option window, slash commands and saved visibility.
 FR.ToggleMenu();FR.ToggleMenu()
 for _,cmd in ipairs({'compact','scale 1.1','lock','position','arrow','show','hide','show'})do SlashCmdList.FOREVERROUTES(cmd)end
