@@ -1,5 +1,5 @@
 {
- "actionCount": 206,
+ "actionCount": 209,
  "bagFinished": false,
  "basis": "ForeverRoutes optimization of independent routes and ordinary RestedXP Forever quest projections (RestedXP/RXPGuides, CC BY-NC-SA 4.0)",
  "character": {
@@ -11,7 +11,7 @@
    "inRoute": true,
    "level": 5,
    "minLevel": 1,
-   "minutes": 0.1,
+   "minutes": -0.6,
    "name": "Hallowed Sigil",
    "possible": true,
    "quest": 3119,
@@ -121,6 +121,10 @@
     },
     {
      "op": "accept",
+     "quest": 96630
+    },
+    {
+     "op": "accept",
      "quest": 928
     },
     {
@@ -128,7 +132,7 @@
      "quest": 3119
     },
     {
-     "op": "accept",
+     "op": "turnin",
      "quest": 96630
     },
     {
@@ -136,12 +140,14 @@
      "quest": 96606
     },
     {
-     "op": "turnin",
-     "quest": 96630
+     "objective": 1,
+     "op": "complete",
+     "quest": 96606
     },
     {
-     "op": "accept",
-     "quest": 488
+     "objective": 2,
+     "op": "complete",
+     "quest": 96606
     },
     {
      "op": "accept",
@@ -177,17 +183,11 @@
     },
     {
      "op": "accept",
+     "quest": 4161
+    },
+    {
+     "op": "accept",
      "quest": 929
-    },
-    {
-     "objective": 1,
-     "op": "complete",
-     "quest": 96606
-    },
-    {
-     "objective": 2,
-     "op": "complete",
-     "quest": 96606
     },
     {
      "op": "turnin",
@@ -195,15 +195,20 @@
     },
     {
      "op": "accept",
-     "quest": 4161
+     "quest": 488
     },
     {
-     "objective": 1,
+     "objective": 3,
      "op": "complete",
-     "quest": 87288
+     "quest": 488
     },
     {
      "objective": 2,
+     "op": "complete",
+     "quest": 488
+    },
+    {
+     "objective": 1,
      "op": "complete",
      "quest": 488
     },
@@ -249,11 +254,6 @@
      "objective": 1,
      "op": "complete",
      "quest": 929
-    },
-    {
-     "objective": 3,
-     "op": "complete",
-     "quest": 488
     },
     {
      "op": "turnin",
@@ -342,10 +342,6 @@
      "quest": 938
     },
     {
-     "op": "turnin",
-     "quest": 938
-    },
-    {
      "op": "accept",
      "quest": 937
     },
@@ -361,6 +357,10 @@
     {
      "op": "accept",
      "quest": 98392
+    },
+    {
+     "op": "turnin",
+     "quest": 938
     },
     {
      "objective": 1,
@@ -382,7 +382,7 @@
     {
      "level": 15,
      "op": "level",
-     "totalXP": 78516
+     "totalXP": 78412
     },
     {
      "objective": 1,
@@ -404,6 +404,10 @@
     {
      "op": "turnin",
      "quest": 930
+    },
+    {
+     "op": "accept",
+     "quest": 6344
     },
     {
      "op": "turnin",
@@ -435,6 +439,10 @@
      "quest": 2520
     },
     {
+     "op": "turnin",
+     "quest": 6344
+    },
+    {
      "op": "accept",
      "quest": 6341
     },
@@ -456,15 +464,15 @@
     },
     {
      "op": "accept",
-     "quest": 1138
-    },
-    {
-     "op": "accept",
      "quest": 947
     },
     {
      "op": "accept",
      "quest": 98025
+    },
+    {
+     "op": "accept",
+     "quest": 1138
     },
     {
      "op": "accept",
@@ -517,6 +525,10 @@
      "quest": 4681
     },
     {
+     "op": "accept",
+     "quest": 963
+    },
+    {
      "objective": 1,
      "op": "complete",
      "quest": 1001
@@ -608,13 +620,18 @@
      "quest": 2178
     },
     {
+     "op": "turnin",
+     "quest": 982
+    },
+    {
+     "objective": 1,
+     "op": "complete",
+     "quest": 963
+    },
+    {
      "objective": 1,
      "op": "complete",
      "quest": 958
-    },
-    {
-     "op": "accept",
-     "quest": 4722
     },
     {
      "op": "accept",
@@ -633,6 +650,10 @@
     {
      "op": "turnin",
      "quest": 953
+    },
+    {
+     "op": "accept",
+     "quest": 4722
     },
     {
      "objective": 1,
@@ -659,6 +680,10 @@
     {
      "op": "turnin",
      "quest": 958
+    },
+    {
+     "op": "turnin",
+     "quest": 963
     },
     {
      "op": "accept",
@@ -708,10 +733,6 @@
     {
      "op": "turnin",
      "quest": 957
-    },
-    {
-     "op": "turnin",
-     "quest": 982
     },
     {
      "op": "turnin",
@@ -802,13 +823,13 @@
     {
      "level": 20,
      "op": "level",
-     "totalXP": 167294
+     "totalXP": 167220
     }
    ],
    "inRoute": false,
    "level": 5,
    "minLevel": 5,
-   "minutes": -0.5,
+   "minutes": -1,
    "name": "Garments of the Moon",
    "possible": true,
    "quest": 5621,
@@ -917,15 +938,15 @@
     },
     {
      "op": "accept",
+     "quest": 96630
+    },
+    {
+     "op": "accept",
      "quest": 928
     },
     {
      "op": "turnin",
      "quest": 3119
-    },
-    {
-     "op": "accept",
-     "quest": 96630
     },
     {
      "op": "accept",
@@ -936,16 +957,22 @@
      "quest": 5622
     },
     {
-     "op": "accept",
-     "quest": 96606
-    },
-    {
      "op": "turnin",
      "quest": 96630
     },
     {
      "op": "accept",
-     "quest": 488
+     "quest": 96606
+    },
+    {
+     "objective": 1,
+     "op": "complete",
+     "quest": 96606
+    },
+    {
+     "objective": 2,
+     "op": "complete",
+     "quest": 96606
     },
     {
      "op": "accept",
@@ -969,17 +996,11 @@
     },
     {
      "op": "accept",
+     "quest": 4161
+    },
+    {
+     "op": "accept",
      "quest": 929
-    },
-    {
-     "objective": 1,
-     "op": "complete",
-     "quest": 96606
-    },
-    {
-     "objective": 2,
-     "op": "complete",
-     "quest": 96606
     },
     {
      "op": "turnin",
@@ -987,15 +1008,20 @@
     },
     {
      "op": "accept",
-     "quest": 4161
+     "quest": 488
     },
     {
-     "objective": 1,
+     "objective": 3,
      "op": "complete",
-     "quest": 87288
+     "quest": 488
     },
     {
      "objective": 2,
+     "op": "complete",
+     "quest": 488
+    },
+    {
+     "objective": 1,
      "op": "complete",
      "quest": 488
     },
@@ -1041,11 +1067,6 @@
      "objective": 1,
      "op": "complete",
      "quest": 929
-    },
-    {
-     "objective": 3,
-     "op": "complete",
-     "quest": 488
     },
     {
      "op": "turnin",
@@ -1138,10 +1159,6 @@
      "quest": 938
     },
     {
-     "op": "turnin",
-     "quest": 938
-    },
-    {
      "op": "accept",
      "quest": 937
     },
@@ -1157,6 +1174,10 @@
     {
      "op": "accept",
      "quest": 98392
+    },
+    {
+     "op": "turnin",
+     "quest": 938
     },
     {
      "objective": 1,
@@ -1178,7 +1199,7 @@
     {
      "level": 15,
      "op": "level",
-     "totalXP": 78516
+     "totalXP": 78412
     },
     {
      "objective": 1,
@@ -1200,6 +1221,10 @@
     {
      "op": "turnin",
      "quest": 930
+    },
+    {
+     "op": "accept",
+     "quest": 6344
     },
     {
      "op": "turnin",
@@ -1231,6 +1256,10 @@
      "quest": 2520
     },
     {
+     "op": "turnin",
+     "quest": 6344
+    },
+    {
      "op": "accept",
      "quest": 6341
     },
@@ -1252,15 +1281,15 @@
     },
     {
      "op": "accept",
-     "quest": 1138
-    },
-    {
-     "op": "accept",
      "quest": 947
     },
     {
      "op": "accept",
      "quest": 98025
+    },
+    {
+     "op": "accept",
+     "quest": 1138
     },
     {
      "op": "accept",
@@ -1313,6 +1342,10 @@
      "quest": 4681
     },
     {
+     "op": "accept",
+     "quest": 963
+    },
+    {
      "objective": 1,
      "op": "complete",
      "quest": 1001
@@ -1404,13 +1437,18 @@
      "quest": 2178
     },
     {
+     "op": "turnin",
+     "quest": 982
+    },
+    {
+     "objective": 1,
+     "op": "complete",
+     "quest": 963
+    },
+    {
      "objective": 1,
      "op": "complete",
      "quest": 958
-    },
-    {
-     "op": "accept",
-     "quest": 4722
     },
     {
      "op": "accept",
@@ -1429,6 +1467,10 @@
     {
      "op": "turnin",
      "quest": 953
+    },
+    {
+     "op": "accept",
+     "quest": 4722
     },
     {
      "objective": 1,
@@ -1455,6 +1497,10 @@
     {
      "op": "turnin",
      "quest": 958
+    },
+    {
+     "op": "turnin",
+     "quest": 963
     },
     {
      "op": "accept",
@@ -1504,10 +1550,6 @@
     {
      "op": "turnin",
      "quest": 957
-    },
-    {
-     "op": "turnin",
-     "quest": 982
     },
     {
      "op": "turnin",
@@ -1598,13 +1640,13 @@
     {
      "level": 20,
      "op": "level",
-     "totalXP": 167294
+     "totalXP": 167220
     }
    ],
    "inRoute": false,
    "level": 7,
    "minLevel": 5,
-   "minutes": 0.1,
+   "minutes": -0.3,
    "name": "In Favor of Elune",
    "possible": true,
    "quest": 5622,
@@ -1713,6 +1755,10 @@
     },
     {
      "op": "accept",
+     "quest": 96630
+    },
+    {
+     "op": "accept",
      "quest": 928
     },
     {
@@ -1720,7 +1766,7 @@
      "quest": 3119
     },
     {
-     "op": "accept",
+     "op": "turnin",
      "quest": 96630
     },
     {
@@ -1728,12 +1774,14 @@
      "quest": 96606
     },
     {
-     "op": "turnin",
-     "quest": 96630
+     "objective": 1,
+     "op": "complete",
+     "quest": 96606
     },
     {
-     "op": "accept",
-     "quest": 488
+     "objective": 2,
+     "op": "complete",
+     "quest": 96606
     },
     {
      "op": "accept",
@@ -1757,17 +1805,11 @@
     },
     {
      "op": "accept",
+     "quest": 4161
+    },
+    {
+     "op": "accept",
      "quest": 929
-    },
-    {
-     "objective": 1,
-     "op": "complete",
-     "quest": 96606
-    },
-    {
-     "objective": 2,
-     "op": "complete",
-     "quest": 96606
     },
     {
      "op": "turnin",
@@ -1775,15 +1817,20 @@
     },
     {
      "op": "accept",
-     "quest": 4161
+     "quest": 488
     },
     {
-     "objective": 1,
+     "objective": 3,
      "op": "complete",
-     "quest": 87288
+     "quest": 488
     },
     {
      "objective": 2,
+     "op": "complete",
+     "quest": 488
+    },
+    {
+     "objective": 1,
      "op": "complete",
      "quest": 488
     },
@@ -1829,11 +1876,6 @@
      "objective": 1,
      "op": "complete",
      "quest": 929
-    },
-    {
-     "objective": 3,
-     "op": "complete",
-     "quest": 488
     },
     {
      "op": "turnin",
@@ -1922,10 +1964,6 @@
      "quest": 938
     },
     {
-     "op": "turnin",
-     "quest": 938
-    },
-    {
      "op": "accept",
      "quest": 937
     },
@@ -1941,6 +1979,10 @@
     {
      "op": "accept",
      "quest": 98392
+    },
+    {
+     "op": "turnin",
+     "quest": 938
     },
     {
      "objective": 1,
@@ -1962,7 +2004,7 @@
     {
      "level": 15,
      "op": "level",
-     "totalXP": 78516
+     "totalXP": 78412
     },
     {
      "objective": 1,
@@ -1992,6 +2034,10 @@
     {
      "op": "complete",
      "quest": 5629
+    },
+    {
+     "op": "accept",
+     "quest": 6344
     },
     {
      "op": "turnin",
@@ -2039,6 +2085,10 @@
      "quest": 2520
     },
     {
+     "op": "turnin",
+     "quest": 6344
+    },
+    {
      "op": "accept",
      "quest": 6341
     },
@@ -2060,15 +2110,15 @@
     },
     {
      "op": "accept",
-     "quest": 1138
-    },
-    {
-     "op": "accept",
      "quest": 947
     },
     {
      "op": "accept",
      "quest": 98025
+    },
+    {
+     "op": "accept",
+     "quest": 1138
     },
     {
      "op": "accept",
@@ -2121,6 +2171,10 @@
      "quest": 4681
     },
     {
+     "op": "accept",
+     "quest": 963
+    },
+    {
      "objective": 1,
      "op": "complete",
      "quest": 1001
@@ -2212,13 +2266,18 @@
      "quest": 2178
     },
     {
+     "op": "turnin",
+     "quest": 982
+    },
+    {
+     "objective": 1,
+     "op": "complete",
+     "quest": 963
+    },
+    {
      "objective": 1,
      "op": "complete",
      "quest": 958
-    },
-    {
-     "op": "accept",
-     "quest": 4722
     },
     {
      "op": "accept",
@@ -2237,6 +2296,10 @@
     {
      "op": "turnin",
      "quest": 953
+    },
+    {
+     "op": "accept",
+     "quest": 4722
     },
     {
      "objective": 1,
@@ -2263,6 +2326,10 @@
     {
      "op": "turnin",
      "quest": 958
+    },
+    {
+     "op": "turnin",
+     "quest": 963
     },
     {
      "op": "accept",
@@ -2312,10 +2379,6 @@
     {
      "op": "turnin",
      "quest": 957
-    },
-    {
-     "op": "turnin",
-     "quest": 982
     },
     {
      "op": "turnin",
@@ -2406,13 +2469,13 @@
     {
      "level": 20,
      "op": "level",
-     "totalXP": 167294
+     "totalXP": 167220
     }
    ],
    "inRoute": false,
    "level": 15,
    "minLevel": 10,
-   "minutes": 1.2,
+   "minutes": 1.4,
    "name": "Stars of Elune",
    "possible": true,
    "quest": 5627,
@@ -2522,6 +2585,10 @@
     },
     {
      "op": "accept",
+     "quest": 96630
+    },
+    {
+     "op": "accept",
      "quest": 928
     },
     {
@@ -2529,7 +2596,7 @@
      "quest": 3119
     },
     {
-     "op": "accept",
+     "op": "turnin",
      "quest": 96630
     },
     {
@@ -2537,12 +2604,14 @@
      "quest": 96606
     },
     {
-     "op": "turnin",
-     "quest": 96630
+     "objective": 1,
+     "op": "complete",
+     "quest": 96606
     },
     {
-     "op": "accept",
-     "quest": 488
+     "objective": 2,
+     "op": "complete",
+     "quest": 96606
     },
     {
      "op": "accept",
@@ -2566,17 +2635,11 @@
     },
     {
      "op": "accept",
+     "quest": 4161
+    },
+    {
+     "op": "accept",
      "quest": 929
-    },
-    {
-     "objective": 1,
-     "op": "complete",
-     "quest": 96606
-    },
-    {
-     "objective": 2,
-     "op": "complete",
-     "quest": 96606
     },
     {
      "op": "turnin",
@@ -2584,15 +2647,20 @@
     },
     {
      "op": "accept",
-     "quest": 4161
+     "quest": 488
     },
     {
-     "objective": 1,
+     "objective": 3,
      "op": "complete",
-     "quest": 87288
+     "quest": 488
     },
     {
      "objective": 2,
+     "op": "complete",
+     "quest": 488
+    },
+    {
+     "objective": 1,
      "op": "complete",
      "quest": 488
     },
@@ -2638,11 +2706,6 @@
      "objective": 1,
      "op": "complete",
      "quest": 929
-    },
-    {
-     "objective": 3,
-     "op": "complete",
-     "quest": 488
     },
     {
      "op": "turnin",
@@ -2731,10 +2794,6 @@
      "quest": 938
     },
     {
-     "op": "turnin",
-     "quest": 938
-    },
-    {
      "op": "accept",
      "quest": 937
     },
@@ -2750,6 +2809,10 @@
     {
      "op": "accept",
      "quest": 98392
+    },
+    {
+     "op": "turnin",
+     "quest": 938
     },
     {
      "objective": 1,
@@ -2771,7 +2834,7 @@
     {
      "level": 15,
      "op": "level",
-     "totalXP": 78516
+     "totalXP": 78412
     },
     {
      "op": "accept",
@@ -2801,6 +2864,10 @@
     {
      "op": "turnin",
      "quest": 930
+    },
+    {
+     "op": "accept",
+     "quest": 6344
     },
     {
      "op": "turnin",
@@ -2832,6 +2899,10 @@
      "quest": 2520
     },
     {
+     "op": "turnin",
+     "quest": 6344
+    },
+    {
      "op": "accept",
      "quest": 6341
     },
@@ -2853,15 +2924,15 @@
     },
     {
      "op": "accept",
-     "quest": 1138
-    },
-    {
-     "op": "accept",
      "quest": 947
     },
     {
      "op": "accept",
      "quest": 98025
+    },
+    {
+     "op": "accept",
+     "quest": 1138
     },
     {
      "op": "turnin",
@@ -2978,6 +3049,10 @@
      "quest": 4681
     },
     {
+     "op": "accept",
+     "quest": 963
+    },
+    {
      "objective": 1,
      "op": "complete",
      "quest": 1001
@@ -3069,13 +3144,18 @@
      "quest": 2178
     },
     {
+     "op": "turnin",
+     "quest": 982
+    },
+    {
+     "objective": 1,
+     "op": "complete",
+     "quest": 963
+    },
+    {
      "objective": 1,
      "op": "complete",
      "quest": 958
-    },
-    {
-     "op": "accept",
-     "quest": 4722
     },
     {
      "op": "accept",
@@ -3094,6 +3174,10 @@
     {
      "op": "turnin",
      "quest": 953
+    },
+    {
+     "op": "accept",
+     "quest": 4722
     },
     {
      "objective": 1,
@@ -3120,6 +3204,10 @@
     {
      "op": "turnin",
      "quest": 958
+    },
+    {
+     "op": "turnin",
+     "quest": 963
     },
     {
      "op": "accept",
@@ -3169,10 +3257,6 @@
     {
      "op": "turnin",
      "quest": 957
-    },
-    {
-     "op": "turnin",
-     "quest": 982
     },
     {
      "op": "turnin",
@@ -3263,13 +3347,13 @@
     {
      "level": 20,
      "op": "level",
-     "totalXP": 167294
+     "totalXP": 167220
     }
    ],
    "inRoute": false,
    "level": 16,
    "minLevel": 14,
-   "minutes": 90.4,
+   "minutes": 97.8,
    "name": "This Must Be The Place",
    "possible": true,
    "quest": 79976,
@@ -3388,6 +3472,10 @@
   },
   {
    "op": "accept",
+   "quest": 96630
+  },
+  {
+   "op": "accept",
    "quest": 928
   },
   {
@@ -3395,7 +3483,7 @@
    "quest": 3119
   },
   {
-   "op": "accept",
+   "op": "turnin",
    "quest": 96630
   },
   {
@@ -3403,12 +3491,14 @@
    "quest": 96606
   },
   {
-   "op": "turnin",
-   "quest": 96630
+   "objective": 1,
+   "op": "complete",
+   "quest": 96606
   },
   {
-   "op": "accept",
-   "quest": 488
+   "objective": 2,
+   "op": "complete",
+   "quest": 96606
   },
   {
    "op": "accept",
@@ -3432,17 +3522,11 @@
   },
   {
    "op": "accept",
+   "quest": 4161
+  },
+  {
+   "op": "accept",
    "quest": 929
-  },
-  {
-   "objective": 1,
-   "op": "complete",
-   "quest": 96606
-  },
-  {
-   "objective": 2,
-   "op": "complete",
-   "quest": 96606
   },
   {
    "op": "turnin",
@@ -3450,15 +3534,20 @@
   },
   {
    "op": "accept",
-   "quest": 4161
+   "quest": 488
   },
   {
-   "objective": 1,
+   "objective": 3,
    "op": "complete",
-   "quest": 87288
+   "quest": 488
   },
   {
    "objective": 2,
+   "op": "complete",
+   "quest": 488
+  },
+  {
+   "objective": 1,
    "op": "complete",
    "quest": 488
   },
@@ -3504,11 +3593,6 @@
    "objective": 1,
    "op": "complete",
    "quest": 929
-  },
-  {
-   "objective": 3,
-   "op": "complete",
-   "quest": 488
   },
   {
    "op": "turnin",
@@ -3597,10 +3681,6 @@
    "quest": 938
   },
   {
-   "op": "turnin",
-   "quest": 938
-  },
-  {
    "op": "accept",
    "quest": 937
   },
@@ -3616,6 +3696,10 @@
   {
    "op": "accept",
    "quest": 98392
+  },
+  {
+   "op": "turnin",
+   "quest": 938
   },
   {
    "objective": 1,
@@ -3637,7 +3721,7 @@
   {
    "level": 15,
    "op": "level",
-   "totalXP": 78516
+   "totalXP": 78412
   },
   {
    "objective": 1,
@@ -3659,6 +3743,10 @@
   {
    "op": "turnin",
    "quest": 930
+  },
+  {
+   "op": "accept",
+   "quest": 6344
   },
   {
    "op": "turnin",
@@ -3690,6 +3778,10 @@
    "quest": 2520
   },
   {
+   "op": "turnin",
+   "quest": 6344
+  },
+  {
    "op": "accept",
    "quest": 6341
   },
@@ -3711,15 +3803,15 @@
   },
   {
    "op": "accept",
-   "quest": 1138
-  },
-  {
-   "op": "accept",
    "quest": 947
   },
   {
    "op": "accept",
    "quest": 98025
+  },
+  {
+   "op": "accept",
+   "quest": 1138
   },
   {
    "op": "accept",
@@ -3772,6 +3864,10 @@
    "quest": 4681
   },
   {
+   "op": "accept",
+   "quest": 963
+  },
+  {
    "objective": 1,
    "op": "complete",
    "quest": 1001
@@ -3863,13 +3959,18 @@
    "quest": 2178
   },
   {
+   "op": "turnin",
+   "quest": 982
+  },
+  {
+   "objective": 1,
+   "op": "complete",
+   "quest": 963
+  },
+  {
    "objective": 1,
    "op": "complete",
    "quest": 958
-  },
-  {
-   "op": "accept",
-   "quest": 4722
   },
   {
    "op": "accept",
@@ -3888,6 +3989,10 @@
   {
    "op": "turnin",
    "quest": 953
+  },
+  {
+   "op": "accept",
+   "quest": 4722
   },
   {
    "objective": 1,
@@ -3914,6 +4019,10 @@
   {
    "op": "turnin",
    "quest": 958
+  },
+  {
+   "op": "turnin",
+   "quest": 963
   },
   {
    "op": "accept",
@@ -3963,10 +4072,6 @@
   {
    "op": "turnin",
    "quest": 957
-  },
-  {
-   "op": "turnin",
-   "quest": 982
   },
   {
    "op": "turnin",
@@ -4057,13 +4162,13 @@
   {
    "level": 20,
    "op": "level",
-   "totalXP": 167294
+   "totalXP": 167220
   }
  ],
  "finalModelReplayVerified": true,
- "finalXP": 167294,
+ "finalXP": 167220,
  "hours": {
-  "optimized": 13.810416666666667
+  "optimized": 13.780583333333333
  },
  "key": "nightelf-priest",
  "killProfile": "Engine priest smite_testing (gear starter weapon, talents none; outside the table: default (uncalibrated) scaled to the table's edge)",
@@ -4078,12 +4183,12 @@
   "professionLevel": 1,
   "wands": true
  },
- "quests": 67,
+ "quests": 69,
  "replayVerified": true,
  "requiredClassGoals": [
   3119
  ],
- "resumedAndReverified": true,
+ "resumedAndReverified": false,
  "runs": [
   "wailing-caverns",
   "ruins-of-lordaeron"
@@ -4091,17 +4196,17 @@
  "scenario": "dungeons_auto",
  "schema": "foreverroutes.route.v1",
  "search": {
-  "BestSeconds": 49717.5,
+  "BestSeconds": 49610.1,
   "Better": [
-   2,
-   0,
-   0,
-   0,
-   0,
-   0,
-   0,
-   0,
    1,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   3,
    0,
    0
   ],
@@ -4110,21 +4215,21 @@
    {
     "candidateFound": true,
     "keys": [],
-    "seconds": 55354.2
+    "seconds": 55476.5
    },
    {
     "candidateFound": true,
     "keys": [
      "the-hall-of-thanes"
     ],
-    "seconds": 55156.6
+    "seconds": 55221.6
    },
    {
     "candidateFound": true,
     "keys": [
      "wailing-caverns"
     ],
-    "seconds": 52844.7
+    "seconds": 52972
    },
    {
     "candidateFound": true,
@@ -4132,14 +4237,14 @@
      "the-hall-of-thanes",
      "wailing-caverns"
     ],
-    "seconds": 53227.4
+    "seconds": 53306.8
    },
    {
     "candidateFound": true,
     "keys": [
      "ruins-of-lordaeron"
     ],
-    "seconds": 52849.9
+    "seconds": 53140.4
    },
    {
     "candidateFound": true,
@@ -4147,7 +4252,7 @@
      "the-hall-of-thanes",
      "ruins-of-lordaeron"
     ],
-    "seconds": 52331.2
+    "seconds": 52167.5
    },
    {
     "candidateFound": true,
@@ -4155,7 +4260,7 @@
      "wailing-caverns",
      "ruins-of-lordaeron"
     ],
-    "seconds": 49735.6
+    "seconds": 49682.1
    },
    {
     "candidateFound": true,
@@ -4164,14 +4269,14 @@
      "wailing-caverns",
      "ruins-of-lordaeron"
     ],
-    "seconds": 50300.3
+    "seconds": 50773.6
    },
    {
     "candidateFound": true,
     "keys": [
      "deadmines"
     ],
-    "seconds": 54359.1
+    "seconds": 54235.3
    },
    {
     "candidateFound": true,
@@ -4179,7 +4284,7 @@
      "the-hall-of-thanes",
      "deadmines"
     ],
-    "seconds": 54549.2
+    "seconds": 54308.4
    },
    {
     "candidateFound": true,
@@ -4187,7 +4292,7 @@
      "wailing-caverns",
      "deadmines"
     ],
-    "seconds": 53039.3
+    "seconds": 53025.7
    },
    {
     "candidateFound": true,
@@ -4196,7 +4301,7 @@
      "wailing-caverns",
      "deadmines"
     ],
-    "seconds": 52998.3
+    "seconds": 53077.6
    },
    {
     "candidateFound": true,
@@ -4204,7 +4309,7 @@
      "ruins-of-lordaeron",
      "deadmines"
     ],
-    "seconds": 50983.6
+    "seconds": 50903.3
    },
    {
     "candidateFound": true,
@@ -4213,7 +4318,7 @@
      "ruins-of-lordaeron",
      "deadmines"
     ],
-    "seconds": 50283.2
+    "seconds": 50274.6
    },
    {
     "candidateFound": true,
@@ -4222,7 +4327,7 @@
      "ruins-of-lordaeron",
      "deadmines"
     ],
-    "seconds": 51466.2
+    "seconds": 51831.5
    },
    {
     "candidateFound": true,
@@ -4232,7 +4337,7 @@
      "ruins-of-lordaeron",
      "deadmines"
     ],
-    "seconds": 55158.7
+    "seconds": 55700.7
    }
   ],
   "DungeonCombinationsAllowed": 16,
@@ -4240,15 +4345,15 @@
   "DungeonCombinationsTotal": 16,
   "DungeonEnumerationComplete": true,
   "Kept": [
-   9,
+   4,
+   1,
+   0,
+   1,
    0,
    0,
    0,
-   0,
-   0,
-   0,
-   16,
-   13,
+   4,
+   10,
    1,
    18
   ],
@@ -4256,22 +4361,22 @@
   "Restarts": 0,
   "SeedsEvaluated": 13,
   "Walks": [
-   39,
-   47,
-   54,
+   30,
    48,
-   3,
-   25,
+   29,
+   23,
+   7,
+   20,
    0,
-   16,
-   73,
-   167,
-   64
+   4,
+   51,
+   100,
+   51
   ]
  },
- "searchAttempts": 0,
- "searchSeconds": 0.39840254,
- "seconds": 49717.5,
+ "searchAttempts": 1,
+ "searchSeconds": 34.208020039,
+ "seconds": 49610.1,
  "skipped": {},
  "sleepSteps": 0,
  "sleepingBagModel": {
@@ -4283,7 +4388,7 @@
   "stackSeconds": 60
  },
  "target": 20,
- "wandDetour": 900,
+ "wandDetour": 60,
  "wandSteps": 1,
  "winner": "timeline",
  "license": "CC-BY-NC-SA-4.0"
