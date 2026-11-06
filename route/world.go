@@ -74,6 +74,7 @@ type World struct {
 	zoneCache                    *sync.Map // zoneOf by 25-yard cell (zones.go)
 	anchorOnce                   sync.Once
 	liveGoals                    map[int]bool // quests of the goals switched on in the addon (live_stages.go)
+	liveGoalChains               [][]int
 	zoneAnchors                  []zoneAnchor
 	preparation                  PreparationPlan
 	feedback                     *CombatFeedback

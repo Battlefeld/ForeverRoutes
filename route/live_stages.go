@@ -2,6 +2,7 @@ package route
 
 import (
 	"math"
+	"slices"
 	"sort"
 	"strings"
 	"sync"
@@ -57,6 +58,7 @@ type stageSearch struct {
 	s0       *State
 	po       PlanOptions
 	deadline time.Time
+	home     string // the zone the plan starts in
 	stopAt   float64
 	cap      int
 }
@@ -66,7 +68,8 @@ type stageSearch struct {
 func (w *World) PlanStages(s *State, po PlanOptions, budget time.Duration) (*Result, []Stage) {
 	po = po.withDefaults()
 	ss := &stageSearch{w: w, s0: s, po: po, deadline: time.Now().Add(budget), stopAt: s.Time + StageHorizon, cap: min(po.TargetLevel, w.Level(s)+stageLevels)}
-	best := ss.run(s.clone(), nil, w.zoneOf(s.Pos), stageDepth, true)
+	ss.home = w.zoneOf(s.Pos)
+	best := ss.run(s.clone(), nil, ss.home, stageDepth, true, false)
 	if best == nil || len(best.acts) == 0 {
 		return nil, nil
 	}
@@ -81,13 +84,10 @@ func (ss *stageSearch) rate(r *stageRun) float64 {
 	if r == nil || r.end.Time <= ss.s0.Time {
 		return math.Inf(-1)
 	}
-	v := float64(r.end.XP - ss.s0.XP)
-	for _, a := range r.acts {
-		if a.Op == "turnin" && ss.w.liveGoals[a.Quest] {
-			v += goalBonus // a goal switched on counts in the whole stretch too, not only in the next decision
-		}
-	}
-	return v / (r.end.Time - ss.s0.Time)
+	// a goal switched on is an obligation: what of it is left at the end of the run still has to be walked, so it
+	// counts as time. Done now or later then costs the same unless the run does it on its way (cheaper), and the
+	// goal is neither rushed (inside the horizon) nor pushed past it.
+	return float64(r.end.XP-ss.s0.XP) / (r.end.Time - ss.s0.Time + goalLater*ss.w.goalLeft(r.end))
 }
 
 func (ss *stageSearch) done(s *State) bool {
@@ -96,7 +96,7 @@ func (ss *stageSearch) done(s *State) bool {
 
 // run plays on from s in zone: the zone's best block while it holds one worth more than grinding; at a point of
 // leaving (and at the start) the best few zones to go to are each played out and the best whole run is kept.
-func (ss *stageSearch) run(s *State, acts []Action, zone string, depth int, root bool) *stageRun {
+func (ss *stageSearch) run(s *State, acts []Action, zone string, depth int, root, homeDone bool) *stageRun {
 	w := ss.w
 	for steps := 0; steps < 400 && !ss.done(s); steps++ {
 		ss.sleep(s, &acts)
@@ -104,7 +104,11 @@ func (ss *stageSearch) run(s *State, acts []Action, zone string, depth int, root
 		if len(options) == 0 {
 			break
 		}
-		ss.favourGoals(options)
+		options = ss.readyDungeons(s, options)
+		if !homeDone && !ss.w.goalBegun(s) {
+			options = withoutGoals(ss.w, options) // goals wait until the start zone is worked off (below)
+		}
+		ss.favourGoals(s, options)
 		sort.SliceStable(options, func(a, b int) bool { return options[a].score < options[b].score })
 		// the best block that stays in the zone, and the best block into each other zone
 		var here *macro
@@ -125,7 +129,29 @@ func (ss *stageSearch) run(s *State, acts []Action, zone string, depth int, root
 			}
 		}
 		// worth staying: a block here brings more than grinding (grinding itself scores zero)
-		stay := here != nil && (here.score < 0 || here.kind == "grind" && len(zones) == 0)
+		// worth staying: the zone's best block brings more per second than grinding here (the planner's scores measure
+		// against the best quests anywhere, which would call a zone done as soon as something far pays more)
+		// worth staying: a block of the zone brings more per second than grinding here and not much less than the
+		// best block elsewhere (the planner's scores measure against the best quests anywhere, which calls a zone done
+		// as soon as anything far pays more; plain rates keep a zone while it is good, not only while it is best)
+		awayRate := 0.0
+		for _, m := range away {
+			awayRate = math.Max(awayRate, ss.rateOf(s, m, rateSpan))
+		}
+		stay := here != nil && here.kind == "grind" && len(zones) == 0
+		if here != nil && !stay {
+			for i := range options {
+				m := &options[i]
+				if m.kind == "grind" {
+					continue
+				}
+				if stays, _ := w.macroZone(m, zone); stays && ss.beatsGrinding(s, m) && ss.rateOf(s, m, 0) >= stayShare*awayRate {
+					here, stay = m, true
+					break
+				}
+			}
+		}
+		homeDone = homeDone || zone == ss.home && !stay
 		if !root && stay || depth <= 0 || time.Now().After(ss.deadline) || len(zones) == 0 {
 			next := here
 			if !stay || next == nil {
@@ -154,6 +180,18 @@ func (ss *stageSearch) run(s *State, acts []Action, zone string, depth int, root
 			}
 			cands = append(cands, cand{away[z], z})
 		}
+		// a goal that needs its own trip waits until the zone the plan starts in is worked off: the player finishes
+		// what is around first, then sets out
+		if g := w.goalMacro(options); g != nil && homeDone {
+			_, end := w.macroZone(g, zone)
+			dup := false
+			for _, c := range cands {
+				dup = dup || c.m == g
+			}
+			if !dup {
+				cands = append(cands, cand{g, end})
+			}
+		}
 		results := make([]*stageRun, len(cands))
 		var wg sync.WaitGroup
 		for i, c := range cands {
@@ -161,7 +199,7 @@ func (ss *stageSearch) run(s *State, acts []Action, zone string, depth int, root
 			go func(i int, c cand) {
 				defer wg.Done()
 				a := append(append([]Action(nil), acts...), c.m.actions...)
-				results[i] = ss.run(c.m.state, a, c.zone, depth-1, false)
+				results[i] = ss.run(c.m.state, a, c.zone, depth-1, false, homeDone)
 			}(i, c)
 		}
 		wg.Wait()
@@ -273,28 +311,78 @@ func (r *Result) Head(seconds float64, turnins int) *Result {
 
 // goalBonus: what a quest of a goal switched on in the addon (the sleeping bag chain, a class chain) is worth beyond
 // its XP to the stages: the player wants the goal, the run takes its quests along where they lie.
-const goalBonus = 10000.0
+const goalBonus = 3000.0
 
-// SetLiveGoals names the quests of the goals switched on in the addon (their whole chains).
-func (w *World) SetLiveGoals(quests []int) {
-	w.liveGoals = map[int]bool{}
-	for _, id := range quests {
-		w.liveGoals[id] = true
+// goalLater: what is left of a goal at the end of a run is charged a bit more than its bare walk (the bonus it would
+// have brought meanwhile, and a later trip may not combine with anything), so a goal is done once it is on the way,
+// not put off at every new plan.
+const goalLater = 1.0
+
+// SetLiveGoals names the goals switched on in the addon: each goal's chain in the order it is played.
+func (w *World) SetLiveGoals(chains [][]int) {
+	w.liveGoals, w.liveGoalChains = map[int]bool{}, nil
+	for _, c := range chains {
+		for _, id := range c {
+			w.liveGoals[id] = true
+		}
+		w.liveGoalChains = append(w.liveGoalChains, c)
 	}
 }
 
-// favourGoals lowers the score of blocks that hand in quests of the goals switched on.
-func (ss *stageSearch) favourGoals(options []macro) {
-	if len(ss.w.liveGoals) == 0 {
-		return
-	}
-	for i := range options {
-		for _, a := range options[i].actions {
-			if a.Op == "turnin" && ss.w.liveGoals[a.Quest] {
-				options[i].score -= goalBonus
+// favourGoals: a chain once begun is followed on (its next step before other blocks of the same worth); a chain not
+// begun is chosen at a point of leaving (run), never by the bonus alone.
+func (ss *stageSearch) favourGoals(s *State, options []macro) {
+	for _, chain := range ss.w.liveGoalChains {
+		begun, left := false, false
+		for _, id := range chain {
+			if q := ss.w.ByID[id]; q != nil {
+				begun = begun || s.Status[q.Index] != notTaken
+				left = left || s.Status[q.Index] != done
+			}
+		}
+		if !begun || !left {
+			continue
+		}
+		for i := range options {
+			for _, a := range options[i].actions {
+				if (a.Op == "turnin" || a.Op == "accept") && slices.Contains(chain, a.Quest) {
+					options[i].score -= goalBonus
+					break
+				}
 			}
 		}
 	}
+}
+
+// goalLeft: seconds of travel the goals switched on still need from s: from where s stands through every quest left,
+// in chain order (each giver, then its ender).
+func (w *World) goalLeft(s *State) float64 {
+	t, at := 0.0, s.Pos
+	for _, chain := range w.liveGoalChains {
+		for _, id := range chain {
+			q := w.ByID[id]
+			if q == nil || s.Status[q.Index] == done {
+				continue
+			}
+			if s.Status[q.Index] == notTaken {
+				t += w.TravelTime(s, at, q.StartPos)
+				at = q.StartPos
+			}
+			t += w.TravelTime(s, at, q.EndPos)
+			at = q.EndPos
+		}
+	}
+	return t
+}
+
+// goalMacro: the best block that takes or hands in a quest of a goal (a candidate at every point of leaving).
+func (w *World) goalMacro(options []macro) *macro {
+	for i := range options {
+		if w.forGoal(&options[i]) {
+			return &options[i]
+		}
+	}
+	return nil
 }
 
 // forGoal: the block takes or hands in a quest of a goal switched on.
@@ -306,3 +394,81 @@ func (w *World) forGoal(m *macro) bool {
 	}
 	return false
 }
+
+// GoalLeft is goalLeft for reports.
+func (w *World) GoalLeft(s *State) float64 { return w.goalLeft(s) }
+
+// dungeonFrom: the level from which the leveling guides send a group into a dungeon (the dataset's minimum is the
+// first level the game lets in). Live, a run is planned from here on: a fresh group of the lowest level wipes.
+var dungeonFrom = map[string]int{"ragefire-chasm": 14, "ruins-of-lordaeron": 17, "wailing-caverns": 18,
+	"deadmines": 18, "shadowfang-keep": 22, "blackfathom-deeps": 25, "razorfen-kraul": 29}
+
+// readyDungeons drops the dungeon runs the character is still below the guides' level for.
+func (ss *stageSearch) readyDungeons(s *State, options []macro) []macro {
+	l := ss.w.Level(s)
+	out := options[:0]
+	for _, m := range options {
+		ok := true
+		for _, a := range m.actions {
+			if a.Op == "dungeon" && l < dungeonFrom[a.Dungeon] {
+				ok = false
+			}
+		}
+		if ok {
+			out = append(out, m)
+		}
+	}
+	return out
+}
+
+// goalBegun: a goal's chain has a quest taken or done and quests left.
+func (w *World) goalBegun(s *State) bool {
+	for _, chain := range w.liveGoalChains {
+		begun, left := false, false
+		for _, id := range chain {
+			if q := w.ByID[id]; q != nil {
+				begun = begun || s.Status[q.Index] != notTaken
+				left = left || s.Status[q.Index] != done
+			}
+		}
+		if begun && left {
+			return true
+		}
+	}
+	return false
+}
+
+func withoutGoals(w *World, options []macro) []macro {
+	out := options[:0]
+	for _, m := range options {
+		if !w.forGoal(&m) {
+			out = append(out, m)
+		}
+	}
+	return out
+}
+
+// beatsGrinding: the block brings more XP per second (its value: XP and what it unlocks) than the best grind spot near.
+func (ss *stageSearch) beatsGrinding(s *State, m *macro) bool {
+	dt := m.state.Time - s.Time
+	if dt <= 0 {
+		return true
+	}
+	g := ss.w.grindMacro(s, ss.po.TargetLevel)
+	if g == nil {
+		return true
+	}
+	gdt := g.state.Time - s.Time
+	return gdt <= 0 || ss.w.value(s, m.state)/dt > ss.w.value(s, g.state)/gdt
+}
+
+// stayShare: a zone is kept while a block of it brings at least this share of the best block elsewhere per second.
+const stayShare = 0.7
+
+// rateOf: the value a block brings per second, over at least span seconds. Elsewhere a block is measured over
+// rateSpan: handing in finished quests takes a minute and pays a lot, which says nothing about how good a zone is.
+func (ss *stageSearch) rateOf(s *State, m *macro, span float64) float64 {
+	return ss.w.value(s, m.state) / math.Max(math.Max(span, 1), m.state.Time-s.Time)
+}
+
+const rateSpan = 900.0

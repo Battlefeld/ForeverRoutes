@@ -179,13 +179,15 @@ func cmdNext(args []string) error {
 			}
 		}
 		events = route.WithOptions(events, opts, qs)
-		var goals []int
-		for _, set := range qs {
-			for q := range set {
-				goals = append(goals, q)
+		var goals [][]int
+		for _, id := range req.Options {
+			for _, c := range file.Options {
+				if c.Quest == id && len(c.Events) > 0 {
+					goals = append(goals, c.Quests)
+				}
 			}
 		}
-		w.SetLiveGoals(goals) // the stages take these chains along too
+		w.SetLiveGoals(goals) // the stages take these chains along too, where they cost least
 	}
 	if fb := req.Live.CombatFeedback; fb != nil && fb.Source == "measured" {
 		fb.Character = w.Char // the bridge measures this character; it names race and class in the game's terms
@@ -195,6 +197,9 @@ func cmdNext(args []string) error {
 		return err
 	}
 	notes = append(notes, selectionNotes...)
+	if left := w.GoalLeft(s); left > 0 {
+		notes = append(notes, fmt.Sprintf("goals switched on: %.0f min of travel left", left/60))
+	}
 	if pf, pr := w.Pace(); pf != 1 || pr != 1 {
 		notes = append(notes, fmt.Sprintf("measured pace: fights x%.2f, rests x%.2f of the model", pf, pr))
 	}
