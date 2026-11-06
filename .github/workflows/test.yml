@@ -15,6 +15,7 @@ concurrency:
 
 permissions:
   contents: read
+  actions: write # starts the route recompute after a data fix (below)
 
 jobs:
   test:
@@ -22,6 +23,8 @@ jobs:
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # the shipped-route check compares when the dataset and the routes last changed
       - uses: actions/setup-go@v5
         with:
           go-version-file: go.mod
@@ -43,4 +46,30 @@ jobs:
           lua5.1 _dev/harness/quest_collector_test.lua
           python3 tools/package_addon.py --routes _dev/harness/addon_routes_fixture.lua --out /tmp/ForeverRoutes-addon.zip
       - name: test (includes the Orc Warlock / Human Mage baseline)
-        run: go test -timeout 25m ./...
+        run: go test -timeout 25m -skip 'TestShippedRoutesMatchCurrentModel' ./...
+      # The shipped routes must replay under the current data and model. After a data fix (the dataset changed since
+      # the routes were last computed) they cannot until the update workflow recomputes them: on main that recompute
+      # is started here (unless one is already queued or running) and the check counts as passed. Any other mismatch
+      # (planner code changed the routes) fails as before.
+      - name: shipped routes match the current model
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if go test -timeout 25m -run 'TestShippedRoutesMatchCurrentModel' -count=1 ./cmd/foreverroutes > /tmp/shipped.log 2>&1; then
+            echo "shipped routes replay"; exit 0
+          fi
+          data=$(git log -1 --format=%ct -- data/routes-data.json.gz)
+          routes=$(git log -1 --format=%ct -- data/routes)
+          if [ "$data" -gt "$routes" ] && [ "${{ github.ref }}" = "refs/heads/main" ]; then
+            stale=$(grep -c 'stale/invalid route' /tmp/shipped.log || true)
+            echo "::notice::$stale shipped routes wait for the recompute after the data fix"
+            if [ -z "$(gh run list --workflow update.yml --json status --jq '.[] | select(.status=="queued" or .status=="in_progress" or .status=="waiting" or .status=="pending") | .status')" ]; then
+              gh workflow run update.yml --ref main -f force=true
+              echo "::notice::route recompute started (only the affected scenarios)"
+            else
+              echo "route recompute already queued or running"
+            fi
+            exit 0
+          fi
+          grep -E -- '--- FAIL|_test\.go:[0-9]+:' /tmp/shipped.log | head -n 40
+          exit 1

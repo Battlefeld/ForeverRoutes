@@ -41,21 +41,30 @@ jobs:
     timeout-minutes: 40
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: actions/setup-go@v5
         with:
           go-version-file: go.mod
           cache-dependency-path: go.mod
       - name: checks
+        id: checks
         run: |
           test -z "$(gofmt -l .)" || { gofmt -l .; exit 1; }
           go vet ./...
-          if [ "${{ inputs.interim }}" = "true" ]; then
-            go test -timeout 30m -skip 'TestShippedRoutesMatchCurrentModel' ./...
-          else
-            go test -timeout 30m ./...
-          fi
+          go test -timeout 30m -skip 'TestShippedRoutesMatchCurrentModel' ./...
           python3 tools/check_refs.py
+          if [ "${{ inputs.interim }}" = "true" ]; then exit 0; fi
+          if go test -timeout 30m -run 'TestShippedRoutesMatchCurrentModel' -count=1 ./cmd/foreverroutes > /tmp/shipped.log 2>&1; then exit 0; fi
+          # after a data fix the routes wait for their recompute: the update workflow publishes then, not this run
+          if [ "$(git log -1 --format=%ct -- data/routes-data.json.gz)" -gt "$(git log -1 --format=%ct -- data/routes)" ]; then
+            echo "::notice::routes wait for the recompute after the data fix; the update workflow publishes"
+            echo "skip=true" >> "$GITHUB_OUTPUT"; exit 0
+          fi
+          grep -E -- '--- FAIL|_test\.go:[0-9]+:' /tmp/shipped.log | head -n 40
+          exit 1
       - name: publish
+        if: steps.checks.outputs.skip != 'true'
         env:
           GH_TOKEN: ${{ github.token }}
           FR_STALE_OK: ${{ inputs.interim && '1' || '' }}
