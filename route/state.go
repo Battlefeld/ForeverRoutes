@@ -24,6 +24,7 @@ type State struct {
 	BagStacks                   int
 	BagUntil, BagReady          float64
 	EquipmentRevision           string
+ ManaCurrent, ManaMaximum float64
 	Pos                         dataset.Point
 	XP                          int
 	Time                        float64
@@ -266,6 +267,26 @@ func (w *World) killSeconds(s *State, n *dataset.NPC, site Site, k float64) (t, 
 		per = w.mobTime(s, n, site)
 	} else {
 		per = 4 + site.Spacing*w.Opt.PathFactor/w.Opt.RunSpeed // using an object
+	}
+	// Prefer measured mana depletion when available. This is a conservative
+	// estimate: observed net mana use includes regeneration and is not spell cost.
+	// No guessed mana consumption is applied when observations are missing.
+	if n != nil && w.feedback != nil && w.feedback.Source == "measured" && k >= 1 {
+		for _, obs := range w.feedback.Kills {
+			if obs.NPC == n.ID && obs.PlayerLevel == w.Level(s) && obs.Samples >= 3 && obs.ManaNetPerKill > 0 && obs.ManaMax > 0 {
+				if s.ManaMaximum <= 0 { s.ManaMaximum = obs.ManaMax; s.ManaCurrent = obs.ManaMax }
+				if s.ManaMaximum == obs.ManaMax {
+					// The current mana estimate is retained between route actions.
+					needed := obs.ManaNetPerKill*k
+					if needed > s.ManaCurrent {
+						// No verified drink rate yet: retain the existing measured rest
+						// timing rather than inventing a drinking duration.
+						s.ManaCurrent = 0
+					} else { s.ManaCurrent -= needed }
+				}
+				break
+			}
+		}
 	}
 	t = per * k
 	if n == nil || site.Spawns <= 0 {
