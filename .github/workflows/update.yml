@@ -34,7 +34,11 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 330
     steps:
+      # the newest main, not the commit that queued the run: a run waits behind the one before it (concurrency), and
+      # its routes must build on what that one pushed
       - uses: actions/checkout@v4
+        with:
+          ref: main
       - uses: actions/setup-go@v5
         with:
           go-version-file: go.mod
@@ -166,7 +170,13 @@ jobs:
           for wait in 0 10 30 60 120; do
             sleep "$wait"
             if git push origin HEAD:main; then pushed=1; break; fi
-            git pull -q --rebase origin main || true
+            # main moved meanwhile: rebase onto it; when its routes changed too (another update or a fix), these
+            # routes are not the newest any more and are not published (the next run starts from main)
+            if ! git pull -q --rebase origin main; then
+              git rebase --abort || true
+              echo "::warning::main changed the same routes during this run; nothing published, the next run builds on main"
+              exit 0
+            fi
           done
           [ -n "${pushed:-}" ] || { echo "push failed after retries"; exit 1; }
           tools/release.sh /tmp/report.md
