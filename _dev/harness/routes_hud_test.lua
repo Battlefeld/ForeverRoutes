@@ -245,6 +245,18 @@ do
  FR.SetLive(plan({611,612,613,614}));FR.ReplanNow();check(FR.live[1].q==611,'replan now takes the newest plan at once')
  for q=601,614 do accepted[q]=nil end;FR.live=nil;FR.nextLive=nil
 end
+-- Options as check boxes; solo or with dungeons shown beside the title.
+do
+ FR.CharDB().dungeons=nil;FR.Show()
+ check(FR.frame.mode:GetText()=='Solo','solo shown')
+ FR.ToggleMenu();local m=ForeverRoutesOptions
+ local box;for _,c in ipairs(m.checks)do if c.label:GetText()=='Mit Dungeons'then box=c end end
+ check(box and not box.check:IsShown(),'dungeon box unticked')
+ M.script(box,'OnClick');check(FR.CharDB().dungeons==true and box.check:IsShown(),'ticking switches dungeons on')
+ check(FR.frame.mode:GetText():find('mit Dungeons',1,true),'with dungeons shown')
+ M.script(box,'OnClick');check(not FR.CharDB().dungeons,'and off again')
+ FR.ToggleMenu()
+end
 -- Exercise events/timers, option window, slash commands and saved visibility.
 FR.ToggleMenu();FR.ToggleMenu()
 for _,cmd in ipairs({'compact','scale 1.1','lock','position','arrow','show','hide','show'})do SlashCmdList.FOREVERROUTES(cmd)end

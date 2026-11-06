@@ -4,6 +4,7 @@ local UI=FR.UI
 local C=UI.COLOR
 local call=FR.Call
 local frame,menu,view
+local refresh -- FR.Refresh, set below
 local function label(parent,size,color)
  return UI.Text(parent,size or 12,color or C.text,'body','LEFT')
 end
@@ -20,6 +21,23 @@ local function button(parent,text,width,fn)
  local b=CreateFrame('Button',nil,parent);b:SetSize(width,28)
  UI.Style(b,'button');b.label=label(b,12);b.label:SetPoint('CENTER');b.label:SetText(text)
  b:SetScript('OnClick',fn);return b
+end
+-- A small icon button for the window head (no frame art: it sits inside the border, not on it).
+local function iconButton(parent,normal,pushed,fn)
+ local b=CreateFrame('Button',nil,parent);b:SetSize(20,20)
+ b:SetNormalTexture(normal);b:SetPushedTexture(pushed or normal)
+ b:SetHighlightTexture('Interface\\Buttons\\UI-Panel-MinimizeButton-Highlight','ADD')
+ b:SetScript('OnClick',fn);return b
+end
+-- A check box with its text: the whole line toggles. get() tells whether it is on, set(on) switches.
+local function checkbox(parent,text,get,set,width)
+ local b=CreateFrame('Button',nil,parent);b:SetSize(width or 300,22)
+ b.box=b:CreateTexture(nil,'ARTWORK');b.box:SetSize(20,20);b.box:SetPoint('LEFT',0,0);b.box:SetTexture('Interface\\Buttons\\UI-CheckBox-Up')
+ b.check=b:CreateTexture(nil,'OVERLAY');b.check:SetSize(20,20);b.check:SetPoint('LEFT',0,0);b.check:SetTexture('Interface\\Buttons\\UI-CheckBox-Check')
+ b.label=label(b,12,C.text);b.label:SetPoint('LEFT',b.box,'RIGHT',6,0);b.label:SetWidth((width or 300)-26);b.label:SetText(text)
+ b.get=get;b.refresh=function(self)self.check:SetShown(self.get()and true or false)end
+ b:SetScript('OnClick',function(self)set(not self.get());self:refresh();refresh()end)
+ b:refresh();return b
 end
 local function position(f,key,defaultPoint,dx,dy)
  f:ClearAllPoints();local p=FR.Config()[key]
@@ -75,7 +93,7 @@ local function dock(f)
 end
 local items,placeItems,questList
 local function hide()frame:Hide();if menu then menu:Hide()end;FR.Config().hidden=true;applyTracker();if items and call(InCombatLockdown)~=true then items:Hide()end end
-local function refresh()FR.Refresh()end
+refresh=function()FR.Refresh()end
 -- Icons: each step and hint shows what it is at a glance (the game's own icons).
 local ICON={
  a='Interface\\GossipFrame\\AvailableQuestIcon',t='Interface\\GossipFrame\\ActiveQuestIcon',
@@ -135,14 +153,17 @@ local function makeFrame()
  position(frame,'window','LEFT',40,120)
  if FR.Config().docked~=false and not FR.Config().window then frame.docked=dock(frame)end
  frame:SetScale(math.max(.65,math.min(1.5,tonumber(FR.Config().scale)or 1)))
- frame.crystal=CreateFrame('Button',nil,frame);frame.crystal:SetSize(28,28);frame.crystal:SetPoint('TOPLEFT',26,-34)
+ frame.crystal=CreateFrame('Button',nil,frame);frame.crystal:SetSize(26,26);frame.crystal:SetPoint('TOPLEFT',28,-38)
  frame.crystal.tex=frame.crystal:CreateTexture(nil,'ARTWORK');frame.crystal.tex:SetAllPoints()
  tip(frame.crystal,'ForeverCore','Blau: ForeverCore hat in dieser Sitzung geantwortet. Ohne Verbindung folgt ForeverRoutes der gespeicherten Route.')
  local title=UI.Text(frame,16,C.gold,'title');title:SetPoint('LEFT',frame.crystal,'RIGHT',8,0);title:SetText('ForeverRoutes')
- local close=button(frame,'X',26,hide);close:SetPoint('TOPRIGHT',-26,-35)
- local collapse=button(frame,'-',25,function()FR.Config().compact=not FR.Config().compact;refresh()end);collapse:SetPoint('RIGHT',close,'LEFT',-2,0)
+ -- solo or with dungeons, at a glance beside the title
+ frame.mode=UI.Text(frame,11,C.muted,'body');frame.mode:SetPoint('LEFT',title,'RIGHT',8,-1)
+ local close=iconButton(frame,'Interface\\Buttons\\UI-Panel-MinimizeButton-Up','Interface\\Buttons\\UI-Panel-MinimizeButton-Down',hide);close:SetSize(24,24);close:SetPoint('TOPRIGHT',-30,-39)
+ tip(close,'Schließen','Mit /fr wieder öffnen.')
+ local collapse=iconButton(frame,'Interface\\Buttons\\UI-MinusButton-Up','Interface\\Buttons\\UI-MinusButton-Down',function()FR.Config().compact=not FR.Config().compact;refresh()end);collapse:SetSize(16,16);collapse:SetPoint('RIGHT',close,'LEFT',-4,0)
  tip(collapse,'Kompaktansicht','Nur den aktuellen Schritt mit Fortschritt zeigen.')
- frame.status=label(frame,11,C.muted);frame.status:SetPoint('TOPLEFT',30,-70);frame.status:SetWidth(340)
+ frame.status=label(frame,11,C.muted);frame.status:SetPoint('TOPLEFT',30,-72);frame.status:SetWidth(340)
  frame.current=CreateFrame('Button',nil,frame);frame.current:SetPoint('TOPLEFT',30,-90);frame.current:SetWidth(340)
  frame.current.icon=frame.current:CreateTexture(nil,'ARTWORK');frame.current.icon:SetSize(26,26);frame.current.icon:SetPoint('TOPLEFT',0,2)
  frame.current.text=label(frame.current,15,C.gold);frame.current.text:SetPoint('TOPLEFT',32,0);frame.current.text:SetWidth(308);frame.current.text:SetWordWrap(true)
@@ -158,7 +179,7 @@ local function makeFrame()
  frame.back=button(frame,'Zurück',90,function()FR.Back();refresh()end);frame.back:SetPoint('RIGHT',frame.skip,'LEFT',-6,0)
   frame.confirm=button(frame,'Erledigt',90,function()FR.Confirm();refresh()end);frame.confirm:SetPoint('LEFT',frame.skip,'RIGHT',6,0)
  tip(frame.confirm,'Schritt erledigt','Markiert den Schritt als fertig. Bei einer Quest, die es im Spiel nicht gibt oder die du nicht annehmen kannst, nimmt es die ganze Quest aus der Planung. Zurück macht es rückgängig.')
- frame.options=button(frame,'...',32,function()FR.ToggleMenu()end);frame.options:SetPoint('RIGHT',collapse,'LEFT',-2,0)
+ frame.options=iconButton(frame,'Interface\\Icons\\INV_Misc_Gear_01',nil,function()FR.ToggleMenu()end);frame.options:SetSize(16,16);frame.options:SetPoint('RIGHT',collapse,'LEFT',-6,0)
  tip(frame.options,'Routenoptionen','Mit oder ohne Dungeons, Zusatzziele, Position.')
  for _,child in ipairs({frame.current,frame.back,frame.skip,frame.confirm,frame.options})do passDrag(child,frame)end
  for _,r in ipairs(frame.rows)do passDrag(r,frame)end;for _,r in ipairs(frame.nextRows)do passDrag(r,frame)end
@@ -166,38 +187,67 @@ local function makeFrame()
  tip(frame.skip,'Schritt überspringen','Mit Zurück den letzten übersprungenen Schritt wiederherstellen. Die Quest wird nicht als erledigt markiert.')
  return frame
 end
+-- Route options: switches as check boxes, the route's extra goals as check boxes with their cost, actions as buttons.
 local function optionMenu()
  if menu then return menu end
- menu=CreateFrame('Frame','ForeverRoutesOptions',UIParent);menu:SetSize(360,416);menu:SetFrameStrata('DIALOG');menu:SetClampedToScreen(true);UI.Style(menu,'panel')
- local title=label(menu,15,C.gold);title:SetPoint('TOPLEFT',24,-20);title:SetText('Routenoptionen')
- local close=button(menu,'X',25,function()menu:Hide()end);close:SetPoint('TOPRIGHT',-18,-15)
+ menu=CreateFrame('Frame','ForeverRoutesOptions',UIParent);menu:SetSize(380,500);menu:SetFrameStrata('DIALOG');menu:SetClampedToScreen(true);UI.Style(menu,'panel')
+ menu:SetMovable(true);menu:EnableMouse(true);menu:RegisterForDrag('LeftButton')
+ menu:SetScript('OnDragStart',menu.StartMoving);menu:SetScript('OnDragStop',menu.StopMovingOrSizing)
+ local title=UI.Text(menu,16,C.gold,'title');title:SetPoint('TOPLEFT',30,-40);title:SetText('Routenoptionen')
+ local close=iconButton(menu,'Interface\\Buttons\\UI-Panel-MinimizeButton-Up','Interface\\Buttons\\UI-Panel-MinimizeButton-Down',function()menu:Hide()end);close:SetSize(24,24);close:SetPoint('TOPRIGHT',-30,-37)
+ local y=70
+ local function head(text)local h=label(menu,11,C.muted);h:SetPoint('TOPLEFT',30,-y);h:SetText(text);y=y+18 end
+ menu.checks={}
+ local function check(text,get,set,hint)
+  local c=checkbox(menu,text,get,set,320);c:SetPoint('TOPLEFT',30,-y);y=y+24
+  if hint then tip(c,text,hint)end
+  menu.checks[#menu.checks+1]=c
+ end
+ head('ROUTE')
+ check('Mit Dungeons',function()return FR.CharDB().dungeons==true end,function(on)FR.SetDungeons(on)end,'Route mit Gruppen-Dungeons (Questreihen der Dungeons) statt nur solo.')
+ check('Blizzard-Questtracker anzeigen',function()return FR.Config().blizzTracker==true end,function()SlashCmdList.FOREVERROUTES('tracker')end,'Aus: dieses Fenster zeigt alle Quests selbst.')
+ check('Kompaktansicht',function()return FR.Config().compact==true end,function(on)FR.Config().compact=on or nil end,'Nur den aktuellen Schritt mit Fortschritt zeigen.')
+ check('Pfeil anzeigen',function()return not FR.Config().arrowHidden end,function(on)FR.Config().arrowHidden=not on or nil end)
+ check('Fenster festsetzen',function()return FR.Config().locked==true end,function(on)FR.Config().locked=on or nil end,'Das Fenster lässt sich nicht mehr verschieben.')
+ y=y+6;head('ZUSATZZIELE')
+ menu.optY=y
+ menu.scroll=CreateFrame('ScrollFrame',nil,menu,'UIPanelScrollFrameTemplate');menu.scroll:SetPoint('TOPLEFT',30,-y);menu.scroll:SetSize(300,140)
+ menu.child=CreateFrame('Frame',nil,menu.scroll);menu.child:SetSize(300,140);menu.scroll:SetScrollChild(menu.child);menu.rows={}
+ y=y+150;head('AKTIONEN')
  local actions={
-  {'Mit / ohne Dungeons',function()FR.SetDungeons(not FR.CharDB().dungeons);refresh()end},
-  {'Nebenaufgaben wieder anzeigen',function()FR.RestoreTasks();refresh()end},
-  {'Übersprungene wiederherstellen',function()FR.RestoreSkipped();refresh()end},
-  {'Position sperren / entsperren',function()FR.Config().locked=not FR.Config().locked end},
-  {'An den Platz des Questtrackers setzen',function()SlashCmdList.FOREVERROUTES('dock')end},
-  {'Blizzard-Questtracker zeigen / ausblenden',function()SlashCmdList.FOREVERROUTES('tracker')end},
-  {'Live-Plan jetzt neu berechnen',function()FR.ReplanNow();refresh()end},
+  {'Live-Plan neu berechnen',function()FR.ReplanNow()end},
+  {'Neben den Questtracker setzen',function()SlashCmdList.FOREVERROUTES('dock')end},
+  {'Übersprungene zurückholen',function()FR.RestoreSkipped()end},
+  {'Nebenaufgaben zeigen',function()FR.RestoreTasks()end},
  }
- for i,a in ipairs(actions)do local b=button(menu,a[1],305,a[2]);b:SetPoint('TOPLEFT',25,-45-(i-1)*28)end
- menu.scroll=CreateFrame('ScrollFrame',nil,menu,'UIPanelScrollFrameTemplate');menu.scroll:SetPoint('TOPLEFT',25,-251);menu.scroll:SetSize(283,136)
- menu.child=CreateFrame('Frame',nil,menu.scroll);menu.child:SetSize(280,136);menu.scroll:SetScrollChild(menu.child);menu.rows={}
+ for i,a in ipairs(actions)do
+  local b=button(menu,a[1],158,function()a[2]();refresh()end)
+  b:SetPoint('TOPLEFT',30+((i-1)%2)*164,-(y+math.floor((i-1)/2)*32))
+ end
+ menu:SetHeight(y+64+20)
  menu:Hide();return menu
 end
 function FR.ToggleMenu()
  local f=optionMenu();if f:IsShown()then f:Hide();return end
  f:ClearAllPoints();f:SetPoint('CENTER',UIParent,'CENTER',0,0)
+ for _,c in ipairs(f.checks)do c:refresh()end
  for _,r in ipairs(f.rows)do r:Hide()end
  local opts=FR.Options()
  for i,o in ipairs(opts)do
   local b=f.rows[i]
-  if not b then b=button(f.child,'',275,function(self)FR.SetOption(self.option);FR.ToggleMenu();FR.ToggleMenu();refresh()end);f.rows[i]=b end
-  b.option=i;b:ClearAllPoints();b:SetPoint('TOPLEFT',0,-(i-1)*30)
-  b.label:SetText(((FR.CharDB().opts or{})[o.id]and'[an] 'or'[aus] ')..o.n)
+  if not b then
+   b=checkbox(f.child,'',function()return false end,function()end,290)
+   b.cost=label(b,10,C.muted);b.cost:SetPoint('RIGHT',b,'RIGHT',0,0);b.cost:SetJustifyH('RIGHT')
+   f.rows[i]=b
+  end
+  b.get=function()return(FR.CharDB().opts or{})[o.id]==true end
+  b:SetScript('OnClick',function(self)FR.SetOption(i);self:refresh();refresh()end)
+  b:ClearAllPoints();b:SetPoint('TOPLEFT',0,-(i-1)*24);b.label:SetText(o.n);b.label:SetWidth(200)
+  b.cost:SetText(string.format('%+d Min',o.min or 0));b:refresh()
   tip(b,o.n,(o.nt or'')..string.format('\n%+d Min · Abschluss Stufe %d',o.min or 0,o.l or 0));b:Show()
  end
- f.child:SetHeight(math.max(136,#opts*30));f:Show()
+ f.none=f.none or label(f.child,11,C.muted);f.none:SetPoint('TOPLEFT',0,-2);f.none:SetText('Keine Zusatzziele für diese Route.');f.none:SetShown(#opts==0)
+ f.child:SetHeight(math.max(140,#opts*24));f:Show()
 end
 -- An independent, movable arrow with the same card/crystal art as the route HUD.
 local arrow
@@ -292,7 +342,10 @@ questList=function(y)
   r.q,r.objective,r.item,r.task=q,objective,nil,nil
   y=setRow(r,text,y,color,{indent=indent});return r
  end
- for _,quest in ipairs(list)do
+ -- the window stays at most about three quarters of the screen high: the quests that do not fit are counted
+ local limit=math.min(700,((UIParent.GetHeight and UIParent:GetHeight()or 800)/(frame:GetScale()or 1))*0.75)-120
+ for n,quest in ipairs(list)do
+  if y>limit then add(string.format('+ %d weitere Quests (Questlog: L)',#list-n+1),C.muted);break end
   local tag,color=role(quest.q)
   local link,icon,_,showDone=call(GetQuestLogSpecialItemInfo,quest.index)
   local done=FR.QuestDone(quest.q)
@@ -316,6 +369,8 @@ function FR.Refresh()
  -- the quest tracker comes up after login: dock as soon as it is there
  if not frame.docked and FR.Config().docked~=false and not FR.Config().window then frame.docked=dock(frame)end
  local connected=FR.Connected();UI.SetArt(frame.crystal.tex,connected and'crystal_on'or'crystal_off')
+ local group=FR.CharDB().dungeons==true or FR.CharDB().group==true
+ frame.mode:SetText(group and'|cffe8c070mit Dungeons|r'or'Solo')
  local mode=view.live and'Live geplant'or(view.kind=='rxp-fallback'and'Guide-Fallback'or'Gespeicherte Route')
  frame.status:SetText(view.paused and'Route pausiert · Dungeon'or string.format('%s · Schritt %d/%d',mode,math.min(view.index,view.total),view.total))
  if view.live and FR.liveBlock then frame.status:SetText(string.format('Live-Plan · Block: noch %d Schritte (%d Quests)',FR.BlockLeft(),FR.BlockQuests()))end
