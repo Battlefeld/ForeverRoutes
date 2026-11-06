@@ -488,12 +488,15 @@ func (w *World) hubMacro(s0 *State, h hub) *macro {
 	if !w.workLog(s, &acts, doable) {
 		return nil
 	}
-	// turn in, nearest first
+	// turn in, nearest first (live stages: only around the hub; a quest handed in far away waits for that trip)
 	for {
 		var next *Quest
 		bd := math.Inf(1)
 		for qi := range s.Prog {
 			q := w.Quests[qi]
+			if w.liveLocal && distance(q.EndPos, h.center) > h.radius+700 {
+				continue
+			}
 			if w.complete(s, q) {
 				if d := w.TravelTime(s, s.Pos, q.EndPos); d < bd {
 					next, bd = q, d

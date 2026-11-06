@@ -67,6 +67,7 @@ type stageSearch struct {
 // when nothing can be planned.
 func (w *World) PlanStages(s *State, po PlanOptions, budget time.Duration) (*Result, []Stage) {
 	po = po.withDefaults()
+	w.liveLocal = true // set once before the search; the world is only read concurrently after
 	ss := &stageSearch{w: w, s0: s, po: po, deadline: time.Now().Add(budget), stopAt: s.Time + StageHorizon, cap: min(po.TargetLevel, w.Level(s)+stageLevels)}
 	ss.home = w.zoneOf(s.Pos)
 	best := ss.run(s.clone(), nil, ss.home, stageDepth, true, false)
@@ -105,6 +106,9 @@ func (ss *stageSearch) run(s *State, acts []Action, zone string, depth int, root
 			break
 		}
 		options = ss.readyDungeons(s, withoutPickups(options))
+		if !homeDone {
+			options = ss.withoutErrandsAway(options, zone) // a message to deliver elsewhere waits for the trip there
+		}
 		if !homeDone && !ss.w.goalBegun(s) {
 			options = withoutGoals(ss.w, options) // goals wait until the start zone is worked off (below)
 		}
@@ -156,7 +160,7 @@ func (ss *stageSearch) run(s *State, acts []Action, zone string, depth int, root
 			}
 		}
 		homeDone = homeDone || zone == ss.home && !stay
-		if !root && stay || depth <= 0 || time.Now().After(ss.deadline) || len(zones) == 0 {
+		if stay || depth <= 0 || time.Now().After(ss.deadline) || len(zones) == 0 {
 			next := here
 			if !stay || next == nil {
 				next = &options[0]
@@ -551,4 +555,32 @@ func withoutPickups(options []macro) []macro {
 		}
 	}
 	return out
+}
+
+// withoutErrandsAway drops the blocks that only talk (deliver a message, hand in a finished quest) in another zone:
+// such a trip is made when the zone here is worked off, and the errands go along then (takeAlong, the hand-ins there).
+func (ss *stageSearch) withoutErrandsAway(options []macro, zone string) []macro {
+	out := options[:0]
+	for _, m := range options {
+		if stays, _ := ss.w.macroZone(&m, zone); stays || !errand(ss.w, &m) {
+			out = append(out, m)
+		}
+	}
+	return out
+}
+
+// errand: a block of hand-ins and quests without objectives only, no fighting or gathering.
+func errand(w *World, m *macro) bool {
+	for _, a := range m.actions {
+		switch a.Op {
+		case "turnin":
+		case "accept":
+			if q := w.ByID[a.Quest]; q == nil || len(q.Objectives) > 0 {
+				return false
+			}
+		default:
+			return false
+		}
+	}
+	return true
 }
