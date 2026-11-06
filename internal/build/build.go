@@ -366,6 +366,7 @@ func Build(in Inputs) (*dataset.Dataset, error) {
 	b.objects()
 	b.guideSpawns()
 	b.capitalNPCs()
+	b.applyNPCRanks()
 	b.skillQuests()
 	b.objectiveActions()
 	b.instantQuests()

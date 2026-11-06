@@ -217,6 +217,13 @@ func writeStep(b *strings.Builder, w *route.World, res *route.GuideResult, st ro
 	case st.Via == "teleport":
 		b.WriteString(`, v = "t"`)
 	}
+	if st.StartBy != nil {
+		// an item starts the quest: sk the creature to kill for it (sl its level, se elite), si the item
+		fmt.Fprintf(b, ", sk = %s, sl = %d, si = %d", luaStr(st.StartBy.Name), st.StartBy.Level, st.StartBy.Item)
+		if st.StartBy.Elite {
+			b.WriteString(", se = true")
+		}
+	}
 	if st.Bind != nil {
 		// the hearthstone is bound here: bn the innkeeper, bm bx by where, bu a later hearthstone trip comes back to it
 		fmt.Fprintf(b, ", bn = %s, bm = %d, bx = %.1f, by = %.1f", luaStr(st.Bind.Name), st.Bind.At.Map, st.Bind.At.X, st.Bind.At.Y)

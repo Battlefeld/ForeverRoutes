@@ -206,6 +206,15 @@ do
  GetItemCount,GetItemInfo,UnitBuff,GetNumSkillLines=oldCount,oldInfo,oldBuff,oldLines;C_Item.GetItemCount=oldC
  C_UnitAuras=nil;GetProfessions=nil;GetProfessionInfo=nil;UnitLevel=function()return 2 end;FR.CharDB().campLevel=nil
 end
+-- A quest an item starts reads as the kill it is.
+do
+ local st={op='a',q=96877,n="Halikor's Hoof",sk='Halikor',sl=12,se=true,si=275723,m=1,x=0,y=0}
+ local t=FR.Text(st)
+ check(t:find('Töten: Halikor',1,true)and t:find('Elite',1,true)and t:find('annehmen',1,true),'item-started accept reads as a kill: '..t)
+ check(FR.StepIcon(st):find('DualWield',1,true),'with the kill icon')
+ FR.SetLive({steps={{op='accept',quest=96877,name="Halikor's Hoof",at={m=1,x=0,y=0},startBy={npc=266852,name='Halikor',level=12,elite=true,item=275723}}}})
+ check(FR.live[1].sk=='Halikor'and FR.live[1].se,'live step carries the creature');FR.live=nil
+end
 -- Exercise events/timers, option window, slash commands and saved visibility.
 FR.ToggleMenu();FR.ToggleMenu()
 for _,cmd in ipairs({'compact','scale 1.1','lock','position','arrow','show','hide','show'})do SlashCmdList.FOREVERROUTES(cmd)end

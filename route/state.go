@@ -584,10 +584,12 @@ type Step struct {
 	// BindUsed: a later step travels by hearthstone to it, so the bind matters for the route.
 	Bind     *dataset.Node `json:"bind,omitempty"`
 	BindUsed bool          `json:"bindUsed,omitempty"`
-	Name     string        `json:"name"`
-	Time     float64       `json:"time"`
-	Level    int           `json:"level"`
-	XP       int           `json:"xp"`
+	// StartBy: an accept of a quest an item starts, with the creature to kill for that item
+	StartBy *StartBy `json:"startBy,omitempty"`
+	Name    string   `json:"name"`
+	Time    float64  `json:"time"`
+	Level   int      `json:"level"`
+	XP      int      `json:"xp"`
 }
 
 // Result of a replay.
@@ -626,7 +628,7 @@ func (w *World) replayFrom(s0 *State, actions []Action) (*Result, error) {
 		if err := w.Apply(s, a); err != nil {
 			return nil, fmt.Errorf("step %d (%s %d): %w", i+1, a.Op, a.Quest, err)
 		}
-		res.Steps = append(res.Steps, Step{Action: a, Via: s.via, ViaAt: s.viaAt, Bind: s.bound, Name: w.describe(a), Time: round1(s.Time - t0), Level: w.Level(s), XP: s.XP})
+		res.Steps = append(res.Steps, Step{Action: a, Via: s.via, ViaAt: s.viaAt, Bind: s.bound, StartBy: w.startBy(a), Name: w.describe(a), Time: round1(s.Time - t0), Level: w.Level(s), XP: s.XP})
 	}
 	markUsedBinds(res.Steps)
 	res.Deaths = s.Deathskips - d0
@@ -688,4 +690,44 @@ func markUsedBinds(steps []Step) {
 			last = i
 		}
 	}
+}
+
+// StartBy is what starts a quest that an item starts: the creature that drops the item, and the item.
+type StartBy struct {
+	NPC   int    `json:"npc,omitempty"`
+	Name  string `json:"name,omitempty"`
+	Level int    `json:"level,omitempty"`
+	Elite bool   `json:"elite,omitempty"`
+	Item  int    `json:"item,omitempty"`
+}
+
+// startBy: for the accept of a quest an item starts, the creature of the drop site the action goes to.
+func (w *World) startBy(a Action) *StartBy {
+	if a.Op != "accept" {
+		return nil
+	}
+	q := w.ByID[a.Quest]
+	if q == nil || len(q.StartSources) == 0 {
+		return nil
+	}
+	var src *Source
+	bd := math.Inf(1)
+	for i := range q.StartSources {
+		if q.StartSources[i].NPC == nil {
+			continue
+		}
+		if d := distance(q.StartSources[i].Site.Center, a.At); d < bd {
+			src, bd = &q.StartSources[i], d
+		}
+	}
+	if src == nil {
+		return nil
+	}
+	sb := &StartBy{NPC: src.NPC.ID, Name: src.NPC.Name, Level: src.NPC.MaxLevel, Elite: src.NPC.Rank == 1 || src.NPC.Rank == 2}
+	for _, r := range q.Start {
+		if r.Kind == "item" {
+			sb.Item = r.ID
+		}
+	}
+	return sb
 }

@@ -91,6 +91,7 @@ local ICON={
 function FR.StepIcon(step)
  if not step then return nil end
  if step.op=='w'then return ICON[step.k]or ICON.kill end
+ if step.op=='a'and step.sk then return ICON.kill end
  return ICON[step.op]or ICON.note
 end
 -- callout colors: a band behind the hint, the text in the same tone
