@@ -230,6 +230,21 @@ do
  check(FR.Advance().op=='a','a finished step does not hold the plan')
  FR.live=nil;FR.nearbyAccept=nil;accepted[501]=nil;objectives[501]=nil;pm=0
 end
+-- A live plan is played in blocks: a new plan waits until the block is nearly done or no longer fits.
+do
+ FR.live=nil;FR.nextLive=nil;FR.CharDB().skipQuests=nil
+ local function plan(ids)local st={};for _,q in ipairs(ids)do st[#st+1]={op='accept',quest=q,at={m=1,x=q,y=0}}end;return{steps=st}end
+ FR.SetLive(plan({601,602,603,604,605,606}))
+ FR.SetLive(plan({606,605,604,603,602,601}))
+ check(FR.Advance().q==601,'a new plan does not replace the block being played')
+ check(FR.BlockLeft()==6,'six steps left in the block')
+ accepted[601],accepted[602],accepted[603]=true,true,true;FR.CheckBlock()
+ check(FR.Advance().q==604,'block kept while more than two are left')
+ accepted[604]=true;FR.CheckBlock()
+ check(FR.live[1].q==605 and FR.live[2].q==606,'with two left the newest plan takes over (the step being done stays first)')
+ FR.SetLive(plan({611,612,613,614}));FR.ReplanNow();check(FR.live[1].q==611,'replan now takes the newest plan at once')
+ for q=601,614 do accepted[q]=nil end;FR.live=nil;FR.nextLive=nil
+end
 -- Exercise events/timers, option window, slash commands and saved visibility.
 FR.ToggleMenu();FR.ToggleMenu()
 for _,cmd in ipairs({'compact','scale 1.1','lock','position','arrow','show','hide','show'})do SlashCmdList.FOREVERROUTES(cmd)end

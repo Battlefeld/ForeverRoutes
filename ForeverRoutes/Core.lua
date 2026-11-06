@@ -385,7 +385,7 @@ function FR.Skip()
  local st,i=FR.Advance();local _,live=FR.Steps();local c=charDB();if not st then return end
  FR.undo={step=st,index=i,live=live,removed=live}
  if st.op=='a'then skipQuest(c,st.q,true)end
- if live then table.remove(FR.live,i)else c.skipped[i]=true;c.index=i+1 end
+ if live then table.remove(FR.live,i);if FR.liveBlock and i<=FR.liveBlock then FR.liveBlock=FR.liveBlock-1 end else c.skipped[i]=true;c.index=i+1 end
  return FR.Advance()
 end
 function FR.Back()
@@ -412,7 +412,7 @@ local function storedDungeon(name)
  return nil
 end
 function FR.SetLive(result)
- if type(result)~='table'or type(result.steps)~='table'then FR.live=nil;return end
+ if type(result)~='table'or type(result.steps)~='table'then FR.live=nil;FR.nextLive=nil;return end
  local out={}
  for _,s in ipairs(result.steps)do
   local at=type(s.at)=='table'and s.at or{}
@@ -432,6 +432,49 @@ function FR.SetLive(result)
   if st.op=='z'then st.it,st.cl=FR.LESSER_WAND,FR.CAMP_LEVEL end
   if st.op=='p'then st.cl=FR.CAMP_LEVEL end
  end
+ FR.nextLive=out
+ if FR.KeepBlock()then return end -- the block being played stays; this plan waits until it is (nearly) done
+ FR.AdoptLive(out)
+end
+
+-- A live plan is played in blocks: its first BLOCK steps stay as they are until BLOCK_LEFT of them are left, however
+-- often ForeverCore plans again meanwhile (after every bit of quest progress). Then the newest plan takes over, made
+-- from where the character is by then. A block that no longer fits (a quest of it left the log, a step is blocked)
+-- or "Live-Plan neu berechnen" lets the newest plan take over at once.
+FR.BLOCK,FR.BLOCK_LEFT=10,2
+function FR.BlockLeft()
+ if not FR.live then return 0 end
+ local n=0
+ for i=1,math.min(FR.liveBlock or 0,#FR.live)do if not FR.Done(FR.live[i])then n=n+1 end end
+ return n
+end
+local function blockFits()
+ local taking={}
+ for i=1,math.min(FR.liveBlock or 0,#FR.live)do
+  local s=FR.live[i]
+  if not FR.Done(s)then
+   if s.op=='a'and s.q then taking[s.q]=true end
+   if(s.op=='w'or s.op=='t')and s.q and not taking[s.q]and not FR.OnQuest(s.q)then return false end
+   if s.op=='a'and FR.Blocked and FR.Blocked(s)then return false end
+  end
+ end
+ return true
+end
+function FR.KeepBlock()
+ return FR.live~=nil and not FR.forceReplan and FR.BlockLeft()>FR.BLOCK_LEFT and blockFits()
+end
+-- Take the newest plan when the block is (nearly) done or no longer fits; called on every refresh.
+function FR.CheckBlock()
+ local nextPlan=FR.nextLive
+ if FR.live and nextPlan and nextPlan~=FR.live and not FR.KeepBlock()then FR.AdoptLive(nextPlan)end
+end
+function FR.ReplanNow()
+ FR.forceReplan=true
+ local r=ForeverCoreClient and ForeverCoreClient.Route
+ if r and r.Request then call(r.Request,false)end
+ FR.CheckBlock()
+end
+function FR.AdoptLive(out)
  -- Stay on the step being done: a new plan (one comes after every bit of quest progress) may put another step first,
  -- often an accept the character walks past. The current step stays first until it is done; an accept the new plan
  -- wants right here becomes a hint beside it (FR.nearbyAccept).
@@ -451,7 +494,8 @@ function FR.SetLive(result)
    end
   end
  end
- FR.live=out;FR.undo=nil;FR.pinned=nil
+ FR.live=out;FR.undo=nil;FR.pinned=nil;FR.forceReplan=nil;FR.nextLive=out
+ FR.liveBlock=math.min(FR.BLOCK,#out)
 end
 
 -- Wording.

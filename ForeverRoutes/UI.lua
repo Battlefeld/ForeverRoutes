@@ -168,7 +168,7 @@ local function makeFrame()
 end
 local function optionMenu()
  if menu then return menu end
- menu=CreateFrame('Frame','ForeverRoutesOptions',UIParent);menu:SetSize(360,388);menu:SetFrameStrata('DIALOG');menu:SetClampedToScreen(true);UI.Style(menu,'panel')
+ menu=CreateFrame('Frame','ForeverRoutesOptions',UIParent);menu:SetSize(360,416);menu:SetFrameStrata('DIALOG');menu:SetClampedToScreen(true);UI.Style(menu,'panel')
  local title=label(menu,15,C.gold);title:SetPoint('TOPLEFT',24,-20);title:SetText('Routenoptionen')
  local close=button(menu,'X',25,function()menu:Hide()end);close:SetPoint('TOPRIGHT',-18,-15)
  local actions={
@@ -178,9 +178,10 @@ local function optionMenu()
   {'Position sperren / entsperren',function()FR.Config().locked=not FR.Config().locked end},
   {'An den Platz des Questtrackers setzen',function()SlashCmdList.FOREVERROUTES('dock')end},
   {'Blizzard-Questtracker zeigen / ausblenden',function()SlashCmdList.FOREVERROUTES('tracker')end},
+  {'Live-Plan jetzt neu berechnen',function()FR.ReplanNow();refresh()end},
  }
  for i,a in ipairs(actions)do local b=button(menu,a[1],305,a[2]);b:SetPoint('TOPLEFT',25,-45-(i-1)*28)end
- menu.scroll=CreateFrame('ScrollFrame',nil,menu,'UIPanelScrollFrameTemplate');menu.scroll:SetPoint('TOPLEFT',25,-223);menu.scroll:SetSize(283,136)
+ menu.scroll=CreateFrame('ScrollFrame',nil,menu,'UIPanelScrollFrameTemplate');menu.scroll:SetPoint('TOPLEFT',25,-251);menu.scroll:SetSize(283,136)
  menu.child=CreateFrame('Frame',nil,menu.scroll);menu.child:SetSize(280,136);menu.scroll:SetScrollChild(menu.child);menu.rows={}
  menu:Hide();return menu
 end
@@ -309,7 +310,7 @@ questList=function(y)
  return y
 end
 function FR.Refresh()
- view=FR.TaskView();updateArrow(view.step)
+ FR.CheckBlock();view=FR.TaskView();updateArrow(view.step)
  -- hidden window: give the quests back to the game (also when it was hidden in combat)
  if not frame or not frame:IsShown()then if frame then applyTracker();placeItems()end;return view.step end
  -- the quest tracker comes up after login: dock as soon as it is there
@@ -317,6 +318,7 @@ function FR.Refresh()
  local connected=FR.Connected();UI.SetArt(frame.crystal.tex,connected and'crystal_on'or'crystal_off')
  local mode=view.live and'Live geplant'or(view.kind=='rxp-fallback'and'Guide-Fallback'or'Gespeicherte Route')
  frame.status:SetText(view.paused and'Route pausiert · Dungeon'or string.format('%s · Schritt %d/%d',mode,math.min(view.index,view.total),view.total))
+ if view.live and FR.liveBlock then frame.status:SetText(string.format('Live-Plan · Block: noch %d von %d Schritten',FR.BlockLeft(),FR.liveBlock))end
  if FR.dataStatus and (FR.dataStatus.status=='warning' or FR.dataStatus.status=='error') then frame.status:SetText(frame.status:GetText()..' · Datenprüfung ausstehend')end
  frame.current.text:SetText(view.text)
  local icon=FR.StepIcon(view.step);frame.current.icon:SetShown(icon~=nil);if icon then frame.current.icon:SetTexture(icon)end
@@ -400,6 +402,7 @@ SlashCmdList.FOREVERROUTES=function(msg)
  elseif msg=='arrow'then FR.Config().arrowHidden=not FR.Config().arrowHidden
  elseif msg:match('^scale%s+[%d%.]+$')then
   FR.Config().scale=math.max(.65,math.min(1.5,tonumber(msg:match('([%d%.]+)$'))or 1));if frame then frame:SetScale(FR.Config().scale)end
+ elseif msg=='neu'or msg=='replan'then FR.ReplanNow()
  elseif msg=='tracker'or msg=='questtracker'then FR.Config().blizzTracker=not FR.Config().blizzTracker or nil;FR.Config().window=nil;FR.Config().docked=true;if frame then frame.docked=dock(frame)end;applyTracker()
  elseif msg=='dock'or msg=='andocken'then FR.Config().window=nil;FR.Config().docked=true;if frame and not dock(frame)then position(frame,'window','LEFT',40,120)end
  elseif msg=='position'then FR.Config().window=nil;FR.Config().arrow=nil;if frame then position(frame,'window','LEFT',40,120)end;if arrow then position(arrow,'arrow','TOP',0,-110)end

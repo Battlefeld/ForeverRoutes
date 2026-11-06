@@ -52,16 +52,18 @@ func (w *World) ImproveLive(s *State, plan *Result, budget time.Duration) (*Resu
 	trial := make([]Action, end)
 	for improved := true; improved && time.Now().Before(deadline); {
 		improved = false
-		// move one step (and the run of steps at the same place after it) to another position
-		for i := 0; i < end && time.Now().Before(deadline); i++ {
-			for j := 0; j < end; j++ {
-				if j == i {
-					continue
-				}
-				moveTo(trial, best, i, j)
-				if c := cost(trial); c < bestCost-1 {
-					copy(best, trial)
-					bestCost, improved = c, true
+		// move one step, or a run of two or three (quests at the same place stay together), to another position
+		for n := 1; n <= 3; n++ {
+			for i := 0; i+n <= end && time.Now().Before(deadline); i++ {
+				for j := 0; j+n <= end; j++ {
+					if j == i {
+						continue
+					}
+					moveRun(trial, best, i, n, j)
+					if c := cost(trial); c < bestCost-1 {
+						copy(best, trial)
+						bestCost, improved = c, true
+					}
 				}
 			}
 		}
@@ -74,22 +76,12 @@ func (w *World) ImproveLive(s *State, plan *Result, budget time.Duration) (*Resu
 	return res, true
 }
 
-// moveTo writes src with the element at i moved to position j into dst.
-func moveTo(dst, src []Action, i, j int) {
-	a := src[i]
-	k := 0
-	for n := range src {
-		if n == i {
-			continue
-		}
-		if k == j {
-			dst[k] = a
-			k++
-		}
-		dst[k] = src[n]
-		k++
-	}
-	if k == j {
-		dst[k] = a
-	}
+// moveRun writes src with its n elements from i moved to start at position j (of the result) into dst.
+func moveRun(dst, src []Action, i, n, j int) {
+	rest := make([]Action, 0, len(src)-n)
+	rest = append(rest, src[:i]...)
+	rest = append(rest, src[i+n:]...)
+	k := copy(dst, rest[:j])
+	k += copy(dst[k:], src[i:i+n])
+	copy(dst[k:], rest[j:])
 }
