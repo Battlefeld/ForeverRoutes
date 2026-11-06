@@ -11,6 +11,10 @@ on:
         description: Rebuild even when no source changed
         type: boolean
         default: false
+      full:
+        description: Search every scenario again (default only the ones the change affects; the daily run always searches all)
+        type: boolean
+        default: false
       budget:
         description: Search budget per route scenario when the data changed (the routes are recomputed)
         default: 30s
@@ -104,6 +108,12 @@ jobs:
           # tolerant: a scenario that still fails after its retries is marked, not fatal; the repair step replaces
           # it with a verified route that keeps its options (or stops the update when it cannot, or when too many
           # scenarios need it: then something broke for everyone)
+          # started by hand without "full": the scenarios of the last run that still replay to the same time are kept,
+          # only the ones the change affects are searched again (minutes instead of hours)
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ "${{ inputs.full }}" != "true" ]; then
+            python3 tools/seed_roster_resume.py /tmp/roster
+            export FR_ROSTER_RESUME=1
+          fi
           FR_ROSTER_TOLERATE=1 FR_ROSTER_REBUILD=/tmp/roster FR_ROSTER_BUDGET="${{ inputs.budget || '30s' }}" \
             go test ./cmd/foreverroutes -run '^TestRebuildRoster$' -parallel 4 -count=1 -timeout 300m -v > /tmp/rebuild.log 2>&1 \
             || failed /tmp/rebuild.log
