@@ -91,7 +91,7 @@ local function dock(f)
  if replacing()then f:SetPoint('TOPRIGHT',t,'TOPRIGHT',0,0)else f:SetPoint('TOPRIGHT',t,'TOPLEFT',-14,0)end
  return true
 end
-local items,placeItems,questList
+local items,placeItems,questList,dungeonSection
 local function hide()frame:Hide();if menu then menu:Hide()end;FR.Config().hidden=true;applyTracker();if items and call(InCombatLockdown)~=true then items:Hide()end end
 refresh=function()FR.Refresh()end
 -- Icons: each step and hint shows what it is at a glance (the game's own icons).
@@ -139,7 +139,7 @@ local function setRow(r,text,y,color,opts)
  r.text:ClearAllPoints();r.text:SetPoint('TOPLEFT',x,opts.callout and -4 or -2);r.text:SetWidth(340-x)
  local tone=opts.callout and CALLOUT[opts.callout]
  if tone then r.bg:SetColorTexture(tone[1],tone[2],tone[3],tone[4]);r.bg:Show()else r.bg:Hide()end
- r.text:SetText(text);r.text:SetTextColor(unpack(color or C.text));r:ClearAllPoints();r:SetPoint('TOPLEFT',frame,'TOPLEFT',30,-y)
+ r.text:SetText(text);r.text:SetTextColor(unpack(color or C.text));r:ClearAllPoints();r:SetPoint('TOPLEFT',frame.content,'TOPLEFT',0,-y)
  local h=math.max(opts.callout and 26 or 20,r.text:GetStringHeight()+(opts.callout and 10 or 6));r:SetHeight(h);r:Show()
  return y+h+(opts.callout and 4 or 0)
 end
@@ -157,24 +157,36 @@ local function makeFrame()
  frame.crystal.tex=frame.crystal:CreateTexture(nil,'ARTWORK');frame.crystal.tex:SetAllPoints()
  tip(frame.crystal,'ForeverCore','Blau: ForeverCore hat in dieser Sitzung geantwortet. Ohne Verbindung folgt ForeverRoutes der gespeicherten Route.')
  local title=UI.Text(frame,16,C.gold,'title');title:SetPoint('LEFT',frame.crystal,'RIGHT',8,0);title:SetText('ForeverRoutes')
- -- solo or with dungeons, at a glance beside the title
- frame.mode=UI.Text(frame,11,C.muted,'body');frame.mode:SetPoint('LEFT',title,'RIGHT',8,-1)
  local close=iconButton(frame,'Interface\\Buttons\\UI-Panel-MinimizeButton-Up','Interface\\Buttons\\UI-Panel-MinimizeButton-Down',hide);close:SetSize(24,24);close:SetPoint('TOPRIGHT',-30,-39)
  tip(close,'Schließen','Mit /fr wieder öffnen.')
  local collapse=iconButton(frame,'Interface\\Buttons\\UI-MinusButton-Up','Interface\\Buttons\\UI-MinusButton-Down',function()FR.Config().compact=not FR.Config().compact;refresh()end);collapse:SetSize(16,16);collapse:SetPoint('RIGHT',close,'LEFT',-4,0)
  tip(collapse,'Kompaktansicht','Nur den aktuellen Schritt mit Fortschritt zeigen.')
- frame.status=label(frame,11,C.muted);frame.status:SetPoint('TOPLEFT',30,-72);frame.status:SetWidth(340)
+ frame.status=label(frame,11,C.muted);frame.status:SetPoint('TOPLEFT',30,-72);frame.status:SetWidth(340);frame.status:SetWordWrap(false)
  frame.current=CreateFrame('Button',nil,frame);frame.current:SetPoint('TOPLEFT',30,-90);frame.current:SetWidth(340)
  frame.current.icon=frame.current:CreateTexture(nil,'ARTWORK');frame.current.icon:SetSize(26,26);frame.current.icon:SetPoint('TOPLEFT',0,2)
  frame.current.text=label(frame.current,15,C.gold);frame.current.text:SetPoint('TOPLEFT',32,0);frame.current.text:SetWidth(308);frame.current.text:SetWordWrap(true)
  frame.current:SetScript('OnClick',function()if view and view.step and view.step.q then FR.OpenQuest(view.step.q)end end)
  frame.current:SetScript('OnEnter',function(self)if view and view.step and view.step.q then FR.ShowQuestTooltip(self,view.step.q)end end)
  frame.current:SetScript('OnLeave',FR.HideQuestTooltip)
- frame.rows={};for i=1,24 do frame.rows[i]=row(frame)end
- frame.nextLabel=label(frame,11,C.muted)
- frame.nextRows={};for i=1,3 do frame.nextRows[i]=row(frame)end
- frame.questLabel=label(frame,11,C.muted)
- frame.questRows={};for i=1,60 do frame.questRows[i]=row(frame)end
+ -- below the current step the window has a fixed height: its lines scroll with the mouse wheel instead of
+ -- stretching the frame art
+ frame.scroll=CreateFrame('ScrollFrame',nil,frame);frame.scroll:EnableMouseWheel(true)
+ frame.content=CreateFrame('Frame',nil,frame.scroll);frame.content:SetSize(340,10);frame.scroll:SetScrollChild(frame.content)
+ frame.scroll:SetScript('OnMouseWheel',function(self,delta)
+  local max=math.max(0,(frame.content:GetHeight()or 0)-(self:GetHeight()or 0))
+  self:SetVerticalScroll(math.max(0,math.min(max,(self:GetVerticalScroll()or 0)-delta*40)))
+  if placeItems then placeItems()end
+ end)
+ frame.more=frame:CreateTexture(nil,'OVERLAY');frame.more:SetSize(16,16);frame.more:SetTexture('Interface\\Buttons\\Arrow-Down-Up')
+ frame.more:SetPoint('BOTTOMRIGHT',frame.scroll,'BOTTOMRIGHT',4,-14);frame.more:Hide()
+ local content=frame.content
+ frame.rows={};for i=1,24 do frame.rows[i]=row(content)end
+ frame.nextLabel=label(content,11,C.muted)
+ frame.nextRows={};for i=1,3 do frame.nextRows[i]=row(content)end
+ frame.dungeonLabel=label(content,11,C.muted)
+ frame.dungeonRows={};for i=1,2 do frame.dungeonRows[i]=row(content)end
+ frame.questLabel=label(content,11,C.muted)
+ frame.questRows={};for i=1,60 do frame.questRows[i]=row(content)end
  frame.skip=button(frame,'Überspringen',124,function()FR.Skip();refresh()end);frame.skip:SetPoint('BOTTOM',0,40)
  frame.back=button(frame,'Zurück',90,function()FR.Back();refresh()end);frame.back:SetPoint('RIGHT',frame.skip,'LEFT',-6,0)
   frame.confirm=button(frame,'Erledigt',90,function()FR.Confirm();refresh()end);frame.confirm:SetPoint('LEFT',frame.skip,'RIGHT',6,0)
@@ -183,7 +195,7 @@ local function makeFrame()
  tip(frame.options,'Routenoptionen','Mit oder ohne Dungeons, Zusatzziele, Position.')
  for _,child in ipairs({frame.current,frame.back,frame.skip,frame.confirm,frame.options})do passDrag(child,frame)end
  for _,r in ipairs(frame.rows)do passDrag(r,frame)end;for _,r in ipairs(frame.nextRows)do passDrag(r,frame)end
- for _,r in ipairs(frame.questRows)do passDrag(r,frame)end
+ for _,r in ipairs(frame.questRows)do passDrag(r,frame)end;for _,r in ipairs(frame.dungeonRows)do passDrag(r,frame)end
  tip(frame.skip,'Schritt überspringen','Mit Zurück den letzten übersprungenen Schritt wiederherstellen. Die Quest wird nicht als erledigt markiert.')
  return frame
 end
@@ -323,6 +335,9 @@ placeItems=function()
  local scale=(frame:GetEffectiveScale()or 1)/(UIParent:GetEffectiveScale()or 1)
  for i,w in ipairs(wanted)do
   local b=itemButton(i);local left,top=w.row:GetLeft(),w.row:GetTop()
+  -- only for a line that is in view (the window's lines scroll)
+  local st,sb=frame.scroll:GetTop(),frame.scroll:GetBottom()
+  if top and st and sb and(top>st+1 or top-22<sb-1)then top=nil end
   if left and top then
    if b.link~=w.link then b.link=w.link;b:SetAttribute('item',w.item);b.icon:SetTexture(w.icon)end
    b:ClearAllPoints();b:SetPoint('TOPLEFT',UIParent,'BOTTOMLEFT',left*scale,top*scale);b:Show()
@@ -336,17 +351,14 @@ questList=function(y)
  frame.questLabel:Hide()
  if FR.Config().compact or not replacing()then return y end
  local list=questLog();if #list==0 then return y end
- frame.questLabel:ClearAllPoints();frame.questLabel:SetPoint('TOPLEFT',30,-y-6);frame.questLabel:SetText(string.format('QUESTS (%d)',#list));frame.questLabel:Show();y=y+25
+ frame.questLabel:ClearAllPoints();frame.questLabel:SetPoint('TOPLEFT',frame.content,'TOPLEFT',0,-y-6);frame.questLabel:SetText(string.format('QUESTS (%d)',#list));frame.questLabel:Show();y=y+25
  local ri=0
  local function add(text,color,q,objective,indent)
   ri=ri+1;local r=frame.questRows[ri];if not r then return end
   r.q,r.objective,r.item,r.task=q,objective,nil,nil
   y=setRow(r,text,y,color,{indent=indent});return r
  end
- -- the window stays at most about three quarters of the screen high: the quests that do not fit are counted
- local limit=math.min(700,((UIParent.GetHeight and UIParent:GetHeight()or 800)/(frame:GetScale()or 1))*0.75)-120
- for n,quest in ipairs(list)do
-  if y>limit then add(string.format('+ %d weitere Quests (Questlog: L)',#list-n+1),C.muted);break end
+ for _,quest in ipairs(list)do
   local tag,color=role(quest.q)
   local link,icon,_,showDone=call(GetQuestLogSpecialItemInfo,quest.index)
   local done=FR.QuestDone(quest.q)
@@ -363,6 +375,35 @@ questList=function(y)
  end
  return y
 end
+-- The window's height limit: a few lines more than the head; the rest scrolls.
+FR.WINDOW_MAX=560
+-- With dungeons: the next dungeon run of the plan, when (level, steps away) and the quests to take along.
+dungeonSection=function(y,group)
+ frame.dungeonLabel:Hide();for _,r in ipairs(frame.dungeonRows)do r:Hide()end
+ if not group or FR.Config().compact then return y end
+ local steps=FR.Steps();local found,ahead
+ for i=view.index,#steps do
+  local s=steps[i]
+  if s.op=='d'and not FR.Done(s)then found,ahead=s,i-view.index;break end
+ end
+ -- not in the live plan's horizon: the stored route with dungeons knows the next one
+ if not found then
+  local data=ForeverRoutesData and ForeverRoutesData.routes
+  local r=data and data[(FR.Key()or'')..'-dungeons']
+  local level=call(UnitLevel,'player')or 0
+  for _,s in ipairs(r and r.s or{})do
+   if s.op=='d'and not FR.Done(s)and(s.l or 0)>=level then found=s;break end
+  end
+ end
+ frame.dungeonLabel:ClearAllPoints();frame.dungeonLabel:SetPoint('TOPLEFT',frame.content,'TOPLEFT',0,-y-6);frame.dungeonLabel:SetText('DUNGEON');frame.dungeonLabel:Show();y=y+25
+ local r1,r2=frame.dungeonRows[1],frame.dungeonRows[2]
+ r1.q,r1.item,r1.task,r1.objective=nil,nil,nil,nil;r2.q,r2.item,r2.task,r2.objective=nil,nil,nil,nil
+ if not found then return setRow(r1,'Kein Dungeon mehr geplant',y,C.muted,{icon=ICON.d})end
+ local when=ahead and(ahead==0 and'jetzt'or string.format('in %d Schritten',ahead))or string.format('ab Stufe %d',found.l or 0)
+ y=setRow(r1,string.format('%s  |cff9aa9c0· %s|r',found.n or'Dungeon',when),y,C.gold,{icon=ICON.d})
+ if type(found.qi)=='table'and #found.qi>0 then y=setRow(r2,'Mitnehmen: '..table.concat(found.qi,', '),y,C.muted,{indent=24})end
+ return y
+end
 function FR.Refresh()
  FR.CheckBlock();view=FR.TaskView();updateArrow(view.step)
  -- hidden window: give the quests back to the game (also when it was hidden in combat)
@@ -371,15 +412,19 @@ function FR.Refresh()
  if not frame.docked and FR.Config().docked~=false and not FR.Config().window then frame.docked=dock(frame)end
  local connected=FR.Connected();UI.SetArt(frame.crystal.tex,connected and'crystal_on'or'crystal_off')
  local group=FR.CharDB().dungeons==true or FR.CharDB().group==true
- frame.mode:SetText(group and'|cffe8c070mit Dungeons|r'or'Solo')
- local mode=view.live and'Live geplant'or(view.kind=='rxp-fallback'and'Guide-Fallback'or'Gespeicherte Route')
- frame.status:SetText(view.paused and'Route pausiert · Dungeon'or string.format('%s · Schritt %d/%d',mode,math.min(view.index,view.total),view.total))
- if view.live and FR.liveBlock then frame.status:SetText(string.format('Live-Plan · Block: noch %d Schritte (%d Quests)',FR.BlockLeft(),FR.BlockQuests()))end
- if FR.dataStatus and (FR.dataStatus.status=='warning' or FR.dataStatus.status=='error') then frame.status:SetText(frame.status:GetText()..' · Datenprüfung ausstehend')end
+ -- one short line: where the steps come from and how far (the data check is in the crystal's tooltip)
+ local status
+ if view.paused then status='Route pausiert: im Dungeon'
+ elseif view.live and FR.liveBlock then status=string.format('Live-Plan · %d Quests im Block',FR.BlockQuests())
+ elseif view.live then status='Live-Plan'
+ else status=string.format('%s · Schritt %d von %d',view.kind=='rxp-fallback'and'Guide'or'Route',math.min(view.index,view.total),view.total)end
+ frame.status:SetText(status..(group and' · mit Dungeons'or' · solo'))
  frame.current.text:SetText(view.text)
  local icon=FR.StepIcon(view.step);frame.current.icon:SetShown(icon~=nil);if icon then frame.current.icon:SetTexture(icon)end
  local ch=math.max(28,frame.current.text:GetStringHeight()+8);frame.current:SetHeight(ch)
- local y=90+ch
+ local top=90+ch+2
+ frame.scroll:ClearAllPoints();frame.scroll:SetPoint('TOPLEFT',frame,'TOPLEFT',30,-top);frame.scroll:SetPoint('BOTTOMRIGHT',frame,'BOTTOMRIGHT',-30,76)
+ local y=0
  local ri=0
  local function add(text,color,q,objective,item,task,opts)
   ri=ri+1;local r=frame.rows[ri];if not r then return end
@@ -410,16 +455,23 @@ function FR.Refresh()
    if not FR.Done(s)and(view.live or not FR.CharDB().skipped[i])and FR.Text(s)~=last then
     last=FR.Text(s)
     count=count+1
-    if count==1 then frame.nextLabel:ClearAllPoints();frame.nextLabel:SetPoint('TOPLEFT',30,-y-6);frame.nextLabel:SetText('DANACH');frame.nextLabel:Show();y=y+25 end
+    if count==1 then frame.nextLabel:ClearAllPoints();frame.nextLabel:SetPoint('TOPLEFT',frame.content,'TOPLEFT',0,-y-6);frame.nextLabel:SetText('DANACH');frame.nextLabel:Show();y=y+25 end
     local r=frame.nextRows[count];r.q,r.task,r.item,r.objective=s.q,nil,nil,nil
     y=setRow(r,FR.Text(s),y,C.muted,{icon=FR.StepIcon(s)});if count==3 then break end
    end
   end
  end
+ y=dungeonSection(y,group)
  y=questList(y)
  frame.confirm:SetEnabled(FR.CanConfirm(view.step)and true or false)
  frame.skip:SetEnabled(view.step~=nil and not view.paused);frame.back:SetEnabled(not view.paused and(FR.undo~=nil or not view.live))
- frame:SetHeight(math.max(210,y+92))
+ -- the window: as high as its lines, at most WINDOW_MAX; more lines scroll
+ frame.content:SetHeight(math.max(10,y))
+ frame:SetHeight(math.max(230,math.min(FR.WINDOW_MAX,top+y+80)))
+ local visible=frame:GetHeight()-top-76
+ local over=y-visible
+ if over<=0 then frame.scroll:SetVerticalScroll(0)elseif(frame.scroll:GetVerticalScroll()or 0)>over then frame.scroll:SetVerticalScroll(over)end
+ frame.more:SetShown(over>4 and(frame.scroll:GetVerticalScroll()or 0)<over-4)
  applyTracker();placeItems()
  return view.step
 end

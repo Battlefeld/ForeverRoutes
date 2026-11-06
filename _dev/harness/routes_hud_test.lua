@@ -248,12 +248,12 @@ end
 -- Options as check boxes; solo or with dungeons shown beside the title.
 do
  FR.CharDB().dungeons=nil;FR.Show()
- check(FR.frame.mode:GetText()=='Solo','solo shown')
+ check(FR.frame.status:GetText():find('solo',1,true),'solo shown')
  FR.ToggleMenu();local m=ForeverRoutesOptions
  local box;for _,c in ipairs(m.checks)do if c.label:GetText()=='Mit Dungeons'then box=c end end
  check(box and not box.check:IsShown(),'dungeon box unticked')
  M.script(box,'OnClick');check(FR.CharDB().dungeons==true and box.check:IsShown(),'ticking switches dungeons on')
- check(FR.frame.mode:GetText():find('mit Dungeons',1,true),'with dungeons shown')
+ check(FR.frame.status:GetText():find('mit Dungeons',1,true)and FR.frame.dungeonLabel:IsShown(),'with dungeons shown, with its section')
  M.script(box,'OnClick');check(not FR.CharDB().dungeons,'and off again')
  FR.ToggleMenu()
 end
