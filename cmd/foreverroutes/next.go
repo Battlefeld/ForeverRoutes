@@ -179,6 +179,13 @@ func cmdNext(args []string) error {
 			}
 		}
 		events = route.WithOptions(events, opts, qs)
+		var goals []int
+		for _, set := range qs {
+			for q := range set {
+				goals = append(goals, q)
+			}
+		}
+		w.SetLiveGoals(goals) // the stages take these chains along too
 	}
 	if fb := req.Live.CombatFeedback; fb != nil && fb.Source == "measured" {
 		fb.Character = w.Char // the bridge measures this character; it names race and class in the game's terms

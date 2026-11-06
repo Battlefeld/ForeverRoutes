@@ -81,7 +81,13 @@ func (ss *stageSearch) rate(r *stageRun) float64 {
 	if r == nil || r.end.Time <= ss.s0.Time {
 		return math.Inf(-1)
 	}
-	return float64(r.end.XP-ss.s0.XP) / (r.end.Time - ss.s0.Time)
+	v := float64(r.end.XP - ss.s0.XP)
+	for _, a := range r.acts {
+		if a.Op == "turnin" && ss.w.liveGoals[a.Quest] {
+			v += goalBonus // a goal switched on counts in the whole stretch too, not only in the next decision
+		}
+	}
+	return v / (r.end.Time - ss.s0.Time)
 }
 
 func (ss *stageSearch) done(s *State) bool {
@@ -98,6 +104,7 @@ func (ss *stageSearch) run(s *State, acts []Action, zone string, depth int, root
 		if len(options) == 0 {
 			break
 		}
+		ss.favourGoals(options)
 		sort.SliceStable(options, func(a, b int) bool { return options[a].score < options[b].score })
 		// the best block that stays in the zone, and the best block into each other zone
 		var here *macro
@@ -174,6 +181,9 @@ func (ss *stageSearch) run(s *State, acts []Action, zone string, depth int, root
 func (ss *stageSearch) sleep(s *State, acts *[]Action) {
 	w := ss.w
 	stacks := w.preparation.BagStacks
+	if stacks == 0 && w.liveGoals[79976] && w.Opt.Preparations.SleepingBag != "off" {
+		stacks = 3 // the bag chain switched on in the addon: the bag is for resting on
+	}
 	if stacks < 1 || s.BagUntil > s.Time || s.Time < s.BagReady || !w.bagOwned(s) || !w.canSleep(s) {
 		return
 	}
@@ -259,4 +269,40 @@ func (r *Result) Head(seconds float64, turnins int) *Result {
 		out.Seconds, out.Level, out.XP = last.Time, last.Level, last.XP
 	}
 	return &out
+}
+
+// goalBonus: what a quest of a goal switched on in the addon (the sleeping bag chain, a class chain) is worth beyond
+// its XP to the stages: the player wants the goal, the run takes its quests along where they lie.
+const goalBonus = 10000.0
+
+// SetLiveGoals names the quests of the goals switched on in the addon (their whole chains).
+func (w *World) SetLiveGoals(quests []int) {
+	w.liveGoals = map[int]bool{}
+	for _, id := range quests {
+		w.liveGoals[id] = true
+	}
+}
+
+// favourGoals lowers the score of blocks that hand in quests of the goals switched on.
+func (ss *stageSearch) favourGoals(options []macro) {
+	if len(ss.w.liveGoals) == 0 {
+		return
+	}
+	for i := range options {
+		for _, a := range options[i].actions {
+			if a.Op == "turnin" && ss.w.liveGoals[a.Quest] {
+				options[i].score -= goalBonus
+			}
+		}
+	}
+}
+
+// forGoal: the block takes or hands in a quest of a goal switched on.
+func (w *World) forGoal(m *macro) bool {
+	for _, a := range m.actions {
+		if (a.Op == "accept" || a.Op == "turnin") && w.liveGoals[a.Quest] {
+			return true
+		}
+	}
+	return false
 }

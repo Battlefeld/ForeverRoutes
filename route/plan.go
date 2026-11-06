@@ -183,7 +183,8 @@ func (w *World) options(s *State, target int) []macro {
 	early := w.classQuestsLeft(s)
 	add := func(m *macro) {
 		// a dungeon run may cross the sea to hand in its quests right after (a short trip to Undercity after Ragefire)
-		if m != nil && m.kind != "dungeon" && m.state.Switches > s.Switches && (m.state.Switches > cap || early) {
+		// a goal switched on in the addon (live_stages.go) may cross the sea too: the player asked for it
+		if m != nil && m.kind != "dungeon" && m.state.Switches > s.Switches && (m.state.Switches > cap || early) && !w.forGoal(m) {
 			return
 		}
 		if m != nil && len(m.actions) > 0 && !math.IsInf(m.score, 0) && !math.IsNaN(m.score) {
