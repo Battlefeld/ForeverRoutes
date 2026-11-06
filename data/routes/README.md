@@ -11,61 +11,61 @@ Modell: `foreverroutes.timeline-model.v2.3`. Alle 56 unterstützten Kombinatione
 | Volk | Fraktion | Klasse | Solo | Optionale Dungeons | Gewählte Läufe |
 |---|---|---|---|---|---|
 | Dwarf | A | Hunter | 10:15:25 | 10:11:29 | keine |
-| Dwarf | A | Paladin | 15:46:58 | 13:00:37 | HdT → RoL → DM → HDW |
-| Dwarf | A | Priest | 15:01:57 | 13:40:52 | HdT → RoL → HDW |
-| Dwarf | A | Rogue | 17:06:25 | 14:31:34 | HdT → HDW → RoL |
+| Dwarf | A | Paladin | 15:46:58 | 12:34:28 | HdT → RoL → DM → HDW |
+| Dwarf | A | Priest | 15:01:57 | 13:13:49 | HdT → RoL → DM → HDW |
+| Dwarf | A | Rogue | 17:06:25 | 14:16:02 | HdT → HDW → DM → RoL |
 | Dwarf | A | Shaman | 15:52:43 | 14:29:49 | HdT → RoL |
-| Dwarf | A | Warrior | 19:58:12 | 16:37:16 | HDW → HdT → RoL → DM |
-| Gnome | A | Mage | 14:26:13 | 13:13:34 | HdT → RoL → DM |
-| Gnome | A | Priest | 15:21:25 | 13:42:17 | HdT → HDW → RoL → DM |
-| Gnome | A | Rogue | 17:07:45 | 14:38:37 | HdT → HDW → RoL |
+| Dwarf | A | Warrior | 19:58:12 | 16:18:06 | HDW → HdT → RoL → DM |
+| Gnome | A | Mage | 14:26:13 | 13:03:16 | HdT → RoL → DM |
+| Gnome | A | Priest | 15:21:25 | 13:13:08 | HdT → HDW → RoL → DM |
+| Gnome | A | Rogue | 17:07:45 | 14:12:56 | HdT → HDW → DM → RoL |
 | Gnome | A | Warlock | 13:48:48 | 12:53:40 | HdT → RoL → DM |
-| Gnome | A | Warrior | 20:00:29 | 16:37:16 | HDW → HdT → RoL → DM |
+| Gnome | A | Warrior | 20:00:29 | 16:18:06 | HDW → HdT → RoL → DM |
 | Human | A | Hunter | 10:26:57 | 10:16:14 | RoL |
-| Human | A | Mage | 14:56:03 | 13:29:17 | HdT → HDW → RoL → DM |
-| Human | A | Paladin | 15:40:25 | 13:41:03 | HdT → RoL → HDW → DM |
-| Human | A | Priest | 15:06:24 | 13:01:25 | HdT → HDW → RoL → DM |
-| Human | A | Rogue | 16:43:53 | 14:12:13 | HdT → RoL → DM → HDW |
+| Human | A | Mage | 14:56:03 | 12:53:05 | HdT → HDW → RoL → DM |
+| Human | A | Paladin | 15:40:25 | 13:15:46 | HdT → HDW → RoL → DM |
+| Human | A | Priest | 15:06:24 | 12:38:50 | HdT → RoL → DM |
+| Human | A | Rogue | 16:43:53 | 14:06:47 | HdT → RoL → HDW |
 | Human | A | Warlock | 13:51:52 | 12:31:02 | HdT → RoL → DM |
-| Human | A | Warrior | 20:41:03 | 16:55:04 | HdT → HDW → RoL → DM |
-| NightElf | A | Druid | 17:14:46 | 14:54:31 | HdT → RoL → DM |
+| Human | A | Warrior | 20:41:03 | 16:34:51 | HdT → RoL → DM → HDW |
+| NightElf | A | Druid | 17:14:46 | 14:43:07 | HdT → RoL → HDW → DM |
 | NightElf | A | Hunter | 10:33:44 | 10:32:48 | keine |
-| NightElf | A | Priest | 15:00:33 | 13:46:50 | HDW → RoL |
-| NightElf | A | Rogue | 17:09:10 | 15:33:42 | HdT → HDW → RoL |
-| NightElf | A | Warrior | 20:52:15 | 18:02:08 | HDW → RoL → HdT |
+| NightElf | A | Priest | 15:00:33 | 13:34:49 | RoL → DM |
+| NightElf | A | Rogue | 17:09:10 | 15:13:15 | HdT → HDW → RoL |
+| NightElf | A | Warrior | 20:52:15 | 17:45:30 | HdT → HDW → RoL |
 | Orc | H | Hunter | 09:55:41 | 09:42:54 | keine |
-| Orc | H | Mage | 13:34:08 | 12:14:46 | HDW → RoL |
-| Orc | H | Rogue | 15:40:55 | 13:12:08 | RoL |
+| Orc | H | Mage | 13:19:36 | 11:48:24 | RF → HDW → RoL |
+| Orc | H | Rogue | 15:36:57 | 13:44:39 | RF → RoL |
 | Orc | H | Shaman | 14:08:09 | 12:29:33 | RF → RoL |
 | Orc | H | Warlock | 13:18:43 | 11:54:22 | RoL → HDW |
-| Orc | H | Warrior | 18:08:48 | 15:56:41 | RF → RoL → HDW |
+| Orc | H | Warrior | 17:14:21 | 14:49:17 | RF → RoL → HDW |
 | Skyborne | A | Druid | 17:01:00 | 15:20:05 | HdT → RoL |
 | Skyborne | A | Hunter | 12:00:39 | 11:41:17 | HdT → RoL |
-| Skyborne | A | Mage | 15:39:18 | 14:05:19 | HdT → RoL → DM |
+| Skyborne | A | Mage | 15:39:18 | 14:09:49 | HdT → RoL → DM |
 | Skyborne | A | Rogue | 18:05:43 | 15:48:54 | RoL → HdT |
-| Skyborne | A | Warrior | 21:17:30 | 18:50:10 | HDW → RoL → DM → HdT |
-| Skyborne | H | Druid | 15:21:15 | 13:49:26 | HDW → RoL |
-| Skyborne | H | Hunter | 11:07:54 | 10:46:13 | RoL |
-| Skyborne | H | Rogue | 17:07:44 | 15:08:23 | RoL |
-| Skyborne | H | Shaman | 15:28:11 | 13:17:37 | RF → HDW → RoL |
-| Skyborne | H | Warrior | 19:00:49 | 18:19:16 | HDW → RoL |
-| Tauren | H | Druid | 15:10:04 | 14:02:35 | RF → HDW → RoL |
-| Tauren | H | Hunter | 10:37:10 | 10:16:36 | RoL |
-| Tauren | H | Shaman | 15:07:16 | 12:49:16 | RF → RoL → HDW |
-| Tauren | H | Warrior | 20:05:30 | 15:07:11 | RF → RoL → HDW |
+| Skyborne | A | Warrior | 21:17:30 | 19:06:18 | HDW → RoL → HdT |
+| Skyborne | H | Druid | 15:11:08 | 13:26:15 | RoL → HDW |
+| Skyborne | H | Hunter | 11:17:53 | 10:58:01 | RoL |
+| Skyborne | H | Rogue | 16:54:33 | 15:40:05 | RoL → HDW |
+| Skyborne | H | Shaman | 15:26:10 | 12:55:20 | RF → HDW → RoL |
+| Skyborne | H | Warrior | 18:46:09 | 15:57:15 | RoL → HDW |
+| Tauren | H | Druid | 15:10:04 | 13:30:31 | RF → HDW → RoL |
+| Tauren | H | Hunter | 10:37:04 | 10:16:29 | RoL |
+| Tauren | H | Shaman | 15:27:13 | 12:55:21 | RF → RoL → HDW |
+| Tauren | H | Warrior | 20:21:45 | 14:38:44 | RF → RoL → HDW |
 | Troll | H | Hunter | 09:48:52 | 09:42:12 | keine |
-| Troll | H | Mage | 13:34:30 | 12:30:58 | HDW → RoL |
-| Troll | H | Priest | 13:42:54 | 12:46:10 | HDW → RoL |
-| Troll | H | Rogue | 16:06:06 | 13:12:26 | RF → RoL → HDW |
+| Troll | H | Mage | 13:30:10 | 11:55:08 | RF → HDW → RoL |
+| Troll | H | Priest | 13:42:54 | 12:34:18 | RoL → HDW |
+| Troll | H | Rogue | 15:59:10 | 13:02:24 | RF → RoL → HDW |
 | Troll | H | Shaman | 14:08:09 | 12:29:33 | RF → RoL |
 | Troll | H | Warlock | 12:57:48 | 11:47:27 | HDW → RoL |
-| Troll | H | Warrior | 18:05:24 | 15:44:07 | RF → RoL → HDW |
-| Undead | H | Mage | 13:21:11 | 11:50:47 | RF → HDW → RoL |
-| Undead | H | Paladin | 13:35:35 | 11:47:21 | RF → RoL → HDW |
-| Undead | H | Priest | 13:06:25 | 11:41:17 | RF → HDW → RoL |
-| Undead | H | Rogue | 15:28:31 | 13:11:37 | RF → RoL → HDW |
-| Undead | H | Warlock | 13:02:09 | 11:57:18 | RF → HDW → RoL |
-| Undead | H | Warrior | 18:05:09 | 15:21:34 | RF → HDW → RoL |
+| Troll | H | Warrior | 17:20:16 | 14:39:30 | RF → RoL → HDW |
+| Undead | H | Mage | 13:30:25 | 11:41:38 | RF → HDW → RoL |
+| Undead | H | Paladin | 13:45:07 | 11:29:21 | RoL → HDW |
+| Undead | H | Priest | 12:56:54 | 11:39:09 | RF → HDW → RoL |
+| Undead | H | Rogue | 16:02:06 | 12:59:43 | RoL → HDW |
+| Undead | H | Warlock | 13:02:09 | 11:53:49 | RF → HDW → RoL |
+| Undead | H | Warrior | 18:05:09 | 14:36:22 | RF → HDW → RoL |
 
 RF: Ragefire Chasm; HDW: Wailing Caverns; RoL: Ruins of Lordaeron; DM: Deadmines; HdT: Hall of Thanes; BSF: Shadowfang Keep.
 
