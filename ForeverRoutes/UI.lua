@@ -146,17 +146,24 @@ end
 local function makeFrame()
  if frame then return frame end
  frame=CreateFrame('Frame','ForeverRoutesFrame',UIParent);FR.frame=frame
- frame:SetSize(400,300);frame:SetClampedToScreen(true);frame:SetFrameStrata('MEDIUM');UI.Style(frame,'panel')
+ frame:SetSize(400,300);frame:SetClampedToScreen(true);frame:SetFrameStrata('MEDIUM')
+ -- the panel without its gem: the ForeverCore crystal sits in its place at the top centre (below)
+ local pieces=UI.Style(frame,'panel')
+ if pieces and pieces.tc then
+  pieces.tc:Hide();pieces.t2:Hide()
+  pieces.t:ClearAllPoints();pieces.t:SetPoint('TOPLEFT',frame,'TOPLEFT',39,0);pieces.t:SetPoint('TOPRIGHT',frame,'TOPRIGHT',-39,0)
+ end
  movable(frame,'window')
  -- layout 3: the window takes the quest tracker's place; a place saved before that is dropped once
  if FR.Config().layout~=3 then FR.Config().layout=3;FR.Config().window=nil;FR.Config().docked=true end
  position(frame,'window','LEFT',40,120)
  if FR.Config().docked~=false and not FR.Config().window then frame.docked=dock(frame)end
  frame:SetScale(math.max(.65,math.min(1.5,tonumber(FR.Config().scale)or 1)))
- frame.crystal=CreateFrame('Button',nil,frame);frame.crystal:SetSize(26,26);frame.crystal:SetPoint('TOPLEFT',28,-38)
+ frame.crystal=CreateFrame('Button',nil,frame);frame.crystal:SetSize(64,64);frame.crystal:SetPoint('TOP',frame,'TOP',0,16)
+ frame.crystal:SetFrameLevel((frame:GetFrameLevel()or 1)+5)
  frame.crystal.tex=frame.crystal:CreateTexture(nil,'ARTWORK');frame.crystal.tex:SetAllPoints()
  tip(frame.crystal,'ForeverCore','Blau: ForeverCore hat in dieser Sitzung geantwortet. Ohne Verbindung folgt ForeverRoutes der gespeicherten Route.')
- local title=UI.Text(frame,16,C.gold,'title');title:SetPoint('LEFT',frame.crystal,'RIGHT',8,0);title:SetText('ForeverRoutes')
+ local title=UI.Text(frame,16,C.gold,'title');title:SetPoint('TOPLEFT',frame,'TOPLEFT',32,-42);title:SetText('ForeverRoutes')
  local close=iconButton(frame,'Interface\\Buttons\\UI-Panel-MinimizeButton-Up','Interface\\Buttons\\UI-Panel-MinimizeButton-Down',hide);close:SetSize(24,24);close:SetPoint('TOPRIGHT',-30,-39)
  tip(close,'Schließen','Mit /fr wieder öffnen.')
  local collapse=iconButton(frame,'Interface\\Buttons\\UI-MinusButton-Up','Interface\\Buttons\\UI-MinusButton-Down',function()FR.Config().compact=not FR.Config().compact;refresh()end);collapse:SetSize(16,16);collapse:SetPoint('RIGHT',close,'LEFT',-4,0)
