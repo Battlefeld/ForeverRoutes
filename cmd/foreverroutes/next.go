@@ -50,6 +50,7 @@ func cmdNext(args []string) error {
 	out := fs.String("out", "", "write the reply here instead of standard output")
 	group := fs.Bool("dungeons", false, "route with dungeons: dungeon runs with their quests may be planned (also when the route runs dungeons)")
 	window := fs.Duration("optimize", 3*time.Second, "time to re-order the plan's next quest steps from the live state (0: keep the route's order)")
+	blockBudget := fs.Duration("block", 4*time.Second, "time to plan the next block of quests for XP per hour (0: follow the route only)")
 	feedbackPolicy := fs.String("feedback-policy", "", "optional locally approved post-release ForeverSim feedback settings; disabled by default")
 	fs.Parse(args)
 	if *routesDir == "" {
@@ -176,11 +177,17 @@ func cmdNext(args []string) error {
 		}
 		events = route.WithOptions(events, opts, qs)
 	}
+	if fb := req.Live.CombatFeedback; fb != nil && fb.Source == "measured" {
+		fb.Character = w.Char // the bridge measures this character; it names race and class in the game's terms
+	}
 	s, notes, err := w.StateFrom(req.Live)
 	if err != nil {
 		return err
 	}
 	notes = append(notes, selectionNotes...)
+	if pf, pr := w.Pace(); pf != 1 || pr != 1 {
+		notes = append(notes, fmt.Sprintf("measured pace: fights x%.2f, rests x%.2f of the model", pf, pr))
+	}
 	var res *route.Result
 	mode := "plan"
 	if len(events) > 0 {
@@ -213,6 +220,18 @@ func cmdNext(args []string) error {
 		if better, changed := w.ImproveLive(s, res, *window); changed {
 			notes = append(notes, fmt.Sprintf("next steps re-ordered from the live state: %.0f s faster", res.Seconds-better.Seconds))
 			res = better
+		}
+	}
+	// The next block of quests for the most XP per hour from where the character stands, against the route's way on.
+	// From level 6 on (before, the class quests of the start lead) and while the route's next steps hold no
+	// preparation (trainers, wands, sleeping bag, a dungeon run): those the free block does not plan.
+	if *blockBudget > 0 && mode == "route" && req.Live.Level >= 6 && !preparationAhead(res, 60) {
+		if b := w.PlanBlock(s, route.PlanOptions{TargetLevel: 20}, *blockBudget); b != nil {
+			rb, rr := route.XPRate(s, b), route.XPRate(s, res)
+			if rb > rr*1.03 {
+				notes = append(notes, fmt.Sprintf("next block planned for XP per hour: %.0f instead of %.0f XP/h", rb*3600, rr*3600))
+				res, mode = b, "block"
+			}
 		}
 	}
 	reply := nextReply{Schema: "foreverroutes.next.v1", Mode: mode, Level: req.Live.Level, Horizon: *horizon, Seconds: res.Seconds, ToLevel: res.Level,
@@ -251,4 +270,19 @@ func readRoute(path string) (routeFileData, error) {
 		return routeFileData{}, fmt.Errorf("%s: not a route", path)
 	}
 	return f, nil
+}
+
+// preparationAhead: the plan's first n steps hold a step the free block planner does not plan (the profession
+// trainers, the wands, the sleeping bag, a dungeon run).
+func preparationAhead(r *route.Result, n int) bool {
+	for i, st := range r.Steps {
+		if i >= n {
+			break
+		}
+		switch st.Op {
+		case "prof", "wand", "sleep", "dungeon":
+			return true
+		}
+	}
+	return false
 }

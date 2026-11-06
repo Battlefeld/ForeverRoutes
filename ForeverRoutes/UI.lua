@@ -318,7 +318,7 @@ function FR.Refresh()
  local connected=FR.Connected();UI.SetArt(frame.crystal.tex,connected and'crystal_on'or'crystal_off')
  local mode=view.live and'Live geplant'or(view.kind=='rxp-fallback'and'Guide-Fallback'or'Gespeicherte Route')
  frame.status:SetText(view.paused and'Route pausiert · Dungeon'or string.format('%s · Schritt %d/%d',mode,math.min(view.index,view.total),view.total))
- if view.live and FR.liveBlock then frame.status:SetText(string.format('Live-Plan · Block: noch %d von %d Schritten',FR.BlockLeft(),FR.liveBlock))end
+ if view.live and FR.liveBlock then frame.status:SetText(string.format('Live-Plan · Block: noch %d Schritte (%d Quests)',FR.BlockLeft(),FR.BlockQuests()))end
  if FR.dataStatus and (FR.dataStatus.status=='warning' or FR.dataStatus.status=='error') then frame.status:SetText(frame.status:GetText()..' · Datenprüfung ausstehend')end
  frame.current.text:SetText(view.text)
  local icon=FR.StepIcon(view.step);frame.current.icon:SetShown(icon~=nil);if icon then frame.current.icon:SetTexture(icon)end

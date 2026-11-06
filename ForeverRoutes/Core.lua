@@ -437,7 +437,7 @@ function FR.SetLive(result)
  FR.AdoptLive(out)
 end
 
--- A live plan is played in blocks: its first BLOCK steps stay as they are until BLOCK_LEFT of them are left, however
+-- A live plan is played in blocks: its first BLOCK quests (up to the BLOCK-th hand-in) stay as they are until BLOCK_LEFT of their steps are left, however
 -- often ForeverCore plans again meanwhile (after every bit of quest progress). Then the newest plan takes over, made
 -- from where the character is by then. A block that no longer fits (a quest of it left the log, a step is blocked)
 -- or "Live-Plan neu berechnen" lets the newest plan take over at once.
@@ -460,11 +460,23 @@ local function blockFits()
  end
  return true
 end
+-- quests of the block not handed in yet
+function FR.BlockQuests()
+ local n=0
+ for i=1,math.min(FR.liveBlock or 0,#(FR.live or{}))do local s=FR.live[i];if s.op=='t'and not FR.Done(s)then n=n+1 end end
+ return n
+end
 function FR.KeepBlock()
  return FR.live~=nil and not FR.forceReplan and FR.BlockLeft()>FR.BLOCK_LEFT and blockFits()
 end
 -- Take the newest plan when the block is (nearly) done or no longer fits; called on every refresh.
 function FR.CheckBlock()
+ -- nearly through the block: ask ForeverCore for the next one from here (it plans after quest events anyway)
+ if FR.live and not FR.blockRequested and FR.BlockLeft()<=FR.BLOCK_LEFT then
+  FR.blockRequested=true
+  local r=ForeverCoreClient and ForeverCoreClient.Route
+  if r and r.schedule then call(r.schedule,1)end
+ end
  local nextPlan=FR.nextLive
  if FR.live and nextPlan and nextPlan~=FR.live and not FR.KeepBlock()then FR.AdoptLive(nextPlan)end
 end
@@ -495,7 +507,10 @@ function FR.AdoptLive(out)
   end
  end
  FR.live=out;FR.undo=nil;FR.pinned=nil;FR.forceReplan=nil;FR.nextLive=out
- FR.liveBlock=math.min(FR.BLOCK,#out)
+ -- the block: its first BLOCK quests, up to the BLOCK-th hand-in (taken, done, handed in)
+ local handed,last=0,#out
+ for i,s in ipairs(out)do if s.op=='t'then handed=handed+1;if handed>=FR.BLOCK then last=i;break end end end
+ FR.liveBlock=last;FR.blockRequested=nil
 end
 
 -- Wording.

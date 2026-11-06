@@ -77,3 +77,42 @@ func TestImproveLiveFromDeviatedState(t *testing.T) {
 	}
 	_ = gains
 }
+
+// The player's measured kills set the pace of every fight: twice as slow as the model, every kill takes longer.
+func TestMeasuredPace(t *testing.T) {
+	d, err := dataset.Load("../data/routes-data.json.gz")
+	if err != nil {
+		t.Skip("dataset not available:", err)
+	}
+	w, err := NewWorld(d, Character{Race: "Troll", Class: "Shaman"}, Options{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	n := w.NPC[3125] // Clattering Scorpid
+	if n == nil {
+		t.Skip("creature not in the dataset")
+	}
+	s := w.NewState()
+	s.XP = 2000
+	site := Site{Center: n.Spawns[0], Spawns: 1}
+	before := w.mobTime(s, n, site)
+	f, r := w.Opt.Profile.KillSeconds(w.Char, 5, n)
+	fb := CombatFeedback{Schema: "foreverroutes.combat-feedback.v1", Source: "measured", Character: w.Char,
+		Kills: []KillObservation{{NPC: n.ID, PlayerLevel: 5, FightSeconds: 2 * f, RestSeconds: 2*r + 1, Samples: 6}}}
+	if err := w.AcceptFeedback(fb); err != nil {
+		t.Fatal(err)
+	}
+	if pf, _ := w.Pace(); pf < 1.9 || pf > 2.1 {
+		t.Fatalf("pace %.2f, want 2", pf)
+	}
+	other := w.NPC[3098] // Mottled Boar: not measured, scaled by the pace
+	if other != nil {
+		of, _ := w.Opt.Profile.KillSeconds(w.Char, w.Level(s), other)
+		if got := w.mobTime(s, other, Site{Center: other.Spawns[0], Spawns: 1}); got < 1.8*of {
+			t.Fatalf("unmeasured creature not scaled: %.1f s for a %.1f s model fight", got, of)
+		}
+	}
+	if after := w.mobTime(s, n, site); after <= before {
+		t.Fatalf("measured creature not slower: %.1f -> %.1f", before, after)
+	}
+}

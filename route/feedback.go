@@ -46,6 +46,9 @@ type KillObservation struct {
 }
 
 func (w *World) AcceptFeedback(f CombatFeedback) error {
+	if f.Source == "measured" {
+		return w.acceptMeasured(f)
+	}
 	if !w.Opt.Feedback.Active() {
 		return fmt.Errorf("ForeverSim live feedback disabled: post-release user confirmation required")
 	}
@@ -64,6 +67,14 @@ func (w *World) AcceptFeedback(f CombatFeedback) error {
 }
 func (w *World) feedbackSeconds(s *State, n *dataset.NPC) (float64, float64, bool) {
 	f := w.feedback
+	if f != nil && f.Source == "measured" {
+		for _, k := range f.Kills {
+			if k.NPC == n.ID && k.PlayerLevel == w.Level(s) && k.Samples >= 3 {
+				return k.FightSeconds, k.RestSeconds, true
+			}
+		}
+		return 0, 0, false
+	}
 	if !w.Opt.Feedback.Active() || f == nil || s.EquipmentRevision == "" || s.EquipmentRevision != f.EquipmentRevision || s.BuildRevision != f.BuildRevision {
 		return 0, 0, false
 	}
@@ -73,4 +84,60 @@ func (w *World) feedbackSeconds(s *State, n *dataset.NPC) (float64, float64, boo
 		}
 	}
 	return 0, 0, false
+}
+
+// Measured play: the bridge times the player's own fights without the combat log (combat start and end, the XP of
+// each kill, health and mana back after it): seconds of fighting and of resting per kill, by creature and level. A
+// creature fought often enough at this level takes its measured time; every other creature its modelled time scaled
+// by how the player's measured kills compare with the model (pace), so the plan follows this character's real speed,
+// gear and rests. The player's own measurements need no release confirmation (they are not ForeverSim's).
+
+// paceSamples: kills measured before the pace replaces the model; paceMin and paceMax bound it.
+const (
+	paceSamples = 5
+	paceMin     = 0.4
+	paceMax     = 3.0
+)
+
+func (w *World) acceptMeasured(f CombatFeedback) error {
+	if f.Schema != "foreverroutes.combat-feedback.v1" || !SameCharacter(f.Character, w.Char) {
+		return fmt.Errorf("invalid or incompatible measured combat feedback")
+	}
+	var mf, mr, pf, pr float64
+	samples := 0
+	for _, k := range f.Kills {
+		if k.NPC <= 0 || k.PlayerLevel < 1 || k.PlayerLevel > 60 || k.FightSeconds <= 0 || k.RestSeconds < 0 || k.Samples < 1 ||
+			math.IsNaN(k.FightSeconds+k.RestSeconds) || math.IsInf(k.FightSeconds+k.RestSeconds, 0) {
+			return fmt.Errorf("invalid measured kill observation")
+		}
+		n := w.NPC[k.NPC]
+		if n == nil {
+			continue
+		}
+		ff, rr := w.Opt.Profile.KillSeconds(w.Char, k.PlayerLevel, n)
+		c := float64(k.Samples)
+		mf, mr, pf, pr = mf+k.FightSeconds*c, mr+k.RestSeconds*c, pf+ff*c, pr+rr*c
+		samples += k.Samples
+	}
+	c := f
+	c.Kills = append([]KillObservation(nil), f.Kills...)
+	w.feedback = &c
+	w.paceFight, w.paceRest, w.restAdd = 1, 1, 0
+	if samples >= paceSamples && pf > 0 {
+		w.paceFight = math.Max(paceMin, math.Min(paceMax, mf/pf))
+		if pr > 0 {
+			w.paceRest = math.Max(paceMin, math.Min(paceMax, mr/pr))
+		} else {
+			w.restAdd = mr / float64(samples) // the model rests not at all, the player does
+		}
+	}
+	return nil
+}
+
+// Pace is how the player's measured fights and rests compare with the model (1, 1 before enough kills are measured).
+func (w *World) Pace() (fight, rest float64) {
+	if w.paceFight == 0 {
+		return 1, 1
+	}
+	return w.paceFight, w.paceRest
 }

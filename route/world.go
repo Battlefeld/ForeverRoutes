@@ -70,29 +70,30 @@ type Farm struct {
 
 // World is the dataset seen by one character.
 type World struct {
-	preparation PreparationPlan
-	feedback    *CombatFeedback
-	Data        *dataset.Dataset
-	Char        Character
-	Faction     string
-	Opt         Options
-	Quests      []*Quest
-	ByID        map[int]*Quest
-	NPC         map[int]*dataset.NPC
-	Objects     map[int]*dataset.Object
-	Start       dataset.Point
-	Excluded    map[int]string // quest -> why this character cannot use it
-	Farms       []Farm
-	net         *network
-	walkGrids   walks
-	walkTable   walkTable // walks measured between the places routes go to (walktable.go)
-	deaths      *deaths
-	lifts       []dataset.Lift
-	danger      dangerMap
-	elites      dangerMap    // elite places: cell -> highest elite level
-	Dungeons    []*Dungeon   // dungeons a route with dungeons may run (Options.Dungeons)
-	required    map[int]bool // quests of the required class chains (keepClassQuest), for requiredTarget
-	tank        map[int]bool // quests that give the tank form or stance (tankGoals)
+	preparation                  PreparationPlan
+	feedback                     *CombatFeedback
+	paceFight, paceRest, restAdd float64 // the player's measured pace (feedback.go); 0: none
+	Data                         *dataset.Dataset
+	Char                         Character
+	Faction                      string
+	Opt                          Options
+	Quests                       []*Quest
+	ByID                         map[int]*Quest
+	NPC                          map[int]*dataset.NPC
+	Objects                      map[int]*dataset.Object
+	Start                        dataset.Point
+	Excluded                     map[int]string // quest -> why this character cannot use it
+	Farms                        []Farm
+	net                          *network
+	walkGrids                    walks
+	walkTable                    walkTable // walks measured between the places routes go to (walktable.go)
+	deaths                       *deaths
+	lifts                        []dataset.Lift
+	danger                       dangerMap
+	elites                       dangerMap    // elite places: cell -> highest elite level
+	Dungeons                     []*Dungeon   // dungeons a route with dungeons may run (Options.Dungeons)
+	required                     map[int]bool // quests of the required class chains (keepClassQuest), for requiredTarget
+	tank                         map[int]bool // quests that give the tank form or stance (tankGoals)
 	// classOverride turns a class chain (by its goal) off ("off": not required) or on ("on": required) for a measure
 	classOverride map[int]string
 	// wandDetour: the most a visit to a capital for the wands may add to the way (seconds; 0: defaultWandDetour)

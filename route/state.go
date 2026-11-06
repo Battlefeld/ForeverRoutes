@@ -233,6 +233,9 @@ func (w *World) mobTime(s *State, n *dataset.NPC, site Site) float64 {
 			f, r = wp.KillSecondsWand(w.Char, w.Level(s), n, dps)
 		}
 	}
+	if w.paceFight > 0 {
+		f, r = f*w.paceFight, r*w.paceRest+w.restAdd // the player's measured pace (feedback.go)
+	}
 	if ff, rr, ok := w.feedbackSeconds(s, n); ok {
 		f, r = ff, rr
 	}
