@@ -302,5 +302,19 @@ if realData then
  FR.Key=originalKey;check(#M.errors==0,'real route event errors')
  io.write('PASS actual route data: '..routeCount..' variants, start/middle/end HUD refresh\n')
 end
+-- the RestedXP guide: followed as a fixed list by default when there is one, the live plan ignored; /fr guide route
+-- goes back to the optimized route with live planning
+do
+ local saved=ForeverRoutesData.guides
+ ForeverRoutesData.guides={[FR.Key()]={s={{op='a',q=96873,n='Guide quest',m=1,x=0,y=0}}}}
+ FR.CharDB().guide=nil;FR.live=nil
+ check(FR.GuideMode()=='rxp','the guide is the default when it exists')
+ local _,_,kind=FR.Route();check(kind=='rxp','the route is the guide')
+ FR.SetLive({steps={{op='accept',quest=4641,at={m=1,x=0,y=0}}}})
+ check(FR.live==nil,'no live plan while the guide is followed')
+ check(FR.Advance().q==96873,'the guide step comes first')
+ SlashCmdList.FOREVERROUTES('guide route');check(FR.GuideMode()=='route','switched back to the route')
+ ForeverRoutesData.guides=saved;FR.CharDB().guide=nil
+end
 io.write('PASS '..count..' checks; no mocked UI/event errors\n')
 

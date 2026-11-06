@@ -62,10 +62,31 @@ end
 
 -- The route of this character: "Solo mit Dungeon" (with dungeon runs) when chosen and there is one, else "Solo ohne
 -- Dungeon".
+-- Which steps the window follows: the RestedXP guide as a fixed list (the default for now; no live plan), or
+-- ForeverRoutes' optimized route with live planning (/fr guide route).
+function FR.GuideMode()
+ local g=charDB().guide
+ if g=='route'then return'route'end
+ local key=FR.Key();local data=ForeverRoutesData
+ if key and data and data.guides and data.guides[key]then return'rxp'end
+ return'route'
+end
+function FR.SetGuideMode(mode)
+ local c=charDB();c.guide=mode;c.index=1;c.skipped={};c.confirmed={};FR.live=nil;FR.nextLive=nil;FR.liveStages=nil;FR.pinned=nil
+ return FR.Advance()
+end
 function FR.Route()
  local key=FR.Key();local data=ForeverRoutesData
  if not key or not data then return nil,key end
- local c=charDB();local selected=key..((c.dungeons or c.group)and'-dungeons'or'')
+ local c=charDB()
+ if FR.GuideMode()=='rxp'then
+  local selected=key..'-rxp';local g=data.guides[key]
+  if c.routeKey~=selected or c.dataRevision~=data.build then
+   c.routeKey=selected;c.dataRevision=data.build;c.index=1;c.skipped={};c.confirmed={};FR.pinned=nil
+  end
+  return g,selected,'rxp'
+ end
+ local selected=key..((c.dungeons or c.group)and'-dungeons'or'')
  local revision=data.routes and data.routes[selected]and data.routes[selected].revision or data.build
  if c.routeKey~=selected or c.dataRevision~=revision then
   c.routeKey=selected;c.dataRevision=revision;c.index=1;c.skipped={};c.confirmed={};FR.pinned=nil
@@ -412,6 +433,7 @@ local function storedDungeon(name)
  return nil
 end
 function FR.SetLive(result)
+ if FR.GuideMode()=='rxp'then FR.live=nil;FR.nextLive=nil;FR.liveStages=nil;return end -- the guide is followed as it is
  if type(result)~='table'or type(result.steps)~='table'then FR.live=nil;FR.nextLive=nil;FR.liveStages=nil;return end
  local out={}
  for _,s in ipairs(result.steps)do

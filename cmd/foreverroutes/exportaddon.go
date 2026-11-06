@@ -1,6 +1,7 @@
 package main
 
 import (
+	"cmp"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -107,6 +108,36 @@ func cmdExportAddon(args []string) error {
 	}
 	if ds != nil {
 		fmt.Fprintf(&b, "ForeverRoutesData.build = %s\n", luaStr(ds.Build))
+	}
+	// The RestedXP guides as plain step lists: the addon follows one instead of the optimized route when the player
+	// chooses it (/fr guide rxp), live planning off.
+	b.WriteString("ForeverRoutesData.guides = {}\n")
+	for _, g := range cat.Routes {
+		if len(g.Events) == 0 {
+			continue
+		}
+		prof := filepath.Join(*profiles, strings.ToLower(g.Character.Class)+".json")
+		if !fileExists(prof) {
+			prof = ""
+		}
+		w, err := loadWorld(*path, g.Character.Race, g.Character.Class, g.Character.Faction, prof, false)
+		if err != nil {
+			return fmt.Errorf("RXP %s: %w", g.Key, err)
+		}
+		res, err := w.FollowGuide(g.Events, cmp.Or(g.Target, 20))
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "RXP %s: left out: %v\n", g.Key, err)
+			continue
+		}
+		fmt.Fprintf(&b, "ForeverRoutesData.guides[%s] = {race = %s, class = %s, faction = %s, target = %d, hours = %.1f, basis = \"rxp\", s = {\n",
+			luaStr(g.Key), luaStr(g.Character.Race), luaStr(g.Character.Class), luaStr(g.Character.Faction), cmp.Or(g.Target, 20), res.Seconds/3600)
+		for _, st := range res.Steps {
+			b.WriteString(" {")
+			writeStep(&b, w, res, st)
+			b.WriteString("},\n")
+		}
+		b.WriteString("}}\n")
+		fmt.Fprintf(os.Stderr, "RXP %s: %d steps, %.1f h\n", g.Key, len(res.Steps), res.Seconds/3600)
 	}
 	writeFallbackCatalog(&b, cat)
 	return os.WriteFile(*out, []byte(b.String()), 0o644)

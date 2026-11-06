@@ -237,6 +237,7 @@ local function optionMenu()
  menu.child=CreateFrame('Frame',nil,menu.scroll);menu.child:SetSize(300,140);menu.scroll:SetScrollChild(menu.child);menu.rows={}
  y=y+150;head('AKTIONEN')
  local actions={
+  {'Guide: RestedXP / ForeverRoutes live',function()FR.SetGuideMode(FR.GuideMode()=='rxp'and'route'or'rxp');refresh()end},
   {'Live-Plan neu berechnen',function()FR.ReplanNow()end},
   {'An den Questtracker setzen',function()SlashCmdList.FOREVERROUTES('dock')end},
   {'Übersprungene zurückholen',function()FR.RestoreSkipped()end},
@@ -440,7 +441,7 @@ function FR.Refresh()
  if view.paused then status='Route pausiert: im Dungeon'
  elseif view.live and FR.liveBlock then status=string.format('Live-Plan · %d Quests im Block',FR.BlockQuests())
  elseif view.live then status='Live-Plan'
- else status=string.format('%s · Schritt %d von %d',view.kind=='rxp-fallback'and'Guide'or'Route',math.min(view.index,view.total),view.total)end
+ else status=string.format('%s · Schritt %d von %d',view.kind=='rxp'and'RestedXP'or view.kind=='rxp-fallback'and'Guide'or'Route',math.min(view.index,view.total),view.total)end
  frame.status:SetText(status..(group and' · mit Dungeons'or' · solo'))
  frame.current.text:SetText(view.text)
  local icon=FR.StepIcon(view.step);frame.current.icon:SetShown(icon~=nil);if icon then frame.current.icon:SetTexture(icon)end
@@ -536,6 +537,9 @@ SlashCmdList.FOREVERROUTES=function(msg)
  elseif msg=='arrow'then FR.Config().arrowHidden=not FR.Config().arrowHidden
  elseif msg:match('^scale%s+[%d%.]+$')then
   FR.Config().scale=math.max(.65,math.min(1.5,tonumber(msg:match('([%d%.]+)$'))or 1));if frame then frame:SetScale(FR.Config().scale)end
+ elseif msg=='guide'or msg=='guide rxp'or msg=='guide route'then
+  local mode=msg=='guide rxp'and'rxp'or msg=='guide route'and'route'or(FR.GuideMode()=='rxp'and'route'or'rxp')
+  FR.SetGuideMode(mode);print('ForeverRoutes: '..(FR.GuideMode()=='rxp'and'RestedXP-Guide (Live-Plan aus)'or'ForeverRoutes-Route mit Live-Plan'));refresh()
  elseif msg=='neu'or msg=='replan'then FR.ReplanNow()
  elseif msg=='tracker'or msg=='questtracker'then FR.Config().blizzTracker=not FR.Config().blizzTracker or nil;FR.Config().window=nil;FR.Config().docked=true;if frame then frame.docked=dock(frame)end;applyTracker()
  elseif msg=='dock'or msg=='andocken'then FR.Config().window=nil;FR.Config().docked=true;if frame and not dock(frame)then position(frame,'window','LEFT',40,120)end
