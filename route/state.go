@@ -25,6 +25,7 @@ type State struct {
 	BagUntil, BagReady          float64
 	EquipmentRevision           string
  ManaCurrent, ManaMaximum float64
+ ManaRegenPerSecond float64 // verified out-of-combat regeneration; zero if unavailable
 	Pos                         dataset.Point
 	XP                          int
 	Time                        float64
@@ -144,6 +145,11 @@ func (w *World) move(s *State, to dataset.Point) error {
 		}
 	case byWalk:
 		w.discoverAlong(s, from, to)
+	}
+	// Recover mana while traveling only when a verified rate is available.
+	// No guessed regeneration and no double counting of drink recovery.
+	if s.ManaMaximum > 0 && s.ManaRegenPerSecond > 0 && !math.IsNaN(s.ManaRegenPerSecond) && !math.IsInf(s.ManaRegenPerSecond, 0) {
+		s.ManaCurrent = math.Min(s.ManaMaximum, s.ManaCurrent+t*s.ManaRegenPerSecond)
 	}
 	s.Time += t
 	s.Travel += t
