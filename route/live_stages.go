@@ -73,7 +73,7 @@ func (w *World) PlanStages(s *State, po PlanOptions, budget time.Duration) (*Res
 	if best == nil || len(best.acts) == 0 {
 		return nil, nil
 	}
-	res, err := w.replayFrom(s, best.acts)
+	res, err := w.replayFrom(s, w.takeAlong(s, best.acts))
 	if err != nil {
 		return nil, nil
 	}
@@ -472,3 +472,63 @@ func (ss *stageSearch) rateOf(s *State, m *macro, span float64) float64 {
 }
 
 const rateSpan = 900.0
+
+// takeAlong adds the errands a plan passes by: a quest without objectives (deliver a message, report to someone) that
+// is offered where a step of the plan stands and handed in where a later step stands is taken there and handed in
+// there. It costs a few seconds of talking; the plan goes there anyway.
+func (w *World) takeAlong(s0 *State, acts []Action) []Action {
+	const near, aside = 60.0, 90.0 // yards to the giver; seconds aside to the ender
+	states := make([]*State, len(acts)+1)
+	s := s0.clone()
+	states[0] = s.clone()
+	for i, a := range acts {
+		if w.Apply(s, a) != nil {
+			return acts
+		}
+		states[i+1] = s.clone()
+	}
+	planned := map[int]bool{}
+	for _, a := range acts {
+		if a.Op == "accept" {
+			planned[a.Quest] = true
+		}
+	}
+	out := acts
+	for _, q := range w.Quests {
+		if len(q.Objectives) > 0 || q.Dungeon != nil || planned[q.ID] || s0.Status[q.Index] != notTaken {
+			continue
+		}
+		// where it is offered (the first step there that may take it) and where it is handed in after that
+		from, to := -1, -1
+		for i := range out {
+			if from < 0 {
+				if distance(out[i].At, q.StartPos) <= near && i+1 < len(states) && w.CanAccept(states[i+1], q) == nil {
+					from = i
+				}
+			} else if i+1 < len(states) && w.TravelTime(states[i+1], out[i].At, q.EndPos) <= aside {
+				to = i
+				break
+			}
+		}
+		if from < 0 || to < 0 {
+			continue
+		}
+		try := slices.Clone(out[:from+1])
+		try = append(try, Action{Op: "accept", Quest: q.ID, At: q.StartPos})
+		try = append(try, out[from+1:to+1]...)
+		try = append(try, Action{Op: "turnin", Quest: q.ID, At: q.EndPos})
+		try = append(try, out[to+1:]...)
+		if _, err := w.replayFrom(s0, try); err != nil {
+			continue
+		}
+		out = try
+		// the states after the insertion point moved by one or two steps: rebuild them for the next quest
+		s = s0.clone()
+		states = append(states[:0], s.clone())
+		for _, a := range out {
+			w.Apply(s, a)
+			states = append(states, s.clone())
+		}
+	}
+	return out
+}
