@@ -104,7 +104,7 @@ func (ss *stageSearch) run(s *State, acts []Action, zone string, depth int, root
 		if len(options) == 0 {
 			break
 		}
-		options = ss.readyDungeons(s, options)
+		options = ss.readyDungeons(s, withoutPickups(options))
 		if !homeDone && !ss.w.goalBegun(s) {
 			options = withoutGoals(ss.w, options) // goals wait until the start zone is worked off (below)
 		}
@@ -140,14 +140,18 @@ func (ss *stageSearch) run(s *State, acts []Action, zone string, depth int, root
 		}
 		stay := here != nil && here.kind == "grind" && len(zones) == 0
 		if here != nil && !stay {
+			// in the zone the block that brings the most per second, the way there included: the near quests before
+			// the far ones, so the run works the zone off instead of crossing it for the biggest block each time
+			best := 0.0
 			for i := range options {
 				m := &options[i]
 				if m.kind == "grind" {
 					continue
 				}
-				if stays, _ := w.macroZone(m, zone); stays && ss.beatsGrinding(s, m) && ss.rateOf(s, m, 0) >= stayShare*awayRate {
-					here, stay = m, true
-					break
+				if stays, _ := w.macroZone(m, zone); stays && ss.beatsGrinding(s, m) {
+					if r := ss.rateOf(s, m, nearSpan); r >= stayShare*awayRate && r > best {
+						here, stay, best = m, true, r
+					}
 				}
 			}
 		}
@@ -528,6 +532,22 @@ func (w *World) takeAlong(s0 *State, acts []Action) []Action {
 		for _, a := range out {
 			w.Apply(s, a)
 			states = append(states, s.clone())
+		}
+	}
+	return out
+}
+
+// nearSpan: a block in the zone is measured over at least this many seconds (a hand-in next door is not worth a
+// detour for itself).
+const nearSpan = 300.0
+
+// withoutPickups drops the blocks that only take dungeon quests: the run of the dungeon takes them on its way there,
+// and taken alone they pull the character across the zone for a quest done hours later.
+func withoutPickups(options []macro) []macro {
+	out := options[:0]
+	for _, m := range options {
+		if m.kind != "pickup" {
+			out = append(out, m)
 		}
 	}
 	return out
