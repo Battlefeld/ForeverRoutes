@@ -526,6 +526,7 @@ local function questName(step)
  local t=C_QuestLog and call(C_QuestLog.GetTitleForQuestID,step.q)
  return(type(t)=='string'and t~='')and t or step.n or('Quest '..tostring(step.q))
 end
+FR.QuestName=questName
 function FR.Text(step)
  if not step then return'Route geschafft'end
  local n=questName(step)

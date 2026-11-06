@@ -472,10 +472,12 @@ function FR.Refresh()
  frame.nextLabel:Hide();for _,r in ipairs(frame.nextRows)do r:Hide()end
  if not FR.Config().compact and view.step then
   local steps=FR.Steps();local count=0;local last=FR.Text(view.step)
+  local grouped={};for _,g in ipairs(view.group or{})do grouped[g]=true end
   for i=view.index+1,#steps do
    local s=steps[i]
-   -- two steps in a row with the same text (a grind split at a level) read as one line
-   if not FR.Done(s)and(view.live or not FR.CharDB().skipped[i])and FR.Text(s)~=last then
+   -- two steps in a row with the same text (a grind split at a level) read as one line; the gathering task's
+   -- steps are in its line already
+   if not FR.Done(s)and not grouped[s]and(view.live or not FR.CharDB().skipped[i])and FR.Text(s)~=last then
     last=FR.Text(s)
     count=count+1
     if count==1 then frame.nextLabel:ClearAllPoints();frame.nextLabel:SetPoint('TOPLEFT',frame.content,'TOPLEFT',0,-y-6);frame.nextLabel:SetText('DANACH');frame.nextLabel:Show();y=y+25 end

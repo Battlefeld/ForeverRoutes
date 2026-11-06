@@ -117,6 +117,15 @@ check(FR.frame.stageRows[1].text:GetText():find('The Barrens',1,true),'first leg
 FR.SetLive({steps={{op='accept',quest=96873,at={m=1,x=0,y=0}}}});FR.Refresh()
 check(FR.liveStages==nil and not FR.frame.stageLabel:IsShown(),'no legs without the planner\'s stages')
 FR.Config().compact=wasCompact
+-- a gathering task: the accepts in one town are one task, in any order; a far accept is not part of it
+FR.live=nil;FR.SetLive({steps={{op='accept',quest=96873,name='A',at={m=1,x=0,y=0}},{op='accept',quest=4641,name='B',at={m=1,x=60,y=0}},{op='accept',quest=4642,name='C',at={m=1,x=90,y=40}},{op='accept',quest=4643,name='D',at={m=1,x=2000,y=0}}}})
+local v=FR.TaskView()
+check(v.group and #v.group==3,'three accepts in one town are one task')
+check(v.text:find('^Alle hier annehmen %(3%)'),'the task reads as one line: '..tostring(v.text))
+FR.Config().compact=false;FR.Refresh()
+for _,r in ipairs(FR.frame.nextRows)do check(not(r:IsShown()and r.text:GetText():find('Annehmen: B',1,true)),'grouped steps not listed again under DANACH')end
+FR.Config().compact=wasCompact;FR.live=nil;FR.SetLive({steps={{op='accept',quest=96873,at={m=1,x=0,y=0}}}})
+
 
 check(#FR.live==1 and FR.live[1].q==96873,'restoring skipped steps lets the quest in again')
 FR.Skip();FR.Back();FR.SetLive({steps={{op='accept',quest=96873,at={m=1,x=0,y=0}}}})

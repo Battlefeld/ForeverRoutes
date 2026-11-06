@@ -61,10 +61,31 @@ function FR.Blocked(step)
  if(step.op=='w'or step.op=='t')and not FR.OnQuest(step.q)and not FR.Completed(step.q)then return'Quest ist nicht im Log. Annahme prüfen oder übersprungenen Schritt wiederherstellen.'end
  return nil
 end
+-- A gathering task: the accepts (or hand-ins) that follow the current one in the same town are one task, done in any
+-- order (each step counts as done once its quest is in the log, or handed in). Nil when the step stands alone.
+FR.GROUP_NEAR=150
+function FR.Group(step,index,steps)
+ if not step or(step.op~='a'and step.op~='t')or step.sk or not step.x then return nil end
+ local group={step}
+ for i=index+1,#steps do
+  local s=steps[i]
+  if s.op~=step.op or s.sk or s.m~=step.m or not s.x or(s.x-step.x)^2+(s.y-step.y)^2>FR.GROUP_NEAR^2 then
+   if not FR.Done(s)then break end -- a step done meanwhile does not end the group
+  elseif not FR.Done(s)then group[#group+1]=s end
+ end
+ return #group>1 and group or nil
+end
+function FR.GroupText(group)
+ local names={}
+ for _,s in ipairs(group)do names[#names+1]=FR.QuestName(s)end
+ return string.format('%s (%d): %s',group[1].op=='a'and'Alle hier annehmen'or'Alle hier abgeben',#group,table.concat(names,', '))
+end
 function FR.TaskView()
  local step,index=FR.Advance();local steps,live=FR.Steps();local r,key,kind=FR.Route()
  local view={step=step,index=index,total=#steps,live=live,route=r,key=key,kind=kind,items=FR.Items(step),parallel={},paused=FR.Paused(step)}
  view.text=step and FR.Text(step)or((live or(r and r.s))and'Route geschafft'or'Keine Route verfügbar')
+ view.group=FR.Group(step,index,steps)
+ if view.group then view.text=FR.GroupText(view.group)end
  view.hint=step and(FR.Blocked(step)or FR.Hint(step))
  -- Persistent side tasks are authored data, never every future quest forced into the log.
  for _,t in ipairs(r and r.tasks or{})do
