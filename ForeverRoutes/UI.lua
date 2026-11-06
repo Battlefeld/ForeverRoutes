@@ -544,7 +544,7 @@ SlashCmdList.FOREVERROUTES=function(msg)
  elseif msg=='tracker'or msg=='questtracker'then FR.Config().blizzTracker=not FR.Config().blizzTracker or nil;FR.Config().window=nil;FR.Config().docked=true;if frame then frame.docked=dock(frame)end;applyTracker()
  elseif msg=='dock'or msg=='andocken'then FR.Config().window=nil;FR.Config().docked=true;if frame and not dock(frame)then position(frame,'window','LEFT',40,120)end
  elseif msg=='position'then FR.Config().window=nil;FR.Config().arrow=nil;if frame then position(frame,'window','LEFT',40,120)end;if arrow then position(arrow,'arrow','TOP',0,-110)end
- elseif msg~='show'then print('ForeverRoutes: /fr · show · hide · skip · back · done · options · compact · tracker · lock · arrow · scale 1 · position · restore');return end
+ elseif msg~='show'then print('ForeverRoutes: /fr · show · hide · skip · back · done · options · compact · tracker · lock · arrow · scale 1 · position · restore · guide (RestedXP an/aus) · neu');return end
  FR.Show()
 end
 
