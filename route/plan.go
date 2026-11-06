@@ -459,7 +459,11 @@ func (w *World) hubs(s *State) []hub {
 func (w *World) hubMacro(s0 *State, h hub) *macro {
 	s := s0.clone()
 	var acts []Action
-	for _, q := range h.quests {
+	quests := h.quests
+	if w.liveLocal {
+		quests = w.nearestFirst(s.Pos, quests) // live: the givers in walking order, not back and forth
+	}
+	for _, q := range quests {
 		w.try(s, &acts, Action{Op: "accept", Quest: q.ID, At: w.startAt(s, q)})
 	}
 	if len(acts) == 0 {

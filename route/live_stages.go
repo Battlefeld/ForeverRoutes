@@ -1,6 +1,7 @@
 package route
 
 import (
+	"github.com/Battlefeld/ForeverRoutes/dataset"
 	"math"
 	"slices"
 	"sort"
@@ -153,8 +154,13 @@ func (ss *stageSearch) run(s *State, acts []Action, zone string, depth int, root
 					continue
 				}
 				if stays, _ := w.macroZone(m, zone); stays && ss.beatsGrinding(s, m) {
-					if r := ss.rateOf(s, m, nearSpan); r >= stayShare*awayRate && r > best {
-						here, stay, best = m, true, r
+					r := ss.rateOf(s, m, nearSpan)
+					pick := r
+					if m.kind == "hub" {
+						pick *= hubPreferred // take what is offered here at once, then work it off, then hand it in
+					}
+					if r >= stayShare*awayRate && pick > best {
+						here, stay, best = m, true, pick
 					}
 				}
 			}
@@ -591,3 +597,26 @@ func errand(w *World, m *macro) bool {
 	}
 	return true
 }
+
+// nearestFirst orders quests by their givers, each time the nearest to the last one (from p).
+func (w *World) nearestFirst(p dataset.Point, quests []*Quest) []*Quest {
+	left := slices.Clone(quests)
+	out := make([]*Quest, 0, len(left))
+	for len(left) > 0 {
+		bi := 0
+		for i, q := range left {
+			if distance(p, q.StartPos) < distance(p, left[bi].StartPos) {
+				bi = i
+			}
+		}
+		out = append(out, left[bi])
+		p = left[bi].StartPos
+		left = slices.Delete(left, bi, bi+1)
+	}
+	return out
+}
+
+// hubPreferred: a hub (every quest offered at a place taken at once, worked off together, handed in together) is
+// preferred to single quests of a little more XP per second: one quest after the other from the same town means
+// walking out and back for each.
+const hubPreferred = 1.25
