@@ -361,7 +361,13 @@ const zephrasMap = 2991
 func (w *World) resolve(q *dataset.Quest) (*Quest, string) {
 	rq := &Quest{Quest: q}
 	var ok bool
-	if rq.StartPos, rq.StartNPC, ok = w.refPos(q.Start, q.StartAt); !ok {
+	// started by an item only (no giver): the quest begins where the item drops, from creatures the character must
+	// be able to fight, even where a source gives a place for its start
+	itemOnly := len(q.Start) > 0 && len(q.StartDrops) > 0
+	for _, r := range q.Start {
+		itemOnly = itemOnly && r.Kind == "item"
+	}
+	if rq.StartPos, rq.StartNPC, ok = w.refPos(q.Start, q.StartAt); !ok || itemOnly {
 		// started by an item: the quest begins where the item drops
 		if len(q.StartDrops) == 0 {
 			return nil, "start position unknown"

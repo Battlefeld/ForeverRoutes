@@ -179,6 +179,17 @@ func (w *World) CanAccept(s *State, q *Quest) error {
 			return fail("quest %d needs quest %d first", q.ID, p)
 		}
 	}
+	// a quest an item starts: the item must drop from a creature the character can fight now (an elite of a higher
+	// level is not farmed for its quest)
+	if len(q.StartSources) > 0 && s.Status[q.Index] == notTaken {
+		safe := false
+		for _, src := range q.StartSources {
+			safe = safe || !w.tooDangerous(s, src)
+		}
+		if !safe {
+			return fail("quest %d starts with an item from creatures too strong at level %d", q.ID, w.Level(s))
+		}
+	}
 	for _, p := range q.PreActive {
 		if pq := w.ByID[p]; pq == nil || s.Status[pq.Index] != active {
 			return fail("quest %d is offered while quest %d is in the log", q.ID, p)

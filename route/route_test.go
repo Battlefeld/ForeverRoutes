@@ -409,3 +409,44 @@ func TestQuestOfferedWhileAnotherIsInTheLog(t *testing.T) {
 		}
 	}
 }
+
+// A quest an item starts is not taken while the item drops only from creatures too strong; Lakota'mani (elite 22)
+// is not planned at all for a solo character.
+func TestItemStartNeedsAFightableSource(t *testing.T) {
+	d, err := dataset.Load("../data/routes-data.json.gz")
+	if err != nil {
+		t.Skip("dataset not available:", err)
+	}
+	w, err := NewWorld(d, Character{Race: "Troll", Class: "Shaman"}, Options{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if w.ByID[883] != nil {
+		t.Fatal("Lakota'mani planned for a solo character")
+	}
+	low, high := w.NewState(), w.NewState()
+	high.XP = totalXP(w, 20)
+	checked := 0
+	for _, q := range w.Quests {
+		if len(q.StartSources) == 0 || q.MinLevel > 1 || len(q.PreAll)+len(q.PreAny)+len(q.PreActive) > 0 || q.Breadcrumb > 0 || q.Exclusive > 0 {
+			continue
+		}
+		dangerLow, dangerHigh := true, true
+		for _, src := range q.StartSources {
+			dangerLow = dangerLow && w.tooDangerous(low, src)
+			dangerHigh = dangerHigh && w.tooDangerous(high, src)
+		}
+		if dangerLow && !dangerHigh {
+			if w.CanAccept(low, q) == nil {
+				t.Fatalf("%s taken at level 1 though its item drops only from creatures too strong", q.Name)
+			}
+			if err := w.CanAccept(high, q); err != nil {
+				t.Fatalf("%s not taken at level 20: %v", q.Name, err)
+			}
+			checked++
+		}
+	}
+	if checked == 0 {
+		t.Skip("no item-started quest to check")
+	}
+}
