@@ -216,15 +216,16 @@ local function optionMenu()
  y=y+150;head('AKTIONEN')
  local actions={
   {'Live-Plan neu berechnen',function()FR.ReplanNow()end},
-  {'Neben den Questtracker setzen',function()SlashCmdList.FOREVERROUTES('dock')end},
+  {'An den Questtracker setzen',function()SlashCmdList.FOREVERROUTES('dock')end},
   {'Übersprungene zurückholen',function()FR.RestoreSkipped()end},
-  {'Nebenaufgaben zeigen',function()FR.RestoreTasks()end},
+  {'Nebenaufgaben wieder zeigen',function()FR.RestoreTasks()end},
  }
+ -- one button per line, as wide as the menu: the texts fit
  for i,a in ipairs(actions)do
-  local b=button(menu,a[1],158,function()a[2]();refresh()end)
-  b:SetPoint('TOPLEFT',30+((i-1)%2)*164,-(y+math.floor((i-1)/2)*32))
+  local b=button(menu,a[1],320,function()a[2]();refresh()end)
+  b:SetPoint('TOPLEFT',30,-(y+(i-1)*32))
  end
- menu:SetHeight(y+64+20)
+ menu:SetHeight(y+#actions*32+44)
  menu:Hide();return menu
 end
 function FR.ToggleMenu()
