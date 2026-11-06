@@ -43,6 +43,8 @@ type KillObservation struct {
 	FightSeconds float64 `json:"fightSeconds"`
 	RestSeconds  float64 `json:"restSeconds"`
 	Samples      int     `json:"samples"`
+ ManaNetPerKill float64 `json:"manaNetPerKill,omitempty"`
+ ManaMax float64 `json:"manaMax,omitempty"`
 }
 
 func (w *World) AcceptFeedback(f CombatFeedback) error {
@@ -56,7 +58,7 @@ func (w *World) AcceptFeedback(f CombatFeedback) error {
 		return fmt.Errorf("invalid or incompatible combat feedback")
 	}
 	for _, k := range f.Kills {
-		if k.NPC <= 0 || k.PlayerLevel < 1 || k.PlayerLevel > 60 || k.FightSeconds <= 0 || k.RestSeconds < 0 || math.IsNaN(k.FightSeconds+k.RestSeconds) || math.IsInf(k.FightSeconds+k.RestSeconds, 0) || (f.Source == "measured" && k.Samples < 3) {
+		if k.NPC <= 0 || k.PlayerLevel < 1 || k.PlayerLevel > 60 || k.FightSeconds <= 0 || k.RestSeconds < 0 || k.ManaNetPerKill < 0 || k.ManaMax < 0 || math.IsNaN(k.FightSeconds+k.RestSeconds) || math.IsInf(k.FightSeconds+k.RestSeconds, 0) || (f.Source == "measured" && k.Samples < 3) {
 			return fmt.Errorf("invalid or insufficient kill observation")
 		}
 	}
