@@ -76,6 +76,9 @@ func (d dangerMap) at(p dataset.Point) int {
 	return d[[3]int{p.Map, int(math.Floor(p.X / dangerCell)), int(math.Floor(p.Y / dangerCell))}]
 }
 
+// eliteAbove: how many levels above the character a lone elite (not among other elites) is still fought alone.
+const eliteAbove = 2
+
 // tooDangerous tells whether the character cannot work at a source yet: a creature above its fighting range, or a place
 // among such creatures.
 func (w *World) tooDangerous(s *State, src Source) bool {
@@ -96,7 +99,8 @@ func (w *World) dangerousAt(level int, src Source) bool {
 	}
 	if src.NPC != nil {
 		if src.NPC.Rank == 1 {
-			return mobLevel(src.NPC) > level // an elite only at the character's level or below
+			// a lone elite up to eliteAbove levels above the character: a hard fight, its time comes from its health
+			return mobLevel(src.NPC) > level+eliteAbove
 		}
 		return mobLevel(src.NPC) > lvl
 	}

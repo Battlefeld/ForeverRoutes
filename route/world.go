@@ -70,6 +70,10 @@ type Farm struct {
 
 // World is the dataset seen by one character.
 type World struct {
+	zoneOnce                     sync.Once
+	zoneCache                    *sync.Map // zoneOf by 25-yard cell (zones.go)
+	anchorOnce                   sync.Once
+	zoneAnchors                  []zoneAnchor
 	preparation                  PreparationPlan
 	feedback                     *CombatFeedback
 	paceFight, paceRest, restAdd float64 // the player's measured pace (feedback.go); 0: none
@@ -493,12 +497,12 @@ func (w *World) soloSources(src []Source, class bool) []Source {
 		if s.Site.Spawns == 0 || s.Chance <= 0 {
 			continue
 		}
-		// elites are for groups; a warlock's or hunter's pet tanks a plain elite (not a rare elite or a boss) of the
-		// character's level or below (tooDangerous checks the level when it is fought). A class quest's plain elite is
-		// made to be fought alone (Call of Fire's last spirit, the Voidwalker to bind).
+		// rare elites and bosses are for groups; a plain elite is fought alone up to eliteAbove levels above the
+		// character (tooDangerous checks the level when it is fought, and elite camps stay closed). A class quest's
+		// plain elite is made to be fought alone (Call of Fire's last spirit, the Voidwalker to bind).
 		if class && !s.Talk && s.NPC != nil && s.NPC.Rank == 1 {
 			s.Class = true
-		} else if !s.Talk && s.NPC != nil && (s.NPC.Rank == 1 && !w.Opt.SoloElites || s.NPC.Rank == 2 || s.NPC.Rank == 3) {
+		} else if !s.Talk && s.NPC != nil && (s.NPC.Rank == 2 || s.NPC.Rank == 3) {
 			continue
 		}
 		kept = append(kept, s)

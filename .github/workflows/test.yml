@@ -48,7 +48,7 @@ jobs:
       - name: test (includes the Orc Warlock / Human Mage baseline)
         run: go test -timeout 25m -skip 'TestShippedRoutesMatchCurrentModel' ./...
       # The shipped routes must replay under the current data and model. After a data fix (the dataset changed since
-      # the routes were last computed) they cannot until the update workflow recomputes them: on main that recompute
+      # the routes were last computed, or route/model-stamp.txt marks a planner model change) they cannot until the update workflow recomputes them: on main that recompute
       # is started here (unless one is already queued or running) and the check counts as passed. Any other mismatch
       # (planner code changed the routes) fails as before.
       - name: shipped routes match the current model
@@ -59,6 +59,8 @@ jobs:
             echo "shipped routes replay"; exit 0
           fi
           data=$(git log -1 --format=%ct -- data/routes-data.json.gz)
+          model=$(git log -1 --format=%ct -- route/model-stamp.txt)
+          [ "${model:-0}" -gt "$data" ] && data=$model # a planner model change waits for the recompute like a data fix
           routes=$(git log -1 --format=%ct -- data/routes)
           if [ "$data" -gt "$routes" ] && [ "${{ github.ref }}" = "refs/heads/main" ]; then
             stale=$(grep -c 'stale/invalid route' /tmp/shipped.log || true)

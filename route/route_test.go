@@ -71,8 +71,8 @@ func TestWorldExcludesWhatTheCharacterCannotDo(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if mage.Excluded[5] == "" {
-		t.Error("a quest that needs an elite kill must be excluded for a mage")
+	if mage.ByID[5] == nil {
+		t.Errorf("a lone plain elite is fought alone up to two levels above: %s", mage.Excluded[5])
 	}
 	for _, id := range []int{1, 2, 3} {
 		if w.ByID[id] == nil {
@@ -94,8 +94,9 @@ func TestClassRules(t *testing.T) {
 	if warrior.tooDangerous(s, warrior.ByID[1].Objectives[0].Sources[0]) {
 		t.Error("a group of level 1-2 suits a level 1 warrior")
 	}
-	if warrior.ByID[5] != nil {
-		t.Error("a warrior does not fight elites alone")
+	// the lone elite (level 2) is in reach of a level 1 warrior (two levels above at most)
+	if q := warrior.ByID[5]; q == nil || warrior.tooDangerous(s, q.Objectives[0].Sources[0]) {
+		t.Error("a lone plain elite two levels above is fought alone")
 	}
 }
 
@@ -411,7 +412,7 @@ func TestQuestOfferedWhileAnotherIsInTheLog(t *testing.T) {
 }
 
 // A quest an item starts is not taken while the item drops only from creatures too strong; Lakota'mani (elite 22)
-// is not planned at all for a solo character.
+// waits until the character is at most two levels below him.
 func TestItemStartNeedsAFightableSource(t *testing.T) {
 	d, err := dataset.Load("../data/routes-data.json.gz")
 	if err != nil {
@@ -421,10 +422,17 @@ func TestItemStartNeedsAFightableSource(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if w.ByID[883] != nil {
-		t.Fatal("Lakota'mani planned for a solo character")
-	}
 	low, high := w.NewState(), w.NewState()
+	if q := w.ByID[883]; q != nil {
+		at14, at20 := w.NewState(), w.NewState()
+		at14.XP, at20.XP = totalXP(w, 14), totalXP(w, 20)
+		if w.CanAccept(at14, q) == nil {
+			t.Fatal("Lakota'mani (elite 22) taken at level 14")
+		}
+		if err := w.CanAccept(at20, q); err != nil {
+			t.Fatalf("Lakota'mani not taken at level 20: %v", err)
+		}
+	}
 	high.XP = totalXP(w, 20)
 	checked := 0
 	for _, q := range w.Quests {

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"cmp"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -24,17 +25,18 @@ type liveRequest struct {
 
 // nextReply is the next stretch of route.
 type nextReply struct {
-	Schema    string       `json:"schema"`
-	Mode      string       `json:"mode"` // route: following the character's best route; plan: planned freely
-	Level     int          `json:"level"`
-	Horizon   float64      `json:"horizon"`
-	Seconds   float64      `json:"seconds"`
-	ToLevel   int          `json:"toLevel"`
-	Profile   string       `json:"killProfile"`
-	Assumed   int          `json:"assumedDropSteps"`
-	Notes     []string     `json:"notes,omitempty"`
-	Steps     []route.Step `json:"steps"`
-	PlannedMS int64        `json:"plannedMs"`
+	Schema    string        `json:"schema"`
+	Mode      string        `json:"mode"` // route: following the character's best route; plan: planned freely
+	Level     int           `json:"level"`
+	Horizon   float64       `json:"horizon"`
+	Seconds   float64       `json:"seconds"`
+	ToLevel   int           `json:"toLevel"`
+	Profile   string        `json:"killProfile"`
+	Assumed   int           `json:"assumedDropSteps"`
+	Notes     []string      `json:"notes,omitempty"`
+	Stages    []route.Stage `json:"stages,omitempty"` // the legs of the next hours: zones, cities, dungeon runs
+	Steps     []route.Step  `json:"steps"`
+	PlannedMS int64         `json:"plannedMs"`
 }
 
 func cmdNext(args []string) error {
@@ -50,7 +52,8 @@ func cmdNext(args []string) error {
 	out := fs.String("out", "", "write the reply here instead of standard output")
 	group := fs.Bool("dungeons", false, "route with dungeons: dungeon runs with their quests may be planned (also when the route runs dungeons)")
 	window := fs.Duration("optimize", 3*time.Second, "time to re-order the plan's next quest steps from the live state (0: keep the route's order)")
-	blockBudget := fs.Duration("block", 4*time.Second, "time to plan the next block of quests for XP per hour (0: follow the route only)")
+	blockBudget := fs.Duration("block", 0, "time to plan the next block of quests for XP per hour alone (0: off; the stages plan further)")
+	stagesBudget := fs.Duration("stages", 6*time.Second, "time to plan the next hours by zones for XP per hour (0: follow the route only)")
 	feedbackPolicy := fs.String("feedback-policy", "", "optional locally approved post-release ForeverSim feedback settings; disabled by default")
 	fs.Parse(args)
 	if *routesDir == "" {
@@ -234,8 +237,26 @@ func cmdNext(args []string) error {
 			}
 		}
 	}
+	// The next hours by zones (live_stages.go): where to go and in which order, each zone worked off before the next,
+	// against the route's way on over the same stretch. Not while the route's next steps hold a trainer or the wand
+	// (those the stages do not plan); dungeon runs and the sleeping bag they plan themselves.
+	full := res
+	if *stagesBudget > 0 && (mode == "route" || mode == "rxp-fallback") && req.Live.Level >= 6 && !trainingAhead(res, 60) {
+		if st, _ := w.PlanStages(s, route.PlanOptions{TargetLevel: 60}, *stagesBudget); st != nil {
+			ref := res
+			if g, err := w.FollowGuideFrom(s, events, cmp.Or(file.Target, 60), route.StageHorizon); err == nil {
+				ref = g.Result
+			}
+			if rs, rr := route.XPRate(s, st), route.XPRate(s, ref); rs > rr {
+				notes = append(notes, fmt.Sprintf("next hours planned by zones: %.0f instead of %.0f XP/h", rs*3600, rr*3600))
+				res, full, mode = st.Head(*horizon, route.BlockQuests+2), st, "stages"
+			} else {
+				full = ref
+			}
+		}
+	}
 	reply := nextReply{Schema: "foreverroutes.next.v1", Mode: mode, Level: req.Live.Level, Horizon: *horizon, Seconds: res.Seconds, ToLevel: res.Level,
-		Profile: res.Profile, Assumed: res.Assumed, Notes: notes, Steps: res.Steps, PlannedMS: time.Since(t0).Milliseconds()}
+		Profile: res.Profile, Assumed: res.Assumed, Notes: notes, Stages: w.Stages(s, full), Steps: res.Steps, PlannedMS: time.Since(t0).Milliseconds()}
 	if *out == "" {
 		return printJSON(reply)
 	}
@@ -270,6 +291,19 @@ func readRoute(path string) (routeFileData, error) {
 		return routeFileData{}, fmt.Errorf("%s: not a route", path)
 	}
 	return f, nil
+}
+
+// trainingAhead: the plan's first n steps go to the profession trainers or make the wand.
+func trainingAhead(r *route.Result, n int) bool {
+	for i, st := range r.Steps {
+		if i >= n {
+			break
+		}
+		if st.Op == "prof" || st.Op == "wand" {
+			return true
+		}
+	}
+	return false
 }
 
 // preparationAhead: the plan's first n steps hold a step the free block planner does not plan (the profession

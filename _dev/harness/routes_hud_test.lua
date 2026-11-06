@@ -105,6 +105,19 @@ FR.Skip();check(FR.Advance().q==4641,'skip moves on')
 FR.SetLive({steps={{op='accept',quest=96873,at={m=1,x=0,y=0}},{op='work',quest=96873,obj=0,at={m=1,x=0,y=0}},{op='accept',quest=4641,at={m=1,x=0,y=0}}}})
 check(#FR.live==1 and FR.live[1].q==4641,'replanned live plan leaves the skipped quest out')
 FR.RestoreSkipped();FR.SetLive({steps={{op='accept',quest=96873,at={m=1,x=0,y=0}}}})
+-- the live plan's legs: shown as ETAPPEN, the first one highlighted; a block being played keeps its steps but the
+-- legs are always the newest plan's
+FR.SetLive({steps={{op='accept',quest=96873,at={m=1,x=0,y=0}}},stages={{zone='The Barrens',fromLevel=14,toLevel=15,minutes=40,quests=8},{zone='Orgrimmar',fromLevel=15,toLevel=15,minutes=5},{zone='Ruins of Lordaeron',dungeon='ruins-of-lordaeron',fromLevel=15,toLevel=16,minutes=56},{zone='Tirisfal Glades / Undercity',fromLevel=16,toLevel=17,minutes=20}}})
+local lines=FR.StageLines(4)
+check(#lines==4 and lines[1].text=='The Barrens · bis Stufe 15 · 40 Min' and lines[1].current,'first leg with level and minutes')
+check(lines[3].dungeon and lines[3].text:find('^Dungeon: Ruins of Lordaeron'),'a dungeon run is its own leg')
+local wasCompact=FR.Config().compact;FR.Config().compact=false;FR.Refresh()
+check(FR.frame.stageLabel:IsShown()and FR.frame.stageLabel:GetText()=='ETAPPEN','legs shown in the window')
+check(FR.frame.stageRows[1].text:GetText():find('The Barrens',1,true),'first leg row')
+FR.SetLive({steps={{op='accept',quest=96873,at={m=1,x=0,y=0}}}});FR.Refresh()
+check(FR.liveStages==nil and not FR.frame.stageLabel:IsShown(),'no legs without the planner\'s stages')
+FR.Config().compact=wasCompact
+
 check(#FR.live==1 and FR.live[1].q==96873,'restoring skipped steps lets the quest in again')
 FR.Skip();FR.Back();FR.SetLive({steps={{op='accept',quest=96873,at={m=1,x=0,y=0}}}})
 check(#FR.live==1 and FR.live[1].q==96873,'taking the skip back lets the quest in again')

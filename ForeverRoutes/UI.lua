@@ -91,7 +91,7 @@ local function dock(f)
  if replacing()then f:SetPoint('TOPRIGHT',t,'TOPRIGHT',0,0)else f:SetPoint('TOPRIGHT',t,'TOPLEFT',-14,0)end
  return true
 end
-local items,placeItems,questList,dungeonSection
+local items,placeItems,questList,dungeonSection,stageSection
 local function hide()frame:Hide();if menu then menu:Hide()end;FR.Config().hidden=true;applyTracker();if items and call(InCombatLockdown)~=true then items:Hide()end end
 refresh=function()FR.Refresh()end
 -- Icons: each step and hint shows what it is at a glance (the game's own icons).
@@ -191,6 +191,8 @@ local function makeFrame()
  frame.rows={};for i=1,24 do frame.rows[i]=row(content)end
  frame.nextLabel=label(content,11,C.muted)
  frame.nextRows={};for i=1,3 do frame.nextRows[i]=row(content)end
+ frame.stageLabel=label(content,11,C.muted)
+ frame.stageRows={};for i=1,4 do frame.stageRows[i]=row(content)end
  frame.dungeonLabel=label(content,11,C.muted)
  frame.dungeonRows={};for i=1,2 do frame.dungeonRows[i]=row(content)end
  frame.questLabel=label(content,11,C.muted)
@@ -385,6 +387,19 @@ questList=function(y)
 end
 -- The window's height limit: a few lines more than the head; the rest scrolls.
 FR.WINDOW_MAX=560
+-- The live plan's legs for the next hours: where to go in which order (the first is the one being played).
+stageSection=function(y)
+ frame.stageLabel:Hide();for _,r in ipairs(frame.stageRows)do r:Hide()end
+ if FR.Config().compact or not view.live then return y end
+ local lines=FR.StageLines(#frame.stageRows)
+ if #lines<2 then return y end
+ frame.stageLabel:ClearAllPoints();frame.stageLabel:SetPoint('TOPLEFT',frame.content,'TOPLEFT',0,-y-6);frame.stageLabel:SetText('ETAPPEN');frame.stageLabel:Show();y=y+25
+ for i,l in ipairs(lines)do
+  local r=frame.stageRows[i];r.q,r.item,r.task,r.objective=nil,nil,nil,nil
+  y=setRow(r,l.text,y,l.current and C.gold or C.muted,{icon=l.dungeon and ICON.d or ICON.travel})
+ end
+ return y
+end
 -- With dungeons: the next dungeon run of the plan, when (level, steps away) and the quests to take along.
 dungeonSection=function(y,group)
  frame.dungeonLabel:Hide();for _,r in ipairs(frame.dungeonRows)do r:Hide()end
@@ -469,6 +484,7 @@ function FR.Refresh()
    end
   end
  end
+ y=stageSection(y)
  y=dungeonSection(y,group)
  y=questList(y)
  frame.confirm:SetEnabled(FR.CanConfirm(view.step)and true or false)

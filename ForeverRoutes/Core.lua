@@ -412,7 +412,7 @@ local function storedDungeon(name)
  return nil
 end
 function FR.SetLive(result)
- if type(result)~='table'or type(result.steps)~='table'then FR.live=nil;FR.nextLive=nil;return end
+ if type(result)~='table'or type(result.steps)~='table'then FR.live=nil;FR.nextLive=nil;FR.liveStages=nil;return end
  local out={}
  for _,s in ipairs(result.steps)do
   local at=type(s.at)=='table'and s.at or{}
@@ -433,6 +433,14 @@ function FR.SetLive(result)
   if st.op=='p'then st.cl=FR.CAMP_LEVEL end
  end
  FR.nextLive=out
+ -- the legs of the next hours (zones, cities, dungeon runs): always the newest plan's, also while a block is played
+ local stages={}
+ for _,g in ipairs(type(result.stages)=='table'and result.stages or{})do
+  if type(g)=='table'and type(g.zone)=='string'then
+   stages[#stages+1]={zone=g.zone,dungeon=type(g.dungeon)=='string'and g.dungeon~=''and g.dungeon or nil,from=tonumber(g.fromLevel),to=tonumber(g.toLevel),min=tonumber(g.minutes),quests=tonumber(g.quests)}
+  end
+ end
+ FR.liveStages=#stages>0 and stages or nil
  if FR.KeepBlock()then return end -- the block being played stays; this plan waits until it is (nearly) done
  FR.AdoptLive(out)
 end
@@ -667,3 +675,16 @@ function FR.GrindProgress(step)
  return lines
 end
 
+
+-- The legs of the live plan as lines: "The Barrens · bis Stufe 15 · 40 Min", a dungeon run as "Dungeon: ...".
+function FR.StageLines(max)
+ local out={}
+ for i,g in ipairs(FR.liveStages or{})do
+  if i>(max or 4)then break end
+  local what=g.dungeon and('Dungeon: '..g.zone)or g.zone
+  local lvl=(g.to and g.from and g.to>g.from)and string.format(' · bis Stufe %d',g.to)or''
+  local mins=(g.min and g.min>0)and string.format(' · %d Min',g.min)or''
+  out[#out+1]={text=what..lvl..mins,dungeon=g.dungeon~=nil,current=i==1}
+ end
+ return out
+end
