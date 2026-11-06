@@ -46,3 +46,22 @@ func WithMageWater(p ManaChain, level int, ranks []MageWaterRank) (ManaChain,err
  p.DrinkTargetFraction=1
  return p,nil
 }
+
+// ClassUsesMana reports the primary resource of the standard playable classes.
+// Druids use mana in caster form; shapeshifted energy/rage is handled separately.
+// Hunters use mana in the Classic/Forever ruleset.
+func ClassUsesMana(class string) bool {
+ switch class {
+ case "MAGE", "PRIEST", "WARLOCK", "SHAMAN", "PALADIN", "DRUID", "HUNTER":
+  return true
+ default:
+  return false
+ }
+}
+
+// WithMageWaterForClass leaves non-mana classes unchanged.
+// Actual power type must additionally be checked by the live bridge.
+func WithMageWaterForClass(p ManaChain, class string, level int, ranks []MageWaterRank) (ManaChain,error) {
+ if !ClassUsesMana(class) { return p,nil }
+ return WithMageWater(p,level,ranks)
+}
