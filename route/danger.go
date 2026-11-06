@@ -53,7 +53,7 @@ func newElites(npcs []dataset.NPC, faction string) dangerMap {
 	n, top := map[[3]int]int{}, map[[3]int]int{}
 	for i := range npcs {
 		c := &npcs[i]
-		if c.Rank < 1 || c.Rank > 3 || c.Hostile == "-" || (c.Hostile != "" && c.Hostile != "AH" && c.Hostile != faction) {
+		if c.Rank < 1 || c.Rank > 3 || c.Lone || c.Hostile == "-" || (c.Hostile != "" && c.Hostile != "AH" && c.Hostile != faction) {
 			continue
 		}
 		for _, p := range c.Spawns {

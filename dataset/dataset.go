@@ -98,10 +98,12 @@ type NPC struct {
 	HP       int     `json:"hp"`
 	Dmg      float64 `json:"dmg,omitempty"`  // average melee hit (cmangos); 0 = unknown
 	Rank     int     `json:"rank,omitempty"` // 0 normal, 1 elite, 2 rare elite, 3 boss, 4 rare
-	Respawn  int     `json:"respawn,omitempty"`
-	Hostile  string  `json:"hostile,omitempty"` // A, H, AH: which factions it attacks; empty = unknown
-	Spawns   []Point `json:"spawns,omitempty"`
-	Source   string  `json:"src"`
+	// Lone: one creature that roams; its spawns are where it may be, not a group (an elite place needs a group)
+	Lone    bool    `json:"lone,omitempty"`
+	Respawn int     `json:"respawn,omitempty"`
+	Hostile string  `json:"hostile,omitempty"` // A, H, AH: which factions it attacks; empty = unknown
+	Spawns  []Point `json:"spawns,omitempty"`
+	Source  string  `json:"src"`
 }
 
 // Object is a game object: chests, herbs, quest objects.

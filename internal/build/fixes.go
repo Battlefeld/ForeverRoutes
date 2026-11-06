@@ -30,7 +30,9 @@ type questFix struct {
 	// another creature is wrong and would send the route there
 	ObjectiveDrops map[int][]int `json:"objectiveDrops,omitempty"`
 	// NPCRanks: the rank of a creature of the quest the sources leave out (1 elite), NPC ID to rank
-	NPCRanks   map[int]int         `json:"npcRanks,omitempty"`
+	NPCRanks map[int]int `json:"npcRanks,omitempty"`
+	// NPCLone: creatures that are one roaming creature (their spawns are its places, not a group)
+	NPCLone    []int               `json:"npcLone,omitempty"`
 	AddFight   int                 `json:"addFight,omitempty"`
 	Objectives []dataset.Objective `json:"objectives,omitempty"`
 	// Profession: the quest is offered only to characters with this profession (the routes learn Skinning, Cooking
@@ -244,6 +246,13 @@ func (b *builder) notLeveling() {
 // applyNPCRanks sets the creature ranks the quest fixes give (an elite the sources list as a plain creature).
 func (b *builder) applyNPCRanks() {
 	for _, f := range b.questFixes {
+		for _, id := range f.NPCLone {
+			for i := range b.npcOut {
+				if b.npcOut[i].ID == id {
+					b.npcOut[i].Lone = true
+				}
+			}
+		}
 		for id, rank := range f.NPCRanks {
 			for i := range b.npcOut {
 				if b.npcOut[i].ID == id {
