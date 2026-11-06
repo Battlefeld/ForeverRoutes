@@ -475,8 +475,15 @@ const stayShare = 0.7
 
 // rateOf: the value a block brings per second, over at least span seconds. Elsewhere a block is measured over
 // rateSpan: handing in finished quests takes a minute and pays a lot, which says nothing about how good a zone is.
+// The XP of quests finished already does not count: it is earned, whenever the character hands them in.
 func (ss *stageSearch) rateOf(s *State, m *macro, span float64) float64 {
-	return ss.w.value(s, m.state) / math.Max(math.Max(span, 1), m.state.Time-s.Time)
+	v := ss.w.value(s, m.state)
+	for _, a := range m.actions {
+		if q := ss.w.ByID[a.Quest]; a.Op == "turnin" && q != nil && ss.w.complete(s, q) {
+			v -= float64(q.XP)
+		}
+	}
+	return v / math.Max(math.Max(span, 1), m.state.Time-s.Time)
 }
 
 const rateSpan = 900.0

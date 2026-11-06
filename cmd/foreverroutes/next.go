@@ -259,7 +259,7 @@ func cmdNext(args []string) error {
 			if g, err := w.FollowGuideFrom(s, events, cmp.Or(file.Target, 60), route.StageHorizon); err == nil {
 				ref = g.Result
 			}
-			if rs, rr := route.XPRate(s, st), route.XPRate(s, ref); rs > rr {
+			if rs, rr := route.XPRate(s, st), route.XPRate(s, ref); rs >= stagesPreferred*rr {
 				notes = append(notes, fmt.Sprintf("next hours planned by zones: %.0f instead of %.0f XP/h", rs*3600, rr*3600))
 				res, full, mode = st.Head(*horizon, route.BlockQuests+2), st, "stages"
 			} else {
@@ -332,3 +332,7 @@ func preparationAhead(r *route.Result, n int) bool {
 	}
 	return false
 }
+
+// stagesPreferred: the stages are taken while they bring at least this share of the route's XP per hour over the same
+// stretch: following the route from a state it was not made for sends the player back and forth, the stages do not.
+const stagesPreferred = 0.9
