@@ -159,9 +159,10 @@ local function makeFrame()
  position(frame,'window','LEFT',40,120)
  if FR.Config().docked~=false and not FR.Config().window then frame.docked=dock(frame)end
  frame:SetScale(math.max(.65,math.min(1.5,tonumber(FR.Config().scale)or 1)))
- frame.crystal=CreateFrame('Button',nil,frame);frame.crystal:SetSize(64,64);frame.crystal:SetPoint('TOP',frame,'TOP',0,16)
- frame.crystal:SetFrameLevel((frame:GetFrameLevel()or 1)+5)
- frame.crystal.tex=frame.crystal:CreateTexture(nil,'ARTWORK');frame.crystal.tex:SetAllPoints()
+ -- the crest in the frame's top edge: the ForeverCore crystal set into the gold, blue when connected, grey when not
+ -- (_dev/tools/build_crest.py makes it from the panel's gem wings and the crystal)
+ frame.crest=frame:CreateTexture(nil,'BORDER');frame.crest:SetSize(128,78);frame.crest:SetPoint('TOP',frame,'TOP',0,15)
+ frame.crystal=CreateFrame('Button',nil,frame);frame.crystal:SetSize(56,56);frame.crystal:SetPoint('TOP',frame,'TOP',0,12)
  tip(frame.crystal,'ForeverCore','Blau: ForeverCore hat in dieser Sitzung geantwortet. Ohne Verbindung folgt ForeverRoutes der gespeicherten Route.')
  local title=UI.Text(frame,16,C.gold,'title');title:SetPoint('TOPLEFT',frame,'TOPLEFT',32,-42);title:SetText('ForeverRoutes')
  local close=iconButton(frame,'Interface\\Buttons\\UI-Panel-MinimizeButton-Up','Interface\\Buttons\\UI-Panel-MinimizeButton-Down',hide);close:SetSize(24,24);close:SetPoint('TOPRIGHT',-30,-39)
@@ -417,7 +418,7 @@ function FR.Refresh()
  if not frame or not frame:IsShown()then if frame then applyTracker();placeItems()end;return view.step end
  -- the quest tracker comes up after login: dock as soon as it is there
  if not frame.docked and FR.Config().docked~=false and not FR.Config().window then frame.docked=dock(frame)end
- local connected=FR.Connected();UI.SetArt(frame.crystal.tex,connected and'crystal_on'or'crystal_off')
+ local connected=FR.Connected();UI.SetArt(frame.crest,connected and'crest_on'or'crest_off')
  local group=FR.CharDB().dungeons==true or FR.CharDB().group==true
  -- one short line: where the steps come from and how far (the data check is in the crystal's tooltip)
  local status
