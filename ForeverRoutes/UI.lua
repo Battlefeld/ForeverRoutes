@@ -160,17 +160,17 @@ local function makeFrame()
  if FR.Config().docked~=false and not FR.Config().window then frame.docked=dock(frame)end
  frame:SetScale(math.max(.65,math.min(1.5,tonumber(FR.Config().scale)or 1)))
  -- the crest in the frame's top edge: the ForeverCore crystal set into the gold, blue when connected, grey when not
- -- (_dev/tools/build_crest.py makes it from the panel's gem wings and the crystal)
- frame.crest=frame:CreateTexture(nil,'BORDER');frame.crest:SetSize(144,105);frame.crest:SetPoint('TOP',frame,'TOP',0,0)
- frame.crystal=CreateFrame('Button',nil,frame);frame.crystal:SetSize(76,76);frame.crystal:SetPoint('TOP',frame,'TOP',0,-22)
+ -- (_dev/tools/build_crest.py makes it: the panel's gem ornament with the crystal in place of its stone)
+ frame.crest=frame:CreateTexture(nil,'BORDER');frame.crest:SetSize(74,75);frame.crest:SetPoint('TOP',frame,'TOP',0,0)
+ frame.crystal=CreateFrame('Button',nil,frame);frame.crystal:SetSize(56,56);frame.crystal:SetPoint('TOP',frame,'TOP',0,-4)
  tip(frame.crystal,'ForeverCore','Blau: ForeverCore hat in dieser Sitzung geantwortet. Ohne Verbindung folgt ForeverRoutes der gespeicherten Route.')
  local title=UI.Text(frame,16,C.gold,'title');title:SetPoint('TOPLEFT',frame,'TOPLEFT',32,-42);title:SetText('ForeverRoutes')
  local close=iconButton(frame,'Interface\\Buttons\\UI-Panel-MinimizeButton-Up','Interface\\Buttons\\UI-Panel-MinimizeButton-Down',hide);close:SetSize(24,24);close:SetPoint('TOPRIGHT',-30,-39)
  tip(close,'Schließen','Mit /fr wieder öffnen.')
  local collapse=iconButton(frame,'Interface\\Buttons\\UI-MinusButton-Up','Interface\\Buttons\\UI-MinusButton-Down',function()FR.Config().compact=not FR.Config().compact;refresh()end);collapse:SetSize(16,16);collapse:SetPoint('RIGHT',close,'LEFT',-4,0)
  tip(collapse,'Kompaktansicht','Nur den aktuellen Schritt mit Fortschritt zeigen.')
- frame.status=label(frame,11,C.muted);frame.status:SetPoint('TOPLEFT',30,-104);frame.status:SetWidth(340);frame.status:SetWordWrap(false)
- frame.current=CreateFrame('Button',nil,frame);frame.current:SetPoint('TOPLEFT',30,-122);frame.current:SetWidth(340)
+ frame.status=label(frame,11,C.muted);frame.status:SetPoint('TOPLEFT',30,-76);frame.status:SetWidth(340);frame.status:SetWordWrap(false)
+ frame.current=CreateFrame('Button',nil,frame);frame.current:SetPoint('TOPLEFT',30,-96);frame.current:SetWidth(340)
  frame.current.icon=frame.current:CreateTexture(nil,'ARTWORK');frame.current.icon:SetSize(26,26);frame.current.icon:SetPoint('TOPLEFT',0,2)
  frame.current.text=label(frame.current,15,C.gold);frame.current.text:SetPoint('TOPLEFT',32,0);frame.current.text:SetWidth(308);frame.current.text:SetWordWrap(true)
  frame.current:SetScript('OnClick',function()if view and view.step and view.step.q then FR.OpenQuest(view.step.q)end end)
@@ -430,7 +430,7 @@ function FR.Refresh()
  frame.current.text:SetText(view.text)
  local icon=FR.StepIcon(view.step);frame.current.icon:SetShown(icon~=nil);if icon then frame.current.icon:SetTexture(icon)end
  local ch=math.max(28,frame.current.text:GetStringHeight()+8);frame.current:SetHeight(ch)
- local top=122+ch+2
+ local top=96+ch+2
  frame.scroll:ClearAllPoints();frame.scroll:SetPoint('TOPLEFT',frame,'TOPLEFT',30,-top);frame.scroll:SetPoint('BOTTOMRIGHT',frame,'BOTTOMRIGHT',-30,76)
  local y=0
  local ri=0
