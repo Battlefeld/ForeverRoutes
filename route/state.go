@@ -268,27 +268,40 @@ func (w *World) killSeconds(s *State, n *dataset.NPC, site Site, k float64) (t, 
 	} else {
 		per = 4 + site.Spacing*w.Opt.PathFactor/w.Opt.RunSpeed // using an object
 	}
-	// Prefer measured mana depletion when available. This is a conservative
-	// estimate: observed net mana use includes regeneration and is not spell cost.
-	// No guessed mana consumption is applied when observations are missing.
-	if n != nil && w.feedback != nil && w.feedback.Source == "measured" && k >= 1 {
+	// Measured mana usage is applied only to mana-based combat profiles.
+	// Feral druids are deliberately excluded until form-specific feedback is available.
+	var drinkSeconds float64
+	if n != nil && ClassUsesMana(string(w.Char.Class)) && string(w.Char.Class) != "DRUID" && w.feedback != nil && w.feedback.Source == "measured" && k >= 1 {
 		for _, obs := range w.feedback.Kills {
-			if obs.NPC == n.ID && obs.PlayerLevel == w.Level(s) && obs.Samples >= 3 && obs.ManaNetPerKill > 0 && obs.ManaMax > 0 {
-				if s.ManaMaximum <= 0 { s.ManaMaximum = obs.ManaMax; s.ManaCurrent = obs.ManaMax }
-				if s.ManaMaximum == obs.ManaMax {
-					// The current mana estimate is retained between route actions.
-					needed := obs.ManaNetPerKill*k
-					if needed > s.ManaCurrent {
-						// No verified drink rate yet: retain the existing measured rest
-						// timing rather than inventing a drinking duration.
-						s.ManaCurrent = 0
-					} else { s.ManaCurrent -= needed }
-				}
-				break
+			if obs.NPC != n.ID || obs.PlayerLevel != w.Level(s) || obs.Samples < 3 || obs.ManaNetPerKill <= 0 || obs.ManaMax <= 0 {
+				continue
 			}
+			if s.ManaMaximum != obs.ManaMax {
+				s.ManaMaximum, s.ManaCurrent = obs.ManaMax, obs.ManaMax
+			}
+			water, err := BestMageWater(w.Level(s), ClassicMageWaterReference)
+			if err == nil {
+				// Net observed consumption already includes in-combat regeneration.
+				// Avoid adding regeneration a second time.
+				chain := ManaChain{
+					Current: s.ManaCurrent, Maximum: s.ManaMaximum,
+					CostPerKill: obs.ManaNetPerKill, FightSeconds: per,
+					DrinkManaPerSecond: water.RestoreMana / water.DurationSeconds,
+					DrinkTargetFraction: 1,
+				}
+				// The optimizer sometimes evaluates fractional expected kills. Keep
+				// the old timing model for those instead of rounding up.
+				if k == math.Trunc(k) {
+					if result, err := SimulateManaChain(chain, int(k)); err == nil {
+						s.ManaCurrent = result.EndMana
+						drinkSeconds = result.Drinking + result.Waiting
+					}
+				}
+			}
+			break
 		}
 	}
-	t = per * k
+	t = per*k + drinkSeconds
 	if n == nil || site.Spawns <= 0 {
 		return t, 0, 0
 	}
