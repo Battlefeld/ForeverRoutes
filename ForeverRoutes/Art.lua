@@ -38,7 +38,7 @@ end
 -- Draws a pack image as a frame around `frame`, the way CSS border-image does: the corners keep their size, the edges
 -- and the middle stretch. slices = {top,right,bottom,left} in pixels of the pack image, borders = the same four
 -- widths as drawn. Returns the nine textures.
-function UI.NineSlice(frame,key,slices,borders,layer,sublevel)
+function UI.NineSlice(frame,key,slices,borders,layer,sublevel,center)
  local e=A[key];if not e then return nil end
  local st,sr,sb,sl=slices[1],slices[2],slices[3],slices[4]
  local bt,br,bb,bl=borders[1],borders[2],borders[3],borders[4]
@@ -55,7 +55,15 @@ function UI.NineSlice(frame,key,slices,borders,layer,sublevel)
  local tr=piece('tr',w-sr,w,0,st);tr:SetSize(br,bt);tr:SetPoint('TOPRIGHT',frame,'TOPRIGHT',0,0)
  local bL=piece('bl',0,sl,h-sb,h);bL:SetSize(bl,bb);bL:SetPoint('BOTTOMLEFT',frame,'BOTTOMLEFT',0,0)
  local bR=piece('br',w-sr,w,h-sb,h);bR:SetSize(br,bb);bR:SetPoint('BOTTOMRIGHT',frame,'BOTTOMRIGHT',0,0)
- local top=piece('t',sl,w-sr,0,st);top:SetHeight(bt);top:SetPoint('TOPLEFT',frame,'TOPLEFT',bl,0);top:SetPoint('TOPRIGHT',frame,'TOPRIGHT',-br,0)
+ if center then
+  -- an ornament in the middle of the top edge (the panel's gem) keeps its size; only the bars beside it stretch
+  local c0,c1=center[1],center[2];local cw=(c1-c0)*bt/st
+  local mid=piece('tc',c0,c1,0,st);mid:SetSize(cw,bt);mid:SetPoint('TOP',frame,'TOP',0,0)
+  local tl2=piece('t',sl,c0,0,st);tl2:SetHeight(bt);tl2:SetPoint('TOPLEFT',frame,'TOPLEFT',bl,0);tl2:SetPoint('TOPRIGHT',mid,'TOPLEFT',0,0)
+  local tr2=piece('t2',c1,w-sr,0,st);tr2:SetHeight(bt);tr2:SetPoint('TOPLEFT',mid,'TOPRIGHT',0,0);tr2:SetPoint('TOPRIGHT',frame,'TOPRIGHT',-br,0)
+ else
+  local top=piece('t',sl,w-sr,0,st);top:SetHeight(bt);top:SetPoint('TOPLEFT',frame,'TOPLEFT',bl,0);top:SetPoint('TOPRIGHT',frame,'TOPRIGHT',-br,0)
+ end
  local bot=piece('b',sl,w-sr,h-sb,h);bot:SetHeight(bb);bot:SetPoint('BOTTOMLEFT',frame,'BOTTOMLEFT',bl,0);bot:SetPoint('BOTTOMRIGHT',frame,'BOTTOMRIGHT',-br,0)
  local lef=piece('l',0,sl,st,h-sb);lef:SetWidth(bl);lef:SetPoint('TOPLEFT',frame,'TOPLEFT',0,-bt);lef:SetPoint('BOTTOMLEFT',frame,'BOTTOMLEFT',0,bb)
  local rig=piece('r',w-sr,w,st,h-sb);rig:SetWidth(br);rig:SetPoint('TOPRIGHT',frame,'TOPRIGHT',0,-bt);rig:SetPoint('BOTTOMRIGHT',frame,'BOTTOMRIGHT',0,bb)
@@ -73,13 +81,15 @@ UI.STYLE={
  dropdown={'dropdown',{18,24,18,24},{12,16,12,16}},
  card={'panel_wide_small',{46,30,30,30},{30,22,22,22}},
  note={'notification_panel',{16,22,16,22},{10,14,10,14}},
- panel={'panel_square_medium',{50,34,34,34},{34,24,26,24}},
+ -- the panel is cut around its whole corner ornaments and its gem (top centre, pixels 98-165), drawn at 85 %: only
+ -- the plain bars between them stretch, so a tall window keeps its corners
+ panel={'panel_square_medium',{68,46,58,46},{58,39,49,39},{98,165}},
 }
 -- Frames are drawn a little muted (edges and middle slightly darker and translucent): softer than the raw pack art.
 local SOFT={panel={edge={.9,.9,.95,1},mid={.8,.84,.94,1}},button={edge={.92,.92,.96,1},mid={.9,.92,.98,1}},note={edge={.9,.9,.95,1},mid={.8,.84,.94,1}}}
 function UI.Style(frame,name,layer,sublevel)
  local s=UI.STYLE[name];if not s then return nil end
- local pieces=UI.NineSlice(frame,s[1],s[2],s[3],layer,sublevel)
+ local pieces=UI.NineSlice(frame,s[1],s[2],s[3],layer,sublevel,s[4])
  local soft=pieces and SOFT[name]
  if soft then for key,tex in pairs(pieces)do local c=key=='m'and soft.mid or soft.edge;tex:SetVertexColor(c[1],c[2],c[3],c[4])end end
  return pieces
