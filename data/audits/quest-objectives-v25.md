@@ -7,8 +7,8 @@ This is a structural audit of the pinned source rebuild, not an assertion that e
 | Status | Quests |
 |---|---:|
 | group_or_special_quest | 249 |
-| incomplete_or_unsupported | 490 |
-| structural_references_present | 2183 |
+| incomplete_or_unsupported | 486 |
+| structural_references_present | 2187 |
 
 The full compressed report contains every quest, target, source attribution and unresolved reference.
 
@@ -49,19 +49,16 @@ An item waypoint alone no longer establishes a safe pickup. A ground pickup need
 | 79362 | Grant's Shield | item 281146: acquisition unresolved; waypoints alone are not a gathering source |
 | 86667 | Snowbound | item 279379: acquisition unresolved; waypoints alone are not a gathering source |
 | 87760 | Holy Diver | item 280686: acquisition unresolved; waypoints alone are not a gathering source |
+| 91317 | The Tarnished | item 270435: acquisition unresolved; waypoints alone are not a gathering source |
 | 91725 | Stolen Enchanting Supplies | item 247805: acquisition unresolved; waypoints alone are not a gathering source |
-| 91732 | Good Steel | item 247816: acquisition unresolved; waypoints alone are not a gathering source |
-| 91772 | Shhh! We're Hunting Kobolds | item 247970: acquisition unresolved; waypoints alone are not a gathering source |
 | 91775 | Book Return | item 248002: acquisition unresolved; waypoints alone are not a gathering source |
 | 92742 | Testing the Wells | item 254546: acquisition unresolved; waypoints alone are not a gathering source |
 | 92747 | Moonbrook Espionage | item 254676: acquisition unresolved; waypoints alone are not a gathering source |
-| 92909 | Harvesting the Harvesters | item 255007: acquisition unresolved; waypoints alone are not a gathering source |
 | 94497 | Call of Water | item 265734: acquisition unresolved; waypoints alone are not a gathering source |
 | 94499 | Call of Water | item 265748: acquisition unresolved; waypoints alone are not a gathering source |
 | 94500 | Call of Water | item 265773: acquisition unresolved; waypoints alone are not a gathering source |
-| 95036 | A Moon-Kissed Blade | item 267454: acquisition unresolved; waypoints alone are not a gathering source |
+| 95036 | A Moon-Kissed Blade | item 267361: acquisition unresolved; waypoints alone are not a gathering source |
 | 95041 | Data Hoarders | item 267413: acquisition unresolved; waypoints alone are not a gathering source |
-| 95883 | The Tortured Soul | item 271350: acquisition unresolved; waypoints alone are not a gathering source |
 | 96241 | Talkin' bout Toxins, Mon | item 273015: acquisition unresolved; waypoints alone are not a gathering source |
 | 96264 | Elemental Aid | item 274463: acquisition unresolved; waypoints alone are not a gathering source |
 | 96781 | What's the Big Idea? | item 275482: acquisition unresolved; waypoints alone are not a gathering source |
@@ -85,4 +82,3 @@ An item waypoint alone no longer establishes a safe pickup. A ground pickup need
 | 99141 | Patience | item 286200: acquisition unresolved; waypoints alone are not a gathering source |
 | 99156 | Rear Guard Patrol | item 286326: acquisition unresolved; waypoints alone are not a gathering source |
 | 99161 | Rime's Wrath | item 286325: acquisition unresolved; waypoints alone are not a gathering source |
-| 99162 | Treacherous Cold | item 286360: acquisition unresolved; waypoints alone are not a gathering source |

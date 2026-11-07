@@ -38,7 +38,7 @@ func TestShippedRoutesMatchCurrentModelExtended(t *testing.T) {
 				t.Fatal(err)
 			}
 			if g.Level < r.Target || len(g.Skipped) > 0 {
-				t.Errorf("stale/invalid route: level %d of %d, skipped %v", g.Level, r.Target, g.Skipped)
+				t.Errorf("stale/invalid route: level %d of %d, skipped %v %+v", g.Level, r.Target, g.Skipped, g.Missed)
 			}
 		})
 	}

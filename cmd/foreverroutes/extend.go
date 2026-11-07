@@ -92,6 +92,24 @@ func cmdExtend(args []string) error {
 	if err != nil {
 		return err
 	}
+	// the stages may take a quest the route follower refuses (an item start that takes long to farm): its events
+	// go, with those of quests depending on it, until the route replays as planned
+	for try := 0; try < 5 && len(full.Missed) > 0; try++ {
+		drop := map[int]bool{}
+		for _, m := range full.Missed {
+			drop[m.Quest] = true
+		}
+		var kept []route.GuideEvent
+		for _, e := range events {
+			if !drop[e.Quest] {
+				kept = append(kept, e)
+			}
+		}
+		events = kept
+		if full, err = w.FollowGuide(events, *target); err != nil {
+			return err
+		}
+	}
 	improved, fullBest := events, full
 	if *budget > 0 {
 		if improved, fullBest, err = w.Improve(events, *target, *budget); err != nil {
