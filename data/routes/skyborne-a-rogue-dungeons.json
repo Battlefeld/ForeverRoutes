@@ -395,7 +395,7 @@
    "inRoute": false,
    "level": 14,
    "minLevel": 10,
-   "minutes": 4.7,
+   "minutes": 4.8,
    "name": "Snatch and Grab",
    "possible": true,
    "quest": 2206,
@@ -409,7 +409,7 @@
    "inRoute": true,
    "level": 19,
    "minLevel": 16,
-   "minutes": -10.1,
+   "minutes": -10.7,
    "name": "Alther's Mill",
    "possible": true,
    "quest": 2282,
@@ -424,7 +424,7 @@
    "inRoute": true,
    "level": 17,
    "minLevel": 14,
-   "minutes": -16.1,
+   "minutes": -18.5,
    "name": "This Must Be The Place",
    "possible": true,
    "quest": 79976,
@@ -835,12 +835,12 @@
  "finalModelReplayVerified": true,
  "finalXP": 167215,
  "hours": {
-  "optimized": 15.815027777777777
+  "optimized": 15.816805555555556
  },
  "key": "skyborne-a-rogue",
  "killProfile": "Engine rogue default (gear starter weapon, talents none; outside the table: default (uncalibrated) scaled to the table's edge)",
  "level": 20,
- "modelRevision": "foreverroutes.timeline-model.v2.3",
+ "modelRevision": "foreverroutes.timeline-model.v2.4",
  "preparations": {
   "bagStacks": 3,
   "camping": true,
@@ -856,7 +856,7 @@
   2282,
   92483
  ],
- "resumedAndReverified": true,
+ "resumedAndReverified": false,
  "runs": [
   "ruins-of-lordaeron",
   "the-hall-of-thanes"
@@ -864,163 +864,59 @@
  "scenario": "dungeons_auto",
  "schema": "foreverroutes.route.v1",
  "search": {
-  "BestSeconds": 56764.2,
+  "BestSeconds": 56770.7,
   "Better": [
    0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   1
+  ],
+  "CheckpointLoaded": false,
+  "DungeonChecks": null,
+  "DungeonCombinationsAllowed": 16,
+  "DungeonCombinationsEvaluated": 0,
+  "DungeonCombinationsTotal": 16,
+  "DungeonEnumerationComplete": false,
+  "Kept": [
+   0,
+   0,
+   0,
+   2,
    1,
-   0,
-   0,
-   0,
    0,
    0,
    0,
    1,
    3,
-   1
+   8
   ],
-  "CheckpointLoaded": false,
-  "DungeonChecks": [
-   {
-    "candidateFound": true,
-    "keys": [],
-    "seconds": 68792.8
-   },
-   {
-    "candidateFound": true,
-    "keys": [
-     "the-hall-of-thanes"
-    ],
-    "seconds": 63751.6
-   },
-   {
-    "candidateFound": true,
-    "keys": [
-     "wailing-caverns"
-    ],
-    "seconds": 64606.9
-   },
-   {
-    "candidateFound": true,
-    "keys": [
-     "the-hall-of-thanes",
-     "wailing-caverns"
-    ],
-    "seconds": 61319.2
-   },
-   {
-    "candidateFound": true,
-    "keys": [
-     "ruins-of-lordaeron"
-    ],
-    "seconds": 60497.6
-   },
-   {
-    "candidateFound": true,
-    "keys": [
-     "the-hall-of-thanes",
-     "ruins-of-lordaeron"
-    ],
-    "seconds": 57980
-   },
-   {
-    "candidateFound": false,
-    "keys": [
-     "wailing-caverns",
-     "ruins-of-lordaeron"
-    ]
-   },
-   {
-    "candidateFound": false,
-    "keys": [
-     "the-hall-of-thanes",
-     "wailing-caverns",
-     "ruins-of-lordaeron"
-    ]
-   },
-   {
-    "candidateFound": true,
-    "keys": [
-     "deadmines"
-    ],
-    "seconds": 66070.5
-   },
-   {
-    "candidateFound": true,
-    "keys": [
-     "the-hall-of-thanes",
-     "deadmines"
-    ],
-    "seconds": 62728.4
-   },
-   {
-    "candidateFound": false,
-    "keys": [
-     "wailing-caverns",
-     "deadmines"
-    ]
-   },
-   {
-    "candidateFound": false,
-    "keys": [
-     "the-hall-of-thanes",
-     "wailing-caverns",
-     "deadmines"
-    ]
-   },
-   {
-    "candidateFound": true,
-    "keys": [
-     "ruins-of-lordaeron",
-     "deadmines"
-    ],
-    "seconds": 59131.9
-   },
-   {
-    "candidateFound": false,
-    "keys": [
-     "the-hall-of-thanes",
-     "ruins-of-lordaeron",
-     "deadmines"
-    ]
-   }
-  ],
-  "DungeonCombinationsAllowed": 16,
-  "DungeonCombinationsEvaluated": 14,
-  "DungeonCombinationsTotal": 16,
-  "DungeonEnumerationComplete": false,
-  "Kept": [
-   9,
-   5,
-   1,
-   4,
-   1,
-   0,
-   0,
-   0,
-   13,
-   16,
-   43
-  ],
-  "PreparationCandidates": 28,
+  "PreparationCandidates": 3,
   "Restarts": 0,
-  "SeedsEvaluated": 9,
+  "SeedsEvaluated": 15,
   "Walks": [
-   23,
-   26,
-   30,
-   19,
-   10,
-   15,
+   2,
+   6,
+   2,
+   4,
+   2,
+   3,
    0,
    0,
-   30,
-   162,
-   61
+   1,
+   18,
+   10
   ]
  },
- "searchAttempts": 0,
- "searchSeconds": 0.326875714,
- "seconds": 56934.1,
+ "searchAttempts": 1,
+ "searchSeconds": 3.129282,
+ "seconds": 56940.5,
  "skipped": {},
  "sleepSteps": 1,
  "sleepingBagModel": {

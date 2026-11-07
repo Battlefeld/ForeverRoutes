@@ -16,12 +16,17 @@ import (
 	"github.com/Battlefeld/ForeverRoutes/route"
 )
 
-// loadWorld opens the dataset; profile is a kill profile written by ForeverCore ("" = the default estimate).
+// loadWorld opens the dataset; profile is a file, "auto" for the bundled class
+// profile, or "" for the uncalibrated default estimate.
 func loadWorld(path, race, class, faction, profile string, dungeons ...bool) (*route.World, error) {
 	return loadWorldWithClientQuests(path, race, class, faction, profile, "", dungeons...)
 }
 
 func loadWorldWithClientQuests(path, race, class, faction, profile, observations string, dungeons ...bool) (*route.World, error) {
+	profile, err := resolveCombatProfile(path, class, profile)
+	if err != nil {
+		return nil, err
+	}
 	d, err := dataset.Load(path)
 	if err != nil {
 		return nil, err
@@ -85,7 +90,7 @@ func cmdPlan(args []string) error {
 	race := fs.String("race", "Orc", "race")
 	class := fs.String("class", "Warlock", "class")
 	faction := fs.String("faction", "", "A or H (only for Skyborne)")
-	profile := fs.String("profile", "", "kill profile from ForeverCore (job kill-profile); empty = default estimate")
+	profile := fs.String("profile", automaticProfile, combatProfileHelp)
 	target := fs.Int("target", 30, "target level")
 	restarts := fs.Int("restarts", 4, "search runs")
 	seed := fs.Int64("seed", 1, "seed")
@@ -126,7 +131,8 @@ func cmdReplay(args []string) error {
 	race := fs.String("race", "Orc", "race")
 	class := fs.String("class", "Warlock", "class")
 	faction := fs.String("faction", "", "A or H (only for Skyborne)")
-	profile := fs.String("profile", "", "kill profile from ForeverCore (job kill-profile); empty = default estimate")
+	// Replay keeps legacy routes on their recorded model unless explicitly overridden.
+	profile := fs.String("profile", "", "combat profile file or auto; omitted = saved route model; empty = default estimate")
 	file := fs.String("route", "", "route file (output of plan)")
 	fs.Parse(args)
 	raw, err := os.ReadFile(*file)
@@ -146,9 +152,9 @@ func cmdReplay(args []string) error {
 	if err = json.Unmarshal(raw, &saved); err != nil {
 		return err
 	}
+	supplied := map[string]bool{}
+	fs.Visit(func(f *flag.Flag) { supplied[f.Name] = true })
 	if saved.Character.Race != "" {
-		supplied := map[string]bool{}
-		fs.Visit(func(f *flag.Flag) { supplied[f.Name] = true })
 		if !supplied["race"] {
 			*race = saved.Character.Race
 		}
@@ -165,7 +171,7 @@ func cmdReplay(args []string) error {
 	if saved.Result != nil && len(saved.Steps) == 0 {
 		saved.Steps = saved.Result.Steps
 	}
-	if *profile == "" && isEngineProfile(saved.Profile) {
+	if !supplied["profile"] && isEngineProfile(saved.Profile) {
 		candidate := filepath.Join(filepath.Dir(*path), "profiles", strings.ToLower(*class)+".json")
 		if fileExists(candidate) {
 			*profile = candidate
@@ -220,7 +226,7 @@ func cmdGuide(args []string) error {
 	race := fs.String("race", "Orc", "race")
 	class := fs.String("class", "Warlock", "class")
 	faction := fs.String("faction", "", "A or H (only for Skyborne)")
-	profile := fs.String("profile", "", "kill profile from ForeverCore (job kill-profile); empty = default estimate")
+	profile := fs.String("profile", automaticProfile, combatProfileHelp)
 	target := fs.Int("target", 30, "target level")
 	file := fs.String("events", "", `guide events: JSON list of {"op":"accept|complete|turnin|level","quest":id,"level":n}`)
 	out := fs.String("out", "", "write the walked route (JSON) here")

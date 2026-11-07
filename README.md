@@ -47,9 +47,9 @@ ist noch kein installierbares Addon (`tools/release.sh`).
 
 - Datensatz mit 2922 Quests, 3751 NPCs, 630 Objekten, 59 Flugmeistern, 45 Gasthäusern, Zeppelinen und Schiffen, dazu das
   Skyborne-Startgebiet Zephras Isle mit der Abreise beider Fraktionen. Skyborne brauchen `-faction A` oder `-faction H`.
-- Alle 56 unterstützten Volk-/Klassenkontexte werden bis 20 geprüft; je Kontext werden Solo und optionale Dungeons sowie passende Zauberstab-/Schlafsackvarianten berechnet. [Gesamtprüfung](data/audits/roster-v23.md).
+- Alle 56 unterstützten Volk-/Klassenkontexte werden bis 20 geprüft; je Kontext werden Solo und optionale Dungeons sowie passende Zauberstab-/Schlafsackvarianten berechnet. [Gesamtprüfung](data/audits/roster-v24.md).
 - Orc Hexer und Mensch Magier bleiben zusätzliche Ausgangstests bis Level 30.
-- **Die Stundenangaben sind nicht kalibriert.** Ohne `-profile` gilt das eingebaute Kampfmodell (`DefaultProfile`), eine Schätzung. Es
+- **Die Stundenangaben sind nicht kalibriert.** `plan`, `guide`, `improve`, `timeline` und `next` verwenden standardmäßig das passende Klassenprofil neben dem Datensatz (`-profile auto`). Fehlt es oder wird ausdrücklich `-profile ""` angegeben, gilt das eingebaute Kampfmodell (`DefaultProfile`), eine Schätzung. Es
   bewertet Grinden im Vergleich zu Quests etwa doppelt so gut wie die Wirklichkeit: Ein Guide-Ablauf (RestedXP) und
   reines Grinden landen bis Level 21 im Modell fast gleichauf. Darum grinden die Routen heute zu viel. Klassenbezogene Simulationswerte kommen
   über die eingefrorenen Engine-Profile (`KillProfile`); auch sie sind keine Ingame-Messung. Mit `guide` lassen sich Guides unter denselben Regeln nachgehen und so
@@ -147,10 +147,15 @@ jeder Quest-Änderung neu auf. So folgt die Route dem Charakter, statt ihn auf e
 
 ### Kampfprofil
 
-`-profile` (bei `plan`, `replay` und `guide`) nimmt die Kampfzeiten aus einem Profil, das ForeverCore mit Engine und
+`-profile PFAD` nimmt die Kampfzeiten aus einem Profil, das ForeverCore mit Engine und
 dem Level-Overlay rechnet (`kill-profile`, Schema `foreverroutes.killprofile.v1`). In `data/profiles` liegen die
 Profile aller neun Klassen (Level 10–40): synthetischer Charakter mit der weißen Startwaffe, ohne weitere Ausrüstung
 und Talente. Für alle Völker derselben Klasse wird dasselbe Vergleichsprofil verwendet; individuelle Volksfähigkeiten sind damit nicht separat kalibriert.
+
+Neue Planungsaufrufe wählen dieses Profil automatisch relativ zum Datensatz, unabhängig vom Arbeitsverzeichnis.
+Ein defektes oder klassenfremdes vorhandenes Profil wird abgelehnt; es wird nicht still durch ein allgemeines Modell ersetzt.
+`replay` behält ohne explizite Profilwahl das bisherige Verhalten des gespeicherten Routentyps bei. Ein ausdrücklich leeres
+`-profile ""` erzwingt auch dort das gekennzeichnete Schätzmodell.
 
 - **Kampf:** Für jedes Level stehen Schaden, Manaverbrauch und selbst verbrauchte Gesundheit nach 6, 10, 15, 22 und
   30 Sekunden gegen ein gleich hohes Ziel und gegen eines zwei Level darüber. Der Kampf dauert, bis der Schaden die
@@ -158,7 +163,9 @@ und Talente. Für alle Völker derselben Klasse wird dasselbe Vergleichsprofil v
 - **Pause:** Essen und Trinken holen zurück, was der Kampf gekostet hat, zu den Raten des Händleressens und -wassers des
   Levels (z. B. ab 15: 243 Leben und 437 Mana in 21 s). Der erlittene Schaden ist der Durchschnittstreffer des Gegners
   aus cmangos, ein Schlag alle 2 s. Gezählt wird er für die Zeit, in der der Gegner den Charakter erreicht: beim Hexer
-  mit Leerwandler ein Viertel des Kampfs, sonst der Kampf ohne die ersten 3 s Anlauf. Dazu kommen 4 s für Plündern und
+  mit Leerwandler ein Viertel des Kampfs, bei Krieger, Schurke und Paladin der ganze Nahkampf, bei Fernkampf-/Zauberprofilen
+  der Kampf ohne die ersten 3 s Anlauf. Die Hybridprofile für Schamane und Druide bleiben Zauberprofile; ein klassenübergreifendes
+  Nahkampfschema wird ihnen nicht unterstellt. Dazu kommen 4 s für Plündern und
   den nächsten Pull.
 - **Grenzen:** Die Profile gelten für einen Charakter ohne Ausrüstung und Talente; Ausrüstungs- und Talentunterschiede sind damit nur eingeschränkt abgebildet.
   Unter Level 10 und außerhalb der Tabellen gilt `DefaultProfile`, an die Randwerte des Klassenprofils angepasst. Rüstung und Ausweichen des Charakters

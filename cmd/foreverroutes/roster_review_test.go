@@ -192,10 +192,16 @@ func TestRebuildRoster(t *testing.T) {
 									t.Fatal(err)
 								}
 								w.SetWandDetour(saved.WandDetour)
-								if replay, issue := w.FollowGuide(saved.Events, 20); issue == nil && replay.Level >= 20 && len(replay.Skipped) == 0 && math.Abs(replay.Seconds-saved.Seconds) < .11 {
-									e, r, resumed = saved.Events, replay, true
-									if saved.Search != nil {
-										stats = saved.Search
+								if replay, issue := w.FollowGuide(saved.Events, 20); issue == nil && replay.Level >= 20 && len(replay.Skipped) == 0 {
+									// A model correction can change the time without invalidating the
+									// route. Keep that incumbent as a seed, priced by the new model,
+									// so a shorter rebuild cannot lose a known feasible route.
+									pool = append(pool, saved.OptimizationSeed)
+									if math.Abs(replay.Seconds-saved.Seconds) < .11 {
+										e, r, resumed = saved.Events, replay, true
+										if saved.Search != nil {
+											stats = saved.Search
+										}
 									}
 								}
 							}

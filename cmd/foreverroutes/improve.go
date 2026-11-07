@@ -36,7 +36,7 @@ func cmdImprove(args []string) error {
 	race := fs.String("race", "Orc", "race")
 	class := fs.String("class", "Warlock", "class")
 	faction := fs.String("faction", "", "A or H (only for Skyborne)")
-	profile := fs.String("profile", "", "kill profile from ForeverCore")
+	profile := fs.String("profile", automaticProfile, combatProfileHelp)
 	target := fs.Int("target", 20, "target level")
 	file := fs.String("events", "", "guide events (JSON list), the starting point")
 	budget := fs.Duration("budget", 60*time.Second, "search time per route")

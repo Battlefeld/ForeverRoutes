@@ -2,3 +2,6 @@ Planner model changes that alter shipped routes. A commit touching this file mak
 recompute (as after a data fix) and release.yml wait for it.
 
 2026-11-06: lone plain elites up to two levels above the character are fought alone by every class.
+
+2026-11-07: Warrior, Rogue and Paladin recovery includes incoming damage during the full melee fight;
+caster approach-time and pet-tanking assumptions remain separate. Class prerequisite cycles are rejected.

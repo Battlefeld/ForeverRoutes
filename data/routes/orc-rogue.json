@@ -1,5 +1,5 @@
 {
- "actionCount": 284,
+ "actionCount": 282,
  "bagFinished": false,
  "basis": "ForeverRoutes optimization of independent routes and ordinary RestedXP Forever quest projections (RestedXP/RXPGuides, CC BY-NC-SA 4.0)",
  "character": {
@@ -359,14 +359,6 @@
     },
     {
      "op": "accept",
-     "quest": 97281
-    },
-    {
-     "op": "turnin",
-     "quest": 97281
-    },
-    {
-     "op": "accept",
      "quest": 96877
     },
     {
@@ -494,11 +486,7 @@
     {
      "level": 16,
      "op": "level",
-     "totalXP": 92822
-    },
-    {
-     "op": "accept",
-     "quest": 516
+     "totalXP": 92884
     },
     {
      "op": "accept",
@@ -1143,13 +1131,13 @@
     {
      "level": 20,
      "op": "level",
-     "totalXP": 167307
+     "totalXP": 167222
     }
    ],
    "inRoute": false,
    "level": 18,
    "minLevel": 10,
-   "minutes": 23.8,
+   "minutes": 22.9,
    "name": "The Shattered Hand",
    "possible": true,
    "quest": 1858,
@@ -1512,14 +1500,6 @@
     },
     {
      "op": "accept",
-     "quest": 97281
-    },
-    {
-     "op": "turnin",
-     "quest": 97281
-    },
-    {
-     "op": "accept",
      "quest": 96877
     },
     {
@@ -1647,11 +1627,7 @@
     {
      "level": 16,
      "op": "level",
-     "totalXP": 92822
-    },
-    {
-     "op": "accept",
-     "quest": 516
+     "totalXP": 92884
     },
     {
      "op": "accept",
@@ -2284,7 +2260,7 @@
     {
      "level": 20,
      "op": "level",
-     "totalXP": 167307
+     "totalXP": 167222
     }
    ],
    "inRoute": false,
@@ -2304,7 +2280,7 @@
    "inRoute": true,
    "level": 18,
    "minLevel": 16,
-   "minutes": 20.1,
+   "minutes": 19.1,
    "name": "Plundering the Plunderers",
    "possible": true,
    "quest": 2381,
@@ -2684,14 +2660,6 @@
     },
     {
      "op": "accept",
-     "quest": 97281
-    },
-    {
-     "op": "turnin",
-     "quest": 97281
-    },
-    {
-     "op": "accept",
      "quest": 96877
     },
     {
@@ -2819,11 +2787,7 @@
     {
      "level": 16,
      "op": "level",
-     "totalXP": 92822
-    },
-    {
-     "op": "accept",
-     "quest": 516
+     "totalXP": 92884
     },
     {
      "op": "accept",
@@ -3441,6 +3405,10 @@
      "quest": 1093
     },
     {
+     "op": "accept",
+     "quest": 1094
+    },
+    {
      "op": "turnin",
      "quest": 79192
     },
@@ -3493,10 +3461,6 @@
      "quest": 79976
     },
     {
-     "op": "accept",
-     "quest": 1094
-    },
-    {
      "op": "turnin",
      "quest": 1094
     },
@@ -3516,13 +3480,13 @@
     {
      "level": 20,
      "op": "level",
-     "totalXP": 167307
+     "totalXP": 167222
     }
    ],
    "inRoute": false,
-   "level": 20,
+   "level": 19,
    "minLevel": 14,
-   "minutes": 40.1,
+   "minutes": 61.7,
    "name": "This Must Be The Place",
    "possible": true,
    "quest": 79976,
@@ -3894,14 +3858,6 @@
   },
   {
    "op": "accept",
-   "quest": 97281
-  },
-  {
-   "op": "turnin",
-   "quest": 97281
-  },
-  {
-   "op": "accept",
    "quest": 96877
   },
   {
@@ -4029,11 +3985,7 @@
   {
    "level": 16,
    "op": "level",
-   "totalXP": 92822
-  },
-  {
-   "op": "accept",
-   "quest": 516
+   "totalXP": 92884
   },
   {
    "op": "accept",
@@ -4654,18 +4606,18 @@
   {
    "level": 20,
    "op": "level",
-   "totalXP": 167307
+   "totalXP": 167222
   }
  ],
  "finalModelReplayVerified": true,
- "finalXP": 167307,
+ "finalXP": 167222,
  "hours": {
-  "optimized": 15.615722222222221
+  "optimized": 15.649333333333333
  },
  "key": "orc-rogue",
  "killProfile": "Engine rogue default (gear starter weapon, talents none; outside the table: default (uncalibrated) scaled to the table's edge)",
  "level": 20,
- "modelRevision": "foreverroutes.timeline-model.v2.3",
+ "modelRevision": "foreverroutes.timeline-model.v2.4",
  "preparations": {
   "bagStacks": 0,
   "camping": true,
@@ -4675,7 +4627,7 @@
   "professionLevel": 10,
   "wands": false
  },
- "quests": 87,
+ "quests": 86,
  "replayVerified": true,
  "requiredClassGoals": [
   2381,
@@ -4686,13 +4638,13 @@
  "scenario": "solo_auto",
  "schema": "foreverroutes.route.v1",
  "search": {
-  "BestSeconds": 56216.6,
+  "BestSeconds": 56337.6,
   "Better": [
    0,
-   1,
    0,
-   1,
-   1,
+   0,
+   0,
+   0,
    0,
    0,
    0,
@@ -4701,50 +4653,44 @@
    0
   ],
   "CheckpointLoaded": false,
-  "DungeonChecks": [
-   {
-    "candidateFound": true,
-    "keys": [],
-    "seconds": 57804.7
-   }
-  ],
+  "DungeonChecks": null,
   "DungeonCombinationsAllowed": 1,
-  "DungeonCombinationsEvaluated": 1,
+  "DungeonCombinationsEvaluated": 0,
   "DungeonCombinationsTotal": 1,
-  "DungeonEnumerationComplete": true,
+  "DungeonEnumerationComplete": false,
   "Kept": [
-   47,
-   37,
-   4,
-   18,
-   10,
    0,
-   1,
    0,
-   65,
-   6,
-   49
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0
   ],
-  "PreparationCandidates": 56,
-  "Restarts": 1,
-  "SeedsEvaluated": 5,
+  "PreparationCandidates": 0,
+  "Restarts": 0,
+  "SeedsEvaluated": 8,
   "Walks": [
-   99,
-   114,
-   102,
-   72,
-   26,
    0,
-   1,
    0,
-   122,
-   281,
-   162
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0
   ]
  },
  "searchAttempts": 1,
- "searchSeconds": 37.285115316,
- "seconds": 56216.6,
+ "searchSeconds": 6.5979725,
+ "seconds": 56337.6,
  "skipped": {},
  "sleepSteps": 0,
  "sleepingBagModel": {

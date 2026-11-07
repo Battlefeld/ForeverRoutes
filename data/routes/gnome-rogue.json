@@ -285,6 +285,22 @@
      "quest": 2238
     },
     {
+     "op": "turnin",
+     "quest": 2238
+    },
+    {
+     "op": "accept",
+     "quest": 2239
+    },
+    {
+     "op": "complete",
+     "quest": 2239
+    },
+    {
+     "op": "turnin",
+     "quest": 2239
+    },
+    {
      "op": "accept",
      "quest": 36
     },
@@ -638,22 +654,6 @@
     },
     {
      "op": "turnin",
-     "quest": 2238
-    },
-    {
-     "op": "accept",
-     "quest": 2239
-    },
-    {
-     "op": "complete",
-     "quest": 2239
-    },
-    {
-     "op": "turnin",
-     "quest": 2239
-    },
-    {
-     "op": "turnin",
      "quest": 1338
     },
     {
@@ -695,9 +695,9 @@
     }
    ],
    "inRoute": false,
-   "level": 19,
+   "level": 17,
    "minLevel": 10,
-   "minutes": 9.8,
+   "minutes": 7.2,
    "name": "Onin's Report",
    "possible": true,
    "quest": 2239,
@@ -712,7 +712,7 @@
    "inRoute": true,
    "level": 17,
    "minLevel": 16,
-   "minutes": -29.4,
+   "minutes": -29.6,
    "name": "Alther's Mill",
    "possible": true,
    "quest": 2282,
@@ -2101,7 +2101,7 @@
    "inRoute": false,
    "level": 17,
    "minLevel": 16,
-   "minutes": 6.5,
+   "minutes": 6.4,
    "name": "To Hulfdan!",
    "possible": true,
    "quest": 2299,
@@ -2865,7 +2865,7 @@
    "inRoute": false,
    "level": 17,
    "minLevel": 14,
-   "minutes": 18.6,
+   "minutes": 17,
    "name": "This Must Be The Place",
    "possible": true,
    "quest": 79976,
@@ -3551,12 +3551,12 @@
  "finalModelReplayVerified": true,
  "finalXP": 167252,
  "hours": {
-  "optimized": 17.129055555555556
+  "optimized": 17.170055555555553
  },
  "key": "gnome-rogue",
  "killProfile": "Engine rogue default (gear starter weapon, talents none; outside the table: default (uncalibrated) scaled to the table's edge)",
  "level": 20,
- "modelRevision": "foreverroutes.timeline-model.v2.3",
+ "modelRevision": "foreverroutes.timeline-model.v2.4",
  "preparations": {
   "bagStacks": 0,
   "camping": true,
@@ -3572,70 +3572,64 @@
   2282,
   3113
  ],
- "resumedAndReverified": true,
+ "resumedAndReverified": false,
  "runs": null,
  "scenario": "solo_auto",
  "schema": "foreverroutes.route.v1",
  "search": {
-  "BestSeconds": 61664.6,
+  "BestSeconds": 61812.2,
   "Better": [
    0,
-   1,
    0,
    0,
    0,
    0,
    0,
    0,
-   2,
-   4,
+   0,
+   0,
+   0,
    0
   ],
   "CheckpointLoaded": false,
-  "DungeonChecks": [
-   {
-    "candidateFound": true,
-    "keys": [],
-    "seconds": 62078.6
-   }
-  ],
+  "DungeonChecks": null,
   "DungeonCombinationsAllowed": 1,
-  "DungeonCombinationsEvaluated": 1,
+  "DungeonCombinationsEvaluated": 0,
   "DungeonCombinationsTotal": 1,
-  "DungeonEnumerationComplete": true,
+  "DungeonEnumerationComplete": false,
   "Kept": [
-   12,
-   12,
-   1,
-   2,
-   3,
    0,
    0,
    0,
-   35,
-   14,
-   43
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0
   ],
-  "PreparationCandidates": 56,
+  "PreparationCandidates": 0,
   "Restarts": 0,
-  "SeedsEvaluated": 5,
+  "SeedsEvaluated": 8,
   "Walks": [
-   40,
-   53,
-   57,
-   35,
-   15,
    0,
    0,
    0,
-   74,
-   198,
-   82
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0
   ]
  },
- "searchAttempts": 0,
- "searchSeconds": 0.350733497,
- "seconds": 61664.6,
+ "searchAttempts": 1,
+ "searchSeconds": 5.5704948,
+ "seconds": 61812.2,
  "skipped": {},
  "sleepSteps": 0,
  "sleepingBagModel": {
