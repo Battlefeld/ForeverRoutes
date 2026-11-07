@@ -384,10 +384,21 @@ function FR.Steps()
 end
 
 -- Moves past what is done or skipped. Returns the current step.
+-- Where the character stands in a stored route: past the last step whose quest it has handed in or has in its log.
+-- Steps before that whose quest it never took are passed (the player went another way), except quests in the log.
+local function frontier(steps)
+ local h=0
+ for i=#steps,1,-1 do
+  local s=steps[i]
+  if s.q and(s.op=='a'or s.op=='t'or s.op=='w')and(completed(s.q)or onQuest(s.q))then h=i;break end
+ end
+ return h
+end
 function FR.Advance()
  local steps,live=FR.Steps();local c=charDB()
  local i=live and 1 or c.index
- while steps[i]and(FR.Done(steps[i])or(not live and c.skipped[i]))do
+ local h=live and 0 or frontier(steps)
+ while steps[i]and(FR.Done(steps[i])or(not live and c.skipped[i])or(i<h and not(steps[i].q and onQuest(steps[i].q))))do
   if(steps[i].op=='p'or steps[i].op=='z')and steps[i].cl then c.campLevel=steps[i].cl end -- the professions: camps from then on
   i=i+1
  end

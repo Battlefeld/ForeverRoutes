@@ -316,5 +316,15 @@ do
  SlashCmdList.FOREVERROUTES('guide route');check(FR.GuideMode()=='route','switched back to the route')
  ForeverRoutesData.guides=saved;FR.CharDB().guide=nil
 end
+-- a stored route starts where the character stands: past the last step whose quest is handed in or in the log;
+-- earlier quests it never took are passed, a quest still in the log is not
+do
+ local saved=ForeverRoutesData.guides
+ ForeverRoutesData.guides={[FR.Key()]={s={{op='a',q=9001,n='Skipped',m=1,x=0,y=0},{op='a',q=9002,n='In log',m=1,x=0,y=0},{op='t',q=9003,n='Done',m=1,x=0,y=0},{op='a',q=9004,n='Next',m=1,x=0,y=0}}}}
+ FR.CharDB().guide=nil;FR.live=nil;FR.CharDB().index=1;complete[9003]=true;accepted[9002]=true
+ local st=FR.Advance()
+ check(st and st.q==9004,'the guide continues after the last quest handed in: '..tostring(st and st.q))
+ complete[9003]=nil;accepted[9002]=nil;ForeverRoutesData.guides=saved;FR.CharDB().guide=nil;FR.CharDB().index=1
+end
 io.write('PASS '..count..' checks; no mocked UI/event errors\n')
 
