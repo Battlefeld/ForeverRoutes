@@ -257,6 +257,10 @@ func (w *World) options(s *State, target int) []macro {
 	return out
 }
 
+// dungeonChainShare: the share of a dungeon quest's XP each quest of the chain before it is worth (five steps to
+// Leaders of the Fang: together about the quest itself, so the chain is done before the run, not left aside).
+const dungeonChainShare = 0.2
+
 // value of a finished block: the XP it brought, plus a share of what the quests it finished unlock.
 func (w *World) value(before, after *State) float64 {
 	v := float64(after.XP - before.XP)
@@ -271,6 +275,13 @@ func (w *World) value(before, after *State) float64 {
 			for _, u := range q.Unlocks {
 				if uq := w.ByID[u]; uq != nil {
 					v += 0.25 * float64(uq.XP)
+				}
+			}
+			// a chain that ends in a dungeon quest (The Forgotten Pools ... Leaders of the Fang): each step carries a
+			// share of what it opens there, while the dungeon is still to be run
+			for _, dq := range w.dungeonChains[q.ID] {
+				if dq.Dungeon != nil && after.Runs&(1<<dq.Dungeon.Index) == 0 && after.Status[dq.Index] == notTaken {
+					v += dungeonChainShare * float64(dq.XP)
 				}
 			}
 		}

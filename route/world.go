@@ -75,8 +75,9 @@ type World struct {
 	anchorOnce                   sync.Once
 	liveGoals                    map[int]bool // quests of the goals switched on in the addon (live_stages.go)
 	liveGoalChains               [][]int
-	legPlan                      bool // a laid-out route (legs.go): the player chose the zones, the sea is no limit
-	liveLocal                    bool // live stages: blocks hand in around their place only (live_stages.go)
+	dungeonChains                map[int][]*Quest // quest -> the dungeon quests its follow-ups lead to (plan.go value)
+	legPlan                      bool             // a laid-out route (legs.go): the player chose the zones, the sea is no limit
+	liveLocal                    bool             // live stages: blocks hand in around their place only (live_stages.go)
 	zoneAnchors                  []zoneAnchor
 	preparation                  PreparationPlan
 	feedback                     *CombatFeedback
@@ -285,6 +286,28 @@ func NewWorld(d *dataset.Dataset, c Character, opt Options) (*World, error) {
 			if pq := w.ByID[p]; pq != nil {
 				pq.Unlocks = append(pq.Unlocks, q.ID)
 			}
+		}
+	}
+	// the dungeon quests each quest leads to through its follow-ups (up to six steps)
+	w.dungeonChains = map[int][]*Quest{}
+	for _, q := range w.Quests {
+		seen := map[int]bool{}
+		var walk func(id, depth int)
+		walk = func(id, depth int) {
+			uq := w.ByID[id]
+			if uq == nil || seen[id] || depth > 6 {
+				return
+			}
+			seen[id] = true
+			if uq.Dungeon != nil && uq != q {
+				w.dungeonChains[q.ID] = append(w.dungeonChains[q.ID], uq)
+			}
+			for _, n := range uq.Unlocks {
+				walk(n, depth+1)
+			}
+		}
+		for _, n := range q.Unlocks {
+			walk(n, 1)
 		}
 	}
 	w.farms()
