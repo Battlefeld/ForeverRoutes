@@ -47,7 +47,7 @@ ist noch kein installierbares Addon (`tools/release.sh`).
 
 - Datensatz mit 2922 Quests, 3751 NPCs, 630 Objekten, 59 Flugmeistern, 45 Gasthäusern, Zeppelinen und Schiffen, dazu das
   Skyborne-Startgebiet Zephras Isle mit der Abreise beider Fraktionen. Skyborne brauchen `-faction A` oder `-faction H`.
-- Alle 56 unterstützten Volk-/Klassenkontexte werden bis 20 geprüft; je Kontext werden Solo und optionale Dungeons sowie passende Zauberstab-/Schlafsackvarianten berechnet. [Gesamtprüfung](data/audits/roster-v24.md).
+- Alle 56 unterstützten Volk-/Klassenkontexte werden bis 20 geprüft; je Kontext werden Solo und optionale Dungeons sowie passende Zauberstab-/Schlafsackvarianten berechnet. [Gesamtprüfung](data/audits/roster-v25.md).
 - Orc Hexer und Mensch Magier bleiben zusätzliche Ausgangstests bis Level 30.
 - **Die Stundenangaben sind nicht kalibriert.** `plan`, `guide`, `improve`, `timeline` und `next` verwenden standardmäßig das passende Klassenprofil neben dem Datensatz (`-profile auto`). Fehlt es oder wird ausdrücklich `-profile ""` angegeben, gilt das eingebaute Kampfmodell (`DefaultProfile`), eine Schätzung. Es
   bewertet Grinden im Vergleich zu Quests etwa doppelt so gut wie die Wirklichkeit: Ein Guide-Ablauf (RestedXP) und
@@ -96,6 +96,8 @@ go run ./cmd/foreverroutes audit                                              # 
 {"op":"turnin","quest":4641},{"op":"level","level":6}]`. Der normale RXP-Fallback liegt mit Originalanweisungen und CC-BY-NC-SA-4.0-Lizenz in `data/fallbacks`; andere Guide-Quellen werden dadurch nicht ersetzt. Einzelziele können mit `objective` (1-basiert), XP-Zwischenziele mit `xp` angegeben werden.
 
 ### Solo mit Dungeon (`-dungeons`)
+
+Elite-/Gruppenquests werden aus Solo-Routen ausgeschlossen. Item-Wegpunkte gelten nur mit explizitem Bodenfund-Beleg als Sammelquelle; explizite Benutzung eines von der Quest bereitgestellten Gegenstands zählt als Interaktion. Sonst sind reale Drop-/Händlerquellen nötig. Kampfziele ohne bekannte Gegnerstufe werden ausgelassen. [Ziel- und Quellenprüfung aller Quests](data/audits/quest-objectives-v25.md).
 
 Klassenregeln: Hexer und Jäger kämpfen einfache Elites bis zu ihrem Level allein (das Pet tankt). Krieger, Schurke,
 Paladin und Schamane kämpfen höchstens ein Level nach oben: Die Route kommt erst in ein Gebiet, wenn dessen Gegner

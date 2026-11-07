@@ -71,8 +71,8 @@ func TestWorldExcludesWhatTheCharacterCannotDo(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if mage.ByID[5] == nil {
-		t.Errorf("a lone plain elite is fought alone up to two levels above: %s", mage.Excluded[5])
+	if mage.ByID[5] != nil {
+		t.Error("an ordinary elite-only quest was offered to a solo mage")
 	}
 	for _, id := range []int{1, 2, 3} {
 		if w.ByID[id] == nil {
@@ -94,9 +94,9 @@ func TestClassRules(t *testing.T) {
 	if warrior.tooDangerous(s, warrior.ByID[1].Objectives[0].Sources[0]) {
 		t.Error("a group of level 1-2 suits a level 1 warrior")
 	}
-	// the lone elite (level 2) is in reach of a level 1 warrior (two levels above at most)
-	if q := warrior.ByID[5]; q == nil || warrior.tooDangerous(s, q.Objectives[0].Sources[0]) {
-		t.Error("a lone plain elite two levels above is fought alone")
+	// Ordinary elites are not part of a solo warrior's combat policy.
+	if q := warrior.ByID[5]; q != nil && !warrior.tooDangerous(s, q.Objectives[0].Sources[0]) {
+		t.Error("a solo warrior was allowed to fight an elite")
 	}
 }
 
@@ -412,7 +412,7 @@ func TestQuestOfferedWhileAnotherIsInTheLog(t *testing.T) {
 }
 
 // A quest an item starts is not taken while the item drops only from creatures too strong; Lakota'mani (elite 22)
-// waits until the character is at most two levels below him.
+// must not become a solo Shaman task merely because the character reaches level 20.
 func TestItemStartNeedsAFightableSource(t *testing.T) {
 	d, err := dataset.Load("../data/routes-data.json.gz")
 	if err != nil {
@@ -429,8 +429,8 @@ func TestItemStartNeedsAFightableSource(t *testing.T) {
 		if w.CanAccept(at14, q) == nil {
 			t.Fatal("Lakota'mani (elite 22) taken at level 14")
 		}
-		if err := w.CanAccept(at20, q); err != nil {
-			t.Fatalf("Lakota'mani not taken at level 20: %v", err)
+		if err := w.CanAccept(at20, q); err == nil {
+			t.Fatal("solo Shaman accepted an elite item-start fight")
 		}
 	}
 	high.XP = totalXP(w, 20)

@@ -1,6 +1,7 @@
 package route
 
 import (
+	"bytes"
 	"encoding/json"
 	"math"
 	"os"
@@ -33,17 +34,21 @@ func TestCheckpointCrossProcessKeepsTheFasterRoute(t *testing.T) {
 	}
 	path := filepath.Join(t.TempDir(), "best.json")
 	commands := []*exec.Cmd{}
+	outputs := []*bytes.Buffer{}
 	for _, pick := range []string{"0", "1"} {
 		c := exec.Command(os.Args[0], "-test.run=^TestCheckpointCrossProcessKeepsTheFasterRoute$", "-test.timeout=20s")
+		output := &bytes.Buffer{}
+		c.Stdout, c.Stderr = output, output
 		c.Env = append(os.Environ(), "FR_CP_CHILD_PATH="+path, "FR_CP_CHILD_PICK="+pick)
 		if err := c.Start(); err != nil {
 			t.Fatal(err)
 		}
 		commands = append(commands, c)
+		outputs = append(outputs, output)
 	}
-	for _, c := range commands {
+	for i, c := range commands {
 		if err := c.Wait(); err != nil {
-			t.Fatal(err)
+			t.Fatalf("checkpoint writer: %v\n%s", err, outputs[i].String())
 		}
 	}
 	raw, err := os.ReadFile(path)

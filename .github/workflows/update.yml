@@ -131,6 +131,7 @@ jobs:
             || failed /tmp/finalize.log
           tail -n 20 /tmp/finalize.log
           python3 tools/apply_roster_review.py /tmp/roster
+          python3 tools/audit_quest_objectives.py
 
       - name: keep the roster logs
         if: failure()

@@ -423,7 +423,7 @@ func Rebuild(ctx context.Context, o Options, l *Lock, in Inputs) (*dataset.Datas
 		bin.SPF, bin.SPFRevision = filepath.Join(dir, "Data"), l.SPF
 	}
 	if l.Norgannon != "" {
-		dir, err := sparseCheckout(ctx, o.Cache, "norgannon", repos["norgannon"][0], l.Norgannon, norgannon.ItemsFile)
+		dir, err := sparseCheckout(ctx, o.Cache, "norgannon-world", repos["norgannon"][0], l.Norgannon, norgannon.ItemsFile, norgannon.NPCsFile)
 		if err != nil {
 			return nil, nil, err
 		}

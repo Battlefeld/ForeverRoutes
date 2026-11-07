@@ -21,7 +21,7 @@ Wer nur den Code weiterverwendet (ohne die Daten), braucht nur die MIT-Lizenz.
 | [QuestieDB](https://github.com/Questie/QuestieDB) | Quests, NPCs, Objekte, Spawns, Spieler-Traces | GPL-3.0 nach Angabe des Questie-Teams (siehe Hinweis unten) |
 | [cmangos classic-db](https://github.com/cmangos/classic-db) | Weltdatenbank: Gegner, Beute, Quest-Verknüpfungen, Dungeon-Trash | GPL-3.0 |
 | [Polestar](https://github.com/fitzforge/polestar) forever-db und Forever-Guides | Forever-Quests, Ziele, NPCs, Spawns, Skyborne, Reisezeiten, Guide-Abläufe | GPL-3.0 |
-| [NorgannonDB](https://github.com/zmarotrix/NorgannonDB) | Dungeons, Bosse, Beute (Instanzen aus DungeonJournal by Exehn) | GPL-3.0 |
+| [NorgannonDB](https://github.com/zmarotrix/NorgannonDB) | Dungeons, Bosse, Beute, Gegenstandsquellen und ergänzende Gegnerstufen/-ränge (Instanzen aus DungeonJournal by Exehn) | GPL-3.0 |
 | [Shortest Path Forever](https://github.com/cjber/shortest-path-forever) | Navigationskarten, mit denen Laufgitter und Wegtabelle gemessen sind; Flug- und Schiffszeiten | GPL-3.0-or-later |
 | [RestedXP RXPGuides](https://github.com/RestedXP/RXPGuides) | Normale Kapitel als Rückfall-Route, Guide-Fakten | CC BY-NC-SA 4.0 |
 | [EverythingQuests](https://github.com/wheelbarrel00/EverythingQuests) | Forever-Quests | MIT |

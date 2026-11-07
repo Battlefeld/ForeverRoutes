@@ -56,6 +56,7 @@ type Fact struct {
 	Turnin   bool `json:"turnin,omitempty"`
 	// Action and Targets are explicit objective actions, not combat inferred from a creature credit ID.
 	Action      string   `json:"action,omitempty"`
+	UseItems    []int    `json:"useItems,omitempty"`
 	Targets     []int    `json:"targets,omitempty"`
 	TargetNames []string `json:"targetNames,omitempty"`
 }
@@ -110,6 +111,7 @@ func rxpStep(file string, lines []string) []Fact {
 	var facts []*Fact
 	var cur *Fact
 	var stepMobs, textMobs []string
+	var stepNPCs []int
 	ground, use, accepted := false, 0, 0
 	accepts, turnins := map[int]bool{}, map[int]bool{}
 	for _, l := range lines {
@@ -135,10 +137,18 @@ func rxpStep(file string, lines []string) []Fact {
 			facts = append(facts, cur)
 		case strings.HasPrefix(l, ".mob "):
 			name := strings.TrimSpace(strings.TrimPrefix(strings.TrimPrefix(l, ".mob "), "+"))
+			var ids []int
+			for _, match := range targetID.FindAllStringSubmatch(name, -1) {
+				id, _ := strconv.Atoi(match[1])
+				ids = append(ids, id)
+			}
+			name = strings.TrimSpace(targetID.ReplaceAllString(name, ""))
 			if cur != nil {
 				cur.Mobs = appendName(cur.Mobs, name)
+				cur.NPCs = append(cur.NPCs, ids...)
 			} else {
 				stepMobs = appendName(stepMobs, name)
+				stepNPCs = append(stepNPCs, ids...)
 			}
 		case rxpUse.MatchString(l):
 			use, _ = strconv.Atoi(rxpUse.FindStringSubmatch(l)[1])
@@ -153,7 +163,7 @@ func rxpStep(file string, lines []string) []Fact {
 				ground = true
 			}
 			for _, m := range rxpEnemy.FindAllStringSubmatch(l, -1) {
-				textMobs = appendName(textMobs, singular(strings.TrimSpace(m[1])))
+				textMobs = appendName(textMobs, singular(strings.TrimSpace(targetID.ReplaceAllString(m[1], ""))))
 			}
 		}
 	}
@@ -164,6 +174,7 @@ func rxpStep(file string, lines []string) []Fact {
 		}
 		if len(f.Mobs) == 0 {
 			f.Mobs = stepMobs
+			f.NPCs = append(f.NPCs, stepNPCs...)
 		}
 		if len(f.Mobs) == 0 {
 			f.Mobs = textMobs

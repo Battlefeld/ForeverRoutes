@@ -15,6 +15,10 @@ var objectiveTalk = regexp.MustCompile(`(?i)\b(speak|spoken|talk|gauge|obtain in
 func objectiveAction(f *Fact, lines []string) {
 	gossip, use := false, false
 	for _, l := range lines {
+		if m := rxpUse.FindStringSubmatch(l); m != nil {
+			id, _ := strconv.Atoi(m[1])
+			f.UseItems = append(f.UseItems, id)
+		}
 		if strings.HasPrefix(l, ".target ") {
 			name := strings.TrimSpace(strings.TrimPrefix(l, ".target "))
 			name = strings.TrimPrefix(name, "+")
