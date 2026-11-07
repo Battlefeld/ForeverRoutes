@@ -180,6 +180,10 @@ FOREVERDB_API_KEY=… go run ./cmd/foreverroutes update   # alle Quellen prüfen
 go run ./cmd/foreverroutes build-data                     # Datensatz exakt aus data/sources/lock.json neu bauen
 ```
 
+Für byte-identische Datensatzdateien verwenden die Daten-Workflows Go **1.24.13**. Lokal vorher
+`GOTOOLCHAIN=go1.24.13` setzen (PowerShell: `$env:GOTOOLCHAIN='go1.24.13'`). Andere Go-Versionen können dieselben
+JSON-Daten in einen anderen Gzip-Bytestrom komprimieren.
+
 `update` fragt die neuesten Stände von QuestieDB, EverythingQuests und cmangos ab (Git), liest die Questliste von
 ForeverDB über die API (höchstens einmal pro Stunde, 2,1 s Abstand) und holt für Quests, denen noch Angaben fehlen,
 die Clientdaten von WarcraftDB (1,5 s Abstand, Zwischenspeicher). Ändert sich am Datensatz etwas, wird er neu gebaut und
