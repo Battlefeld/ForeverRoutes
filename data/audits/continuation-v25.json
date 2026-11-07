@@ -1,0 +1,216 @@
+{
+  "schema": "foreverroutes.continuation-benchmark.v1",
+  "date": "2026-11-07",
+  "inputRevision": "de5e3207ed37cddc96d2d683bc7817b9f35e5abb",
+  "datasetSHA256": "f8a5fb9dd4ea2bc55d937d91e4408cae0b6854f187d916a95b9e0557ecc1cfaf",
+  "plannerSHA256": "9886ad72779ad4371008b1aaad58899d5f232d3f77a29e5541c1e62474ac397c",
+  "methodSourceSHA256": {
+    "route/continuation.go": "15c0eba36867eeafdf85ec8d6aa95a4ca812ccb94daec8916413bd9c9c50876e",
+    "cmd/foreverroutes/extend.go": "78ed1c753af64a66045984f12f805f7cb6304c934961132c14811144f1c8b409"
+  },
+  "measurement": "Model seconds of the continuation only; all policies start at the replayed route endpoint.",
+  "limitations": [
+    "Extra compute compared with baseline, not equal-CPU-budget comparison.",
+    "Three solo character contexts, no full-roster or dungeon validation.",
+    "Starter weapon / no individual talent progression; not ingame calibrated.",
+    "Archived candidates are subsequent guide projections, not the raw measured action streams."
+  ],
+  "cases": [
+    {
+      "character": {
+        "race": "Orc",
+        "class": "Shaman"
+      },
+      "target": 25,
+      "routeInputSHA256": "4d5696c0000a9601081c079f024bda731fff1c19d97be32a254cf22790107ff9",
+      "profileInputSHA256": "74c50abaa47c831ad6382d9b1760ac1ea1f7b064ab9e195a08bcd90112df970f",
+      "winner": "baseline",
+      "baselineSeconds": 36937.8,
+      "bestSeconds": 36937.8,
+      "savingPercent": 0.0,
+      "trials": [
+        {
+          "name": "baseline",
+          "lookahead": 6,
+          "depth": 3,
+          "seconds": 36937.8,
+          "level": 25
+        },
+        {
+          "name": "short",
+          "lookahead": 6,
+          "depth": 1,
+          "seconds": 38256.4,
+          "level": 25
+        },
+        {
+          "name": "wide",
+          "lookahead": 12,
+          "depth": 3,
+          "seconds": 37359.9,
+          "level": 25
+        },
+        {
+          "name": "deep",
+          "lookahead": 6,
+          "depth": 6,
+          "seconds": 41350,
+          "level": 25
+        }
+      ],
+      "command": "foreverroutes extend -route data/routes/orc-shaman.json -target 25 -portfolio -budget 0s -out candidate.json -report trials.json"
+    },
+    {
+      "character": {
+        "race": "Orc",
+        "class": "Shaman"
+      },
+      "target": 40,
+      "routeInputSHA256": "4d5696c0000a9601081c079f024bda731fff1c19d97be32a254cf22790107ff9",
+      "profileInputSHA256": "74c50abaa47c831ad6382d9b1760ac1ea1f7b064ab9e195a08bcd90112df970f",
+      "winner": "deep",
+      "baselineSeconds": 206126.5,
+      "bestSeconds": 196682.5,
+      "savingPercent": 4.5817,
+      "trials": [
+        {
+          "name": "baseline",
+          "lookahead": 6,
+          "depth": 3,
+          "seconds": 206126.5,
+          "level": 40
+        },
+        {
+          "name": "short",
+          "lookahead": 6,
+          "depth": 1,
+          "seconds": 211139,
+          "level": 40
+        },
+        {
+          "name": "wide",
+          "lookahead": 12,
+          "depth": 3,
+          "seconds": 202379,
+          "level": 40
+        },
+        {
+          "name": "deep",
+          "lookahead": 6,
+          "depth": 6,
+          "seconds": 196682.5,
+          "level": 40
+        }
+      ],
+      "command": "foreverroutes extend -route data/routes/orc-shaman.json -target 40 -portfolio -budget 0s -out candidate.json -report trials.json"
+    },
+    {
+      "character": {
+        "race": "Human",
+        "class": "Warrior"
+      },
+      "target": 40,
+      "routeInputSHA256": "a6514e1a43b5142368022bac83992bb79b08aa7f2e649e23db04cab14092e4cf",
+      "profileInputSHA256": "e50eec03e407a45194cacfff5b4a20ec357abdd90bdfb2a13d76199eac3d72c9",
+      "winner": "baseline",
+      "baselineSeconds": 289459.7,
+      "bestSeconds": 289459.7,
+      "savingPercent": 0.0,
+      "trials": [
+        {
+          "name": "baseline",
+          "lookahead": 6,
+          "depth": 3,
+          "seconds": 289459.7,
+          "level": 40
+        },
+        {
+          "name": "short",
+          "lookahead": 6,
+          "depth": 1,
+          "seconds": 302452,
+          "level": 40
+        },
+        {
+          "name": "wide",
+          "lookahead": 12,
+          "depth": 3,
+          "seconds": 300414.8,
+          "level": 40
+        },
+        {
+          "name": "deep",
+          "lookahead": 6,
+          "depth": 6,
+          "seconds": 291368.4,
+          "level": 40
+        }
+      ],
+      "command": "foreverroutes extend -route data/routes/human-warrior.json -target 40 -portfolio -budget 0s -out candidate.json -report trials.json"
+    },
+    {
+      "character": {
+        "race": "Orc",
+        "class": "Warlock"
+      },
+      "target": 40,
+      "routeInputSHA256": "2de3b1420a7e883b3c847af590332620642897e4782aeb4cd3372b5cd6bb0575",
+      "profileInputSHA256": "5e75d466e6804e7068d230d2124ab42293f66f1201ca84044edfe165d0732b29",
+      "winner": "baseline",
+      "baselineSeconds": 212534,
+      "bestSeconds": 212534,
+      "savingPercent": 0.0,
+      "trials": [
+        {
+          "name": "baseline",
+          "lookahead": 6,
+          "depth": 3,
+          "seconds": 212534,
+          "level": 40
+        },
+        {
+          "name": "short",
+          "lookahead": 6,
+          "depth": 1,
+          "seconds": 238075.8,
+          "level": 40
+        },
+        {
+          "name": "wide",
+          "lookahead": 12,
+          "depth": 3,
+          "seconds": 219784.5,
+          "level": 40
+        },
+        {
+          "name": "deep",
+          "lookahead": 6,
+          "depth": 6,
+          "seconds": 225252.9,
+          "level": 40
+        }
+      ],
+      "command": "foreverroutes extend -route data/routes/orc-warlock.json -target 40 -portfolio -budget 0s -out candidate.json -report trials.json"
+    }
+  ],
+  "questReadiness": {
+    "target": 40,
+    "examined": 2920,
+    "characterContexts": 56,
+    "questLevelFilter": [
+      20,
+      40
+    ],
+    "subsetCount": 1317,
+    "statuses": {
+      "data_gap": 145,
+      "group_or_pvp_not_selected": 10,
+      "modelled": 847,
+      "not_feasible_by_target": 35,
+      "outside_leveling_scope": 32,
+      "repeatable_modelled_once": 13,
+      "unresolved": 235
+    }
+  },
+  "candidateArchiveSHA256": "12e7f7be37346a7a45a6d312fc276e5c0c0baaf5ec0d151c7d097fc170eeb9a8"
+}

@@ -23,8 +23,13 @@ func cmdExtend(args []string) error {
 	group := fs.Bool("dungeons", false, "route with dungeons: dungeon runs with their quests are part of the planned part")
 	budget := fs.Duration("budget", 60*time.Second, "search time for improving the planned part")
 	restarts := fs.Int("restarts", 2, "search runs of the planner")
+	portfolio := fs.Bool("portfolio", false, "offline experiment: compare baseline, short, wide and deep continuation policies")
+	report := fs.String("report", "", "write continuation policy measurements as JSON (requires -portfolio)")
 	out := fs.String("out", "", "write the continued route here")
 	fs.Parse(args)
+	if *report != "" && !*portfolio {
+		return fmt.Errorf("-report requires -portfolio")
+	}
 	raw, err := os.ReadFile(*file)
 	if err != nil {
 		return err
@@ -55,7 +60,23 @@ func cmdExtend(args []string) error {
 		return err
 	}
 	var best *route.Result
-	for run := 0; run < *restarts; run++ {
+	if *portfolio {
+		var trials []route.ContinuationTrial
+		best, trials, err = w.PlanContinuation(s, *target)
+		if *report != "" {
+			b, marshalErr := json.MarshalIndent(trials, "", " ")
+			if marshalErr != nil {
+				return marshalErr
+			}
+			if writeErr := os.WriteFile(*report, b, 0o644); writeErr != nil {
+				return writeErr
+			}
+		}
+		if err != nil {
+			return err
+		}
+	}
+	for run := 0; !*portfolio && run < *restarts; run++ {
 		res, err := w.PlanAhead(s, route.PlanOptions{TargetLevel: *target, Seed: int64(run + 1)}, 1e9)
 		if err == nil && res.Level >= *target && (best == nil || res.Seconds < best.Seconds) {
 			best = res
