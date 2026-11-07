@@ -10,7 +10,7 @@ import (
 
 // From the middle of a real route (a Troll Shaman with dungeons at level 14 in the Barrens) the stages plan the next
 // hours by zones: legs that differ from one another, a plan that replays, a head that ends after a block of
-// hand-ins, and at least the XP per hour of following the route over the same stretch.
+// hand-ins, and about the XP per hour of following the route over the same stretch (what next asks of them).
 func TestStagesFromTheMiddleOfARoute(t *testing.T) {
 	if testing.Short() {
 		t.Skip("plans for seconds")
@@ -68,7 +68,8 @@ func TestStagesFromTheMiddleOfARoute(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if rs, rr := route.XPRate(s, res), route.XPRate(s, ref.Result); rs < rr {
+	// next takes the stages from stagesPreferred of the route's rate on (they do not send the player back and forth)
+	if rs, rr := route.XPRate(s, res), route.XPRate(s, ref.Result); rs < stagesPreferred*rr {
 		t.Errorf("stages %.0f XP/h, the route %.0f XP/h", rs*3600, rr*3600)
 	}
 	for _, st := range stages {
