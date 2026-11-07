@@ -115,7 +115,10 @@ jobs:
           # scenarios need it: then something broke for everyone)
           # started by hand without "full": the scenarios of the last run that still replay to the same time are kept,
           # only the ones the change affects are searched again (minutes instead of hours)
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ "${{ inputs.full }}" != "true" ]; then
+          # data/focus.txt names the characters the update searches (route keys); the others keep their routes while
+          # those still replay (resume), so a recompute takes minutes, not hours
+          if [ -s data/focus.txt ]; then export FR_ROSTER_FOCUS="$(grep -v '^#' data/focus.txt | tr -s ' \n' ',' | sed 's/^,//;s/,$//')"; fi
+          if [ -n "${FR_ROSTER_FOCUS:-}" ] || { [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ "${{ inputs.full }}" != "true" ]; }; then
             python3 tools/seed_roster_resume.py /tmp/roster
             export FR_ROSTER_RESUME=1
           fi

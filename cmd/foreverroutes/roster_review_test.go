@@ -242,7 +242,9 @@ func TestRebuildRoster(t *testing.T) {
 											requiredComplete = false
 										}
 									}
-									if requiredComplete && math.Abs(replay.Seconds-saved.Seconds) < .11 {
+									// outside the focus (FR_ROSTER_FOCUS) a route that still replays is kept as it is: only
+									// the focused characters are searched again
+									if requiredComplete && (math.Abs(replay.Seconds-saved.Seconds) < .11 || !inFocus(ch)) {
 										e, r, resumed = saved.Events, replay, true
 										if saved.Search != nil {
 											stats = saved.Search
@@ -441,4 +443,18 @@ func scenarioFail(t *testing.T, tolerate bool, format string, args ...any) {
 		return
 	}
 	t.Errorf(format, args...)
+}
+
+// inFocus: the character is one the roster searches again (FR_ROSTER_FOCUS: route keys, comma separated; empty: all).
+func inFocus(ch route.Character) bool {
+	focus := strings.TrimSpace(os.Getenv("FR_ROSTER_FOCUS"))
+	if focus == "" {
+		return true
+	}
+	for _, k := range strings.Split(focus, ",") {
+		if strings.TrimSpace(k) == ch.RouteKey() {
+			return true
+		}
+	}
+	return false
 }
