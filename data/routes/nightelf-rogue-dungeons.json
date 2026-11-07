@@ -1315,7 +1315,7 @@
    "inRoute": false,
    "level": 16,
    "minLevel": 16,
-   "minutes": 129.5,
+   "minutes": 129.9,
    "name": "Erion Shadewhisper",
    "possible": true,
    "quest": 2259,
@@ -1969,7 +1969,7 @@
    "inRoute": false,
    "level": 16,
    "minLevel": 16,
-   "minutes": 129.2,
+   "minutes": 129.5,
    "name": "Erion's Behest",
    "possible": true,
    "quest": 2260,
@@ -3363,12 +3363,12 @@
  "finalModelReplayVerified": true,
  "finalXP": 167281,
  "hours": {
-  "optimized": 15.220805555555556
+  "optimized": 15.238583333333334
  },
  "key": "nightelf-rogue",
  "killProfile": "Engine rogue default (gear starter weapon, talents none; outside the table: default (uncalibrated) scaled to the table's edge)",
  "level": 20,
- "modelRevision": "foreverroutes.timeline-model.v2.3",
+ "modelRevision": "foreverroutes.timeline-model.v2.4",
  "preparations": {
   "bagStacks": 0,
   "camping": true,
@@ -3393,187 +3393,59 @@
  "scenario": "dungeons_auto",
  "schema": "foreverroutes.route.v1",
  "search": {
-  "BestSeconds": 54794.9,
+  "BestSeconds": 54858.9,
   "Better": [
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0
+  ],
+  "CheckpointLoaded": false,
+  "DungeonChecks": null,
+  "DungeonCombinationsAllowed": 16,
+  "DungeonCombinationsEvaluated": 0,
+  "DungeonCombinationsTotal": 16,
+  "DungeonEnumerationComplete": false,
+  "Kept": [
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0
+  ],
+  "PreparationCandidates": 0,
+  "Restarts": 0,
+  "SeedsEvaluated": 15,
+  "Walks": [
+   0,
+   1,
+   2,
+   0,
+   1,
    1,
    0,
    0,
    0,
    2,
-   0,
-   0,
-   0,
-   1,
-   0,
-   2
-  ],
-  "CheckpointLoaded": false,
-  "DungeonChecks": [
-   {
-    "candidateFound": true,
-    "keys": [],
-    "seconds": 65842.2
-   },
-   {
-    "candidateFound": true,
-    "keys": [
-     "the-hall-of-thanes"
-    ],
-    "seconds": 65523.5
-   },
-   {
-    "candidateFound": true,
-    "keys": [
-     "wailing-caverns"
-    ],
-    "seconds": 61595.4
-   },
-   {
-    "candidateFound": true,
-    "keys": [
-     "the-hall-of-thanes",
-     "wailing-caverns"
-    ],
-    "seconds": 61218.7
-   },
-   {
-    "candidateFound": true,
-    "keys": [
-     "ruins-of-lordaeron"
-    ],
-    "seconds": 62052.9
-   },
-   {
-    "candidateFound": true,
-    "keys": [
-     "the-hall-of-thanes",
-     "ruins-of-lordaeron"
-    ],
-    "seconds": 61663.4
-   },
-   {
-    "candidateFound": true,
-    "keys": [
-     "wailing-caverns",
-     "ruins-of-lordaeron"
-    ],
-    "seconds": 55834.3
-   },
-   {
-    "candidateFound": true,
-    "keys": [
-     "the-hall-of-thanes",
-     "wailing-caverns",
-     "ruins-of-lordaeron"
-    ],
-    "seconds": 55456.8
-   },
-   {
-    "candidateFound": true,
-    "keys": [
-     "deadmines"
-    ],
-    "seconds": 63206.6
-   },
-   {
-    "candidateFound": true,
-    "keys": [
-     "the-hall-of-thanes",
-     "deadmines"
-    ],
-    "seconds": 61833.7
-   },
-   {
-    "candidateFound": true,
-    "keys": [
-     "wailing-caverns",
-     "deadmines"
-    ],
-    "seconds": 58175.4
-   },
-   {
-    "candidateFound": true,
-    "keys": [
-     "the-hall-of-thanes",
-     "wailing-caverns",
-     "deadmines"
-    ],
-    "seconds": 57907.7
-   },
-   {
-    "candidateFound": true,
-    "keys": [
-     "ruins-of-lordaeron",
-     "deadmines"
-    ],
-    "seconds": 57626
-   },
-   {
-    "candidateFound": true,
-    "keys": [
-     "the-hall-of-thanes",
-     "ruins-of-lordaeron",
-     "deadmines"
-    ],
-    "seconds": 57511.8
-   },
-   {
-    "candidateFound": true,
-    "keys": [
-     "wailing-caverns",
-     "ruins-of-lordaeron",
-     "deadmines"
-    ],
-    "seconds": 59152.9
-   },
-   {
-    "candidateFound": true,
-    "keys": [
-     "the-hall-of-thanes",
-     "wailing-caverns",
-     "ruins-of-lordaeron",
-     "deadmines"
-    ],
-    "seconds": 58775.5
-   }
-  ],
-  "DungeonCombinationsAllowed": 16,
-  "DungeonCombinationsEvaluated": 16,
-  "DungeonCombinationsTotal": 16,
-  "DungeonEnumerationComplete": true,
-  "Kept": [
-   32,
-   9,
-   1,
-   9,
-   6,
-   0,
-   1,
-   0,
-   38,
-   16,
-   94
-  ],
-  "PreparationCandidates": 56,
-  "Restarts": 1,
-  "SeedsEvaluated": 9,
-  "Walks": [
-   85,
-   109,
-   102,
-   64,
-   29,
-   40,
-   1,
-   0,
-   108,
-   232,
-   236
+   0
   ]
  },
  "searchAttempts": 1,
- "searchSeconds": 32.970166938,
- "seconds": 54794.9,
+ "searchSeconds": 3.9865055,
+ "seconds": 54858.9,
  "skipped": {},
  "sleepSteps": 0,
  "sleepingBagModel": {

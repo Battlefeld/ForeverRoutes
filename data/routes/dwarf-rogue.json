@@ -1,5 +1,5 @@
 {
- "actionCount": 196,
+ "actionCount": 195,
  "bagFinished": true,
  "basis": "ForeverRoutes optimization of independent routes and ordinary RestedXP Forever quest projections (RestedXP/RXPGuides, CC BY-NC-SA 4.0)",
  "character": {
@@ -403,10 +403,6 @@
     },
     {
      "op": "accept",
-     "quest": 153
-    },
-    {
-     "op": "accept",
      "quest": 151
     },
     {
@@ -732,7 +728,7 @@
    "inRoute": true,
    "level": 18,
    "minLevel": 16,
-   "minutes": -16.8,
+   "minutes": -17,
    "name": "Alther's Mill",
    "possible": true,
    "quest": 2282,
@@ -1120,10 +1116,6 @@
     {
      "op": "turnin",
      "quest": 92747
-    },
-    {
-     "op": "accept",
-     "quest": 153
     },
     {
      "op": "accept",
@@ -1843,10 +1835,6 @@
     },
     {
      "op": "accept",
-     "quest": 153
-    },
-    {
-     "op": "accept",
      "quest": 151
     },
     {
@@ -2191,7 +2179,7 @@
    "inRoute": true,
    "level": 17,
    "minLevel": 14,
-   "minutes": -16.6,
+   "minutes": -19.2,
    "name": "This Must Be The Place",
    "possible": true,
    "quest": 79976,
@@ -2583,10 +2571,6 @@
   },
   {
    "op": "accept",
-   "quest": 153
-  },
-  {
-   "op": "accept",
    "quest": 151
   },
   {
@@ -2897,12 +2881,12 @@
  "finalModelReplayVerified": true,
  "finalXP": 167218,
  "hours": {
-  "optimized": 17.10686111111111
+  "optimized": 17.108444444444444
  },
  "key": "dwarf-rogue",
  "killProfile": "Engine rogue default (gear starter weapon, talents none; outside the table: default (uncalibrated) scaled to the table's edge)",
  "level": 20,
- "modelRevision": "foreverroutes.timeline-model.v2.3",
+ "modelRevision": "foreverroutes.timeline-model.v2.4",
  "preparations": {
   "bagStacks": 3,
   "camping": true,
@@ -2918,18 +2902,18 @@
   2282,
   3109
  ],
- "resumedAndReverified": true,
+ "resumedAndReverified": false,
  "runs": null,
  "scenario": "solo_auto",
  "schema": "foreverroutes.route.v1",
  "search": {
-  "BestSeconds": 61584.7,
+  "BestSeconds": 61590.4,
   "Better": [
    0,
    0,
    0,
    0,
-   1,
+   0,
    0,
    0,
    0,
@@ -2938,50 +2922,44 @@
    0
   ],
   "CheckpointLoaded": false,
-  "DungeonChecks": [
-   {
-    "candidateFound": true,
-    "keys": [],
-    "seconds": 61908.7
-   }
-  ],
+  "DungeonChecks": null,
   "DungeonCombinationsAllowed": 1,
-  "DungeonCombinationsEvaluated": 1,
+  "DungeonCombinationsEvaluated": 0,
   "DungeonCombinationsTotal": 1,
-  "DungeonEnumerationComplete": true,
+  "DungeonEnumerationComplete": false,
   "Kept": [
-   16,
-   5,
+   2,
    0,
-   4,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
    1,
-   0,
-   0,
-   0,
-   34,
-   4,
-   43
+   1,
+   5
   ],
-  "PreparationCandidates": 28,
-  "Restarts": 1,
-  "SeedsEvaluated": 5,
+  "PreparationCandidates": 5,
+  "Restarts": 0,
+  "SeedsEvaluated": 8,
   "Walks": [
-   69,
-   74,
-   82,
-   48,
-   16,
+   3,
+   4,
+   3,
+   2,
+   2,
    0,
    0,
    0,
-   90,
-   243,
-   117
+   3,
+   17,
+   8
   ]
  },
- "searchAttempts": 0,
- "searchSeconds": 0.398022782,
- "seconds": 61584.7,
+ "searchAttempts": 1,
+ "searchSeconds": 4.5966774,
+ "seconds": 61590.4,
  "skipped": {},
  "sleepSteps": 2,
  "sleepingBagModel": {

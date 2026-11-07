@@ -78,23 +78,33 @@ func (w *World) ClassChains(target int) []ClassChain {
 	}
 	foreign := func(q *Quest) bool { h := w.home(q.StartPos); return len(h) > 0 && !h[race] }
 	// chain: the goal and what it needs, a prerequisite of several the one not in another race's home, nearest
-	var chain func(q *Quest, seen map[int]bool) ([]*Quest, bool)
-	chain = func(q *Quest, seen map[int]bool) ([]*Quest, bool) {
-		if seen[q.ID] {
-			return nil, true
+	var chain func(q *Quest, visiting map[int]bool) ([]*Quest, bool)
+	chain = func(q *Quest, visiting map[int]bool) ([]*Quest, bool) {
+		if visiting[q.ID] {
+			return nil, false // a prerequisite cycle cannot unlock the class reward
 		}
-		seen[q.ID] = true
+		visiting[q.ID] = true
+		defer delete(visiting, q.ID)
 		var out []*Quest
+		included := map[int]bool{}
+		appendChain := func(qs []*Quest) {
+			for _, step := range qs {
+				if !included[step.ID] {
+					included[step.ID] = true
+					out = append(out, step)
+				}
+			}
+		}
 		for _, p := range q.PreAll {
 			pq := w.ByID[p]
 			if pq == nil {
 				return nil, false
 			}
-			c, good := chain(pq, seen)
+			c, good := chain(pq, visiting)
 			if !good {
 				return nil, false
 			}
-			out = append(out, c...)
+			appendChain(c)
 		}
 		if len(q.PreAny) > 0 {
 			var best []*Quest
@@ -104,7 +114,9 @@ func (w *World) ClassChains(target int) []ClassChain {
 				if pq == nil {
 					continue
 				}
-				c, good := chain(pq, map[int]bool{})
+				// Keep the current ancestors when trying an OR branch. Resetting the
+				// recursion path here lets an alternative point back to its own goal.
+				c, good := chain(pq, visiting)
 				if !good {
 					continue
 				}
@@ -122,12 +134,7 @@ func (w *World) ClassChains(target int) []ClassChain {
 			if best == nil {
 				return nil, false
 			}
-			for _, b := range best {
-				if !seen[b.ID] {
-					seen[b.ID] = true
-					out = append(out, b)
-				}
-			}
+			appendChain(best)
 		}
 		return append(out, q), true
 	}

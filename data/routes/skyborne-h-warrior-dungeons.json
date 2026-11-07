@@ -1,5 +1,5 @@
 {
- "actionCount": 286,
+ "actionCount": 284,
  "bagFinished": false,
  "basis": "ForeverRoutes optimization of independent routes and ordinary RestedXP Forever quest projections (RestedXP/RXPGuides, CC BY-NC-SA 4.0)",
  "character": {
@@ -12,7 +12,7 @@
    "inRoute": true,
    "level": 14,
    "minLevel": 10,
-   "minutes": 11.4,
+   "minutes": 11.1,
    "name": "Path of Defense",
    "possible": true,
    "quest": 1498,
@@ -1077,10 +1077,6 @@
     },
     {
      "op": "accept",
-     "quest": 855
-    },
-    {
-     "op": "accept",
      "quest": 850
     },
     {
@@ -1091,15 +1087,6 @@
     {
      "op": "turnin",
      "quest": 850
-    },
-    {
-     "objective": 1,
-     "op": "complete",
-     "quest": 855
-    },
-    {
-     "op": "turnin",
-     "quest": 855
     },
     {
      "objective": 1,
@@ -1135,6 +1122,11 @@
     {
      "op": "turnin",
      "quest": 95621
+    },
+    {
+     "level": 18,
+     "op": "level",
+     "totalXP": 126569
     },
     {
      "objective": 1,
@@ -1236,13 +1228,13 @@
     {
      "level": 20,
      "op": "level",
-     "totalXP": 167282
+     "totalXP": 167240
     }
    ],
    "inRoute": false,
    "level": 14,
    "minLevel": 10,
-   "minutes": -0.8,
+   "minutes": 0.5,
    "name": "Forged Steel",
    "possible": true,
    "quest": 1503,
@@ -2358,10 +2350,6 @@
     },
     {
      "op": "accept",
-     "quest": 855
-    },
-    {
-     "op": "accept",
      "quest": 850
     },
     {
@@ -2372,15 +2360,6 @@
     {
      "op": "turnin",
      "quest": 850
-    },
-    {
-     "objective": 1,
-     "op": "complete",
-     "quest": 855
-    },
-    {
-     "op": "turnin",
-     "quest": 855
     },
     {
      "objective": 1,
@@ -2416,6 +2395,11 @@
     {
      "op": "turnin",
      "quest": 95621
+    },
+    {
+     "level": 18,
+     "op": "level",
+     "totalXP": 126569
     },
     {
      "objective": 1,
@@ -2517,13 +2501,13 @@
     {
      "level": 20,
      "op": "level",
-     "totalXP": 167282
+     "totalXP": 167240
     }
    ],
    "inRoute": false,
    "level": 16,
    "minLevel": 14,
-   "minutes": 90.2,
+   "minutes": 73.2,
    "name": "This Must Be The Place",
    "possible": true,
    "quest": 79976,
@@ -2558,7 +2542,7 @@
    "inRoute": true,
    "level": 12,
    "minLevel": 10,
-   "minutes": -21.3,
+   "minutes": -23.6,
    "name": "The Skybreaker Bulwark",
    "possible": true,
    "quest": 94003,
@@ -3605,10 +3589,6 @@
   },
   {
    "op": "accept",
-   "quest": 855
-  },
-  {
-   "op": "accept",
    "quest": 850
   },
   {
@@ -3619,15 +3599,6 @@
   {
    "op": "turnin",
    "quest": 850
-  },
-  {
-   "objective": 1,
-   "op": "complete",
-   "quest": 855
-  },
-  {
-   "op": "turnin",
-   "quest": 855
   },
   {
    "objective": 1,
@@ -3663,6 +3634,11 @@
   {
    "op": "turnin",
    "quest": 95621
+  },
+  {
+   "level": 18,
+   "op": "level",
+   "totalXP": 126569
   },
   {
    "objective": 1,
@@ -3764,18 +3740,18 @@
   {
    "level": 20,
    "op": "level",
-   "totalXP": 167282
+   "totalXP": 167240
   }
  ],
  "finalModelReplayVerified": true,
- "finalXP": 167282,
+ "finalXP": 167240,
  "hours": {
-  "optimized": 15.954194444444443
+  "optimized": 15.970583333333334
  },
  "key": "skyborne-h-warrior",
  "killProfile": "Engine warrior arms (gear starter weapon, talents none; outside the table: default (uncalibrated) scaled to the table's edge)",
  "level": 20,
- "modelRevision": "foreverroutes.timeline-model.v2.3",
+ "modelRevision": "foreverroutes.timeline-model.v2.4",
  "preparations": {
   "bagStacks": 0,
   "camping": true,
@@ -3785,7 +3761,7 @@
   "professionLevel": 1,
   "wands": false
  },
- "quests": 97,
+ "quests": 96,
  "replayVerified": true,
  "requiredClassGoals": [
   1498,
@@ -3799,12 +3775,12 @@
  "scenario": "dungeons_auto",
  "schema": "foreverroutes.route.v1",
  "search": {
-  "BestSeconds": 57435.1,
+  "BestSeconds": 57494.1,
   "Better": [
    0,
-   1,
    0,
-   1,
+   0,
+   0,
    0,
    0,
    0,
@@ -3814,172 +3790,44 @@
    0
   ],
   "CheckpointLoaded": false,
-  "DungeonChecks": [
-   {
-    "candidateFound": true,
-    "keys": [],
-    "seconds": 71097.6
-   },
-   {
-    "candidateFound": true,
-    "keys": [
-     "ragefire-chasm"
-    ],
-    "seconds": 67117.7
-   },
-   {
-    "candidateFound": true,
-    "keys": [
-     "wailing-caverns"
-    ],
-    "seconds": 62988
-   },
-   {
-    "candidateFound": true,
-    "keys": [
-     "ragefire-chasm",
-     "wailing-caverns"
-    ],
-    "seconds": 61010.6
-   },
-   {
-    "candidateFound": true,
-    "keys": [
-     "ruins-of-lordaeron"
-    ],
-    "seconds": 58766.3
-   },
-   {
-    "candidateFound": true,
-    "keys": [
-     "ragefire-chasm",
-     "ruins-of-lordaeron"
-    ],
-    "seconds": 58942.6
-   },
-   {
-    "candidateFound": true,
-    "keys": [
-     "wailing-caverns",
-     "ruins-of-lordaeron"
-    ],
-    "seconds": 57827.5
-   },
-   {
-    "candidateFound": true,
-    "keys": [
-     "ragefire-chasm",
-     "wailing-caverns",
-     "ruins-of-lordaeron"
-    ],
-    "seconds": 59930.3
-   },
-   {
-    "candidateFound": true,
-    "keys": [
-     "deadmines"
-    ],
-    "seconds": 72430.2
-   },
-   {
-    "candidateFound": true,
-    "keys": [
-     "ragefire-chasm",
-     "deadmines"
-    ],
-    "seconds": 68838.4
-   },
-   {
-    "candidateFound": true,
-    "keys": [
-     "wailing-caverns",
-     "deadmines"
-    ],
-    "seconds": 64628.7
-   },
-   {
-    "candidateFound": true,
-    "keys": [
-     "ragefire-chasm",
-     "wailing-caverns",
-     "deadmines"
-    ],
-    "seconds": 64741.8
-   },
-   {
-    "candidateFound": true,
-    "keys": [
-     "ruins-of-lordaeron",
-     "deadmines"
-    ],
-    "seconds": 60327.5
-   },
-   {
-    "candidateFound": true,
-    "keys": [
-     "ragefire-chasm",
-     "ruins-of-lordaeron",
-     "deadmines"
-    ],
-    "seconds": 62140
-   },
-   {
-    "candidateFound": true,
-    "keys": [
-     "wailing-caverns",
-     "ruins-of-lordaeron",
-     "deadmines"
-    ],
-    "seconds": 61258.5
-   },
-   {
-    "candidateFound": true,
-    "keys": [
-     "ragefire-chasm",
-     "wailing-caverns",
-     "ruins-of-lordaeron",
-     "deadmines"
-    ],
-    "seconds": 63411.9
-   }
-  ],
+  "DungeonChecks": null,
   "DungeonCombinationsAllowed": 16,
-  "DungeonCombinationsEvaluated": 16,
+  "DungeonCombinationsEvaluated": 0,
   "DungeonCombinationsTotal": 16,
-  "DungeonEnumerationComplete": true,
+  "DungeonEnumerationComplete": false,
   "Kept": [
-   77,
-   28,
-   1,
-   17,
-   14,
-   4,
+   2,
    0,
    0,
-   103,
-   30,
-   161
+   0,
+   0,
+   0,
+   0,
+   0,
+   5,
+   0,
+   3
   ],
-  "PreparationCandidates": 56,
-  "Restarts": 4,
-  "SeedsEvaluated": 9,
+  "PreparationCandidates": 41,
+  "Restarts": 0,
+  "SeedsEvaluated": 15,
   "Walks": [
-   217,
-   225,
-   209,
-   153,
-   69,
-   73,
+   3,
+   4,
+   4,
+   2,
+   3,
+   3,
    0,
    0,
-   260,
-   560,
-   366
+   7,
+   17,
+   5
   ]
  },
  "searchAttempts": 1,
- "searchSeconds": 31.767829763,
- "seconds": 57435.1,
+ "searchSeconds": 3.3242267,
+ "seconds": 57494.1,
  "skipped": {},
  "sleepSteps": 0,
  "sleepingBagModel": {

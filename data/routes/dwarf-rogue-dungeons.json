@@ -563,7 +563,7 @@
    "inRoute": true,
    "level": 17,
    "minLevel": 16,
-   "minutes": -9,
+   "minutes": -9.5,
    "name": "Alther's Mill",
    "possible": true,
    "quest": 2282,
@@ -1103,7 +1103,7 @@
    "inRoute": false,
    "level": 16,
    "minLevel": 16,
-   "minutes": 147.4,
+   "minutes": 146.7,
    "name": "Kingly Shakedown",
    "possible": true,
    "quest": 2298,
@@ -1654,7 +1654,7 @@
    "inRoute": false,
    "level": 16,
    "minLevel": 16,
-   "minutes": 142.2,
+   "minutes": 141.5,
    "name": "To Hulfdan!",
    "possible": true,
    "quest": 2299,
@@ -1669,7 +1669,7 @@
    "inRoute": true,
    "level": 2,
    "minLevel": 1,
-   "minutes": -2.1,
+   "minutes": -2.3,
    "name": "Encrypted Rune",
    "possible": true,
    "quest": 3109,
@@ -2269,7 +2269,7 @@
    "inRoute": false,
    "level": 14,
    "minLevel": 14,
-   "minutes": 55.2,
+   "minutes": 54.5,
    "name": "This Must Be The Place",
    "possible": true,
    "quest": 79976,
@@ -2806,12 +2806,12 @@
  "finalModelReplayVerified": true,
  "finalXP": 167251,
  "hours": {
-  "optimized": 14.267249999999999
+  "optimized": 14.279916666666665
  },
  "key": "dwarf-rogue",
  "killProfile": "Engine rogue default (gear starter weapon, talents none; outside the table: default (uncalibrated) scaled to the table's edge)",
  "level": 20,
- "modelRevision": "foreverroutes.timeline-model.v2.3",
+ "modelRevision": "foreverroutes.timeline-model.v2.4",
  "preparations": {
   "bagStacks": 0,
   "camping": true,
@@ -2837,7 +2837,7 @@
  "scenario": "dungeons_auto",
  "schema": "foreverroutes.route.v1",
  "search": {
-  "BestSeconds": 51362.1,
+  "BestSeconds": 51407.7,
   "Better": [
    0,
    0,
@@ -2848,176 +2848,48 @@
    0,
    0,
    0,
-   2,
-   3
+   0,
+   0
   ],
   "CheckpointLoaded": false,
-  "DungeonChecks": [
-   {
-    "candidateFound": true,
-    "keys": [],
-    "seconds": 66811.4
-   },
-   {
-    "candidateFound": true,
-    "keys": [
-     "the-hall-of-thanes"
-    ],
-    "seconds": 64539.2
-   },
-   {
-    "candidateFound": true,
-    "keys": [
-     "wailing-caverns"
-    ],
-    "seconds": 64001
-   },
-   {
-    "candidateFound": true,
-    "keys": [
-     "the-hall-of-thanes",
-     "wailing-caverns"
-    ],
-    "seconds": 61718.2
-   },
-   {
-    "candidateFound": true,
-    "keys": [
-     "ruins-of-lordaeron"
-    ],
-    "seconds": 61514.3
-   },
-   {
-    "candidateFound": true,
-    "keys": [
-     "the-hall-of-thanes",
-     "ruins-of-lordaeron"
-    ],
-    "seconds": 59102.8
-   },
-   {
-    "candidateFound": true,
-    "keys": [
-     "wailing-caverns",
-     "ruins-of-lordaeron"
-    ],
-    "seconds": 58500.4
-   },
-   {
-    "candidateFound": true,
-    "keys": [
-     "the-hall-of-thanes",
-     "wailing-caverns",
-     "ruins-of-lordaeron"
-    ],
-    "seconds": 56348.3
-   },
-   {
-    "candidateFound": true,
-    "keys": [
-     "deadmines"
-    ],
-    "seconds": 64625.9
-   },
-   {
-    "candidateFound": true,
-    "keys": [
-     "the-hall-of-thanes",
-     "deadmines"
-    ],
-    "seconds": 62214.4
-   },
-   {
-    "candidateFound": true,
-    "keys": [
-     "wailing-caverns",
-     "deadmines"
-    ],
-    "seconds": 61195.6
-   },
-   {
-    "candidateFound": true,
-    "keys": [
-     "the-hall-of-thanes",
-     "wailing-caverns",
-     "deadmines"
-    ],
-    "seconds": 58920.4
-   },
-   {
-    "candidateFound": true,
-    "keys": [
-     "ruins-of-lordaeron",
-     "deadmines"
-    ],
-    "seconds": 57117.7
-   },
-   {
-    "candidateFound": true,
-    "keys": [
-     "the-hall-of-thanes",
-     "ruins-of-lordaeron",
-     "deadmines"
-    ],
-    "seconds": 54682
-   },
-   {
-    "candidateFound": true,
-    "keys": [
-     "wailing-caverns",
-     "ruins-of-lordaeron",
-     "deadmines"
-    ],
-    "seconds": 53914.7
-   },
-   {
-    "candidateFound": true,
-    "keys": [
-     "the-hall-of-thanes",
-     "wailing-caverns",
-     "ruins-of-lordaeron",
-     "deadmines"
-    ],
-    "seconds": 51867.3
-   }
-  ],
+  "DungeonChecks": null,
   "DungeonCombinationsAllowed": 16,
-  "DungeonCombinationsEvaluated": 16,
+  "DungeonCombinationsEvaluated": 0,
   "DungeonCombinationsTotal": 16,
-  "DungeonEnumerationComplete": true,
+  "DungeonEnumerationComplete": false,
   "Kept": [
-   27,
-   10,
-   0,
-   15,
-   7,
    0,
    0,
    0,
-   51,
-   28,
-   229
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   1,
+   1
   ],
-  "PreparationCandidates": 56,
-  "Restarts": 1,
-  "SeedsEvaluated": 9,
+  "PreparationCandidates": 0,
+  "Restarts": 0,
+  "SeedsEvaluated": 15,
   "Walks": [
-   75,
-   91,
-   106,
-   57,
-   24,
-   41,
+   2,
+   3,
+   3,
+   1,
+   1,
+   2,
    0,
    0,
-   103,
-   455,
-   387
+   1,
+   10,
+   3
   ]
  },
  "searchAttempts": 1,
- "searchSeconds": 31.963600408,
- "seconds": 51362.1,
+ "searchSeconds": 3.4738508,
+ "seconds": 51407.7,
  "skipped": {},
  "sleepSteps": 0,
  "sleepingBagModel": {

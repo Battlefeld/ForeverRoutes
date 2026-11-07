@@ -35,7 +35,8 @@ type TableProfile struct {
 	Levels        []TableLevel   `json:"levels"`
 
 	// MeleeShare is the share of the fight the mob hits the character. Without a value: 0.25 when a voidwalker
-	// tanks (it takes the mob after the first hits), else 1 minus the time the mob needs to run to a caster.
+	// tanks, 1 for melee classes, else 1 minus the time the mob needs to run to a ranged character.
+	// Hybrid profiles use the ranged assumption unless their caller supplies a measured share.
 	MeleeShare float64        `json:"-"`
 	Fallback   DefaultProfile `json:"-"`
 	byLevel    map[int]*TableLevel
@@ -199,8 +200,22 @@ func (p *TableProfile) meleeShare(fight float64) float64 {
 	if v, _ := p.ClassOptions["summon"].(float64); strings.EqualFold(p.Class, "warlock") && v == 2 {
 		return 0.25
 	}
-	// A caster pulls from about 25 yd; the mob needs about 3 s to arrive.
-	return math.Max(0, fight-3) / fight
+	switch strings.ToLower(p.Class) {
+	case "warrior", "rogue", "paladin":
+		// These profiles fight in melee from the start; giving them a caster's approach
+		// time understates incoming damage and makes their grinding look too efficient.
+		return 1
+	case "mage", "priest", "warlock", "hunter", "shaman", "druid":
+		// Ranged pulls start about 25 yd away: allow the existing 3 s approach estimate.
+		// The shipped hybrid profiles are casters; feral/enhancement callers can set
+		// MeleeShare explicitly rather than guessing their spec from the class name.
+		if fight > 0 {
+			return math.Max(0, fight-3) / fight
+		}
+		return 0
+	default:
+		return 1
+	}
 }
 
 // solve is the time at which the curve's damage reaches hp, and the mana and health spent until then. Before the first

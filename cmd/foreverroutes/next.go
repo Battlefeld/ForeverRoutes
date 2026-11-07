@@ -7,7 +7,6 @@ import (
 	"io"
 	"os"
 	"path/filepath"
-	"strings"
 	"time"
 
 	"github.com/Battlefeld/ForeverRoutes/fallback"
@@ -43,7 +42,7 @@ func cmdNext(args []string) error {
 	fs := newFlags("next")
 	path := fs.String("data", "data/routes-data.json.gz", "dataset")
 	observations := fs.String("client-quests", "", "optional local build-scoped client quest observations")
-	profile := fs.String("profile", "", "kill profile from ForeverCore; empty = default estimate")
+	profile := fs.String("profile", automaticProfile, combatProfileHelp)
 	live := fs.String("live", "-", "live state (JSON {race, class, live}); - = standard input")
 	horizon := fs.Float64("horizon", 3600, "seconds of play to plan ahead")
 	routeFile := fs.String("route", "auto", "auto = shipped route with RXP fallback; a route path; empty = plan freely")
@@ -121,12 +120,6 @@ func cmdNext(args []string) error {
 	}
 	if file.Character.Race != "" && !route.SameCharacter(file.Character, character) {
 		return fmt.Errorf("route character does not match live character")
-	}
-	if *profile == "" && *routeFile == "auto" && isEngineProfile(file.Profile) {
-		candidate := filepath.Join(filepath.Dir(*path), "profiles", strings.ToLower(req.Class)+".json")
-		if fileExists(candidate) {
-			*profile = candidate
-		}
 	}
 	w, err := loadWorldWithClientQuests(*path, req.Race, req.Class, req.Faction, *profile, *observations, *group || hasDungeons(events))
 	if err != nil {

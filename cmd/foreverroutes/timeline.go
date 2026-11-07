@@ -17,7 +17,7 @@ func cmdTimeline(args []string) error {
 	race := fs.String("race", "Undead", "race")
 	class := fs.String("class", "Warlock", "class")
 	faction := fs.String("faction", "", "A or H for Skyborne")
-	profile := fs.String("profile", "", "fixed combat profile")
+	profile := fs.String("profile", automaticProfile, combatProfileHelp)
 	paths := fs.String("seeds", "", "comma-separated independent route files or event lists")
 	target := fs.Int("target", 20, "target level; elapsed time is minimized, not fixed")
 	budget := fs.Duration("budget", 3*time.Minute, "total search budget")
