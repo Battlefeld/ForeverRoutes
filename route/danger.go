@@ -76,9 +76,6 @@ func (d dangerMap) at(p dataset.Point) int {
 	return d[[3]int{p.Map, int(math.Floor(p.X / dangerCell)), int(math.Floor(p.Y / dangerCell))}]
 }
 
-// eliteAbove: how many levels above the character a lone elite (not among other elites) is still fought alone.
-const eliteAbove = 2
-
 // tooDangerous tells whether the character cannot work at a source yet: a creature above its fighting range, or a place
 // among such creatures.
 func (w *World) tooDangerous(s *State, src Source) bool {
@@ -91,18 +88,21 @@ func (w *World) dangerousAt(level int, src Source) bool {
 	if src.Talk {
 		return false
 	}
+	if src.NPC != nil && src.NPC.MaxLevel < 1 {
+		return true // unknown combat difficulty is not a level-one target
+	}
 	if src.Class {
-		return src.NPC != nil && mobLevel(src.NPC) > lvl // a class quest's creature: by its level only
+		return src.NPC != nil && max(src.NPC.MaxLevel, mobLevel(src.NPC)) > lvl // a class quest's creature: by its level only
 	}
 	if e := w.elites.at(src.Site.Center); e > 0 && !(w.Opt.SoloElites && e <= level) {
 		return true // among elites: not alone
 	}
 	if src.NPC != nil {
 		if src.NPC.Rank == 1 {
-			// a lone elite up to eliteAbove levels above the character: a hard fight, its time comes from its health
-			return mobLevel(src.NPC) > level+eliteAbove
+			// Only the explicit pet-tanking policy permits ordinary elites, never above the character's level.
+			return !w.Opt.SoloElites || src.NPC.MaxLevel > level
 		}
-		return mobLevel(src.NPC) > lvl
+		return max(src.NPC.MaxLevel, mobLevel(src.NPC)) > lvl
 	}
 	return w.danger.at(src.Site.Center) > lvl
 }

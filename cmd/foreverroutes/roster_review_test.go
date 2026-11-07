@@ -77,6 +77,44 @@ func TestRebuildRoster(t *testing.T) {
 	}
 	var mu sync.Mutex
 	var rows []map[string]any
+	// A data correction can reverse the ranking of earlier winners. Keep every
+	// historical auto winner as a candidate, not only the most recent checkpoint.
+	historical := map[string][]route.OptimizationSeed{}
+	audits, err := filepath.Glob("../../data/audits/roster-v*.json.gz")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, path := range audits {
+		f, err := os.Open(path)
+		if err != nil {
+			t.Fatal(err)
+		}
+		z, err := gzip.NewReader(f)
+		if err != nil {
+			f.Close()
+			t.Fatal(err)
+		}
+		var old struct {
+			Results []struct {
+				route.OptimizationSeed
+				Character      route.Character `json:"character"`
+				Scenario       string          `json:"scenario"`
+				ProjectionOnly bool            `json:"projectionOnly"`
+				Error          string          `json:"error"`
+			} `json:"results"`
+		}
+		err = json.NewDecoder(z).Decode(&old)
+		z.Close()
+		f.Close()
+		if err != nil {
+			t.Fatal(err)
+		}
+		for _, row := range old.Results {
+			if !row.ProjectionOnly && row.Error == "" && strings.HasSuffix(row.Scenario, "_auto") {
+				historical[row.Character.RouteKey()] = append(historical[row.Character.RouteKey()], row.OptimizationSeed)
+			}
+		}
+	}
 	write := func(path string, v any) {
 		b, err := json.MarshalIndent(v, "", " ")
 		if err != nil {
@@ -105,6 +143,7 @@ func TestRebuildRoster(t *testing.T) {
 			if len(seeds) != 2 {
 				t.Fatalf("expected independent solo/dungeon inputs, got %d", len(seeds))
 			}
+			seeds = append(seeds, historical[ch.RouteKey()]...)
 			if ch.Race == "Undead" && ch.Class == "Warlock" {
 				for _, pattern := range []string{"../../data/audits/timeline-v2-winners/*.json", "../../data/audits/no-wc-seeds/*.json"} {
 					paths, err := filepath.Glob(pattern)
@@ -197,7 +236,13 @@ func TestRebuildRoster(t *testing.T) {
 									// route. Keep that incumbent as a seed, priced by the new model,
 									// so a shorter rebuild cannot lose a known feasible route.
 									pool = append(pool, saved.OptimizationSeed)
-									if math.Abs(replay.Seconds-saved.Seconds) < .11 {
+									requiredComplete := true
+									for _, chain := range w.ClassChains(20) {
+										if chain.Tier == "required" && !slices.ContainsFunc(replay.Steps, func(step route.Step) bool { return step.Op == "turnin" && step.Quest == chain.Goal.ID }) {
+											requiredComplete = false
+										}
+									}
+									if requiredComplete && math.Abs(replay.Seconds-saved.Seconds) < .11 {
 										e, r, resumed = saved.Events, replay, true
 										if saved.Search != nil {
 											stats = saved.Search

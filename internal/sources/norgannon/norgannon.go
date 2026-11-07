@@ -1,12 +1,13 @@
-// Package norgannon reads NorgannonDB's item table (github.com/zmarotrix/NorgannonDB, GPL-3.0): an open,
+// Package norgannon reads NorgannonDB's item and NPC tables (github.com/zmarotrix/NorgannonDB, GPL-3.0): an open,
 // crowd-sourced WoW Forever database built from QuestieDB, pfQuest, Forever's own game tables and players' collected
 // data. Of it ForeverRoutes takes where an item comes from: the creatures and objects it drops from (with the chance in
-// percent, 0 for unknown) and the quests that reward it. The file is read as data only; no Lua is run.
+// percent, 0 for unknown), quest rewards, and NPC combat levels/ranks. Files are read as data only; no Lua is run.
 package norgannon
 
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
@@ -19,6 +20,7 @@ const Repository = "zmarotrix/NorgannonDB"
 
 // ItemsFile is the item table in the repository.
 const ItemsFile = "data/items.lua"
+const NPCsFile = "data/npcs.lua"
 
 // Drop is a creature or object an item drops from; Chance in percent, 0 when unknown.
 type Drop struct {
@@ -39,6 +41,7 @@ type Item struct {
 type Data struct {
 	Revision string
 	Items    map[int]*Item
+	NPCs     map[int]CombatMetadata
 }
 
 // record: R(id,"name") or R(id,"name",[[fields]]), one per line.
@@ -50,7 +53,17 @@ func Load(path, revision string) (*Data, error) {
 	if err != nil {
 		return nil, err
 	}
-	return Parse(string(b), revision)
+	d, err := Parse(string(b), revision)
+	if err != nil {
+		return nil, err
+	}
+	// Standalone item fixtures remain supported; production fetches both tables.
+	if raw, e := os.ReadFile(filepath.Join(filepath.Dir(path), "npcs.lua")); e == nil {
+		d.NPCs, err = ParseNPCs(string(raw))
+	} else if !os.IsNotExist(e) {
+		return nil, e
+	}
+	return d, err
 }
 
 // Parse reads the item table.

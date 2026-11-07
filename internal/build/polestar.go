@@ -17,7 +17,7 @@ import (
 const polestarSrc = "polestar_client"
 
 // Forever quest types (QuestInfo) that a solo route does not do.
-var polestarTypes = map[int]string{81: "dungeon", 62: "raid", 41: "pvp"}
+var polestarTypes = map[int]string{1: "elite", 81: "dungeon", 62: "raid", 41: "pvp"}
 
 // raceMask keeps the classic race bits and Forever's Skyborne bits of a client mask.
 func raceMask(m int) int { return m & (0xFFFF | polestar.SkyborneAlliance | polestar.SkyborneHorde) }
@@ -44,7 +44,10 @@ func (b *builder) applyPolestar(out *dataset.Quest) {
 		out.MinLevel = p.MinLevel
 	}
 	out.Races, out.Classes = raceMask(p.Races), p.Classes&0xFFFF
-	out.Type = polestarTypes[p.Type]
+	if typ, known := polestarTypes[p.Type]; known {
+		out.Type = typ
+		out.Sources["type"] = polestarSrc
+	}
 	if p.Repeat {
 		out.Repeatable = true
 	}
@@ -415,6 +418,17 @@ func (b *builder) polestarDrops(o *dataset.Objective) bool {
 // polestarNPC fills an NPC the other sources do not know or do not place.
 func (b *builder) polestarNPC(n *dataset.NPC, known bool) bool {
 	p := b.pdb.NPCs[n.ID]
+	if p != nil {
+		if p.Rank != nil {
+			n.Rank = *p.Rank
+		}
+		if p.LevelMin > 0 {
+			n.MinLevel = p.LevelMin
+		}
+		if p.LevelMax > 0 {
+			n.MaxLevel = p.LevelMax
+		}
+	}
 	if !known {
 		if p == nil {
 			return false

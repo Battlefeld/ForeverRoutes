@@ -22,10 +22,11 @@ QuestieDB, EverythingQuests und cmangos werden beim Bau in den festgeschriebenen
   Beutechancen als Classic-Referenz gekennzeichnet. Dazu die Forever-Traces (`src/corrections/Forever/traces`, aus den
   Aufzeichnungen der Spieler mit QuestieTrace): von welchen Gegnern und Objekten ein Gegenstand droppt, Questgeber und
   Abgaben, Spawns von Gegnern und Objekten, die den Datendateien fehlen (Gegner mit unbekannter Chance).
-- **NorgannonDB** (https://github.com/zmarotrix/NorgannonDB, GPL-3.0, Datei `data/items.lua`) — offene, gesammelte
+- **NorgannonDB** (https://github.com/zmarotrix/NorgannonDB, GPL-3.0, Dateien `data/items.lua` und `data/npcs.lua`) — offene, gesammelte
   Forever-Datenbank (aus QuestieDB, pfQuest, Forevers Spieltabellen und Spielerdaten): wo ein Gegenstand droppt (Gegner,
   Objekte, mit Chance wo bekannt) und welche Quest ihn als Belohnung gibt (die wird dann Voraussetzung). Nur für
-  Gegenstände ohne andere Quelle.
+  Gegenstände ohne andere Quelle. Die NPC-Tabelle ergänzt fehlende Gegnerstufen und Elite-Einstufungen;
+  explizite Client-Einstufungen haben Vorrang. Bekannte Boss-/Elite-Einstufungen werden durch eine Rückfallquelle nicht abgeschwächt.
 - **EverythingQuests** (https://github.com/wheelbarrel00/EverythingQuests, MIT) — Forever-Questgeber, Abgaben, Ziele,
   Voraussetzungen (teils aus AllTheThings).
 - **WarcraftDB Forever** (https://forever.warcraftdb.com) — Spielclient-Questdaten (Ziele mit Mengen, XP, Level,

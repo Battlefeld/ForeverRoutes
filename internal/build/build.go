@@ -56,7 +56,7 @@ type Inputs struct {
 	EGLinkRevision    string
 	Aegis             string // optional: AEGIS Pathfinder's data/merged.json (internal/sources/aegis)
 	AegisRevision     string
-	Norgannon         string // optional: NorgannonDB's data/items.lua (internal/sources/norgannon)
+	Norgannon         string // optional: NorgannonDB's data/items.lua, with sibling npcs.lua (internal/sources/norgannon)
 	NorgannonRevision string
 }
 
@@ -363,6 +363,7 @@ func Build(in Inputs) (*dataset.Dataset, error) {
 		return nil, err
 	}
 	b.npcs()
+	b.norgannonCombat()
 	b.objects()
 	b.guideSpawns()
 	b.capitalNPCs()
@@ -376,6 +377,7 @@ func Build(in Inputs) (*dataset.Dataset, error) {
 	// dungeon quests stay dungeon quests, also where their objectives lie before the portal: the mobs there are
 	// elites in Forever (the outer caves and mines); the route with dungeons does them on its run
 	dungeons := b.dungeons()
+	b.objectiveSourceSafety()
 	travel := b.travel()
 	build, _ := merged["build"].(string)
 	d := &dataset.Dataset{Schema: dataset.Schema, Build: build, LevelXP: b.levelXP(), Quests: b.out, NPCs: b.npcOut, Objects: b.objOut, Travel: travel, Stats: b.stats,
@@ -392,7 +394,7 @@ func Build(in Inputs) (*dataset.Dataset, error) {
 	}
 	if b.ngn != nil {
 		d.Sources = append(d.Sources, dataset.Source{Name: "NorgannonDB", URL: "https://github.com/" + norgannon.Repository, Revision: in.NorgannonRevision, License: "GPL-3.0",
-			Note: "open, crowd-sourced WoW Forever database (from QuestieDB, pfQuest, Forever's game tables and players' data): where an item drops (creatures, objects, with the chance where known) and the quests that reward it"})
+			Note: "open, crowd-sourced WoW Forever database (from QuestieDB, pfQuest, Forever's game tables and players' data): item drops and quest rewards; missing NPC combat levels and elite ranks (explicit client ranks take precedence)"})
 	}
 	if b.aeg != nil {
 		d.Sources = append(d.Sources, dataset.Source{Name: "AEGIS: Pathfinder (Forever)", URL: "https://github.com/" + aegis.Repository, Revision: in.AegisRevision, License: "MIT",
@@ -1380,14 +1382,21 @@ func (b *builder) creaturesNamed(name, zone string) []int {
 	return out
 }
 
-// classify marks an unresolved quest that ForeverChanges calls elite or a dungeon quest: it is not a data gap, a solo
-// route does not do it.
+// A resolved item source does not make an elite/group quest soloable. Preserve the
+// restriction for resolved quests too; objective completeness and party size are independent.
 func (b *builder) classify(out *dataset.Quest) {
-	if b.fch == nil || out.Unsupported == "" {
+	if b.fch == nil {
 		return
 	}
 	q, ok := b.fch.Quests[out.ID]
 	if !ok || q.Kind == "" || q.Kind == "normal" {
+		return
+	}
+	if out.Type == "" && (q.Kind == "elite" || q.Kind == "dungeon" || q.Kind == "raid" || q.Kind == "pvp") {
+		out.Type = q.Kind
+		out.Sources["type"] = q.URL
+	}
+	if out.Unsupported == "" {
 		return
 	}
 	out.Unsupported = q.Kind + " quest, not solo (" + out.Unsupported + ")"

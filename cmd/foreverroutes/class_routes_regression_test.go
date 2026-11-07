@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 
@@ -66,6 +67,12 @@ func TestShippedClassRoutesRetainPreviousFeasibleWinner(t *testing.T) {
 			if err != nil || incumbent.Level < 20 || len(incumbent.Skipped) != 0 {
 				t.Log("old winner is no longer executable under the corrected model")
 				return
+			}
+			for _, chain := range w.ClassChains(20) {
+				if chain.Tier == "required" && !slices.ContainsFunc(incumbent.Steps, func(step route.Step) bool { return step.Op == "turnin" && step.Quest == chain.Goal.ID }) {
+					t.Log("old winner lacks a currently required class goal")
+					return
+				}
 			}
 			current, err := readRoute(filepath.Join("../../data/routes", key+".json"))
 			if err != nil {

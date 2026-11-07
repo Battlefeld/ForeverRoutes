@@ -455,7 +455,7 @@ func (w *World) resolve(q *dataset.Quest) (*Quest, string) {
 				}
 			}
 			ro.Sources = append(ro.Sources, w.dropSources(o.Drops)...)
-			if len(w.soloSources(ro.Sources, q.Classes != 0)) == 0 && len(o.Places) > 0 {
+			if (o.Ground || o.UseItem > 0) && len(o.Drops) == 0 && len(o.Vendors) == 0 && len(o.Places) > 0 {
 				for _, st := range w.sites(o.Places) {
 					ro.Sources = append(ro.Sources, Source{Chance: 1, Site: st, Gather: true})
 				}
@@ -500,12 +500,15 @@ func (w *World) soloSources(src []Source, class bool) []Source {
 		if s.Site.Spawns == 0 || s.Chance <= 0 {
 			continue
 		}
-		// rare elites and bosses are for groups; a plain elite is fought alone up to eliteAbove levels above the
-		// character (tooDangerous checks the level when it is fought, and elite camps stay closed). A class quest's
+		if !s.Talk && s.NPC != nil && s.NPC.MaxLevel < 1 {
+			continue
+		}
+		// Rare elites and bosses are for groups; ordinary elites require the explicit pet-tanking policy
+		// (tooDangerous checks the level when fought, and elite camps stay closed). A class quest's
 		// plain elite is made to be fought alone (Call of Fire's last spirit, the Voidwalker to bind).
 		if class && !s.Talk && s.NPC != nil && s.NPC.Rank == 1 {
 			s.Class = true
-		} else if !s.Talk && s.NPC != nil && (s.NPC.Rank == 2 || s.NPC.Rank == 3) {
+		} else if !s.Talk && s.NPC != nil && (s.NPC.Rank == 2 || s.NPC.Rank == 3 || s.NPC.Rank == 1 && !w.Opt.SoloElites) {
 			continue
 		}
 		kept = append(kept, s)

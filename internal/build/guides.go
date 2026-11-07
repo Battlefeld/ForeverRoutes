@@ -206,7 +206,16 @@ func (b *builder) guideItem(out *dataset.Quest, o *dataset.Objective, start bool
 	var npcs []int
 	var places []dataset.Point
 	for _, f := range facts {
+		if f.Ground {
+			o.Ground = true
+		}
 		pts := b.guidePoints(f.Places)
+		// A quest-provided container explicitly used at this objective's place
+		// is an interaction, not an assumed ground pickup or monster drop.
+		if !start && f.Complete && len(f.UseItems) == 1 && f.UseItems[0] == b.providedItem(out.ID) &&
+			len(f.Mobs) == 0 && len(f.NPCs) == 0 && len(f.Objects) == 0 && len(pts) > 0 {
+			o.UseItem = f.UseItems[0]
+		}
 		for _, id := range f.Near {
 			pts = append(pts, b.creaturePoints(id)...)
 		}

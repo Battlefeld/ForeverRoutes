@@ -49,6 +49,8 @@ type Objective struct {
 	Drops   []Drop  `json:"drops,omitempty"`
 	Vendors []int   `json:"vendors,omitempty"` // NPCs that sell the item
 	Places  []Point `json:"places,omitempty"`  // where the items lie, from guides, when no creature or object is known
+	Ground  bool    `json:"ground,omitempty"`  // explicit evidence that an item is picked up, not merely a recorded waypoint
+	UseItem int     `json:"useItem,omitempty"` // quest-provided item explicitly used here to obtain this objective item
 	Inside  bool    `json:"inside,omitempty"`  // done inside the quest's dungeon (no open-world source): a group run completes it
 }
 
@@ -81,7 +83,7 @@ type Quest struct {
 	Exclusive   int               `json:"excl,omitempty"` // exclusive group: only one quest of a positive group
 	Breadcrumb  int               `json:"breadcrumb,omitempty"`
 	Repeatable  bool              `json:"repeat,omitempty"`
-	Type        string            `json:"type,omitempty"`    // dungeon, raid or pvp (Forever client quest type); empty = open world
+	Type        string            `json:"type,omitempty"`    // elite, dungeon, raid or pvp (Forever client quest type); empty = open world
 	Dungeon     string            `json:"dungeon,omitempty"` // key of the dungeon the quest belongs to (Dataset.Dungeons)
 	Objectives  []Objective       `json:"obj,omitempty"`
 	Unsupported string            `json:"unsupported,omitempty"`
