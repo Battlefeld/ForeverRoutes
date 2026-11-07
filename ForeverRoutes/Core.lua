@@ -68,7 +68,9 @@ function FR.GuideMode()
  local g=charDB().guide
  if g=='route'then return'route'end
  local key=FR.Key();local data=ForeverRoutesData
- if key and data and data.guides and data.guides[key]then return'rxp'end
+ local guide=key and data and data.guides and data.guides[key]
+ -- the guide ends at its target (20): from there the route goes on (continued past 20 where there is one)
+ if guide and(call(UnitLevel,'player')or 0)<(guide.target or 20)then return'rxp'end
  return'route'
 end
 function FR.SetGuideMode(mode)

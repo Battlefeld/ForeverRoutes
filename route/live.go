@@ -248,3 +248,15 @@ func (w *World) StateAfter(steps []Step) (*State, error) {
 	}
 	return s, nil
 }
+
+// StateAfterFrom is the state after the steps, played from s (s is not changed).
+func (w *World) StateAfterFrom(s0 *State, steps []Step) (*State, error) {
+	s := s0.clone()
+	for i, st := range steps {
+		s.via, s.viaAt = "", nil
+		if err := w.Apply(s, st.Action); err != nil {
+			return nil, fmt.Errorf("step %d (%s %d): %w", i+1, st.Op, st.Quest, err)
+		}
+	}
+	return s, nil
+}

@@ -129,12 +129,15 @@ type Options struct {
 	Preparations PreparationConstraints
 	SleepingBag  SleepingBagModel
 	Feedback     FeedbackSettings
-	RunSpeed     float64            // yards per second (7 = Classic run speed)
-	PathFactor   float64            // real paths are longer than straight lines (1.2)
-	QuestLogCap  int                // 20 in Classic
-	InteractSecs float64            // talking to an NPC (accept / turn in)
-	Profile      KillProfile        // nil = DefaultProfile
-	MaxMobAbove  int                // mobs more than this many levels above the character are not attacked (3; melee and shamans 1)
+	RunSpeed     float64     // yards per second (7 = Classic run speed)
+	PathFactor   float64     // real paths are longer than straight lines (1.2)
+	QuestLogCap  int         // 20 in Classic
+	InteractSecs float64     // talking to an NPC (accept / turn in)
+	Profile      KillProfile // nil = DefaultProfile
+	MaxMobAbove  int         // mobs more than this many levels above the character are not attacked (3; melee and shamans 1)
+	// GrindShare: the share of its XP grinding counts with against quests (0 = 1, all of it); below 1 the planner
+	// quests while grinding is not clearly better (routes past 20, where the model's grinding nearly equals questing)
+	GrindShare   float64
 	SoloElites   bool               // plain elites of the character's level or below are fought alone (warlocks and hunters: the pet tanks)
 	QuestAtLevel bool               // a quest's objectives are worked only from the quest's level on (off by default)
 	NoClassRules bool               // keep the options as given instead of the class's rules

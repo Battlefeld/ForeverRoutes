@@ -54,6 +54,14 @@ func cmdBundle(args []string) error {
 			files[filepath.ToSlash(rel)] = p
 		}
 	}
+	// a route continued past 20 (data/routes-ext, extend -stages) takes the place of its base route
+	ext, err := filepath.Glob("data/routes-ext/*.json")
+	if err != nil {
+		return err
+	}
+	for _, p := range ext {
+		files["routes/"+filepath.Base(p)] = p
+	}
 	if *exe != "" {
 		files["foreverroutes.exe"] = *exe
 	}

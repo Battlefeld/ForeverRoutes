@@ -24,6 +24,8 @@ func cmdExtend(args []string) error {
 	budget := fs.Duration("budget", 60*time.Second, "search time for improving the planned part")
 	restarts := fs.Int("restarts", 2, "search runs of the planner")
 	out := fs.String("out", "", "write the continued route here")
+	stages := fs.Duration("stages", 0, "plan by zones (the live stages, 4 hours at a time) with this search time per stretch instead of the free planner")
+	grind := fs.Float64("grind-share", 0.8, "share of its XP grinding counts with against quests (1: all; below: quest unless grinding is clearly better)")
 	fs.Parse(args)
 	raw, err := os.ReadFile(*file)
 	if err != nil {
@@ -45,6 +47,7 @@ func cmdExtend(args []string) error {
 		return err
 	}
 	w.SetWandDetour(r.WandDetour)
+	w.Opt.GrindShare = *grind
 	t0 := time.Now()
 	base, err := w.FollowGuide(r.Events, r.Target)
 	if err != nil {
@@ -55,7 +58,26 @@ func cmdExtend(args []string) error {
 		return err
 	}
 	var best *route.Result
-	for run := 0; run < *restarts; run++ {
+	if *stages > 0 {
+		// stretch after stretch from the end of the last: each zone worked off before the next
+		cur := s
+		var acts []route.Step
+		for w.Level(cur) < *target {
+			res, _ := w.PlanStages(cur, route.PlanOptions{TargetLevel: *target}, *stages)
+			if res == nil || len(res.Steps) == 0 {
+				return fmt.Errorf("stages: nothing to plan at level %d", w.Level(cur))
+			}
+			acts = append(acts, res.Steps...)
+			next, err := w.StateAfterFrom(cur, res.Steps)
+			if err != nil {
+				return err
+			}
+			fmt.Fprintf(os.Stderr, "  stretch to level %d (%.1f h)\n", w.Level(next), (next.Time-s.Time)/3600)
+			cur = next
+		}
+		best = &route.Result{Steps: acts, Level: w.Level(cur)}
+	}
+	for run := 0; best == nil && run < *restarts; run++ {
 		res, err := w.PlanAhead(s, route.PlanOptions{TargetLevel: *target, Seed: int64(run + 1)}, 1e9)
 		if err == nil && res.Level >= *target && (best == nil || res.Seconds < best.Seconds) {
 			best = res
@@ -70,9 +92,11 @@ func cmdExtend(args []string) error {
 	if err != nil {
 		return err
 	}
-	improved, fullBest, err := w.Improve(events, *target, *budget)
-	if err != nil {
-		return err
+	improved, fullBest := events, full
+	if *budget > 0 {
+		if improved, fullBest, err = w.Improve(events, *target, *budget); err != nil {
+			return err
+		}
 	}
 	runs := 0
 	for _, st := range fullBest.Steps {

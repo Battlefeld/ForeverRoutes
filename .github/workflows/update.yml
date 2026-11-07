@@ -147,6 +147,17 @@ jobs:
           if-no-files-found: ignore
           retention-days: 14
 
+      # the routes continued past 20 (data/routes-ext): continued again from their new base route, a minute each;
+      # only these, the other routes stay at 20
+      - name: continue the extended routes
+        if: steps.update.outputs.changed == 'true'
+        run: |
+          for f in data/routes-ext/*.json; do
+            [ -e "$f" ] || continue
+            key=$(basename "$f" .json)
+            target=$(python3 -c "import json,sys;print(json.load(open(sys.argv[1]))['target'])" "$f")
+            go run ./cmd/foreverroutes extend -route "data/routes/$key.json" -target "$target" -stages 20s -budget 0 -out "$f"
+          done
       - name: checks before publishing
         if: steps.update.outputs.changed == 'true'
         run: |

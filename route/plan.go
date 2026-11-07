@@ -142,13 +142,14 @@ func (w *World) pick(s *State, options []macro, po PlanOptions, run int, rng *ra
 }
 
 // maxSwitches is how often a planned route may change continents by a level: one trip there and back up to level
-// 20, then one more every five levels. Players do not cross the sea for a few quests; the time model alone does not
-// see what that costs them.
+// 20, then one more each level. Players do not cross the sea for a few quests at the start; from 20 on the Horde's
+// and the Alliance's zones alternate between the continents (Hillsbrad, Stranglethorn, Arathi and Badlands against
+// Ashenvale, Thousand Needles, Desolace and Dustwallow), and a tight cap leaves only grinding.
 func maxSwitches(level int) int {
 	if level <= 20 {
 		return 2
 	}
-	return 2 + (level-16)/5
+	return 2 + (level - 20)
 }
 
 // classQuestValue is what finishing one of the first class quests is worth beyond its XP.
@@ -235,10 +236,19 @@ func (w *World) options(s *State, target int) []macro {
 		if len(rates) >= 3 && rates[2] > rate {
 			rate = rates[2]
 		}
+		share := w.Opt.GrindShare
+		if share <= 0 || share > 1 {
+			share = 1
+		}
+		rate *= share
 		for i := range out {
 			m := &out[i]
 			dt := m.state.Time - s.Time
-			m.score = -(w.value(s, m.state) - rate*dt)
+			v := w.value(s, m.state)
+			if m.kind == "grind" {
+				v *= share
+			}
+			m.score = -(v - rate*dt)
 		}
 	}
 	return out

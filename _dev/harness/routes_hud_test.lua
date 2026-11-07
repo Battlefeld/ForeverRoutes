@@ -313,6 +313,9 @@ do
  FR.SetLive({steps={{op='accept',quest=4641,at={m=1,x=0,y=0}}}})
  check(FR.live==nil,'no live plan while the guide is followed')
  check(FR.Advance().q==96873,'the guide step comes first')
+ local realLevel=UnitLevel;UnitLevel=function()return 20 end
+ check(FR.GuideMode()=='route','at the guide\'s target level the route goes on')
+ UnitLevel=realLevel
  SlashCmdList.FOREVERROUTES('guide route');check(FR.GuideMode()=='route','switched back to the route')
  ForeverRoutesData.guides=saved;FR.CharDB().guide=nil
 end
