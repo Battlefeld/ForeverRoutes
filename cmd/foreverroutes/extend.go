@@ -24,6 +24,8 @@ func cmdExtend(args []string) error {
 	budget := fs.Duration("budget", 60*time.Second, "search time for improving the planned part")
 	restarts := fs.Int("restarts", 2, "search runs of the planner")
 	out := fs.String("out", "", "write the continued route here")
+	legsFile := fs.String("legs", "", "a laid-out route (JSON list of legs: {zones, until} or {dungeon}) the planner fills in")
+	from := fs.Int("from", 0, "continue from this level of the route (default: its end)")
 	stages := fs.Duration("stages", 0, "plan by zones (the live stages, 4 hours at a time) with this search time per stretch instead of the free planner")
 	grind := fs.Float64("grind-share", 0.8, "share of its XP grinding counts with against quests (1: all; below: quest unless grinding is clearly better)")
 	fs.Parse(args)
@@ -49,16 +51,40 @@ func cmdExtend(args []string) error {
 	w.SetWandDetour(r.WandDetour)
 	w.Opt.GrindShare = *grind
 	t0 := time.Now()
-	base, err := w.FollowGuide(r.Events, r.Target)
+	baseTarget := r.Target
+	if *from > 0 && *from < baseTarget {
+		baseTarget = *from
+	}
+	base, err := w.FollowGuide(r.Events, baseTarget)
 	if err != nil {
 		return err
+	}
+	if baseTarget < r.Target {
+		r.Events = route.EventsOf(base.Steps) // the route up to -from; the legs go on from there
 	}
 	s, err := w.StateAfter(base.Steps)
 	if err != nil {
 		return err
 	}
 	var best *route.Result
-	if *stages > 0 {
+	if *legsFile != "" {
+		raw, err := os.ReadFile(*legsFile)
+		if err != nil {
+			return err
+		}
+		var legs []route.Leg
+		if err := json.Unmarshal(raw, &legs); err != nil {
+			return fmt.Errorf("%s: %w", *legsFile, err)
+		}
+		res, notes, err := w.PlanLegs(s, legs, *target)
+		if err != nil {
+			return err
+		}
+		for _, n := range notes {
+			fmt.Fprintln(os.Stderr, "  "+n)
+		}
+		best = res
+	} else if *stages > 0 {
 		// stretch after stretch from the end of the last: each zone worked off before the next
 		cur := s
 		var acts []route.Step

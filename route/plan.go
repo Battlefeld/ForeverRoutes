@@ -166,6 +166,9 @@ func (w *World) classQuestsLeft(s *State) bool {
 	if w.Level(s) < 6 {
 		return true
 	}
+	if w.legPlan && w.Level(s) >= 10 {
+		return false // a laid-out route: a class quest of the start left open does not keep the character home
+	}
 	for _, q := range w.Quests {
 		if q.Classes == 0 || q.MinLevel > 6 || distance(q.StartPos, w.Start) > startArea {
 			continue
@@ -185,7 +188,7 @@ func (w *World) options(s *State, target int) []macro {
 	add := func(m *macro) {
 		// a dungeon run may cross the sea to hand in its quests right after (a short trip to Undercity after Ragefire)
 		// a goal switched on in the addon (live_stages.go) may cross the sea too: the player asked for it
-		if m != nil && m.kind != "dungeon" && m.state.Switches > s.Switches && (m.state.Switches > cap || early) && !w.forGoal(m) {
+		if m != nil && m.kind != "dungeon" && m.state.Switches > s.Switches && (m.state.Switches > cap || early) && !w.forGoal(m) && !w.legPlan {
 			return
 		}
 		if m != nil && len(m.actions) > 0 && !math.IsInf(m.score, 0) && !math.IsNaN(m.score) {

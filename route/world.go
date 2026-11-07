@@ -75,6 +75,7 @@ type World struct {
 	anchorOnce                   sync.Once
 	liveGoals                    map[int]bool // quests of the goals switched on in the addon (live_stages.go)
 	liveGoalChains               [][]int
+	legPlan                      bool // a laid-out route (legs.go): the player chose the zones, the sea is no limit
 	liveLocal                    bool // live stages: blocks hand in around their place only (live_stages.go)
 	zoneAnchors                  []zoneAnchor
 	preparation                  PreparationPlan
