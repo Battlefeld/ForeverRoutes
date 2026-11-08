@@ -244,7 +244,7 @@ func TestRebuildRoster(t *testing.T) {
 									}
 									// outside the focus (FR_ROSTER_FOCUS) a route that still replays is kept as it is: only
 									// the focused characters are searched again
-									if requiredComplete && (math.Abs(replay.Seconds-saved.Seconds) < .11 || !inFocus(ch)) {
+									if requiredComplete && (math.Abs(replay.Seconds-saved.Seconds) < .11 || !inFocus(ch, label)) {
 										e, r, resumed = saved.Events, replay, true
 										if saved.Search != nil {
 											stats = saved.Search
@@ -445,14 +445,16 @@ func scenarioFail(t *testing.T, tolerate bool, format string, args ...any) {
 	t.Errorf(format, args...)
 }
 
-// inFocus: the character is one the roster searches again (FR_ROSTER_FOCUS: route keys, comma separated; empty: all).
-func inFocus(ch route.Character) bool {
+// inFocus: the character (and scenario: solo, dungeons) is one the roster searches again. FR_ROSTER_FOCUS: route keys
+// with an optional scenario (orc-shaman:dungeons), comma separated; empty: all.
+func inFocus(ch route.Character, label string) bool {
 	focus := strings.TrimSpace(os.Getenv("FR_ROSTER_FOCUS"))
 	if focus == "" {
 		return true
 	}
 	for _, k := range strings.Split(focus, ",") {
-		if strings.TrimSpace(k) == ch.RouteKey() {
+		key, scenario, _ := strings.Cut(strings.TrimSpace(k), ":")
+		if key == ch.RouteKey() && (scenario == "" || scenario == label) {
 			return true
 		}
 	}
