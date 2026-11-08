@@ -95,7 +95,7 @@ func cmdExportAddon(args []string) error {
 			continue
 		}
 		if res.Level < r.Target || len(res.Skipped) > 0 {
-			if !*stale {
+			if !*stale && !outsideFocus(key, readFocus("data/focus.txt")) {
 				return fmt.Errorf("%s: incomplete route or skipped events; regenerate routes", f)
 			}
 			fmt.Fprintf(os.Stderr, "%s: stale route exported without %d skipped events\n", key, len(res.Missed))
@@ -407,4 +407,38 @@ func luaStr(s string) string {
 	}
 	b.WriteByte('"')
 	return b.String()
+}
+
+// readFocus: the focus (route keys with an optional scenario, comma separated) from FR_ROSTER_FOCUS or the focus
+// file; empty: all routes.
+func readFocus(file string) string {
+	if focus := strings.TrimSpace(os.Getenv("FR_ROSTER_FOCUS")); focus != "" {
+		return focus
+	}
+	b, err := os.ReadFile(file)
+	if err != nil {
+		return ""
+	}
+	var keys []string
+	for _, line := range strings.Split(string(b), "\n") {
+		if line = strings.TrimSpace(line); line != "" && !strings.HasPrefix(line, "#") {
+			keys = append(keys, line)
+		}
+	}
+	return strings.Join(keys, ",")
+}
+
+// outsideFocus: the route file key (orc-shaman, orc-shaman-dungeons) is not one the focus keeps current. Those
+// routes may lag a data fix: they ship without the events the data no longer allows.
+func outsideFocus(key, focus string) bool {
+	if focus == "" {
+		return false
+	}
+	for _, k := range strings.Split(focus, ",") {
+		base, scenario, _ := strings.Cut(strings.TrimSpace(k), ":")
+		if key == base+"-dungeons" && scenario != "solo" || key == base && scenario != "dungeons" {
+			return false
+		}
+	}
+	return true
 }
