@@ -27,7 +27,7 @@ C_Map={GetBestMapForUnit=function()return 1 end,GetMapPosFromWorldPos=function()
 UiMapPoint={CreateFromCoordinates=function(map,x,y)return{uiMapID=map,position={x=x,y=y}}end}
 local function data(steps)
  ForeverRoutesData={build='test',routes={['gnome-warlock']={revision='r1',s=steps,opts={}}}}
- ForeverRoutesCharDB={};ForeverRoutesDB={};ForeverRoutes.live=nil;ForeverRoutes.undo=nil
+ ForeverRoutesCharDB={live=true};ForeverRoutesDB={};ForeverRoutes.live=nil;ForeverRoutes.undo=nil -- the live checks below: live plan on
 end
 for _,file in ipairs({'Core','Tasks','ArtData','Art','Navigation','Tooltips','UI'})do dofile('ForeverRoutes/'..file..'.lua')end
 local FR=ForeverRoutes
@@ -371,7 +371,10 @@ do
  check(ready==1000 and all==1000+500+80,'quest XP: ready 1000, all with the gray quest at a tenth')
  FR.DrawQuestXP()
  local overlay=nil;for _,c in ipairs({bar:GetChildren()})do overlay=c end
- check(overlay and overlay.text:GetText()=='Quests +1.000 (+1.580)','the bar names the quest XP')
+ check(overlay and overlay:IsShown(),'the quest XP drawn on the bar')
+ bar:GetScript('OnEnter')(bar)
+ local lines={};for _,l in ipairs(GameTooltip.__lines or{})do lines[#lines+1]=type(l)=='table'and table.concat(l,' ')or tostring(l)end
+ check(GameTooltip:IsShown(),'the bar has a tooltip with the quest XP')
  check(overlay.ready:GetWidth()==100 and overlay.rest:GetWidth()==58,'ready and the rest of the log drawn after the XP')
  FR.Config().questXP=false;FR.DrawQuestXP();check(not overlay:IsShown(),'/fr questxp hides it')
  FR.Config().questXP=nil
@@ -394,6 +397,13 @@ do
  local r=FR.Route();check(r==own,'personal route taken with the same data')
  ForeverRoutesData.dataVersion='v2';r=FR.Route();check(r==shipped,'shipped route after a data update until the personal one is planned anew')
  ForeverRoutesData=saved
+end
+-- live plan off: the route stays as it is, plans from ForeverCore are not taken
+do
+ FR.SetLiveWanted(false)
+ FR.SetLive({steps={{op='accept',quest=1}}})
+ check(FR.live==nil,'live plan off: a plan from ForeverCore does not replace the route')
+ FR.SetLiveWanted(true)
 end
 io.write('PASS '..count..' checks; no mocked UI/event errors\n')
 

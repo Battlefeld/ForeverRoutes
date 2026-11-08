@@ -245,6 +245,7 @@ local function optionMenu()
   menu.checks[#menu.checks+1]=c
  end
  head('ROUTE')
+ check('Live-Plan',function()return FR.LiveWanted()end,function(on)FR.SetLiveWanted(on)end,'An: ForeverCore plant nach jeder Quest-Änderung neu, die Route passt sich laufend an. Aus: die Route bleibt, wie sie ist.')
  check('Mit Dungeons',function()return FR.CharDB().dungeons==true end,function(on)FR.SetDungeons(on)end,'Route mit Gruppen-Dungeons (Questreihen der Dungeons) statt nur solo.')
  check('Blizzard-Questtracker anzeigen',function()return FR.Config().blizzTracker==true end,function()SlashCmdList.FOREVERROUTES('tracker')end,'Aus: dieses Fenster zeigt alle Quests selbst.')
  check('Kompaktansicht',function()return FR.Config().compact==true end,function(on)FR.Config().compact=on or nil end,'Nur den aktuellen Schritt mit Fortschritt zeigen.')
@@ -256,7 +257,8 @@ local function optionMenu()
  menu.child=CreateFrame('Frame',nil,menu.scroll);menu.child:SetSize(300,140);menu.scroll:SetScrollChild(menu.child);menu.rows={}
  y=y+150;head('AKTIONEN')
  local actions={
-  {'Guide: RestedXP / ForeverRoutes live',function()FR.SetGuideMode(FR.GuideMode()=='rxp'and'route'or'rxp');refresh()end},
+  {'Guide: RestedXP / ForeverRoutes',function()FR.SetGuideMode(FR.GuideMode()=='rxp'and'route'or'rxp');refresh()end},
+  {'Eigene Route berechnen (Gear, Talente)',function()FR.PlanOwnRoute()end},
   {'Live-Plan neu berechnen',function()FR.ReplanNow()end},
   {'An den Questtracker setzen',function()SlashCmdList.FOREVERROUTES('dock')end},
   {'Übersprungene zurückholen',function()FR.RestoreSkipped()end},
@@ -565,13 +567,17 @@ SlashCmdList.FOREVERROUTES=function(msg)
   FR.Config().scale=math.max(.65,math.min(1.5,tonumber(msg:match('([%d%.]+)$'))or 1));if frame then frame:SetScale(FR.Config().scale)end
  elseif msg=='guide'or msg=='guide rxp'or msg=='guide route'then
   local mode=msg=='guide rxp'and'rxp'or msg=='guide route'and'route'or(FR.GuideMode()=='rxp'and'route'or'rxp')
-  FR.SetGuideMode(mode);print('ForeverRoutes: '..(FR.GuideMode()=='rxp'and'RestedXP-Guide (Live-Plan aus)'or'ForeverRoutes-Route mit Live-Plan'));refresh()
+  FR.SetGuideMode(mode);print('ForeverRoutes: '..(FR.GuideMode()=='rxp'and'RestedXP-Guide'or'ForeverRoutes-Route'..(FR.LiveWanted()and' mit Live-Plan'or'')));refresh()
  elseif msg=='neu'or msg=='replan'then FR.ReplanNow()
+ elseif msg=='live'or msg=='live an'or msg=='live aus'then
+  local on=msg=='live an'or(msg=='live'and not FR.LiveWanted());FR.SetLiveWanted(on)
+  print('ForeverRoutes: Live-Plan '..(on and'an: die Route passt sich laufend an'or'aus: die Route bleibt, wie sie ist'));refresh();return
+ elseif msg=='eigene'or msg=='eigene route'then FR.PlanOwnRoute();return
  elseif msg=='questxp'or msg=='quest-xp'then FR.Config().questXP=FR.Config().questXP==false;print('ForeverRoutes: Quest-XP auf der XP-Leiste '..(FR.Config().questXP==false and'aus'or'an'));if FR.DrawQuestXP then FR.DrawQuestXP()end;return
  elseif msg=='tracker'or msg=='questtracker'then FR.Config().blizzTracker=not FR.Config().blizzTracker or nil;FR.Config().window=nil;FR.Config().docked=true;if frame then frame.docked=dock(frame)end;applyTracker()
  elseif msg=='dock'or msg=='andocken'then FR.Config().window=nil;FR.Config().docked=true;if frame and not dock(frame)then position(frame,'window','LEFT',40,120)end
  elseif msg=='position'then FR.Config().window=nil;FR.Config().arrow=nil;if frame then position(frame,'window','LEFT',40,120)end;if arrow then position(arrow,'arrow','TOP',0,-110)end
- elseif msg~='show'then print('ForeverRoutes: /fr · show · hide · skip · back · done · options · compact · tracker · lock · arrow · scale 1 · position · restore · guide (RestedXP an/aus) · neu · questxp');return end
+ elseif msg~='show'then print('ForeverRoutes: /fr · show · hide · skip · back · done · options · compact · tracker · lock · arrow · scale 1 · position · restore · guide (RestedXP an/aus) · live (Live-Plan an/aus) · eigene (eigene Route berechnen) · neu · questxp');return end
  FR.Show()
 end
 
@@ -637,14 +643,25 @@ local function drawQuestXP()
   xpBar=CreateFrame('Frame',nil,bar);xpBar:SetAllPoints(bar);xpBar:SetFrameLevel((bar:GetFrameLevel()or 1)+1)
   xpBar.ready=xpBar:CreateTexture(nil,'ARTWORK');xpBar.ready:SetColorTexture(1,.75,.1,.75)
   xpBar.rest=xpBar:CreateTexture(nil,'ARTWORK');xpBar.rest:SetColorTexture(1,.75,.1,.3)
-  xpBar.text=xpBar:CreateFontString(nil,'OVERLAY','TextStatusBarText');xpBar.text:SetPoint('RIGHT',bar,'RIGHT',-6,1)
-  if bar.HookScript then bar:HookScript('OnEnter',function()
-   local ready,all=FR.QuestXP()
-   if all>0 and GameTooltip:IsShown()then
-    GameTooltip:AddLine(string.format('Quest-XP: %s abgabebereit, %s im Questlog',thousands(ready),thousands(all)),1,.82,0)
+  xpBar:EnableMouse(false) -- the bar under it keeps the mouse (its tooltip)
+  -- the numbers in the bar's tooltip (its own, or one of ours when the bar shows none)
+  if bar.HookScript then
+   if bar.EnableMouse and bar.IsMouseEnabled and not bar:IsMouseEnabled()then bar:EnableMouse(true)end
+   bar:HookScript('OnEnter',function(self)
+    if FR.Config().questXP==false then return end
+    local ready,all=FR.QuestXP()
+    if all<=0 then return end
+    if not GameTooltip:IsShown()or GameTooltip:GetOwner()~=self then GameTooltip:SetOwner(self,'ANCHOR_TOP');GameTooltip:AddLine('Erfahrung',1,1,1);xpBar.ownTip=true end
+    local xp,max=call(UnitXP,'player')or 0,call(UnitXPMax,'player')or 1
+    GameTooltip:AddLine(' ')
+    GameTooltip:AddLine('Quest-XP',1,.82,0)
+    GameTooltip:AddDoubleLine('Abgabebereit',thousands(ready),1,1,1,1,.75,.1)
+    GameTooltip:AddDoubleLine('Im Questlog gesamt',thousands(all),1,1,1,1,.9,.6)
+    GameTooltip:AddDoubleLine('Nach Abgabe der fertigen',string.format('%d %% der Stufe',math.floor(math.min(9.99,(xp+ready)/max)*100+.5)),1,1,1,.8,.8,.8)
     GameTooltip:Show()
-   end
-  end)end
+   end)
+   bar:HookScript('OnLeave',function()if xpBar and xpBar.ownTip then xpBar.ownTip=nil;GameTooltip:Hide()end end)
+  end
  end
  local ready,all=FR.QuestXP()
  local max=call(UnitXPMax,'player')or 0;local xp=call(UnitXP,'player')or 0
@@ -657,7 +674,6 @@ local function drawQuestXP()
   return from+width
  end
  local x1=place(xpBar.ready,x0,ready);place(xpBar.rest,x1,all-ready)
- xpBar.text:SetText(ready>0 and string.format('Quests +%s (+%s)',thousands(ready),thousands(all))or string.format('Quests +%s',thousands(all)))
  xpBar:Show()
 end
 FR.DrawQuestXP=drawQuestXP

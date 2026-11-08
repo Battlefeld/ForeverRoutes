@@ -454,7 +454,22 @@ local function storedDungeon(name)
  end
  return nil
 end
+-- The live plan (ForeverCore plans the next hours anew after every quest change) only when the player switched it on
+-- (/fr live): otherwise the route stays as it is and changes only when the player asks (own route, guide mode).
+function FR.LiveWanted()return charDB().live==true end
+function FR.SetLiveWanted(on)
+ local c=charDB();c.live=on and true or nil
+ if not on then FR.live=nil;FR.nextLive=nil;FR.liveStages=nil;FR.liveBlock=nil;FR.pinned=nil end
+ return FR.Advance()
+end
+-- The own route: ForeverCore plans the route with this character's items and talents (a few minutes); /reload takes it.
+function FR.PlanOwnRoute()
+ local p=ForeverCoreClient and ForeverCoreClient.PersonalRoute
+ if p and p.Request then call(p.Request,true);return true end
+ print('ForeverRoutes: eigene Route braucht ForeverCore (Verbindung im ForeverCore-Addon)');return false
+end
 function FR.SetLive(result)
+ if not FR.LiveWanted()then FR.live=nil;FR.nextLive=nil;FR.liveStages=nil;return end
  if FR.GuideMode()=='rxp'then FR.live=nil;FR.nextLive=nil;FR.liveStages=nil;return end -- the guide is followed as it is
  if type(result)~='table'or type(result.steps)~='table'then FR.live=nil;FR.nextLive=nil;FR.liveStages=nil;return end
  local out={}
@@ -533,6 +548,7 @@ function FR.CheckBlock()
  if FR.live and nextPlan and nextPlan~=FR.live and not FR.KeepBlock()then FR.AdoptLive(nextPlan)end
 end
 function FR.ReplanNow()
+ if not FR.LiveWanted()then print('ForeverRoutes: Live-Plan ist aus (/fr live schaltet ihn an)');return end
  FR.forceReplan=true
  local r=ForeverCoreClient and ForeverCoreClient.Route
  if r and r.Request then call(r.Request,false)end
