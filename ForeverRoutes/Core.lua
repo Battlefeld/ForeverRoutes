@@ -89,11 +89,15 @@ function FR.Route()
   return g,selected,'rxp'
  end
  local selected=key..((c.dungeons or c.group)and'-dungeons'or'')
- local revision=data.routes and data.routes[selected]and data.routes[selected].revision or data.build
+ -- the personal route (Data/Personal.lua, ForeverCore) instead of the shipped one, only with the data it was planned on
+ local own=data.personal and data.personal[selected]
+ local shipped=data.routes and data.routes[selected]
+ local chosen=(own and own.s and #own.s>0 and own.dataVersion~=nil and own.dataVersion==data.dataVersion)and own or shipped
+ local revision=chosen and chosen.revision or data.build
  if c.routeKey~=selected or c.dataRevision~=revision then
   c.routeKey=selected;c.dataRevision=revision;c.index=1;c.skipped={};c.confirmed={};FR.pinned=nil
  end
- local r=data.routes and data.routes[selected]
+ local r=chosen
  if r and r.personal and not FR.personalNoted then
   -- planned by ForeverCore with this character's own items and talents (Data/Personal.lua)
   FR.personalNoted=true

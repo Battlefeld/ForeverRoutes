@@ -385,5 +385,15 @@ do
  EnumerateFrames=nil
  C_QuestLog.GetNumQuestLogEntries,C_QuestLog.GetInfo,C_QuestLog.IsComplete,UnitLevel,UnitXP,UnitXPMax=savedNum,savedInfo,savedComplete,savedLevel,savedXP,savedMax
 end
+-- the personal route counts only with the data it was planned on; otherwise the shipped one
+do
+ local saved=ForeverRoutesData
+ local shipped={revision='r1',s={{op='a',q=1,n='Shipped',x=0,y=0,m=0}}}
+ local own={personal=true,dataVersion='v1',revision='p1',s={{op='a',q=2,n='Own',x=0,y=0,m=0}}}
+ ForeverRoutesData={build='test',dataVersion='v1',routes={['gnome-warlock']=shipped},personal={['gnome-warlock']=own}}
+ local r=FR.Route();check(r==own,'personal route taken with the same data')
+ ForeverRoutesData.dataVersion='v2';r=FR.Route();check(r==shipped,'shipped route after a data update until the personal one is planned anew')
+ ForeverRoutesData=saved
+end
 io.write('PASS '..count..' checks; no mocked UI/event errors\n')
 

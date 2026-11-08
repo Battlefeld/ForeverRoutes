@@ -2,6 +2,8 @@ package main
 
 import (
 	"cmp"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -62,8 +64,10 @@ func cmdExportAddon(args []string) error {
 	b.WriteString("-- tg target; m continent, x y world yards (x north, y west); l level reached by then; v d(eathskip) or h(earth)\n")
 	b.WriteString("-- with dm dx dy the place to die and gy the graveyard; bn bm bx by the innkeeper the hearthstone is bound at, bu when a later hearthstone trip uses it.\n")
 	if *personal {
-		b.WriteString("-- Personal: planned by ForeverCore with this character's own kill profile (its items and talents); replaces the shipped route.\n")
-		b.WriteString("ForeverRoutesData = ForeverRoutesData or {}\nForeverRoutesData.routes = ForeverRoutesData.routes or {}\n")
+		// beside the shipped routes, not in their place: the addon takes it only with the data it was planned on
+		// (dataVersion), else the shipped route counts until ForeverCore plans the personal one anew
+		b.WriteString("-- Personal: planned by ForeverCore with this character's own kill profile (its items and talents); taken instead of the shipped route while the data are the same.\n")
+		b.WriteString("ForeverRoutesData = ForeverRoutesData or {}\nForeverRoutesData.personal = ForeverRoutesData.personal or {}\n")
 	} else {
 		b.WriteString("ForeverRoutesData = ForeverRoutesData or {}\nForeverRoutesData.routes = {}\n")
 	}
@@ -112,14 +116,18 @@ func cmdExportAddon(args []string) error {
 			}
 			fmt.Fprintf(os.Stderr, "%s: stale route exported without %d skipped events\n", key, len(res.Missed))
 		}
-		mark := ""
+		mark, table := "", "routes"
 		if *personal {
 			// its own revision: the addon starts it over from the first step not done yet instead of keeping the
 			// shipped route's place
-			mark = fmt.Sprintf("personal = true, revision = %s, ", luaStr(fmt.Sprintf("%s-personal-%.0f", w.Data.Build, res.Seconds)))
+			version, err := dataVersion(*path)
+			if err != nil {
+				return err
+			}
+			mark, table = fmt.Sprintf("personal = true, dataVersion = %s, revision = %s, ", luaStr(version), luaStr(fmt.Sprintf("%s-personal-%.0f", version, res.Seconds))), "personal"
 		}
-		fmt.Fprintf(&b, "ForeverRoutesData.routes[%s] = {race = %s, class = %s, faction = %s, target = %d, hours = %.1f, basis = %s, %ss = {\n",
-			luaStr(key), luaStr(r.Character.Race), luaStr(r.Character.Class), luaStr(r.Character.Faction), r.Target, res.Seconds/3600, luaStr(r.Winner), mark)
+		fmt.Fprintf(&b, "ForeverRoutesData.%s[%s] = {race = %s, class = %s, faction = %s, target = %d, hours = %.1f, basis = %s, %ss = {\n",
+			table, luaStr(key), luaStr(r.Character.Race), luaStr(r.Character.Class), luaStr(r.Character.Faction), r.Target, res.Seconds/3600, luaStr(r.Winner), mark)
 		for _, st := range res.Steps {
 			b.WriteString(" {")
 			writeStep(&b, w, res, st)
@@ -134,16 +142,16 @@ func cmdExportAddon(args []string) error {
 		if ds == nil {
 			return fmt.Errorf("no route in %s", *dir)
 		}
-		// only while the addon carries the dataset the route was planned with: after a data update the shipped route
-		// counts again until ForeverCore plans the personal one anew
-		head := "ForeverRoutesData.routes = ForeverRoutesData.routes or {}\n"
-		text := b.String()
-		i := strings.Index(text, head) + len(head)
-		text = text[:i] + fmt.Sprintf("if ForeverRoutesData.build == %s then\n", luaStr(ds.Build)) + text[i:] + "end\n"
-		return os.WriteFile(*out, []byte(text), 0o644)
+		return os.WriteFile(*out, []byte(b.String()), 0o644)
 	}
 	if ds != nil {
 		fmt.Fprintf(&b, "ForeverRoutesData.build = %s\n", luaStr(ds.Build))
+		// the dataset itself (its build is the game's): a personal route counts only with the data it was planned on
+		version, err := dataVersion(*path)
+		if err != nil {
+			return err
+		}
+		fmt.Fprintf(&b, "ForeverRoutesData.dataVersion = %s\n", luaStr(version))
 		// every quest's full XP and level: the XP bar shows what the quests in the log give (the game's own value
 		// first, this one when the client has none)
 		b.WriteString("ForeverRoutesData.questXP = {")
@@ -483,4 +491,15 @@ func outsideFocus(key, focus string) bool {
 		}
 	}
 	return true
+}
+
+// dataVersion names the dataset file: the start of its SHA-256 (the dataset's build field is the game's build and
+// stays the same across data updates).
+func dataVersion(path string) (string, error) {
+	raw, err := os.ReadFile(path)
+	if err != nil {
+		return "", err
+	}
+	sum := sha256.Sum256(raw)
+	return hex.EncodeToString(sum[:6]), nil
 }
