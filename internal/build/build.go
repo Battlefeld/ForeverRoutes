@@ -47,10 +47,11 @@ type Inputs struct {
 	GuidesRXP         string
 	GuidesRXPRevision string
 	GuidesPolestar    string
-	Deathskips        string // optional: curated deathskips (data/sources/deathskips.json)
-	Dungeons          string // optional: curated dungeons (data/sources/dungeons.json)
-	QuestFixes        string // optional: curated quest facts (data/sources/quest-fixes.json)
-	SPF               string // optional: Shortest Path Forever's Data folder (internal/sources/spf)
+	Deathskips        string              // optional: curated deathskips (data/sources/deathskips.json)
+	Dungeons          string              // optional: curated dungeons (data/sources/dungeons.json)
+	QuestFixes        string              // optional: curated quest facts (data/sources/quest-fixes.json)
+	ForeverChains     map[int][]ChainLink // optional: ForeverDB's quest chains (chain.previous), see chains.go
+	SPF               string              // optional: Shortest Path Forever's Data folder (internal/sources/spf)
 	SPFRevision       string
 	EGLink            string // optional: EG Link output's data/wow_classic_beta (internal/sources/eglink)
 	EGLinkRevision    string
@@ -358,6 +359,7 @@ func Build(in Inputs) (*dataset.Dataset, error) {
 	b.quests()
 	b.breadcrumbPrereqs()
 	b.rxpPrereqs()
+	b.foreverChains()
 	b.applyQuestFixes()
 	if err := b.clientQuestNames(in.ClientQuests); err != nil {
 		return nil, err

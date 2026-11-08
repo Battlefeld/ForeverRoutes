@@ -365,7 +365,7 @@ func Rebuild(ctx context.Context, o Options, l *Lock, in Inputs) (*dataset.Datas
 	if err := os.WriteFile(mergedPath, mb, 0o644); err != nil {
 		return nil, nil, err
 	}
-	bin := build.Inputs{Merged: mergedPath, CMangos: dump, CMangosRevision: l.CMangos, WarcraftDB: in.Overlay, WCLBox: in.WCLBox, ForeverChanges: in.FChanges}
+	bin := build.Inputs{ForeverChains: build.ForeverChains(in.Snapshot.Quests), Merged: mergedPath, CMangos: dump, CMangosRevision: l.CMangos, WarcraftDB: in.Overlay, WCLBox: in.WCLBox, ForeverChanges: in.FChanges}
 	// Locally imported captures are optional, versioned alongside the other source files.
 	if path := o.path("data/sources/client-quests.json"); path != "" {
 		if _, err := os.Stat(path); err == nil {

@@ -1,6 +1,7 @@
 package route
 
 import (
+	"math"
 	"testing"
 	"time"
 
@@ -119,11 +120,16 @@ func TestLiveWalkPullsNearbyQuestsForward(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	s := w.NewState()
-	// two quests taken at the same place right away, and one far from there
+	// after the valley's first quests (the later ones are chained behind them)
+	s0 := w.NewState()
+	s, _, err := w.StateFrom(Live{Level: 2, Pos: &s0.Pos, Completed: []int{4641, 787}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	// two quests taken at the same place right away, and one far from there (starting-area quests: no holiday ones)
 	var open []*Quest
 	for _, q := range w.Quests {
-		if w.CanAccept(s, q) == nil && len(q.StartSources) == 0 && q.Dungeon == nil && q.StartPos.Map == s.Pos.Map {
+		if w.CanAccept(s, q) == nil && len(q.StartSources) == 0 && q.Dungeon == nil && q.StartPos.Map == s.Pos.Map && q.XP > 0 && q.Level <= 10 {
 			open = append(open, q)
 		}
 	}
@@ -159,7 +165,7 @@ func TestLiveWalkPullsNearbyQuestsForward(t *testing.T) {
 		t.Fatalf("live accepts %v, want %d and %d before %d", order, near[0].ID, near[1].ID, far.ID)
 	}
 	// the stored route keeps its own order
-	stored, err := w.FollowGuide(events, 2)
+	stored, err := w.followFrom(s.clone(), events, 4, math.Inf(1))
 	if err != nil {
 		t.Fatal(err)
 	}
