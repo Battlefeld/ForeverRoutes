@@ -39,17 +39,26 @@ local function checkbox(parent,text,get,set,width)
  b:SetScript('OnClick',function(self)set(not self.get());self:refresh();refresh()end)
  b:refresh();return b
 end
+-- The window hangs from its top left corner: expanding it (more rows, compact off) grows it downwards only.
+local function pinTop(f)
+ local l,t=f:GetLeft(),f:GetTop()
+ if l and t then f:ClearAllPoints();f:SetPoint('TOPLEFT',UIParent,'BOTTOMLEFT',l,t);return l,t end
+end
 local function position(f,key,defaultPoint,dx,dy)
  f:ClearAllPoints();local p=FR.Config()[key]
+ if type(p)=='table'and tonumber(p.left)and tonumber(p.top)then f:SetPoint('TOPLEFT',UIParent,'BOTTOMLEFT',p.left,p.top);return end
  if type(p)=='table'and tonumber(p.x)and tonumber(p.y)then f:SetPoint('CENTER',UIParent,'CENTER',p.x,p.y)
  else f:SetPoint(defaultPoint,UIParent,defaultPoint,dx,dy)end
+ -- a position saved by its centre (earlier versions) or the default: from now on by the top left corner
+ local l,t=pinTop(f)
+ if l and type(p)=='table'and tonumber(p.x)then FR.Config()[key]={left=l,top=t}end
 end
 local function movable(f,key)
  f:SetMovable(true);f:EnableMouse(true);f:RegisterForDrag('LeftButton')
  f:SetScript('OnDragStart',function(self)if not FR.Config().locked then self:StartMoving()end end)
  f:SetScript('OnDragStop',function(self)
-  self:StopMovingOrSizing();local x,y=self:GetCenter();local ux,uy=UIParent:GetCenter()
-  if x and ux then local s=self:GetScale();FR.Config()[key]={x=x-ux/s,y=y-uy/s};if key=='window'then FR.Config().docked=false end end
+  self:StopMovingOrSizing();local l,t=pinTop(self)
+  if l then FR.Config()[key]={left=l,top=t};if key=='window'then FR.Config().docked=false end end
  end)
 end
 -- children (rows, buttons) take the mouse; a drag on them moves the window all the same
