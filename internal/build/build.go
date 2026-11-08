@@ -100,6 +100,7 @@ func field(q obj, name string) (any, string) {
 type world struct {
 	qt, ct, cr, cl, gob, gt, gl, cqr, cir, gqr, gir *sqldump.Table
 	safeLocs, graveZones                            *sqldump.Table
+	events, eventCreatures, eventQuests             *sqldump.Table
 	creature                                        map[int][]any
 	spawns                                          map[int][]dataset.Point
 	respawn                                         map[int]int
@@ -115,7 +116,7 @@ func loadCMangos(path string) (*world, error) {
 	t, err := sqldump.ReadFile(path, "quest_template", "creature_template", "creature", "creature_loot_template",
 		"gameobject", "gameobject_template", "gameobject_loot_template", "creature_questrelation",
 		"creature_involvedrelation", "gameobject_questrelation", "gameobject_involvedrelation", "creature_spawn_entry",
-		"gameobject_spawn_entry", "world_safe_locs", "game_graveyard_zone")
+		"gameobject_spawn_entry", "world_safe_locs", "game_graveyard_zone", "game_event", "game_event_creature", "game_event_quest")
 	if err != nil {
 		return nil, err
 	}
@@ -123,6 +124,7 @@ func loadCMangos(path string) (*world, error) {
 		gob: t["gameobject"], gt: t["gameobject_template"], gl: t["gameobject_loot_template"], cqr: t["creature_questrelation"],
 		cir: t["creature_involvedrelation"], gqr: t["gameobject_questrelation"], gir: t["gameobject_involvedrelation"],
 		safeLocs: t["world_safe_locs"], graveZones: t["game_graveyard_zone"],
+		events: t["game_event"], eventCreatures: t["game_event_creature"], eventQuests: t["game_event_quest"],
 		creature: map[int][]any{}, spawns: map[int][]dataset.Point{}, respawn: map[int]int{}, quest: map[int][]any{},
 		lootCreatures: map[int][]int{}, inside: map[int]map[int]float64{}, objSpawns: map[int][]dataset.Point{}, objLoot: map[int][]int{}, dropsByItem: map[int][]dataset.Drop{}}
 	if len(w.qt.Rows) == 0 || len(w.ct.Rows) == 0 {
@@ -361,6 +363,7 @@ func Build(in Inputs) (*dataset.Dataset, error) {
 	b.rxpPrereqs()
 	b.foreverChains()
 	b.applyQuestFixes()
+	b.eventQuests()
 	if err := b.clientQuestNames(in.ClientQuests); err != nil {
 		return nil, err
 	}

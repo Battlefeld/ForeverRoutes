@@ -610,10 +610,29 @@ local function thousands(v)
  local s=tostring(math.floor(v+.5));local out=s:reverse():gsub('(%d%d%d)','%1.'):reverse()
  return(out:gsub('^%.',''))
 end
-local xpBar
+local xpBar,xpHost
+-- The XP bar: the game's own one, else the status bar that shows the character's XP now (another UI, an addon's
+-- action bars): wide, from 0 to the XP of the level, at the XP the character has.
+local function findXPBar()
+ if _G.MainMenuExpBar and _G.MainMenuExpBar.GetWidth and _G.MainMenuExpBar:IsShown()then return _G.MainMenuExpBar end
+ if xpHost and xpHost:IsShown()then return xpHost end
+ local max,xp=call(UnitXPMax,'player')or 0,call(UnitXP,'player')or 0
+ if max<=0 or type(EnumerateFrames)~='function'then return _G.MainMenuExpBar end
+ local f=EnumerateFrames()
+ while f do
+  if f.GetObjectType and f:GetObjectType()=='StatusBar'and f:IsVisible()and(f:GetWidth()or 0)>=200 and f.GetMinMaxValues then
+   local lo,hi=f:GetMinMaxValues()
+   if lo==0 and hi==max and math.abs((f:GetValue()or -1)-xp)<1 then return f end
+  end
+  f=EnumerateFrames(f)
+ end
+ return _G.MainMenuExpBar
+end
 local function drawQuestXP()
- local bar=_G.MainMenuExpBar
+ local bar=findXPBar()
  if not bar or not bar.GetWidth then return end
+ if xpBar and xpHost~=bar then xpBar:Hide();xpBar=nil end
+ xpHost=bar
  if not xpBar then
   xpBar=CreateFrame('Frame',nil,bar);xpBar:SetAllPoints(bar);xpBar:SetFrameLevel((bar:GetFrameLevel()or 1)+1)
   xpBar.ready=xpBar:CreateTexture(nil,'ARTWORK');xpBar.ready:SetColorTexture(1,.75,.1,.75)

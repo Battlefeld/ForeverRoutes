@@ -375,6 +375,14 @@ do
  check(overlay.ready:GetWidth()==100 and overlay.rest:GetWidth()==58,'ready and the rest of the log drawn after the XP')
  FR.Config().questXP=false;FR.DrawQuestXP();check(not overlay:IsShown(),'/fr questxp hides it')
  FR.Config().questXP=nil
+ -- another UI's XP bar (the game's hidden): found by what it shows, the character's XP of this level
+ bar:Hide()
+ local other=CreateFrame('StatusBar','OtherUIXPBar',UIParent);other:SetSize(800,8);other:SetMinMaxValues(0,10000);other:SetValue(2000);other:Show()
+ EnumerateFrames=function(prev)local i=0;if prev then for k,f in ipairs(M.frames)do if f==prev then i=k end end end;return M.frames[i+1]end
+ FR.DrawQuestXP()
+ local found=nil;for _,c in ipairs({other:GetChildren()})do found=c end
+ check(found and found:IsShown()and found.ready:GetWidth()==80,'quest XP drawn on the XP bar of another UI')
+ EnumerateFrames=nil
  C_QuestLog.GetNumQuestLogEntries,C_QuestLog.GetInfo,C_QuestLog.IsComplete,UnitLevel,UnitXP,UnitXPMax=savedNum,savedInfo,savedComplete,savedLevel,savedXP,savedMax
 end
 io.write('PASS '..count..' checks; no mocked UI/event errors\n')
