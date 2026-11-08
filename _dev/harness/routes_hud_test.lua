@@ -46,6 +46,12 @@ complete[1]=true;FR.Refresh();check(FR.TaskView().step.op=='note','turnin advanc
 check(FR.Confirm(),'manual note confirm');check(FR.TaskView().step==nil,'route ends')
 FR.Back();check(FR.TaskView().step.op=='note','undo manual confirm')
 FR.Config().compact=true;FR.Refresh();check(not FR.frame.nextLabel:IsShown(),'compact hides preview')
+-- a window placed by its centre (earlier versions) hangs from its top left corner once it changes height
+FR.frame.docked=false;FR.Config().docked=false;FR.Config().window={x=10,y=20};FR.frame:ClearAllPoints();FR.frame:SetPoint('CENTER',UIParent,'CENTER',10,20)
+FR.Config().compact=nil;FR.Refresh()
+check(FR.frame:GetPoint(1)=='TOPLEFT','the window grows downwards: it hangs from its top left corner')
+check(FR.Config().window.left==100 and FR.Config().window.top==700,'the place is kept by the top left corner')
+FR.Config().compact=true;FR.Refresh()
 -- Arrival and navigation failure do not complete an active quest.
 local st={op='w',q=2,k='kill',c=1,m=0,x=0,y=0};accepted[2]=true
 objectives[2]={{text='Mob: 0/1',type='monster',numRequired=1,finished=false}}

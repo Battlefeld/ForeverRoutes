@@ -53,6 +53,16 @@ local function position(f,key,defaultPoint,dx,dy)
  local l,t=pinTop(f)
  if l and type(p)=='table'and tonumber(p.x)then FR.Config()[key]={left=l,top=t}end
 end
+-- Before the window changes its height: a window placed by its centre or its left edge (WoW knew no position yet
+-- when it was placed) is hung from its top left corner now, so it grows downwards; docked it hangs from the tracker.
+local function hangFromTop(f)
+ if f.docked then return end
+ local point=f:GetPoint(1)
+ if point=='TOPLEFT'or point=='TOPRIGHT'or point=='TOP'then return end
+ local l,t=pinTop(f)
+ local p=FR.Config().window
+ if l and type(p)=='table'and tonumber(p.x)then FR.Config().window={left=l,top=t}end
+end
 local function movable(f,key)
  f:SetMovable(true);f:EnableMouse(true);f:RegisterForDrag('LeftButton')
  f:SetScript('OnDragStart',function(self)if not FR.Config().locked then self:StartMoving()end end)
@@ -165,9 +175,9 @@ local function makeFrame()
  movable(frame,'window')
  -- layout 3: the window takes the quest tracker's place; a place saved before that is dropped once
  if FR.Config().layout~=3 then FR.Config().layout=3;FR.Config().window=nil;FR.Config().docked=true end
+ frame:SetScale(math.max(.65,math.min(1.5,tonumber(FR.Config().scale)or 1)))
  position(frame,'window','LEFT',40,120)
  if FR.Config().docked~=false and not FR.Config().window then frame.docked=dock(frame)end
- frame:SetScale(math.max(.65,math.min(1.5,tonumber(FR.Config().scale)or 1)))
  -- the crest in the frame's top edge: the ForeverCore crystal set into the gold, blue when connected, grey when not
  -- (_dev/tools/build_crest.py makes it: the panel's gem ornament with the crystal in place of its stone)
  frame.crest=frame:CreateTexture(nil,'BORDER');frame.crest:SetSize(74,75);frame.crest:SetPoint('TOP',frame,'TOP',0,0)
@@ -509,6 +519,7 @@ function FR.Refresh()
  frame.skip:SetEnabled(view.step~=nil and not view.paused);frame.back:SetEnabled(not view.paused and(FR.undo~=nil or not view.live))
  -- the window: as high as its lines, at most WINDOW_MAX; more lines scroll
  frame.content:SetHeight(math.max(10,y))
+ hangFromTop(frame)
  frame:SetHeight(math.max(230,math.min(FR.WINDOW_MAX,top+y+80)))
  local visible=frame:GetHeight()-top-76
  local over=y-visible
