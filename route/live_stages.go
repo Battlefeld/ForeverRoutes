@@ -89,7 +89,35 @@ func (ss *stageSearch) rate(r *stageRun) float64 {
 	// a goal switched on is an obligation: what of it is left at the end of the run still has to be walked, so it
 	// counts as time. Done now or later then costs the same unless the run does it on its way (cheaper), and the
 	// goal is neither rushed (inside the horizon) nor pushed past it.
-	return float64(r.end.XP-ss.s0.XP) / (r.end.Time - ss.s0.Time + goalLater*ss.w.goalLeft(r.end))
+	// each change of zone costs zoneSwitchCost on top: a run that crosses the map for a little more XP per hour is
+	// not better for the player, who sets out, flies and finds the way each time
+	return float64(r.end.XP-ss.s0.XP) / (r.end.Time - ss.s0.Time + goalLater*ss.w.goalLeft(r.end) + zoneSwitchCost*float64(ss.w.zoneSwitches(r.acts)))
+}
+
+// leaveGrindShare: the share of its XP grinding counts with when a zone has run dry and the run chooses where to go.
+const leaveGrindShare = 0.5
+
+// zoneSwitchCost: seconds a change of zone counts beyond its travel when runs are compared.
+const zoneSwitchCost = 600.0
+
+// zoneSwitches counts how often a plan changes zone (a capital belongs to the zone around it; dungeon runs count as
+// their own zone).
+func (w *World) zoneSwitches(acts []Action) int {
+	n, last := 0, ""
+	for _, a := range acts {
+		z := w.zoneOf(a.At)
+		if around, ok := capitals[z]; ok {
+			z = around
+		}
+		if a.Op == "dungeon" {
+			z = "dungeon:" + a.Dungeon
+		}
+		if last != "" && z != last {
+			n++
+		}
+		last = z
+	}
+	return n
 }
 
 func (ss *stageSearch) done(s *State) bool {
@@ -106,7 +134,7 @@ func (ss *stageSearch) run(s *State, acts []Action, zone string, depth int, root
 		if len(options) == 0 {
 			break
 		}
-		options = ss.readyDungeons(s, withoutPickups(options))
+		options = ss.readyDungeons(s, withoutPickups(withoutHostileGrinds(w, options)))
 		if !homeDone {
 			options = ss.withoutErrandsAway(options, zone) // a message to deliver elsewhere waits for the trip there
 		}
@@ -169,7 +197,24 @@ func (ss *stageSearch) run(s *State, acts []Action, zone string, depth int, root
 		if stay || depth <= 0 || time.Now().After(ss.deadline) || len(zones) == 0 {
 			next := here
 			if !stay || next == nil {
+				// leaving: the block worth most per second with a change of zone counted, not the biggest block
+				// anywhere (that one pulls the character across the map and back)
 				next = &options[0]
+				best := math.Inf(-1)
+				for i := range options {
+					m := &options[i]
+					dt := m.state.Time - s.Time
+					if stays, _ := w.macroZone(m, zone); !stays {
+						dt += zoneSwitchCost
+					}
+					v := w.value(s, m.state)
+					if m.kind == "grind" {
+						v *= leaveGrindShare // when a zone runs dry the player moves on to quests, not grinds on
+					}
+					if r := v / math.Max(dt, 1); r > best {
+						next, best = m, r
+					}
+				}
 			}
 			acts = append(acts, next.actions...)
 			s = next.state
@@ -417,16 +462,26 @@ func (w *World) GoalLeft(s *State) float64 { return w.goalLeft(s) }
 var dungeonFrom = map[string]int{"ragefire-chasm": 14, "ruins-of-lordaeron": 17, "wailing-caverns": 18,
 	"deadmines": 18, "shadowfang-keep": 22, "blackfathom-deeps": 25, "razorfen-kraul": 29}
 
-// readyDungeons drops the dungeon runs the character is still below the guides' level for.
+// readyDungeons drops the dungeon runs the character is still below the guides' level for, and runs that hand in no
+// quest (a group for the mobs alone is not a run a player plans).
 func (ss *stageSearch) readyDungeons(s *State, options []macro) []macro {
 	l := ss.w.Level(s)
 	out := options[:0]
 	for _, m := range options {
-		ok := true
+		ok, run, quests := true, false, false
 		for _, a := range m.actions {
-			if a.Op == "dungeon" && l < dungeonFrom[a.Dungeon] {
-				ok = false
+			if a.Op == "dungeon" {
+				run = true
+				if l < dungeonFrom[a.Dungeon] {
+					ok = false
+				}
 			}
+			if a.Op == "turnin" || a.Op == "accept" {
+				quests = true
+			}
+		}
+		if run && !quests {
+			ok = false
 		}
 		if ok {
 			out = append(out, m)
@@ -620,3 +675,23 @@ func (w *World) nearestFirst(p dataset.Point, quests []*Quest) []*Quest {
 // preferred to single quests of a little more XP per second: one quest after the other from the same town means
 // walking out and back for each.
 const hubPreferred = 1.25
+
+// hostileZones: the other side's zones; nobody grinds among its guards and players.
+var hostileZones = map[string]map[string]bool{
+	"H": {"Elwynn Forest": true, "Westfall": true, "Redridge Mountains": true, "Duskwood": true, "Dun Morogh": true,
+		"Loch Modan": true, "Wetlands": true, "Teldrassil": true, "Darkshore": true, "Stormwind": true, "Ironforge": true, "Darnassus": true},
+	"A": {"Durotar": true, "Mulgore": true, "Tirisfal Glades": true, "Silverpine Forest": true, "Orgrimmar": true,
+		"Thunder Bluff": true, "Undercity": true},
+}
+
+// withoutHostileGrinds drops grinding in the other side's zones.
+func withoutHostileGrinds(w *World, options []macro) []macro {
+	out := options[:0]
+	for _, m := range options {
+		if m.kind == "grind" && hostileZones[w.Faction][w.zoneOf(m.actions[0].At)] {
+			continue
+		}
+		out = append(out, m)
+	}
+	return out
+}
