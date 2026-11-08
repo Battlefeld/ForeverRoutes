@@ -400,14 +400,6 @@
      "quest": 835
     },
     {
-     "op": "accept",
-     "quest": 1506
-    },
-    {
-     "op": "complete",
-     "quest": 1506
-    },
-    {
      "op": "turnin",
      "quest": 835
     },
@@ -440,6 +432,14 @@
     {
      "op": "turnin",
      "quest": 816
+    },
+    {
+     "op": "accept",
+     "quest": 1506
+    },
+    {
+     "op": "complete",
+     "quest": 1506
     },
     {
      "op": "accept",
@@ -480,6 +480,10 @@
     },
     {
      "op": "turnin",
+     "quest": 1506
+    },
+    {
+     "op": "turnin",
      "quest": 1501
     },
     {
@@ -490,10 +494,6 @@
      "objective": 1,
      "op": "complete",
      "quest": 1504
-    },
-    {
-     "op": "turnin",
-     "quest": 1506
     },
     {
      "op": "turnin",
@@ -1501,7 +1501,7 @@
    "inRoute": false,
    "level": 11,
    "minLevel": 10,
-   "minutes": 1.2,
+   "minutes": 2.2,
    "name": "Gan'rul's Summons",
    "possible": true,
    "quest": 1506,
@@ -4494,7 +4494,7 @@
  "finalModelReplayVerified": true,
  "finalXP": 167316,
  "hours": {
-  "optimized": 13.04875
+  "optimized": 13.046833333333334
  },
  "key": "troll-warlock",
  "killProfile": "Engine warlock sm_ruin (gear starter weapon, talents none; outside the table: default (uncalibrated) scaled to the table's edge)",
@@ -4517,7 +4517,7 @@
   1504,
   98575
  ],
- "resumedAndReverified": false,
+ "resumedAndReverified": true,
  "runs": null,
  "scenario": "solo_auto",
  "schema": "foreverroutes.route.v1",
@@ -4578,9 +4578,9 @@
    211
   ]
  },
- "searchAttempts": 1,
- "searchSeconds": 34.669611196,
- "seconds": 46975.5,
+ "searchAttempts": 0,
+ "searchSeconds": 0.340868332,
+ "seconds": 46968.6,
  "skipped": {},
  "sleepSteps": 0,
  "sleepingBagModel": {

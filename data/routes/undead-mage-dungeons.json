@@ -358,14 +358,6 @@
      "quest": 96895
     },
     {
-     "op": "accept",
-     "quest": 1881
-    },
-    {
-     "op": "complete",
-     "quest": 1881
-    },
-    {
      "op": "turnin",
      "quest": 96895
     },
@@ -385,10 +377,6 @@
      "objective": 2,
      "op": "complete",
      "quest": 96897
-    },
-    {
-     "op": "turnin",
-     "quest": 1881
     },
     {
      "objective": 1,
@@ -412,6 +400,14 @@
      "objective": 1,
      "op": "complete",
      "quest": 99142
+    },
+    {
+     "op": "accept",
+     "quest": 1881
+    },
+    {
+     "op": "complete",
+     "quest": 1881
     },
     {
      "op": "turnin",
@@ -581,6 +577,10 @@
     {
      "op": "accept",
      "quest": 1358
+    },
+    {
+     "op": "turnin",
+     "quest": 1881
     },
     {
      "level": 14,
@@ -912,9 +912,9 @@
     }
    ],
    "inRoute": false,
-   "level": 10,
+   "level": 12,
    "minLevel": 10,
-   "minutes": 2.5,
+   "minutes": 0.3,
    "name": "Speak with Anastasia",
    "possible": true,
    "quest": 1881,
@@ -3738,7 +3738,7 @@
  "finalModelReplayVerified": true,
  "finalXP": 167252,
  "hours": {
-  "optimized": 12.211222222222222
+  "optimized": 12.196944444444444
  },
  "key": "undead-mage",
  "killProfile": "Engine mage deepFire (gear starter weapon, talents none; outside the table: default (uncalibrated) scaled to the table's edge)",
@@ -3758,7 +3758,7 @@
  "requiredClassGoals": [
   3098
  ],
- "resumedAndReverified": false,
+ "resumedAndReverified": true,
  "runs": [
   "ragefire-chasm",
   "wailing-caverns",
@@ -3944,9 +3944,9 @@
    84
   ]
  },
- "searchAttempts": 1,
- "searchSeconds": 35.328417519,
- "seconds": 43960.4,
+ "searchAttempts": 0,
+ "searchSeconds": 0.33437315,
+ "seconds": 43909,
  "skipped": {},
  "sleepSteps": 0,
  "sleepingBagModel": {

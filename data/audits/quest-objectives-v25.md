@@ -1,14 +1,14 @@
 # Quest objective audit v2.5
 
-All 2922 shipped quests through level 60 were checked for objective counts and source references.
+All 5284 shipped quests through level 60 were checked for objective counts and source references.
 
 This is a structural audit of the pinned source rebuild, not an assertion that every quest has been verified in game.
 
 | Status | Quests |
 |---|---:|
-| group_or_special_quest | 249 |
-| incomplete_or_unsupported | 486 |
-| structural_references_present | 2187 |
+| group_or_special_quest | 567 |
+| incomplete_or_unsupported | 1742 |
+| structural_references_present | 2975 |
 
 The full compressed report contains every quest, target, source attribution and unresolved reference.
 
@@ -19,6 +19,7 @@ An item waypoint alone no longer establishes a safe pickup. A ground pickup need
 
 | Quest | Name | Reason |
 |---|---|---|
+| 490 | Bounty: Gnarlpine Furbolg | item 5220: acquisition unresolved; waypoints alone are not a gathering source |
 | 515 | Elixir of Agony | item 3388: acquisition unresolved; waypoints alone are not a gathering source |
 | 565 | Bartolo's Yeti Fur Cloak | item 3719: acquisition unresolved; waypoints alone are not a gathering source |
 | 715 | Liquid Stone | item 3823: acquisition unresolved; waypoints alone are not a gathering source |
@@ -36,12 +37,20 @@ An item waypoint alone no longer establishes a safe pickup. A ground pickup need
 | 2856 | Wild Leather Vest | item 8189: acquisition unresolved; waypoints alone are not a gathering source |
 | 2857 | Wild Leather Helmet | item 8175: acquisition unresolved; waypoints alone are not a gathering source |
 | 2859 | Wild Leather Leggings | item 8191: acquisition unresolved; waypoints alone are not a gathering source |
+| 3785 | Morrowgrain Research | item 11040: acquisition unresolved; waypoints alone are not a gathering source |
+| 3786 | Morrowgrain Research | item 11040: acquisition unresolved; waypoints alone are not a gathering source |
 | 3924 | Samophlange Manual | item 11149: acquisition unresolved; waypoints alone are not a gathering source |
+| 4441 | Felbound Ancients | item 5646: acquisition unresolved; waypoints alone are not a gathering source |
+| 4512 | A Little Slime Goes a Long Way | item 11947: acquisition unresolved; waypoints alone are not a gathering source |
 | 4784 | Components for the Enchanted Gold Bloodrobe | item 6265: acquisition unresolved; waypoints alone are not a gathering source |
+| 6022 | To Kill With Purpose | item 15448: acquisition unresolved; waypoints alone are not a gathering source |
 | 6122 | The Principal Source | item 15845: acquisition unresolved; waypoints alone are not a gathering source |
 | 6607 | Nat Pagle, Angler Extreme | item 16969: acquisition unresolved; waypoints alone are not a gathering source |
 | 6610 | Clamlette Surprise | item 7974: acquisition unresolved; waypoints alone are not a gathering source |
+| 7642 | Collection of Goods | item 12360: acquisition unresolved; waypoints alone are not a gathering source |
+| 8193 | Master Angler | item 19807: acquisition unresolved; waypoints alone are not a gathering source |
 | 8194 | Apprentice Angler | item 19807: acquisition unresolved; waypoints alone are not a gathering source |
+| 8620 | The Only Prescription | item 21111: acquisition unresolved; waypoints alone are not a gathering source |
 | 76240 | Stalk With The Earthmother | item 206345: acquisition unresolved; waypoints alone are not a gathering source |
 | 78091 | Earning Your Salt | item 209778: acquisition unresolved; waypoints alone are not a gathering source |
 | 78261 | The Horn of Xelthos | item 210183: acquisition unresolved; waypoints alone are not a gathering source |
@@ -77,7 +86,13 @@ An item waypoint alone no longer establishes a safe pickup. A ground pickup need
 | 98404 | The Great Windborne Cat Spirit | item 280502: acquisition unresolved; waypoints alone are not a gathering source |
 | 98427 | Ceasing Operations | item 281048: acquisition unresolved; waypoints alone are not a gathering source |
 | 98887 | Conflict at Darkspear Islands | item 274895: acquisition unresolved; waypoints alone are not a gathering source |
+| 98889 | Conflict at Darkspear Islands | item 274895: acquisition unresolved; waypoints alone are not a gathering source |
+| 98891 | Conflict at Darkspear Islands | item 274895: acquisition unresolved; waypoints alone are not a gathering source |
+| 98893 | Conflict at Darkspear Islands | item 274895: acquisition unresolved; waypoints alone are not a gathering source |
 | 98895 | Darkspear Islands Clash | item 274895: acquisition unresolved; waypoints alone are not a gathering source |
+| 98897 | Darkspear Islands Clash | item 274895: acquisition unresolved; waypoints alone are not a gathering source |
+| 98899 | Darkspear Islands Clash | item 274895: acquisition unresolved; waypoints alone are not a gathering source |
+| 98901 | Darkspear Islands Clash | item 274895: acquisition unresolved; waypoints alone are not a gathering source |
 | 99052 | Threat from Below | item 286009: acquisition unresolved; waypoints alone are not a gathering source |
 | 99141 | Patience | item 286200: acquisition unresolved; waypoints alone are not a gathering source |
 | 99156 | Rear Guard Patrol | item 286326: acquisition unresolved; waypoints alone are not a gathering source |
