@@ -405,5 +405,18 @@ do
  check(FR.live==nil,'live plan off: a plan from ForeverCore does not replace the route')
  FR.SetLiveWanted(true)
 end
+-- the own route's loading bar over the status line while ForeverCore plans it
+do
+ ForeverCoreClient=ForeverCoreClient or{}
+ local savedPR=ForeverCoreClient.PersonalRoute
+ ForeverCoreClient.PersonalRoute={state={state='running',percent=42,phase='Kampfprofil'}}
+ FR.Refresh();check(FR.frame.own:IsShown()and FR.frame.own:GetValue()==42 and FR.frame.own.text:GetText():find('Kampfprofil',1,true),'loading bar shows the progress')
+ check(not FR.frame.status:IsShown(),'the bar lies over the status line')
+ ForeverCoreClient.PersonalRoute.state={state='done',percent=100}
+ FR.Refresh();check(FR.frame.own.text:GetText():find('/reload',1,true),'finished: /reload')
+ ForeverCoreClient.PersonalRoute.state={state='error',message='Eigene Route: kaputt'}
+ FR.Refresh();check(FR.frame.own.text:GetText()=='Eigene Route: kaputt','error shown in the bar')
+ ForeverCoreClient.PersonalRoute=savedPR;FR.Refresh();check(not FR.frame.own:IsShown()and FR.frame.status:IsShown(),'no run: the status line again')
+end
 io.write('PASS '..count..' checks; no mocked UI/event errors\n')
 

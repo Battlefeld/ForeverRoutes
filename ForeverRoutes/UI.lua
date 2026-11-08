@@ -189,6 +189,12 @@ local function makeFrame()
  local collapse=iconButton(frame,'Interface\\Buttons\\UI-MinusButton-Up','Interface\\Buttons\\UI-MinusButton-Down',function()FR.Config().compact=not FR.Config().compact;refresh()end);collapse:SetSize(16,16);collapse:SetPoint('RIGHT',close,'LEFT',-4,0)
  tip(collapse,'Kompaktansicht','Nur den aktuellen Schritt mit Fortschritt zeigen.')
  frame.status=label(frame,11,C.muted);frame.status:SetPoint('TOPLEFT',30,-76);frame.status:SetWidth(340);frame.status:SetWordWrap(false)
+ -- the loading bar of the own route (ForeverCore plans it, a few minutes): over the status line while it runs
+ frame.own=CreateFrame('StatusBar',nil,frame);frame.own:SetPoint('TOPLEFT',28,-73);frame.own:SetSize(344,16);frame.own:SetMinMaxValues(0,100)
+ frame.own:SetStatusBarTexture('Interface\\TargetingFrame\\UI-StatusBar');frame.own:SetStatusBarColor(1,.75,.1,.85)
+ frame.own.bg=frame.own:CreateTexture(nil,'BACKGROUND');frame.own.bg:SetAllPoints(frame.own);frame.own.bg:SetColorTexture(0,0,0,.6)
+ frame.own.text=label(frame.own,11,C.text);frame.own.text:SetPoint('CENTER',frame.own,'CENTER',0,0);frame.own.text:SetJustifyH('CENTER')
+ frame.own:Hide()
  frame.current=CreateFrame('Button',nil,frame);frame.current:SetPoint('TOPLEFT',30,-96);frame.current:SetWidth(340)
  frame.current.icon=frame.current:CreateTexture(nil,'ARTWORK');frame.current.icon:SetSize(26,26);frame.current.icon:SetPoint('TOPLEFT',0,2)
  frame.current.text=label(frame.current,15,C.gold);frame.current.text:SetPoint('TOPLEFT',32,0);frame.current.text:SetWidth(308);frame.current.text:SetWordWrap(true)
@@ -470,6 +476,12 @@ function FR.Refresh()
  elseif view.live then status='Live-Plan'
  else status=string.format('%s · Schritt %d von %d',view.kind=='rxp'and'RestedXP'or view.kind=='rxp-fallback'and'Guide'or'Route',math.min(view.index,view.total),view.total)end
  frame.status:SetText(status..(group and' · mit Dungeons'or' · solo'))
+ local own=FR.OwnRouteState()
+ if own then
+  frame.own:SetValue(own.percent);frame.own.text:SetText(own.text)
+  if own.tone=='bad'then frame.own:SetStatusBarColor(.8,.2,.2,.85)elseif own.tone=='ok'then frame.own:SetStatusBarColor(.3,.8,.3,.85)else frame.own:SetStatusBarColor(1,.75,.1,.85)end
+  frame.own:Show();frame.status:Hide()
+ else frame.own:Hide();frame.status:Show()end
  frame.current.text:SetText(view.text)
  local icon=FR.StepIcon(view.step);frame.current.icon:SetShown(icon~=nil);if icon then frame.current.icon:SetTexture(icon)end
  local ch=math.max(28,frame.current.text:GetStringHeight()+8);frame.current:SetHeight(ch)

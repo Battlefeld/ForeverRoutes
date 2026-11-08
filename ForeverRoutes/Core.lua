@@ -468,6 +468,23 @@ function FR.PlanOwnRoute()
  if p and p.Request then call(p.Request,true);return true end
  print('ForeverRoutes: eigene Route braucht ForeverCore (Verbindung im ForeverCore-Addon)');return false
 end
+-- The own route's progress from the ForeverCore bridge for the loading bar: percent, text and tone, or nil when no run
+-- is to be shown (none started in this session, or the finished one is the route followed now).
+function FR.OwnRouteState()
+ local p=ForeverCoreClient and ForeverCoreClient.PersonalRoute
+ local st=p and p.state
+ if type(st)~='table'then return nil end
+ if st.state=='running'then
+  local percent=math.max(0,math.min(100,tonumber(st.percent)or 0))
+  return{percent=percent,text=string.format('Eigene Route: %s … %d %%',st.phase or'wird berechnet',percent),tone='run'}
+ elseif st.state=='done'then
+  local r=FR.Route()
+  if r and r.personal then return nil end -- taken already (/reload done)
+  return{percent=100,text='Eigene Route fertig: /reload',tone='ok'}
+ elseif st.state=='error'then
+  return{percent=100,text=tostring(st.message or'Eigene Route fehlgeschlagen'),tone='bad'}
+ end
+end
 function FR.SetLive(result)
  if not FR.LiveWanted()then FR.live=nil;FR.nextLive=nil;FR.liveStages=nil;return end
  if FR.GuideMode()=='rxp'then FR.live=nil;FR.nextLive=nil;FR.liveStages=nil;return end -- the guide is followed as it is
