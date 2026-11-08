@@ -6,8 +6,8 @@ This is a structural audit of the pinned source rebuild, not an assertion that e
 
 | Status | Quests |
 |---|---:|
-| group_or_special_quest | 567 |
-| incomplete_or_unsupported | 1742 |
+| group_or_special_quest | 568 |
+| incomplete_or_unsupported | 1741 |
 | structural_references_present | 2975 |
 
 The full compressed report contains every quest, target, source attribution and unresolved reference.
@@ -36,21 +36,37 @@ An item waypoint alone no longer establishes a safe pickup. A ground pickup need
 | 2852 | Wild Leather Leggings | item 8191: acquisition unresolved; waypoints alone are not a gathering source |
 | 2856 | Wild Leather Vest | item 8189: acquisition unresolved; waypoints alone are not a gathering source |
 | 2857 | Wild Leather Helmet | item 8175: acquisition unresolved; waypoints alone are not a gathering source |
+| 2858 | Wild Leather Boots | item 8193: acquisition unresolved; waypoints alone are not a gathering source |
 | 2859 | Wild Leather Leggings | item 8191: acquisition unresolved; waypoints alone are not a gathering source |
 | 3785 | Morrowgrain Research | item 11040: acquisition unresolved; waypoints alone are not a gathering source |
 | 3786 | Morrowgrain Research | item 11040: acquisition unresolved; waypoints alone are not a gathering source |
 | 3924 | Samophlange Manual | item 11149: acquisition unresolved; waypoints alone are not a gathering source |
 | 4441 | Felbound Ancients | item 5646: acquisition unresolved; waypoints alone are not a gathering source |
+| 4481 | Libram of Constitution | item 11952: acquisition unresolved; waypoints alone are not a gathering source |
+| 4482 | Libram of Tenacity | item 11564: acquisition unresolved; waypoints alone are not a gathering source |
+| 4483 | Libram of Resilience | item 11567: acquisition unresolved; waypoints alone are not a gathering source |
+| 4484 | Libram of Voracity | item 11951: acquisition unresolved; waypoints alone are not a gathering source |
 | 4512 | A Little Slime Goes a Long Way | item 11947: acquisition unresolved; waypoints alone are not a gathering source |
 | 4784 | Components for the Enchanted Gold Bloodrobe | item 6265: acquisition unresolved; waypoints alone are not a gathering source |
+| 5063 | Cap of the Scarlet Savant | item 12731: acquisition unresolved; waypoints alone are not a gathering source |
+| 5124 | Fiery Plate Gauntlets | item 12655: acquisition unresolved; waypoints alone are not a gathering source |
+| 5141 | Dragonscale Leatherworking | item 8203: acquisition unresolved; waypoints alone are not a gathering source |
+| 5145 | Dragonscale Leatherworking | item 8203: acquisition unresolved; waypoints alone are not a gathering source |
 | 6022 | To Kill With Purpose | item 15448: acquisition unresolved; waypoints alone are not a gathering source |
 | 6122 | The Principal Source | item 15845: acquisition unresolved; waypoints alone are not a gathering source |
 | 6607 | Nat Pagle, Angler Extreme | item 16969: acquisition unresolved; waypoints alone are not a gathering source |
 | 6610 | Clamlette Surprise | item 7974: acquisition unresolved; waypoints alone are not a gathering source |
+| 6962 | Treats for Great-father Winter | item 17197: acquisition unresolved; waypoints alone are not a gathering source |
+| 7025 | Treats for Greatfather Winter | item 17197: acquisition unresolved; waypoints alone are not a gathering source |
+| 7483 | Libram of Rapidity | item 14344: acquisition unresolved; waypoints alone are not a gathering source |
+| 7484 | Libram of Focus | item 14344: acquisition unresolved; waypoints alone are not a gathering source |
+| 7485 | Libram of Protection | item 14344: acquisition unresolved; waypoints alone are not a gathering source |
+| 7627 | Wheel of the Black March | item 14344: acquisition unresolved; waypoints alone are not a gathering source |
 | 7642 | Collection of Goods | item 12360: acquisition unresolved; waypoints alone are not a gathering source |
 | 8193 | Master Angler | item 19807: acquisition unresolved; waypoints alone are not a gathering source |
 | 8194 | Apprentice Angler | item 19807: acquisition unresolved; waypoints alone are not a gathering source |
 | 8620 | The Only Prescription | item 21111: acquisition unresolved; waypoints alone are not a gathering source |
+| 8728 | The Good News and The Bad News | item 12360: acquisition unresolved; waypoints alone are not a gathering source |
 | 76240 | Stalk With The Earthmother | item 206345: acquisition unresolved; waypoints alone are not a gathering source |
 | 78091 | Earning Your Salt | item 209778: acquisition unresolved; waypoints alone are not a gathering source |
 | 78261 | The Horn of Xelthos | item 210183: acquisition unresolved; waypoints alone are not a gathering source |
@@ -61,6 +77,7 @@ An item waypoint alone no longer establishes a safe pickup. A ground pickup need
 | 91317 | The Tarnished | item 270435: acquisition unresolved; waypoints alone are not a gathering source |
 | 91725 | Stolen Enchanting Supplies | item 247805: acquisition unresolved; waypoints alone are not a gathering source |
 | 91775 | Book Return | item 248002: acquisition unresolved; waypoints alone are not a gathering source |
+| 92519 | Ward Restocking | item 278462: acquisition unresolved; waypoints alone are not a gathering source |
 | 92742 | Testing the Wells | item 254546: acquisition unresolved; waypoints alone are not a gathering source |
 | 92747 | Moonbrook Espionage | item 254676: acquisition unresolved; waypoints alone are not a gathering source |
 | 94497 | Call of Water | item 265734: acquisition unresolved; waypoints alone are not a gathering source |
@@ -78,7 +95,8 @@ An item waypoint alone no longer establishes a safe pickup. A ground pickup need
 | 96874 | This Is Spinal Axe | item 275719: acquisition unresolved; waypoints alone are not a gathering source |
 | 97291 | Unending Torment | item 281246: acquisition unresolved; waypoints alone are not a gathering source |
 | 97485 | Traditions of the Bluff | item 278078: acquisition unresolved; waypoints alone are not a gathering source |
-| 98283 | Carnage | item 280331: acquisition unresolved; waypoints alone are not a gathering source |
+| 97539 | Silky Sutures | item 278225: acquisition unresolved; waypoints alone are not a gathering source |
+| 98069 | Stolen Freewind Supplies | item 279383: acquisition unresolved; waypoints alone are not a gathering source |
 | 98326 | Frosthowl | item 280426: acquisition unresolved; waypoints alone are not a gathering source |
 | 98342 | The Great Cat Spirit | item 280502: acquisition unresolved; waypoints alone are not a gathering source |
 | 98396 | The Great Cat Spirit | item 280502: acquisition unresolved; waypoints alone are not a gathering source |
