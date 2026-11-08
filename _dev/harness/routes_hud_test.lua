@@ -341,5 +341,16 @@ do
  complete[914]=true;check(#FR.DungeonChainHints('Wailing Caverns')==0,'no hint once the dungeon quest is done')
  complete[870]=nil;complete[914]=nil;ForeverRoutesData.dungeonChains=saved
 end
+-- a step in another zone: the window says where to go on; a capital counts as the zone around it
+do
+ local savedZone=GetRealZoneText
+ GetRealZoneText=function()return'The Barrens'end
+ check(FR.ZoneChange({z='Stranglethorn Vale'})=='Gebietswechsel: weiter nach Stranglethorn Vale','zone change named')
+ check(FR.ZoneChange({z='The Barrens'})==nil,'no hint in the same zone')
+ GetRealZoneText=function()return'Orgrimmar'end
+ check(FR.ZoneChange({z='Durotar'})==nil,'a capital is the zone around it')
+ check(FR.ZoneChange({})==nil,'no hint without a zone')
+ GetRealZoneText=savedZone
+end
 io.write('PASS '..count..' checks; no mocked UI/event errors\n')
 

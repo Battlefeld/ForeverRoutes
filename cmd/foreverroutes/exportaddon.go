@@ -216,6 +216,11 @@ end
 
 // writeStep writes a step's fields: what to do, where, the level by then, how to get there.
 func writeStep(b *strings.Builder, w *route.World, res *route.GuideResult, st route.Step) {
+	defer func() {
+		if st.Zone != "" {
+			fmt.Fprintf(b, ", z = %s", luaStr(st.Zone)) // the zone: "Gebietswechsel: weiter nach <z>"
+		}
+	}()
 	q := w.ByID[st.Quest]
 	switch st.Op {
 	case "accept", "turnin":

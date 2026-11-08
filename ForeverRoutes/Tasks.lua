@@ -204,6 +204,7 @@ function FR.Callouts(view)
   local travel=FR.TravelHint(step)
   if step.v=='h'then add('hearth',travel,'gold')elseif step.v=='d'then add('deathskip',travel,'gold')elseif step.v=='t'then add('teleport',travel,'gold')end
   if step.opt then add('option','Option: '..step.opt,'info')end
+  if not step.v then add('travel',FR.ZoneChange(step),'gold')end
  end
  local near=FR.nearbyAccept
  if near and step~=near and not FR.Done(near)then add('a','Nebenbei hier annehmen: '..FR.Text(near):gsub('^Annehmen: ',''),'gold')end

@@ -600,6 +600,7 @@ type Step struct {
 	BindUsed bool          `json:"bindUsed,omitempty"`
 	// StartBy: an accept of a quest an item starts, with the creature to kill for that item
 	StartBy *StartBy `json:"startBy,omitempty"`
+	Zone    string   `json:"zone,omitempty"` // the zone the step is in (zones.go), for "on to <zone>" in the addon
 	Name    string   `json:"name"`
 	Time    float64  `json:"time"`
 	Level   int      `json:"level"`
@@ -642,7 +643,7 @@ func (w *World) replayFrom(s0 *State, actions []Action) (*Result, error) {
 		if err := w.Apply(s, a); err != nil {
 			return nil, fmt.Errorf("step %d (%s %d): %w", i+1, a.Op, a.Quest, err)
 		}
-		res.Steps = append(res.Steps, Step{Action: a, Via: s.via, ViaAt: s.viaAt, Bind: s.bound, StartBy: w.startBy(a), Name: w.describe(a), Time: round1(s.Time - t0), Level: w.Level(s), XP: s.XP})
+		res.Steps = append(res.Steps, Step{Action: a, Via: s.via, ViaAt: s.viaAt, Bind: s.bound, StartBy: w.startBy(a), Zone: w.zoneOf(a.At), Name: w.describe(a), Time: round1(s.Time - t0), Level: w.Level(s), XP: s.XP})
 	}
 	markUsedBinds(res.Steps)
 	res.Deaths = s.Deathskips - d0

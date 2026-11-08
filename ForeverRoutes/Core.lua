@@ -455,7 +455,7 @@ function FR.SetLive(result)
   local name=type(s.name)=='string'and s.name:gsub(' %(dungeon run%)$','')or s.name
   out[#out+1]={op=OP[s.op]or s.op,q=s.quest,n=name,m=at.m,x=at.x,y=at.y,l=s.level,o=s.obj and(s.obj+1),npc=s.npc,object=s.object,items=s.items,stacks=s.stacks,kills=tonumber(s.kills),
    v=(via:find('^deathskip')and'd')or(via=='hearth'and'h')or(via=='teleport'and't')or nil,gy=via:match('^deathskip: (.+)$'),
-   dm=s.viaAt and s.viaAt.m,dx=s.viaAt and s.viaAt.x,dy=s.viaAt and s.viaAt.y,live=true}
+   dm=s.viaAt and s.viaAt.m,dx=s.viaAt and s.viaAt.x,dy=s.viaAt and s.viaAt.y,z=type(s.zone)=='string'and s.zone or nil,live=true}
   local sb=type(s.startBy)=='table'and s.startBy or nil
   if sb and sb.name then local st=out[#out];st.sk,st.sl,st.se,st.si=sb.name,sb.level,sb.elite==true or nil,sb.item end
   local bind=type(s.bind)=='table'and s.bind or nil
@@ -742,4 +742,16 @@ function FR.DungeonChainHints(name)
   end
  end
  return out
+end
+
+-- A change of zone: the step lies in another zone than the one the character is in ("Gebietswechsel: weiter nach
+-- Stranglethorn Vale"). The zone names are the client's English ones; a capital counts as the zone around it.
+local AROUND={['Orgrimmar']='Durotar',['Thunder Bluff']='Mulgore',['Undercity']='Tirisfal Glades',['Stormwind City']='Elwynn Forest',['Stormwind']='Elwynn Forest',['Ironforge']='Dun Morogh',['Darnassus']='Teldrassil'}
+function FR.ZoneChange(step)
+ if not step or type(step.z)~='string'then return nil end
+ local here=call(GetRealZoneText)or call(GetZoneText)
+ if type(here)~='string'or here==''then return nil end
+ local a,b=AROUND[here]or here,AROUND[step.z]or step.z
+ if a==b then return nil end
+ return'Gebietswechsel: weiter nach '..step.z
 end
