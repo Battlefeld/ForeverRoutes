@@ -115,6 +115,34 @@ func cmdExportAddon(args []string) error {
 	if ds != nil {
 		fmt.Fprintf(&b, "ForeverRoutesData.build = %s\n", luaStr(ds.Build))
 	}
+	// The quest chains that lead to a dungeon's quests, per side: the window names the first open step of each before
+	// the run ("Leaders of the Fang: first The Forgotten Pools").
+	b.WriteString("ForeverRoutesData.dungeonChains = {}\n")
+	for _, side := range []struct{ faction, race string }{{"H", "Orc"}, {"A", "Human"}} {
+		w, err := loadWorld(*path, side.race, "Warrior", side.faction, "", true)
+		if err != nil {
+			return err
+		}
+		fmt.Fprintf(&b, "ForeverRoutesData.dungeonChains[%s] = {", luaStr(side.faction))
+		for _, d := range w.Dungeons {
+			var chains []string
+			for _, q := range d.Quests {
+				steps := w.ChainBefore(q)
+				if len(steps) == 0 {
+					continue
+				}
+				var parts []string
+				for _, st := range steps {
+					parts = append(parts, fmt.Sprintf("{q=%d,n=%s}", st.ID, luaStr(st.Name)))
+				}
+				chains = append(chains, fmt.Sprintf("{q=%d,n=%s,steps={%s}}", q.ID, luaStr(q.Name), strings.Join(parts, ",")))
+			}
+			if len(chains) > 0 {
+				fmt.Fprintf(&b, "[%s]={%s},", luaStr(d.Name), strings.Join(chains, ","))
+			}
+		}
+		b.WriteString("}\n")
+	}
 	// The RestedXP guides as plain step lists: the addon follows one instead of the optimized route when the player
 	// chooses it (/fr guide rxp), live planning off.
 	b.WriteString("ForeverRoutesData.guides = {}\n")

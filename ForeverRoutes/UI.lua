@@ -194,7 +194,7 @@ local function makeFrame()
  frame.stageLabel=label(content,11,C.muted)
  frame.stageRows={};for i=1,4 do frame.stageRows[i]=row(content)end
  frame.dungeonLabel=label(content,11,C.muted)
- frame.dungeonRows={};for i=1,2 do frame.dungeonRows[i]=row(content)end
+ frame.dungeonRows={};for i=1,5 do frame.dungeonRows[i]=row(content)end
  frame.questLabel=label(content,11,C.muted)
  frame.questRows={};for i=1,60 do frame.questRows[i]=row(content)end
  frame.skip=button(frame,'Überspringen',124,function()FR.Skip();refresh()end);frame.skip:SetPoint('BOTTOM',0,40)
@@ -426,6 +426,12 @@ dungeonSection=function(y,group)
  local when=ahead and(ahead==0 and'jetzt'or string.format('in %d Schritten',ahead))or string.format('ab Stufe %d',found.l or 0)
  y=setRow(r1,string.format('%s  |cff9aa9c0· %s|r',found.n or'Dungeon',when),y,C.gold,{icon=ICON.d})
  if type(found.qi)=='table'and #found.qi>0 then y=setRow(r2,'Mitnehmen: '..table.concat(found.qi,', '),y,C.muted,{indent=24})end
+ -- chains the run's quests need, started before the run (Leaders of the Fang needs The Forgotten Pools first)
+ local ri=3
+ for _,hint in ipairs(FR.DungeonChainHints(found.n))do
+  local r=frame.dungeonRows[ri];if not r then break end
+  r.q,r.item,r.task,r.objective=nil,nil,nil,nil;y=setRow(r,hint,y,C.gold,{indent=24});ri=ri+1
+ end
  return y
 end
 function FR.Refresh()

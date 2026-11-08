@@ -583,3 +583,28 @@ func (w *World) grindMacro(s0 *State, target int, xpCap ...int) *macro {
 	}
 	return best
 }
+
+// ChainBefore: the quests before q (its prerequisites, theirs, ...), first first, without dungeon quests; one branch
+// where any of several will do.
+func (w *World) ChainBefore(q *Quest) []*Quest {
+	var out []*Quest
+	seen := map[int]bool{}
+	cur := q
+	for depth := 0; depth < 10; depth++ {
+		pre := append(append([]int(nil), cur.PreAll...), cur.PreAny...)
+		var next *Quest
+		for _, id := range pre {
+			if pq := w.ByID[id]; pq != nil && !seen[id] && pq.Dungeon == nil {
+				next = pq
+				break
+			}
+		}
+		if next == nil {
+			break
+		}
+		seen[next.ID] = true
+		out = append([]*Quest{next}, out...)
+		cur = next
+	}
+	return out
+}

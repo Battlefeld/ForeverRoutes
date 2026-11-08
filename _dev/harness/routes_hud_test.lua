@@ -329,5 +329,17 @@ do
  check(st and st.q==9004,'the guide continues after the last quest handed in: '..tostring(st and st.q))
  complete[9003]=nil;accepted[9002]=nil;ForeverRoutesData.guides=saved;FR.CharDB().guide=nil;FR.CharDB().index=1
 end
+-- the chain a dungeon quest needs: its first open step, marked when it is in the log
+do
+ local saved=ForeverRoutesData.dungeonChains
+ ForeverRoutesData.dungeonChains={H={['Wailing Caverns']={{q=914,n='Leaders of the Fang',steps={{q=870,n='The Forgotten Pools'},{q=877,n='The Stagnant Oasis'}}}}},A={['Wailing Caverns']={{q=914,n='Leaders of the Fang',steps={{q=870,n='The Forgotten Pools'},{q=877,n='The Stagnant Oasis'}}}}}}
+ accepted[870]=true
+ local h=FR.DungeonChainHints('Wailing Caverns')
+ check(#h==1 and h[1]=='Leaders of the Fang: zuerst The Forgotten Pools (im Log)','chain hint names the first open step: '..tostring(h[1]))
+ accepted[870]=nil;complete[870]=true
+ h=FR.DungeonChainHints('Wailing Caverns');check(h[1]=='Leaders of the Fang: zuerst The Stagnant Oasis','the next step once the first is done')
+ complete[914]=true;check(#FR.DungeonChainHints('Wailing Caverns')==0,'no hint once the dungeon quest is done')
+ complete[870]=nil;complete[914]=nil;ForeverRoutesData.dungeonChains=saved
+end
 io.write('PASS '..count..' checks; no mocked UI/event errors\n')
 

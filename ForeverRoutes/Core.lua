@@ -724,3 +724,22 @@ function FR.StageLines(max)
  end
  return out
 end
+
+-- The quest chains a dungeon's quests need: for each quest of the run not taken yet, the first step of its chain still
+-- open ("Leaders of the Fang: zuerst The Forgotten Pools (im Log)").
+function FR.DungeonChainHints(name)
+ local side=call(UnitFactionGroup,'player')=='Alliance'and'A'or'H'
+ local all=ForeverRoutesData and ForeverRoutesData.dungeonChains and ForeverRoutesData.dungeonChains[side]
+ local out={}
+ for _,c in ipairs(all and all[name]or{})do
+  if not completed(c.q)and not onQuest(c.q)then
+   for _,st in ipairs(c.steps or{})do
+    if not completed(st.q)then
+     out[#out+1]=string.format('%s: zuerst %s%s',c.n,st.n,onQuest(st.q)and' (im Log)'or'')
+     break
+    end
+   end
+  end
+ end
+ return out
+end
