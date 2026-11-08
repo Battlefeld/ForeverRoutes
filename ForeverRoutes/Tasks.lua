@@ -193,8 +193,9 @@ function FR.Callouts(view)
  local function add(icon,text,tone)if text and text~=''then out[#out+1]={icon=icon,text=text,tone=tone or'info'}end end
  if view.paused then add('d','Nach dem Dungeon geht es beim nächsten offenen Schritt weiter.','info');return out end
  -- why there is no live plan: switched off in the bridge, or the last planning failed
+ -- (only when the player wants the live plan: off by choice, the stored route is followed without a warning)
  local bridge=ForeverCoreClient and ForeverCoreClient.Route
- if bridge and not view.live then
+ if bridge and not view.live and FR.LiveWanted and FR.LiveWanted()then
   local on=type(bridge.Enabled)=='function'and call(bridge.Enabled)
   if on==false or on==nil then add('blocked','Live-Planung ist aus: /fc route an (sonst gilt die gespeicherte Route)','warn')
   elseif bridge.issue then add('blocked','Live-Planung: '..tostring(bridge.issue),'warn')end
