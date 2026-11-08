@@ -25,6 +25,7 @@ func cmdExportAddon(args []string) error {
 	fallbackFile := fs.String("fallbacks", "", "ordinary pinned RXP fallback catalog; default beside dataset")
 	out := fs.String("out", "", "Lua file to write (the addon's Data/Routes.lua)")
 	stale := fs.Bool("stale-ok", false, "interim release before a recompute: a route with events the data no longer allows is exported without them")
+	personal := fs.Bool("personal", false, "only the routes of -routes, added to the shipped ones (the addon's Data/Personal.lua: a route ForeverCore planned with the character's own kill profile)")
 	fs.Parse(args)
 	if *fallbackFile == "" {
 		*fallbackFile = filepath.Join(filepath.Dir(*path), "fallbacks", "rxp.json.gz")
@@ -32,9 +33,12 @@ func cmdExportAddon(args []string) error {
 	if *out == "" {
 		return fmt.Errorf("export-addon needs -out")
 	}
-	cat, err := fallback.Load(*fallbackFile)
-	if err != nil {
-		return fmt.Errorf("RXP fallbacks: %w", err)
+	var cat *fallback.Catalog
+	var err error
+	if !*personal {
+		if cat, err = fallback.Load(*fallbackFile); err != nil {
+			return fmt.Errorf("RXP fallbacks: %w", err)
+		}
 	}
 	files, err := filepath.Glob(filepath.Join(*dir, "*.json"))
 	if err != nil {
@@ -43,6 +47,9 @@ func cmdExportAddon(args []string) error {
 	sort.Strings(files)
 	// a route continued past 20 (routes-ext beside the routes, extend -stages) takes the place of its base route
 	for i, f := range files {
+		if *personal {
+			break
+		}
 		if e := filepath.Join(filepath.Dir(filepath.Clean(*dir)), "routes-ext", filepath.Base(f)); fileExists(e) {
 			files[i] = e
 		}
@@ -54,7 +61,12 @@ func cmdExportAddon(args []string) error {
 	b.WriteString("-- A step: op a(ccept) w(ork) t(urnin) g(rind) d(ungeon run; ii instance map id, qi quests taken inside); q quest, n name; o objective (1-based, route order), k kind, c count,\n")
 	b.WriteString("-- tg target; m continent, x y world yards (x north, y west); l level reached by then; v d(eathskip) or h(earth)\n")
 	b.WriteString("-- with dm dx dy the place to die and gy the graveyard; bn bm bx by the innkeeper the hearthstone is bound at, bu when a later hearthstone trip uses it.\n")
-	b.WriteString("ForeverRoutesData = ForeverRoutesData or {}\nForeverRoutesData.routes = {}\n")
+	if *personal {
+		b.WriteString("-- Personal: planned by ForeverCore with this character's own kill profile (its items and talents); replaces the shipped route.\n")
+		b.WriteString("ForeverRoutesData = ForeverRoutesData or {}\nForeverRoutesData.routes = ForeverRoutesData.routes or {}\n")
+	} else {
+		b.WriteString("ForeverRoutesData = ForeverRoutesData or {}\nForeverRoutesData.routes = {}\n")
+	}
 	var ds *dataset.Dataset
 	for _, f := range files {
 		raw, err := os.ReadFile(f)
@@ -95,13 +107,19 @@ func cmdExportAddon(args []string) error {
 			continue
 		}
 		if res.Level < r.Target || len(res.Skipped) > 0 {
-			if !*stale && !outsideFocus(key, readFocus("data/focus.txt")) {
+			if *personal || !*stale && !outsideFocus(key, readFocus("data/focus.txt")) {
 				return fmt.Errorf("%s: incomplete route or skipped events; regenerate routes", f)
 			}
 			fmt.Fprintf(os.Stderr, "%s: stale route exported without %d skipped events\n", key, len(res.Missed))
 		}
-		fmt.Fprintf(&b, "ForeverRoutesData.routes[%s] = {race = %s, class = %s, faction = %s, target = %d, hours = %.1f, basis = %s, s = {\n",
-			luaStr(key), luaStr(r.Character.Race), luaStr(r.Character.Class), luaStr(r.Character.Faction), r.Target, res.Seconds/3600, luaStr(r.Winner))
+		mark := ""
+		if *personal {
+			// its own revision: the addon starts it over from the first step not done yet instead of keeping the
+			// shipped route's place
+			mark = fmt.Sprintf("personal = true, revision = %s, ", luaStr(fmt.Sprintf("%s-personal-%.0f", w.Data.Build, res.Seconds)))
+		}
+		fmt.Fprintf(&b, "ForeverRoutesData.routes[%s] = {race = %s, class = %s, faction = %s, target = %d, hours = %.1f, basis = %s, %ss = {\n",
+			luaStr(key), luaStr(r.Character.Race), luaStr(r.Character.Class), luaStr(r.Character.Faction), r.Target, res.Seconds/3600, luaStr(r.Winner), mark)
 		for _, st := range res.Steps {
 			b.WriteString(" {")
 			writeStep(&b, w, res, st)
@@ -111,6 +129,18 @@ func cmdExportAddon(args []string) error {
 		writeOptions(&b, w, res, r.Options, r.Target)
 		b.WriteString("}\n")
 		fmt.Fprintf(os.Stderr, "%s: %d steps, %.1f h\n", key, len(res.Steps), res.Seconds/3600)
+	}
+	if *personal {
+		if ds == nil {
+			return fmt.Errorf("no route in %s", *dir)
+		}
+		// only while the addon carries the dataset the route was planned with: after a data update the shipped route
+		// counts again until ForeverCore plans the personal one anew
+		head := "ForeverRoutesData.routes = ForeverRoutesData.routes or {}\n"
+		text := b.String()
+		i := strings.Index(text, head) + len(head)
+		text = text[:i] + fmt.Sprintf("if ForeverRoutesData.build == %s then\n", luaStr(ds.Build)) + text[i:] + "end\n"
+		return os.WriteFile(*out, []byte(text), 0o644)
 	}
 	if ds != nil {
 		fmt.Fprintf(&b, "ForeverRoutesData.build = %s\n", luaStr(ds.Build))

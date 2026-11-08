@@ -11,6 +11,8 @@ def package(source: Path, routes: Path, output: Path) -> None:
     files = {str(p.relative_to(source)).replace('\\', '/'): p.read_bytes()
              for p in sorted(source.rglob('*')) if p.is_file() and p.suffix in {'.lua', '.toc', '.tga', '.md'}}
     files['Data/Routes.lua'] = routes.read_bytes()
+    # ForeverCore writes the character's own route here (planned with its items and talents); shipped empty
+    files['Data/Personal.lua'] = b'-- Filled by ForeverCore: the route planned with this character\'s own items and talents.\n'
     files['LICENSE.txt'] = Path('LICENSE').read_bytes()
     files['RXP-LICENSE.txt'] = Path('data/fallbacks/RXP-LICENSE.txt').read_bytes()
     files['GPL-3.0.txt'] = Path('LICENSES/GPL-3.0.txt').read_bytes()

@@ -94,6 +94,11 @@ function FR.Route()
   c.routeKey=selected;c.dataRevision=revision;c.index=1;c.skipped={};c.confirmed={};FR.pinned=nil
  end
  local r=data.routes and data.routes[selected]
+ if r and r.personal and not FR.personalNoted then
+  -- planned by ForeverCore with this character's own items and talents (Data/Personal.lua)
+  FR.personalNoted=true
+  print(string.format('ForeverRoutes: eigene Route mit deinem Gear und deinen Talenten (%.1f h bis Stufe %d)',r.hours or 0,r.target or 0))
+ end
  if r and r.s and #r.s>0 then return r,selected,'optimized'end
  local solo=data.routes and data.routes[key]
  if solo and solo.s and #solo.s>0 then return solo,key,'optimized'end
