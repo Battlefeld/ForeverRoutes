@@ -144,6 +144,18 @@ func cmdExportAddon(args []string) error {
 	}
 	if ds != nil {
 		fmt.Fprintf(&b, "ForeverRoutesData.build = %s\n", luaStr(ds.Build))
+		// every quest's full XP and level: the XP bar shows what the quests in the log give (the game's own value
+		// first, this one when the client has none)
+		b.WriteString("ForeverRoutesData.questXP = {")
+		for i, q := range ds.Quests {
+			if q.XP > 0 {
+				fmt.Fprintf(&b, "[%d]={%d,%d},", q.ID, q.XP, q.Level)
+			}
+			if i%40 == 39 {
+				b.WriteString("\n")
+			}
+		}
+		b.WriteString("}\n")
 	}
 	// The quest chains that lead to a dungeon's quests, per side: the window names the first open step of each before
 	// the run ("Leaders of the Fang: first The Forgotten Pools").

@@ -567,10 +567,81 @@ SlashCmdList.FOREVERROUTES=function(msg)
   local mode=msg=='guide rxp'and'rxp'or msg=='guide route'and'route'or(FR.GuideMode()=='rxp'and'route'or'rxp')
   FR.SetGuideMode(mode);print('ForeverRoutes: '..(FR.GuideMode()=='rxp'and'RestedXP-Guide (Live-Plan aus)'or'ForeverRoutes-Route mit Live-Plan'));refresh()
  elseif msg=='neu'or msg=='replan'then FR.ReplanNow()
+ elseif msg=='questxp'or msg=='quest-xp'then FR.Config().questXP=FR.Config().questXP==false;print('ForeverRoutes: Quest-XP auf der XP-Leiste '..(FR.Config().questXP==false and'aus'or'an'));if FR.DrawQuestXP then FR.DrawQuestXP()end;return
  elseif msg=='tracker'or msg=='questtracker'then FR.Config().blizzTracker=not FR.Config().blizzTracker or nil;FR.Config().window=nil;FR.Config().docked=true;if frame then frame.docked=dock(frame)end;applyTracker()
  elseif msg=='dock'or msg=='andocken'then FR.Config().window=nil;FR.Config().docked=true;if frame and not dock(frame)then position(frame,'window','LEFT',40,120)end
  elseif msg=='position'then FR.Config().window=nil;FR.Config().arrow=nil;if frame then position(frame,'window','LEFT',40,120)end;if arrow then position(arrow,'arrow','TOP',0,-110)end
- elseif msg~='show'then print('ForeverRoutes: /fr · show · hide · skip · back · done · options · compact · tracker · lock · arrow · scale 1 · position · restore · guide (RestedXP an/aus) · neu');return end
+ elseif msg~='show'then print('ForeverRoutes: /fr · show · hide · skip · back · done · options · compact · tracker · lock · arrow · scale 1 · position · restore · guide (RestedXP an/aus) · neu · questxp');return end
  FR.Show()
 end
 
+
+-- Quest XP on the game's XP bar: after the XP the character has, the XP of the quests in the log that are ready to
+-- hand in (strong) and then of all the others in the log (pale), and the numbers beside the bar's text and in its
+-- tooltip. A quest's XP is the game's own value when the client gives one, else the dataset's at this level (less for
+-- a quest 6 and more levels below). /fr questxp: on or off.
+local function questFactor(level,questLevel)
+ local d=(level or 0)-(questLevel or 0)
+ if not questLevel or questLevel<=0 or d<=5 then return 1 end
+ return({[6]=.8,[7]=.6,[8]=.4,[9]=.2})[d]or .1
+end
+local function questXPOf(q,level)
+ if GetQuestLogRewardXP then local v=call(GetQuestLogRewardXP,q);if type(v)=='number'and v>0 then return v end end
+ local row=ForeverRoutesData and ForeverRoutesData.questXP and ForeverRoutesData.questXP[q]
+ if not row then return 0 end
+ local f=questFactor(level,row[2]);return f>=1 and row[1]or math.ceil(row[1]*f)
+end
+-- FR.QuestXP: XP of the quests ready to hand in, and of all quests in the log (those included).
+function FR.QuestXP()
+ local level=call(UnitLevel,'player')or 1
+ local ready,all=0,0
+ local n=C_QuestLog and C_QuestLog.GetNumQuestLogEntries and call(C_QuestLog.GetNumQuestLogEntries)or 0
+ for i=1,tonumber(n)or 0 do
+  local info=call(C_QuestLog.GetInfo,i)
+  if type(info)=='table'and type(info.questID)=='number'and info.questID>0 and not info.isHeader then
+   local v=questXPOf(info.questID,level)
+   all=all+v
+   if C_QuestLog.IsComplete and call(C_QuestLog.IsComplete,info.questID)==true then ready=ready+v end
+  end
+ end
+ return ready,all
+end
+local function thousands(v)
+ local s=tostring(math.floor(v+.5));local out=s:reverse():gsub('(%d%d%d)','%1.'):reverse()
+ return(out:gsub('^%.',''))
+end
+local xpBar
+local function drawQuestXP()
+ local bar=_G.MainMenuExpBar
+ if not bar or not bar.GetWidth then return end
+ if not xpBar then
+  xpBar=CreateFrame('Frame',nil,bar);xpBar:SetAllPoints(bar);xpBar:SetFrameLevel((bar:GetFrameLevel()or 1)+1)
+  xpBar.ready=xpBar:CreateTexture(nil,'ARTWORK');xpBar.ready:SetColorTexture(1,.75,.1,.75)
+  xpBar.rest=xpBar:CreateTexture(nil,'ARTWORK');xpBar.rest:SetColorTexture(1,.75,.1,.3)
+  xpBar.text=xpBar:CreateFontString(nil,'OVERLAY','TextStatusBarText');xpBar.text:SetPoint('RIGHT',bar,'RIGHT',-6,1)
+  if bar.HookScript then bar:HookScript('OnEnter',function()
+   local ready,all=FR.QuestXP()
+   if all>0 and GameTooltip:IsShown()then
+    GameTooltip:AddLine(string.format('Quest-XP: %s abgabebereit, %s im Questlog',thousands(ready),thousands(all)),1,.82,0)
+    GameTooltip:Show()
+   end
+  end)end
+ end
+ local ready,all=FR.QuestXP()
+ local max=call(UnitXPMax,'player')or 0;local xp=call(UnitXP,'player')or 0
+ if FR.Config().questXP==false or max<=0 or all<=0 then xpBar:Hide();return end
+ local w=bar:GetWidth()or 0;local x0=w*xp/max
+ local function place(tex,from,amount)
+  local width=math.min(w-from,w*amount/max)
+  if width<1 then tex:Hide();return from end
+  tex:ClearAllPoints();tex:SetPoint('TOPLEFT',bar,'TOPLEFT',from,0);tex:SetPoint('BOTTOMLEFT',bar,'BOTTOMLEFT',from,0);tex:SetWidth(width);tex:Show()
+  return from+width
+ end
+ local x1=place(xpBar.ready,x0,ready);place(xpBar.rest,x1,all-ready)
+ xpBar.text:SetText(ready>0 and string.format('Quests +%s (+%s)',thousands(ready),thousands(all))or string.format('Quests +%s',thousands(all)))
+ xpBar:Show()
+end
+FR.DrawQuestXP=drawQuestXP
+local xpEvents=CreateFrame('Frame')
+for _,event in ipairs({'PLAYER_ENTERING_WORLD','QUEST_LOG_UPDATE','PLAYER_XP_UPDATE','PLAYER_LEVEL_UP','UPDATE_EXHAUSTION'})do pcall(xpEvents.RegisterEvent,xpEvents,event)end
+xpEvents:SetScript('OnEvent',function()pcall(drawQuestXP)end)

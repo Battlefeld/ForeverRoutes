@@ -358,5 +358,24 @@ do
  check(FR.ZoneChange({})==nil,'no hint without a zone')
  GetRealZoneText=savedZone
 end
+-- Quest XP on the XP bar: the quests ready to hand in, then all in the log, after the XP the character has
+do
+ local bar=CreateFrame('StatusBar','MainMenuExpBar',UIParent);bar:SetSize(1000,10);MainMenuExpBar=bar
+ ForeverRoutesData.questXP={[901]={1000,20},[902]={500,20},[903]={800,10}}
+ local log={{questID=901},{questID=902},{questID=903},{isHeader=true,questID=0}}
+ local savedNum,savedInfo,savedComplete,savedLevel,savedXP,savedMax=C_QuestLog.GetNumQuestLogEntries,C_QuestLog.GetInfo,C_QuestLog.IsComplete,UnitLevel,UnitXP,UnitXPMax
+ C_QuestLog.GetNumQuestLogEntries=function()return #log end;C_QuestLog.GetInfo=function(i)return log[i]end
+ C_QuestLog.IsComplete=function(q)return q==901 end
+ UnitLevel=function()return 20 end;UnitXP=function()return 2000 end;UnitXPMax=function()return 10000 end
+ local ready,all=FR.QuestXP()
+ check(ready==1000 and all==1000+500+80,'quest XP: ready 1000, all with the gray quest at a tenth')
+ FR.DrawQuestXP()
+ local overlay=nil;for _,c in ipairs({bar:GetChildren()})do overlay=c end
+ check(overlay and overlay.text:GetText()=='Quests +1.000 (+1.580)','the bar names the quest XP')
+ check(overlay.ready:GetWidth()==100 and overlay.rest:GetWidth()==58,'ready and the rest of the log drawn after the XP')
+ FR.Config().questXP=false;FR.DrawQuestXP();check(not overlay:IsShown(),'/fr questxp hides it')
+ FR.Config().questXP=nil
+ C_QuestLog.GetNumQuestLogEntries,C_QuestLog.GetInfo,C_QuestLog.IsComplete,UnitLevel,UnitXP,UnitXPMax=savedNum,savedInfo,savedComplete,savedLevel,savedXP,savedMax
+end
 io.write('PASS '..count..' checks; no mocked UI/event errors\n')
 
