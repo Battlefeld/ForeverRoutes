@@ -107,6 +107,12 @@ jobs:
           GOMAXPROCS: "4"
         run: |
           set -o pipefail
+          # with a focus (data/focus.txt) only the focused routes are kept current: the routes to 20 are not searched
+          # again (the focused ones are continued in data/routes-ext below), the others stay as they are
+          if grep -v '^#' data/focus.txt 2>/dev/null | grep -q .; then
+            echo "- focus $(grep -v '^#' data/focus.txt | tr -s ' \n' ' '): only the routes in data/routes-ext are recomputed" >> /tmp/report.md
+            exit 0
+          fi
           # the full output goes to a file; on a failure the failing scenarios and their messages are printed
           # (and land in the failure issue), not only the last lines, which are mostly passing scenarios
           failed() { grep -E -- '--- FAIL|_test\.go:[0-9]+:|^panic|timed out' "$1" | head -n 80 | tee -a /tmp/failures.txt; exit 1; }

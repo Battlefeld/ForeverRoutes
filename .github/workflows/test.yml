@@ -63,7 +63,7 @@ jobs:
           data=$(git log -1 --format=%ct -- data/routes-data.json.gz)
           model=$(git log -1 --format=%ct -- route/model-stamp.txt)
           [ "${model:-0}" -gt "$data" ] && data=$model # a planner model change waits for the recompute like a data fix
-          routes=$(git log -1 --format=%ct -- data/routes)
+          routes=$(git log -1 --format=%ct -- data/routes data/routes-ext)
           if [ "$data" -gt "$routes" ] && [ "${{ github.ref }}" = "refs/heads/main" ]; then
             stale=$(grep -c 'stale/invalid route' /tmp/shipped.log || true)
             echo "::notice::$stale shipped routes wait for the recompute after the data fix"

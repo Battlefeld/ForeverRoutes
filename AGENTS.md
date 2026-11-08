@@ -18,8 +18,9 @@ Several agents change this repository. These rules keep main green and the daily
   `next` takes the stages from `stagesPreferred` (0.9) of the route's XP per hour; tests measure against the same.
 
 ## Data, workflows, releases
-- Focus: `data/focus.txt` names the characters the route update searches again (now only `orc-shaman`); every other
-  route is kept while it still replays. Continued routes past 20 live in `data/routes-ext` (see its README).
+- Focus: `data/focus.txt` (now only `orc-shaman:dungeons`, the user's wish: build only this route). With a focus the
+  update does not search the routes to 20 at all; it only continues the routes in `data/routes-ext` (see its README),
+  and the shipped-route check skips everything else (those routes may lag data fixes).
 - `update.yml` recomputes and publishes routes (daily and on data fixes); `release.yml` publishes the addon bundle
   after pushes to main; ForeverCore (repository ForeverSim, workflow `forevercore-package.yml`) packages the addon.
 - A failed workflow means something is wrong: a real bug, a test asking too much, or GitHub itself (5xx: re-run

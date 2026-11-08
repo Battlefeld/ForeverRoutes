@@ -59,7 +59,7 @@ jobs:
           if go test -timeout 30m -run 'TestShippedRoutesMatchCurrentModel' -count=1 ./cmd/foreverroutes > /tmp/shipped.log 2>&1; then exit 0; fi
           # after a data fix the routes wait for their recompute: the update workflow publishes then, not this run
           changed=$(git log -1 --format=%ct -- data/routes-data.json.gz route/model-stamp.txt)
-          if [ "$changed" -gt "$(git log -1 --format=%ct -- data/routes)" ]; then
+          if [ "$changed" -gt "$(git log -1 --format=%ct -- data/routes data/routes-ext)" ]; then
             echo "::notice::routes wait for the recompute after the data fix; the update workflow publishes"
             echo "skip=true" >> "$GITHUB_OUTPUT"; exit 0
           fi
