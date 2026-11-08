@@ -86,6 +86,7 @@ func cmdExportAddon(args []string) error {
 			Events    []route.GuideEvent `json:"events"`
 			Options   []route.ClassCost  `json:"classQuests"`
 			Wand      float64            `json:"wandDetour"`
+			Start     *route.Live        `json:"start"` // a personal route planned from the character's state
 		}
 		if err := json.Unmarshal(raw, &r); err != nil || len(r.Events) == 0 {
 			return fmt.Errorf("%s: malformed or empty route", f)
@@ -104,7 +105,15 @@ func cmdExportAddon(args []string) error {
 		w.SetWandDetour(r.Wand)
 		ds = w.Data
 		key := strings.TrimSuffix(filepath.Base(f), ".json")
-		res, err := w.FollowGuide(r.Events, r.Target)
+		var res *route.GuideResult
+		if r.Start != nil {
+			var s *route.State
+			if s, _, err = w.StateFrom(*r.Start); err == nil {
+				res, err = w.FollowGuideFromState(s, r.Events, r.Target)
+			}
+		} else {
+			res, err = w.FollowGuide(r.Events, r.Target)
+		}
 		if err != nil {
 			// a route the dataset no longer carries: left out (the addon says it has no route), not the whole export
 			fmt.Fprintf(os.Stderr, "%s: left out: %v\n", key, err)

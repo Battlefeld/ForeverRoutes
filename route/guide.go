@@ -58,6 +58,12 @@ func (w *World) FollowGuideFrom(s *State, events []GuideEvent, target int, horiz
 	return w.follow(s.clone(), events, target, horizon, false, true)
 }
 
+// FollowGuideFromState walks a whole guide (no horizon) from a given state, as FollowGuide does from the start: a route
+// planned from a character's state (its finished quests, its quest log, its level and place) replays from there.
+func (w *World) FollowGuideFromState(s *State, events []GuideEvent, target int) (*GuideResult, error) {
+	return w.followFrom(s.clone(), events, target, math.Inf(1))
+}
+
 func (w *World) followFrom(s *State, events []GuideEvent, target int, horizon float64) (*GuideResult, error) {
 	return w.follow(s, events, target, horizon, false, false)
 }

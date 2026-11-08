@@ -26,6 +26,7 @@ func cmdExtend(args []string) error {
 	out := fs.String("out", "", "write the continued route here")
 	legsFile := fs.String("legs", "", "a laid-out route (JSON list of legs: {zones, until} or {dungeon}) the planner fills in")
 	from := fs.Int("from", 0, "continue from this level of the route (default: its end)")
+	liveFile := fs.String("live", "", "plan from this character's state instead of the route's (JSON with live as next reads it: level, XP, place, finished quests, quest log); the route then starts there")
 	stages := fs.Duration("stages", 0, "plan by zones (the live stages, 4 hours at a time) with this search time per stretch instead of the free planner")
 	grind := fs.Float64("grind-share", 0.8, "share of its XP grinding counts with against quests (1: all; below: quest unless grinding is clearly better)")
 	fs.Parse(args)
@@ -55,16 +56,42 @@ func cmdExtend(args []string) error {
 	if *from > 0 && *from < baseTarget {
 		baseTarget = *from
 	}
-	base, err := w.FollowGuide(r.Events, baseTarget)
-	if err != nil {
-		return err
+	var base *route.GuideResult
+	var s *route.State
+	if *liveFile != "" {
+		// the character's own state: what it has done is done, its quest log is open, it stands where it is
+		raw, err := os.ReadFile(*liveFile)
+		if err != nil {
+			return err
+		}
+		var req struct {
+			Live route.Live `json:"live"`
+		}
+		if err := json.Unmarshal(raw, &req); err != nil {
+			return fmt.Errorf("%s: %w", *liveFile, err)
+		}
+		if s, _, err = w.StateFrom(req.Live); err != nil {
+			return err
+		}
+		start := req.Live
+		r.Start, r.Events = &start, nil
+		base = &route.GuideResult{Result: &route.Result{}}
+	} else {
+		if base, err = w.FollowGuide(r.Events, baseTarget); err != nil {
+			return err
+		}
+		if baseTarget < r.Target {
+			r.Events = route.EventsOf(base.Steps) // the route up to -from; the legs go on from there
+		}
+		if s, err = w.StateAfter(base.Steps); err != nil {
+			return err
+		}
 	}
-	if baseTarget < r.Target {
-		r.Events = route.EventsOf(base.Steps) // the route up to -from; the legs go on from there
-	}
-	s, err := w.StateAfter(base.Steps)
-	if err != nil {
-		return err
+	follow := func(events []route.GuideEvent) (*route.GuideResult, error) {
+		if r.Start != nil {
+			return w.FollowGuideFromState(s, events, *target)
+		}
+		return w.FollowGuide(events, *target)
 	}
 	var best *route.Result
 	if *legsFile != "" {
@@ -114,7 +141,7 @@ func cmdExtend(args []string) error {
 	}
 	planned := route.EventsOf(best.Steps)
 	events := append(append([]route.GuideEvent(nil), r.Events...), planned...)
-	full, err := w.FollowGuide(events, *target)
+	full, err := follow(events)
 	if err != nil {
 		return err
 	}
@@ -132,12 +159,12 @@ func cmdExtend(args []string) error {
 			}
 		}
 		events = kept
-		if full, err = w.FollowGuide(events, *target); err != nil {
+		if full, err = follow(events); err != nil {
 			return err
 		}
 	}
 	improved, fullBest := events, full
-	if *budget > 0 {
+	if *budget > 0 && r.Start == nil {
 		if improved, fullBest, err = w.Improve(events, *target, *budget); err != nil {
 			return err
 		}
@@ -176,6 +203,7 @@ type routeFile struct {
 	Basis      string             `json:"basis"`
 	Events     []route.GuideEvent `json:"events"`
 	WandDetour float64            `json:"wandDetour,omitempty"`
+	Start      *route.Live        `json:"start,omitempty"` // planned from this character's state (extend -live): the events go on from there
 }
 
 // hasDungeons: the route runs dungeons (a route with dungeons).
