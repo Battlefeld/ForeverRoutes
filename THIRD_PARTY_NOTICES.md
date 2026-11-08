@@ -25,6 +25,7 @@ Wer nur den Code weiterverwendet (ohne die Daten), braucht nur die MIT-Lizenz.
 | [Shortest Path Forever](https://github.com/cjber/shortest-path-forever) | Navigationskarten, mit denen Laufgitter und Wegtabelle gemessen sind; Flug- und Schiffszeiten | GPL-3.0-or-later |
 | [RestedXP RXPGuides](https://github.com/RestedXP/RXPGuides) | Normale Kapitel als Rückfall-Route, Guide-Fakten | CC BY-NC-SA 4.0 |
 | [EverythingQuests](https://github.com/wheelbarrel00/EverythingQuests) | Forever-Quests | MIT |
+| [DungeonQuestTracker](https://github.com/jturnham/DungeonQuestTracker) | Vorquest-Ketten der Dungeon-Quests (als einzelne Fakten in `quest-fixes.json`, je mit Link) | MIT |
 | [AEGIS: Pathfinder (Forever)](https://github.com/Torchlite-bit/Aegis_Pathfinder_Forever) | Zielorte, Geber- und Abgabeorte, fehlende XP | MIT |
 | [EG Link output](https://github.com/JIVESCORP/eg-link-output-wowf) | Gemessene Dropchancen und Zielorte. „Data from Efficient Games (https://efficient.games), licensed under CC BY 4.0.“ Die Werte sind zusammengefasst und gefiltert. | CC BY 4.0 |
 | [ForeverDB.net](https://foreverdb.net) | Questliste mit Spielmetadaten. Data from ForeverDB.net. | keine Lizenz genannt; Nutzung mit Quellenangabe |

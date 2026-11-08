@@ -166,7 +166,8 @@
    "quest": 95216,
    "minLevel": 15,
    "source": "https://eu.forums.blizzard.com/en/wow/t/wow-forever-beta-development-notes-%E2%80%93-updated-3-november/631316/9",
-   "note": "The New Plague: Ruins of Lordaeron dungeon quests now require level 15 consistently (development notes, 3 November)"
+   "note": "The New Plague: Ruins of Lordaeron dungeon quests now require level 15 consistently (development notes, 3 November); it needs the A Recipe For Death chain (447, 450, 451) first (DungeonJournal, seen in game 2026-11-08)",
+   "preAll": [451]
   },
   {
    "quest": 95250,
@@ -259,6 +260,271 @@
    },
    "source": "https://foreverdb.net/en/quest/97003-cholaruk-the-ravener",
    "note": "Chol’aruk is an elite combat target, not an item gathered at route waypoints; Horde client QuestInfo=1, corresponding Alliance quest uses the same head and enemy."
+  },
+  {
+   "quest": 1200,
+   "preAll": [
+    1198
+   ],
+   "source": "https://github.com/jturnham/DungeonQuestTracker/tree/b2e6eb410e1a4d84f8e3cc6aa4b7b76ca72b9939/DungeonQuestTrackerForever/Data",
+   "note": "Blackfathom Villainy: needs In Search of Thaelrid (1198) first (DungeonQuestTracker prerequisite chains, MIT)"
+  },
+  {
+   "quest": 1705,
+   "preAll": [
+    1700
+   ],
+   "source": "https://github.com/jturnham/DungeonQuestTracker/tree/b2e6eb410e1a4d84f8e3cc6aa4b7b76ca72b9939/DungeonQuestTrackerForever/Data",
+   "note": "Burning Blood: needs Grimand Elmore (1700) first (DungeonQuestTracker prerequisite chains, MIT)"
+  },
+  {
+   "quest": 1708,
+   "preAll": [
+    1704
+   ],
+   "source": "https://github.com/jturnham/DungeonQuestTracker/tree/b2e6eb410e1a4d84f8e3cc6aa4b7b76ca72b9939/DungeonQuestTrackerForever/Data",
+   "note": "Iron Coral: needs Klockmort Spannerspan (1704) first (DungeonQuestTracker prerequisite chains, MIT)"
+  },
+  {
+   "quest": 1710,
+   "preAll": [
+    1703
+   ],
+   "source": "https://github.com/jturnham/DungeonQuestTracker/tree/b2e6eb410e1a4d84f8e3cc6aa4b7b76ca72b9939/DungeonQuestTrackerForever/Data",
+   "note": "Sunscorched Shells: needs Mathiel (1703) first (DungeonQuestTracker prerequisite chains, MIT)"
+  },
+  {
+   "quest": 1838,
+   "preAll": [
+    1825
+   ],
+   "source": "https://github.com/jturnham/DungeonQuestTracker/tree/b2e6eb410e1a4d84f8e3cc6aa4b7b76ca72b9939/DungeonQuestTrackerForever/Data",
+   "note": "Brutal Armor: needs Speak with Thun'grim (1825) first (DungeonQuestTracker prerequisite chains, MIT)"
+  },
+  {
+   "quest": 1842,
+   "preAll": [
+    1839
+   ],
+   "source": "https://github.com/jturnham/DungeonQuestTracker/tree/b2e6eb410e1a4d84f8e3cc6aa4b7b76ca72b9939/DungeonQuestTrackerForever/Data",
+   "note": "Satyr Hooves: needs Ula'elek and the Brutal Gauntlets (1839) first (DungeonQuestTracker prerequisite chains, MIT)"
+  },
+  {
+   "quest": 1844,
+   "preAll": [
+    1840
+   ],
+   "source": "https://github.com/jturnham/DungeonQuestTracker/tree/b2e6eb410e1a4d84f8e3cc6aa4b7b76ca72b9939/DungeonQuestTrackerForever/Data",
+   "note": "Chimaeric Horn: needs Orm Stonehoof and the Brutal Helm (1840) first (DungeonQuestTracker prerequisite chains, MIT)"
+  },
+  {
+   "quest": 1846,
+   "preAll": [
+    1841
+   ],
+   "source": "https://github.com/jturnham/DungeonQuestTracker/tree/b2e6eb410e1a4d84f8e3cc6aa4b7b76ca72b9939/DungeonQuestTrackerForever/Data",
+   "note": "Dragonmaw Shinbones: needs Velora Nitely and the Brutal Legguards (1841) first (DungeonQuestTracker prerequisite chains, MIT)"
+  },
+  {
+   "quest": 4126,
+   "preAll": [
+    4128
+   ],
+   "source": "https://github.com/jturnham/DungeonQuestTracker/tree/b2e6eb410e1a4d84f8e3cc6aa4b7b76ca72b9939/DungeonQuestTrackerForever/Data",
+   "note": "Hurley Blackbreath: needs Ragnar Thunderbrew (4128) first (DungeonQuestTracker prerequisite chains, MIT)"
+  },
+  {
+   "quest": 4134,
+   "preAll": [
+    4133
+   ],
+   "source": "https://github.com/jturnham/DungeonQuestTracker/tree/b2e6eb410e1a4d84f8e3cc6aa4b7b76ca72b9939/DungeonQuestTrackerForever/Data",
+   "note": "Lost Thunderbrew Recipe: needs Vivian Lagrave (4133) first (DungeonQuestTracker prerequisite chains, MIT)"
+  },
+  {
+   "quest": 4136,
+   "preAll": [
+    4324
+   ],
+   "source": "https://github.com/jturnham/DungeonQuestTracker/tree/b2e6eb410e1a4d84f8e3cc6aa4b7b76ca72b9939/DungeonQuestTrackerForever/Data",
+   "note": "Ribbly Screwspigot: needs Yuka Screwspigot (4324) first (DungeonQuestTracker prerequisite chains, MIT)"
+  },
+  {
+   "quest": 4764,
+   "preAll": [
+    4766
+   ],
+   "source": "https://github.com/jturnham/DungeonQuestTracker/tree/b2e6eb410e1a4d84f8e3cc6aa4b7b76ca72b9939/DungeonQuestTrackerForever/Data",
+   "note": "Doomrigger's Clasp: needs Mayara Brightwing (4766) first (DungeonQuestTracker prerequisite chains, MIT)"
+  },
+  {
+   "quest": 4768,
+   "preAll": [
+    4769
+   ],
+   "source": "https://github.com/jturnham/DungeonQuestTracker/tree/b2e6eb410e1a4d84f8e3cc6aa4b7b76ca72b9939/DungeonQuestTrackerForever/Data",
+   "note": "The Darkstone Tablet: needs Vivian Lagrave and the Darkstone Tablet (4769) first (DungeonQuestTracker prerequisite chains, MIT)"
+  },
+  {
+   "quest": 6921,
+   "preAll": [
+    6563
+   ],
+   "source": "https://github.com/jturnham/DungeonQuestTracker/tree/b2e6eb410e1a4d84f8e3cc6aa4b7b76ca72b9939/DungeonQuestTrackerForever/Data",
+   "note": "Amongst the Ruins: needs The Essence of Aku'Mai (6563) first (DungeonQuestTracker prerequisite chains, MIT)"
+  },
+  {
+   "quest": 7488,
+   "preAll": [
+    7494
+   ],
+   "source": "https://github.com/jturnham/DungeonQuestTracker/tree/b2e6eb410e1a4d84f8e3cc6aa4b7b76ca72b9939/DungeonQuestTrackerForever/Data",
+   "note": "Lethtendris's Web: needs Feathermoon Stronghold (7494) first (DungeonQuestTracker prerequisite chains, MIT)"
+  },
+  {
+   "quest": 7489,
+   "preAll": [
+    7492
+   ],
+   "source": "https://github.com/jturnham/DungeonQuestTracker/tree/b2e6eb410e1a4d84f8e3cc6aa4b7b76ca72b9939/DungeonQuestTrackerForever/Data",
+   "note": "Lethtendris's Web: needs Camp Mojache (7492) first (DungeonQuestTracker prerequisite chains, MIT)"
+  },
+  {
+   "quest": 92422,
+   "preAll": [
+    99156
+   ],
+   "source": "https://github.com/jturnham/DungeonQuestTracker/tree/b2e6eb410e1a4d84f8e3cc6aa4b7b76ca72b9939/DungeonQuestTrackerForever/Data",
+   "note": "The Wrath of Rath'mael: needs Rear Guard Patrol (99156) first (DungeonQuestTracker prerequisite chains, MIT)"
+  },
+  {
+   "quest": 92434,
+   "preAll": [
+    545,
+    93680
+   ],
+   "source": "https://github.com/jturnham/DungeonQuestTracker/tree/b2e6eb410e1a4d84f8e3cc6aa4b7b76ca72b9939/DungeonQuestTrackerForever/Data",
+   "note": "Blood in the Streets: needs Dalaran Patrols (545), Key to the City (93680) first (DungeonQuestTracker prerequisite chains, MIT)"
+  },
+  {
+   "quest": 92458,
+   "preAll": [
+    92432
+   ],
+   "source": "https://github.com/jturnham/DungeonQuestTracker/tree/b2e6eb410e1a4d84f8e3cc6aa4b7b76ca72b9939/DungeonQuestTrackerForever/Data",
+   "note": "Heart of Disruption: needs An Alarming Request (92432) first (DungeonQuestTracker prerequisite chains, MIT)"
+  },
+  {
+   "quest": 92459,
+   "preAll": [
+    92458
+   ],
+   "source": "https://github.com/jturnham/DungeonQuestTracker/tree/b2e6eb410e1a4d84f8e3cc6aa4b7b76ca72b9939/DungeonQuestTrackerForever/Data",
+   "note": "Friend of the Kirin Tor: needs Heart of Disruption (92458) first (DungeonQuestTracker prerequisite chains, MIT)"
+  },
+  {
+   "quest": 92753,
+   "preAll": [
+    92752
+   ],
+   "source": "https://github.com/jturnham/DungeonQuestTracker/tree/b2e6eb410e1a4d84f8e3cc6aa4b7b76ca72b9939/DungeonQuestTrackerForever/Data",
+   "note": "Destruction in Deadmines: needs Explosive Consultation (92752) first (DungeonQuestTracker prerequisite chains, MIT)"
+  },
+  {
+   "quest": 92819,
+   "preAll": [
+    92753
+   ],
+   "source": "https://github.com/jturnham/DungeonQuestTracker/tree/b2e6eb410e1a4d84f8e3cc6aa4b7b76ca72b9939/DungeonQuestTrackerForever/Data",
+   "note": "Destruction in Deadmines: needs Destruction in Deadmines (92753) first (DungeonQuestTracker prerequisite chains, MIT)"
+  },
+  {
+   "quest": 95042,
+   "preAll": [
+    95036
+   ],
+   "source": "https://github.com/jturnham/DungeonQuestTracker/tree/b2e6eb410e1a4d84f8e3cc6aa4b7b76ca72b9939/DungeonQuestTrackerForever/Data",
+   "note": "Seeking the Kor Gem: needs A Moon-Kissed Blade (95036) first (DungeonQuestTracker prerequisite chains, MIT)"
+  },
+  {
+   "quest": 95111,
+   "preAll": [
+    95036
+   ],
+   "source": "https://github.com/jturnham/DungeonQuestTracker/tree/b2e6eb410e1a4d84f8e3cc6aa4b7b76ca72b9939/DungeonQuestTrackerForever/Data",
+   "note": "An Underrated Talent: needs A Moon-Kissed Blade (95036) first (DungeonQuestTracker prerequisite chains, MIT)"
+  },
+  {
+   "quest": 95647,
+   "preAll": [
+    95737
+   ],
+   "source": "https://github.com/jturnham/DungeonQuestTracker/tree/b2e6eb410e1a4d84f8e3cc6aa4b7b76ca72b9939/DungeonQuestTrackerForever/Data",
+   "note": "Lost in the Thicket Things: needs Seeking Caitlin (95737) first (DungeonQuestTracker prerequisite chains, MIT)"
+  },
+  {
+   "quest": 95682,
+   "preAll": [
+    95663
+   ],
+   "source": "https://github.com/jturnham/DungeonQuestTracker/tree/b2e6eb410e1a4d84f8e3cc6aa4b7b76ca72b9939/DungeonQuestTrackerForever/Data",
+   "note": "Open the Maw: needs Dragonmaw Rumors (95663) first (DungeonQuestTracker prerequisite chains, MIT)"
+  },
+  {
+   "quest": 95795,
+   "preAll": [
+    95772
+   ],
+   "source": "https://github.com/jturnham/DungeonQuestTracker/tree/b2e6eb410e1a4d84f8e3cc6aa4b7b76ca72b9939/DungeonQuestTrackerForever/Data",
+   "note": "Fallen in the Fen: needs Songblade Search (95772) first (DungeonQuestTracker prerequisite chains, MIT)"
+  },
+  {
+   "quest": 95809,
+   "preAll": [
+    95647
+   ],
+   "source": "https://github.com/jturnham/DungeonQuestTracker/tree/b2e6eb410e1a4d84f8e3cc6aa4b7b76ca72b9939/DungeonQuestTrackerForever/Data",
+   "note": "Heartwoven: needs Lost in the Thicket Things (95647) first (DungeonQuestTracker prerequisite chains, MIT)"
+  },
+  {
+   "quest": 96984,
+   "preAll": [
+    92434
+   ],
+   "source": "https://github.com/jturnham/DungeonQuestTracker/tree/b2e6eb410e1a4d84f8e3cc6aa4b7b76ca72b9939/DungeonQuestTrackerForever/Data",
+   "note": "Heart of Disruption: needs Blood in the Streets (92434) first (DungeonQuestTracker prerequisite chains, MIT)"
+  },
+  {
+   "quest": 97287,
+   "preAll": [
+    96984
+   ],
+   "source": "https://github.com/jturnham/DungeonQuestTracker/tree/b2e6eb410e1a4d84f8e3cc6aa4b7b76ca72b9939/DungeonQuestTrackerForever/Data",
+   "note": "Shrewd Negotiations: needs Heart of Disruption (96984) first (DungeonQuestTracker prerequisite chains, MIT)"
+  },
+  {
+   "quest": 98815,
+   "preAll": [
+    469
+   ],
+   "source": "https://github.com/jturnham/DungeonQuestTracker/tree/b2e6eb410e1a4d84f8e3cc6aa4b7b76ca72b9939/DungeonQuestTrackerForever/Data",
+   "note": "Highland Hides: needs Daily Delivery (469) first (DungeonQuestTracker prerequisite chains, MIT)"
+  },
+  {
+   "quest": 98823,
+   "preAll": [
+    95664
+   ],
+   "source": "https://github.com/jturnham/DungeonQuestTracker/tree/b2e6eb410e1a4d84f8e3cc6aa4b7b76ca72b9939/DungeonQuestTrackerForever/Data",
+   "note": "Balnir Farmstead patrol area: needs Elder Knowledge (95664) first (DungeonQuestTracker prerequisite chains, MIT)"
+  },
+  {
+   "quest": 98824,
+   "preAll": [
+    95810
+   ],
+   "source": "https://github.com/jturnham/DungeonQuestTracker/tree/b2e6eb410e1a4d84f8e3cc6aa4b7b76ca72b9939/DungeonQuestTrackerForever/Data",
+   "note": "Prehistoric Prism: needs Lost Relic Carry (95810) first (DungeonQuestTracker prerequisite chains, MIT)"
   }
  ]
 }
