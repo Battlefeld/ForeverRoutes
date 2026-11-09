@@ -32,6 +32,9 @@ var zoneAnchors = map[int]string{
 	6746: "Thunder Bluff", 6747: "Mulgore", 6791: "The Barrens", 6928: "Durotar", 6929: "Orgrimmar", 7714: "The Barrens",
 	7731: "Stonetalon Mountains", 7733: "Tanaris", 7736: "Feralas", 7737: "Feralas", 11103: "Desolace", 11106: "Desolace",
 	11116: "Thousand Needles", 11118: "Winterspring", 12196: "Ashenvale", 15174: "Silithus", 16458: "Stonetalon Mountains",
+	// Kalimdor: camps far from an inn or flight master (the Mirage Raceway on the Shimmering Flats is Thousand Needles,
+	// nearer to Gadgetzan than to Freewind Post)
+	4452: "Thousand Needles", 4454: "Thousand Needles",
 	// Kalimdor: flight masters
 	2995: "Thunder Bluff", 3310: "Orgrimmar", 3615: "The Barrens", 3838: "Teldrassil", 3841: "Darkshore", 4267: "Ashenvale",
 	4312: "Stonetalon Mountains", 4317: "Thousand Needles", 4319: "Feralas", 4321: "Dustwallow Marsh", 4407: "Stonetalon Mountains",
