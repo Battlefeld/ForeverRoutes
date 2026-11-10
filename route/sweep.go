@@ -7,6 +7,7 @@ import (
 	"sort"
 
 	"github.com/Battlefeld/ForeverRoutes/dataset"
+	"github.com/Battlefeld/ForeverRoutes/xp"
 )
 
 // Area sweep: a route built from blocks instead of a search over single actions.
@@ -47,6 +48,10 @@ type SweepOptions struct {
 	// Grind: with Look, grinding to the next level is one of the candidates when the character would move to
 	// another place: it is taken when it brings more XP per hour than every place over the time looked ahead
 	Grind bool
+	// StartLevel, StartAt: begin as a character of that level at that place instead of a new one (a block tried on
+	// its own: nothing is done yet, so quests that need earlier ones elsewhere stay out)
+	StartLevel int
+	StartAt    *dataset.Point
 	// Order: saved blocks to follow in their order: what a block takes, works and hands in is done before the
 	// next block begins; within a block the sweep's rules decide. Empty: the sweep finds the blocks itself.
 	Order []SweepBlock
@@ -433,6 +438,13 @@ func (w *World) Sweep(set map[int]bool, o SweepOptions) (*Result, []SweepBlock, 
 		}
 	}
 	s := w.NewState()
+	if o.StartLevel > 1 {
+		s.XP = xp.Total(w.Data.LevelXP, o.StartLevel)
+	}
+	if o.StartAt != nil {
+		s.Pos, s.Bind = *o.StartAt, *o.StartAt
+	}
+	start := s.clone()
 	sw.zone = w.zoneOf(s.Pos)
 	var acts []Action
 	failed := map[sweepKey]int{} // an action that did not work at a level is not tried again at that level
@@ -454,7 +466,7 @@ func (w *World) Sweep(set map[int]bool, o SweepOptions) (*Result, []SweepBlock, 
 	if len(acts) == 0 {
 		return nil, nil, errors.New("nothing to do in this set of quests")
 	}
-	res, err := w.Replay(acts)
+	res, err := w.replayFrom(start, acts)
 	if err != nil {
 		return nil, nil, err
 	}
