@@ -183,7 +183,7 @@ func (c *Client) pages(ctx context.Context, endpoint, label string, params url.V
 	return nil, fmt.Errorf("foreverdb %s: more than 120 pages, refusing an incomplete list", endpoint)
 }
 
-// Snapshot is what one run reads: game metadata, the quest list of levels 1-30 and the changes seen in game.
+// Snapshot is what one run reads: game metadata, the quest list of levels 1-60 and the changes seen in game.
 type Snapshot struct {
 	Schema   string            `json:"schema"`
 	Source   map[string]string `json:"source"`
@@ -199,7 +199,7 @@ func (c *Client) Fetch(ctx context.Context) (*Snapshot, error) {
 	if err != nil {
 		return nil, err
 	}
-	quests, err := c.pages(ctx, "quests", "quests", url.Values{"minLevel": {"1"}, "maxLevel": {"30"}})
+	quests, err := c.pages(ctx, "quests", "quests", url.Values{"minLevel": {"1"}, "maxLevel": {"60"}})
 	if err != nil {
 		return nil, err
 	}
