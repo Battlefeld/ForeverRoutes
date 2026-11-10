@@ -108,8 +108,8 @@ annehmen, wer die Vorquest hat.
 
 ## Bestätigung in Forever
 
-Von den 147 Quests, die RestedXP oder die Blockroute bis 20 nutzen, haben Spieler bei 141 den Questgeber im Spiel
-gesehen; 3 sind Forever-Daten ohne gesehenen Questgeber, 2 nur Classic, 1 fehlt in ForeverDBs Liste.
+Von den 156 Quests, die RestedXP oder die Blockroute bis 20 nutzen, haben Spieler bei 149 den Questgeber im Spiel
+gesehen; 4 sind Forever-Daten ohne gesehenen Questgeber, 2 nur Classic, 1 fehlt in ForeverDBs Liste.
 
 ## Noch nicht gebaut
 
