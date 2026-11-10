@@ -50,6 +50,8 @@ func main() {
 		err = cmdCheckQuests(os.Args[2:])
 	case "blocks":
 		err = cmdBlocks(os.Args[2:])
+	case "assess-zones":
+		err = cmdAssessZones(os.Args[2:])
 	default:
 		usage()
 		os.Exit(2)
