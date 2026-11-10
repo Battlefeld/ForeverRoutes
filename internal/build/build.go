@@ -586,6 +586,35 @@ func (b *builder) fitTransforms() {
 	b.stats["map_transforms_uimap"] = len(b.uiT)
 }
 
+// foreverPlaces fills a quest's missing start and end places from ForeverDB's sightings in the merged row q.
+func (b *builder) foreverPlaces(out *dataset.Quest, q obj) {
+	if out.StartAt == nil {
+		if p := b.location(q, "starts"); p != nil {
+			out.StartAt = p
+			out.Sources["startAt"] = "forever_location"
+			b.stats["places_from_forever_unactionable"]++
+		}
+	}
+	if out.EndAt == nil {
+		if p := b.location(q, "ends"); p != nil {
+			out.EndAt = p
+			out.Sources["endAt"] = "forever_location"
+			b.stats["places_from_forever_unactionable"]++
+		}
+	}
+	same := len(out.Start) == 1 && len(out.End) == 1 && out.Start[0] == out.End[0] && out.Start[0].Kind == "npc"
+	switch {
+	case same && out.EndAt == nil && out.StartAt != nil:
+		p := *out.StartAt
+		out.EndAt = &p
+		out.Sources["endAt"] = "forever_location (the giver)"
+	case same && out.StartAt == nil && out.EndAt != nil:
+		p := *out.EndAt
+		out.StartAt = &p
+		out.Sources["startAt"] = "forever_location (the turn-in)"
+	}
+}
+
 func (b *builder) location(q obj, which string) *dataset.Point {
 	v, _ := get(q, "locations", which, "value").(map[string]any)
 	if v == nil {
@@ -752,6 +781,11 @@ func (b *builder) quests() {
 		out, ok := b.newPolestarQuest(b.pdb.Quests[id])
 		if !ok {
 			continue
+		}
+		if q, _ := qs[strconv.Itoa(id)].(map[string]any); q != nil {
+			// a quest the merge could not act on (ForeverDB saw its giver but not its turn-in, or the reverse): the
+			// places ForeverDB's players saw still hold; a quest handed in where it was taken ends at the giver
+			b.foreverPlaces(&out, q)
 		}
 		b.classify(&out)
 		b.wantRefs(out)
