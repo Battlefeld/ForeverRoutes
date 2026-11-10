@@ -1,0 +1,222 @@
+{
+ "basis": "ForeverRoutes block route (blocks, every quest of the zones); quest selection partly from ordinary RestedXP Forever guides (RestedXP/RXPGuides, CC BY-NC-SA 4.0)",
+ "calibration": {
+  "fight": 0.8,
+  "rest": 0.2,
+  "source": "Timing.lua, Orc-Schamane 29, Tausend Nadeln, 10.11.2026"
+ },
+ "character": {
+  "race": "Orc",
+  "class": "Shaman"
+ },
+ "eliteRadius": 80,
+ "events": [
+  {
+   "op": "accept",
+   "quest": 5147
+  },
+  {
+   "objective": 1,
+   "op": "complete",
+   "quest": 4821
+  },
+  {
+   "objective": 2,
+   "op": "complete",
+   "quest": 98070
+  },
+  {
+   "objective": 1,
+   "op": "complete",
+   "quest": 98070
+  },
+  {
+   "objective": 3,
+   "op": "complete",
+   "quest": 98070
+  },
+  {
+   "objective": 1,
+   "op": "complete",
+   "quest": 4841
+  },
+  {
+   "objective": 3,
+   "op": "complete",
+   "quest": 4841
+  },
+  {
+   "objective": 2,
+   "op": "complete",
+   "quest": 4841
+  },
+  {
+   "op": "accept",
+   "quest": 4881
+  },
+  {
+   "objective": 1,
+   "op": "complete",
+   "quest": 5147
+  },
+  {
+   "op": "accept",
+   "quest": 4904
+  },
+  {
+   "objective": 1,
+   "op": "complete",
+   "quest": 4904
+  },
+  {
+   "objective": 1,
+   "op": "complete",
+   "quest": 4767
+  },
+  {
+   "op": "turnin",
+   "quest": 4881
+  },
+  {
+   "op": "turnin",
+   "quest": 4821
+  },
+  {
+   "op": "accept",
+   "quest": 4865
+  },
+  {
+   "op": "turnin",
+   "quest": 4767
+  },
+  {
+   "op": "turnin",
+   "quest": 4841
+  },
+  {
+   "op": "accept",
+   "quest": 5064
+  },
+  {
+   "op": "turnin",
+   "quest": 5147
+  },
+  {
+   "op": "turnin",
+   "quest": 4904
+  },
+  {
+   "op": "turnin",
+   "quest": 98070
+  },
+  {
+   "objective": 3,
+   "op": "complete",
+   "quest": 5064
+  },
+  {
+   "objective": 1,
+   "op": "complete",
+   "quest": 5064
+  },
+  {
+   "op": "turnin",
+   "quest": 4865
+  },
+  {
+   "op": "accept",
+   "quest": 1110
+  },
+  {
+   "op": "accept",
+   "quest": 1105
+  },
+  {
+   "objective": 1,
+   "op": "complete",
+   "quest": 1110
+  },
+  {
+   "op": "turnin",
+   "quest": 1110
+  },
+  {
+   "objective": 1,
+   "op": "complete",
+   "quest": 1105
+  },
+  {
+   "op": "turnin",
+   "quest": 1105
+  },
+  {
+   "op": "turnin",
+   "quest": 5064
+  },
+  {
+   "totalXP": 499018,
+   "op": "level",
+   "level": 30
+  }
+ ],
+ "hearthMinSave": 900,
+ "hours": {
+  "blocks": 1.819
+ },
+ "key": "orc-shaman",
+ "killProfile": "Engine shaman testing (gear starter weapon, talents none; outside the table: default (uncalibrated) scaled to the table's edge) (calibrated: fights x0.80, rest x0.20)",
+ "level": 30,
+ "license": "CC-BY-NC-SA-4.0",
+ "mobAbove": 2,
+ "preparations": {
+  "forceWand": false,
+  "forceProfessions": false,
+  "camping": false,
+  "wands": false,
+  "professionDetour": 180,
+  "professionLevel": 1,
+  "bagStacks": 0
+ },
+ "quests": 12,
+ "replayVerified": true,
+ "schema": "foreverroutes.route.v1",
+ "seconds": 6548.4,
+ "soloElites": true,
+ "soloQuests": [
+  5151,
+  1150
+ ],
+ "start": {
+  "level": 29,
+  "xp": 0,
+  "pos": {
+   "m": 1,
+   "x": -5459.5,
+   "y": -2440.1
+  },
+  "completed": [
+   4542
+  ],
+  "active": [
+   {
+    "id": 98070
+   },
+   {
+    "id": 4821
+   },
+   {
+    "id": 4767
+   },
+   {
+    "id": 4841
+   }
+  ],
+  "bind": {
+   "m": 1,
+   "x": -5459.5,
+   "y": -2440.1
+  }
+ },
+ "target": 30,
+ "winner": "blocks"
+}

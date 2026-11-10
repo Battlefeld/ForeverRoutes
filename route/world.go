@@ -99,10 +99,11 @@ type World struct {
 	deaths                       *deaths
 	lifts                        []dataset.Lift
 	danger                       dangerMap
-	elites                       dangerMap    // elite places: cell -> highest elite level
-	Dungeons                     []*Dungeon   // dungeons a route with dungeons may run (Options.Dungeons)
-	required                     map[int]bool // quests of the required class chains (keepClassQuest), for requiredTarget
-	tank                         map[int]bool // quests that give the tank form or stance (tankGoals)
+	elites                       dangerMap               // elite places: cell -> highest elite level
+	eliteSpawns                  map[[3]int][]eliteSpawn // with Options.EliteRadius: elite spawns by cell
+	Dungeons                     []*Dungeon              // dungeons a route with dungeons may run (Options.Dungeons)
+	required                     map[int]bool            // quests of the required class chains (keepClassQuest), for requiredTarget
+	tank                         map[int]bool            // quests that give the tank form or stance (tankGoals)
 	// classOverride turns a class chain (by its goal) off ("off": not required) or on ("on": required) for a measure
 	classOverride map[int]string
 	// wandDetour: the most a visit to a capital for the wands may add to the way (seconds; 0: defaultWandDetour)
@@ -166,6 +167,7 @@ func NewWorld(d *dataset.Dataset, c Character, opt Options) (*World, error) {
 	w.lifts = d.Travel.Lifts
 	w.danger = newDanger(d.NPCs, faction)
 	w.elites = newElites(d.NPCs, faction)
+	w.eliteSpawns = newEliteSpawns(d.NPCs, faction)
 	for i := range d.NPCs {
 		w.NPC[d.NPCs[i].ID] = &d.NPCs[i]
 	}

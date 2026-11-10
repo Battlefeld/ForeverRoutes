@@ -135,6 +135,9 @@ type Options struct {
 	InteractSecs float64     // talking to an NPC (accept / turn in)
 	Profile      KillProfile // nil = DefaultProfile
 	MaxMobAbove  int         // mobs more than this many levels above the character are not attacked (3; melee and shamans 1)
+	// EliteRadius: a place counts as among elites only when eliteMin elite spawns lie within this many yards of it
+	// (0: when they spawn in the same 200-yard cell). Measured: a cell flags a whole camp next to a dungeon entrance.
+	EliteRadius float64
 	// GrindShare: the share of its XP grinding counts with against quests (0 = 1, all of it); below 1 the planner
 	// quests while grinding is not clearly better (routes past 20, where the model's grinding nearly equals questing)
 	GrindShare   float64

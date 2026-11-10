@@ -19,6 +19,9 @@ import (
 // datasetEdit changes the dataset after it is read (the chain rules of the blocks: blocks.go, export-addon -forever).
 var datasetEdit func(*dataset.Dataset)
 
+// optionsEdit changes the world's options before it is made (a route model's measured rules: route_model.go).
+var optionsEdit func(*route.Options)
+
 // loadWorld opens the dataset; profile is a file, "auto" for the bundled class
 // profile, or "" for the uncalibrated default estimate.
 func loadWorld(path, race, class, faction, profile string, dungeons ...bool) (*route.World, error) {
@@ -71,6 +74,9 @@ func loadWorldWithClientQuests(path, race, class, faction, profile, observations
 			return nil, fmt.Errorf("%s is a %s profile, not %s", profile, p.Class, class)
 		}
 		opt.Profile = p
+	}
+	if optionsEdit != nil {
+		optionsEdit(&opt)
 	}
 	return route.NewWorld(d, c, opt)
 }

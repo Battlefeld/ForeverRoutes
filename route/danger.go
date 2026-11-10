@@ -71,6 +71,52 @@ func newElites(npcs []dataset.NPC, faction string) dangerMap {
 	return d
 }
 
+type eliteSpawn struct {
+	at    dataset.Point
+	level int
+}
+
+// newEliteSpawns: the spawns newElites counts, kept by cell for the radius rule (Options.EliteRadius).
+func newEliteSpawns(npcs []dataset.NPC, faction string) map[[3]int][]eliteSpawn {
+	out := map[[3]int][]eliteSpawn{}
+	for i := range npcs {
+		c := &npcs[i]
+		if c.Rank < 1 || c.Rank > 3 || c.Lone || c.Hostile == "-" || (c.Hostile != "" && c.Hostile != "AH" && c.Hostile != faction) {
+			continue
+		}
+		for _, p := range c.Spawns {
+			k := [3]int{p.Map, int(math.Floor(p.X / dangerCell)), int(math.Floor(p.Y / dangerCell))}
+			out[k] = append(out[k], eliteSpawn{p, mobLevel(c)})
+		}
+	}
+	return out
+}
+
+// eliteAt is the highest elite level at a place: by the cell, or with Options.EliteRadius by the elite spawns within
+// that radius (0: no elite place).
+func (w *World) eliteAt(p dataset.Point) int {
+	r := w.Opt.EliteRadius
+	if r <= 0 || w.eliteSpawns == nil {
+		return w.elites.at(p)
+	}
+	cx, cy := int(math.Floor(p.X/dangerCell)), int(math.Floor(p.Y/dangerCell))
+	n, top := 0, 0
+	for dx := -1; dx <= 1; dx++ {
+		for dy := -1; dy <= 1; dy++ {
+			for _, e := range w.eliteSpawns[[3]int{p.Map, cx + dx, cy + dy}] {
+				if math.Hypot(e.at.X-p.X, e.at.Y-p.Y) <= r {
+					n++
+					top = max(top, e.level)
+				}
+			}
+		}
+	}
+	if n < eliteMin {
+		return 0
+	}
+	return top
+}
+
 // at is the danger level of a place (0: nothing known).
 func (d dangerMap) at(p dataset.Point) int {
 	return d[[3]int{p.Map, int(math.Floor(p.X / dangerCell)), int(math.Floor(p.Y / dangerCell))}]
@@ -94,7 +140,7 @@ func (w *World) dangerousAt(level int, src Source) bool {
 	if src.Class {
 		return src.NPC != nil && max(src.NPC.MaxLevel, mobLevel(src.NPC)) > lvl // a class quest's creature: by its level only
 	}
-	if e := w.elites.at(src.Site.Center); e > 0 && !(w.Opt.SoloElites && e <= level) {
+	if e := w.eliteAt(src.Site.Center); e > 0 && !(w.Opt.SoloElites && e <= level) {
 		return true // among elites: not alone
 	}
 	if src.NPC != nil {

@@ -36,6 +36,16 @@ func (p pacedProfile) Name() string {
 // blocksWorld opens the world as loadWorld does, with the dataset changed first (the chain rules) and the fights
 // scaled by pace.
 func blocksWorld(path, race, class, faction, profile string, pace float64, dungeons bool, edit func(*dataset.Dataset)) (*route.World, error) {
+	m := blocksModel
+	if m != nil {
+		prev := edit
+		edit = func(d *dataset.Dataset) {
+			if prev != nil {
+				prev(d)
+			}
+			m.edit(d)
+		}
+	}
 	profile, err := resolveCombatProfile(path, class, profile)
 	if err != nil {
 		return nil, err
@@ -50,6 +60,9 @@ func blocksWorld(path, race, class, faction, profile string, pace float64, dunge
 	c := route.Character{Race: race, Class: class, Faction: faction}
 	var opt route.Options
 	opt.Dungeons = dungeons
+	if m != nil {
+		m.options(&opt)
+	}
 	if wk := filepath.Join(filepath.Dir(path), "walks.json.gz"); fileExists(wk) {
 		if opt.Walks, err = dataset.LoadWalks(wk); err != nil {
 			return nil, err
@@ -78,6 +91,13 @@ func blocksWorld(path, race, class, faction, profile string, pace float64, dunge
 	w, err := route.NewWorld(d, c, opt)
 	if err != nil {
 		return nil, err
+	}
+	if m != nil {
+		mm := *m
+		mm.Calibration = nil // applied by the caller on the world it plans with
+		if err := mm.apply(w); err != nil {
+			return nil, err
+		}
 	}
 	if pace != 1 {
 		w.Opt.Profile = pacedProfile{w.Opt.Profile, pace}
@@ -168,6 +188,9 @@ type blocksFile struct {
 	Names     map[string]string  `json:"questNames"`
 	Shareable map[string]bool    `json:"shareable"` // Classic data; a quest without an entry is unknown
 }
+
+// blocksModel: the measured rules of the blocks command's routes (set by cmdBlocks for its worlds).
+var blocksModel *RouteModel
 
 // blocksRun is one route of the comparison.
 type blocksRun struct {
@@ -404,7 +427,15 @@ func cmdBlocks(args []string) error {
 	startActive := fs.String("start-active", "", "with -start-level: quests in the log, comma separated")
 	skip := fs.String("skip", "", "quests the block routes leave out, comma separated")
 	noProf := fs.Bool("no-professions", false, "the block routes learn no professions on the way")
+	soloQuests := fs.String("solo-quests", "", "elite quests the player does alone, comma separated (measured)")
+	soloElites := fs.Bool("solo-elites", false, "plain elites of the player's level or below are fought alone (measured)")
+	eliteRadius := fs.Float64("elite-radius", 0, "a place is among elites only with elites within this many yards (measured; 0: the 200-yard cell)")
+	mobAbove := fs.Int("mob-above", 0, "creatures up to this many levels above the player are attacked (measured; 0: the class rule)")
+	calFight := fs.Float64("cal-fight", 0, "measured factor on the profile's fight times (0: none)")
+	calRest := fs.Float64("cal-rest", 0, "measured factor on the profile's rest times (with -cal-fight)")
+	calSource := fs.String("cal-source", "", "where the calibration was measured")
 	hearthSave := fs.Float64("hearth-save", 0, "the hearthstone only when it saves this many seconds over walking (0: any saving)")
+	startReady := fs.String("start-ready", "", "with -start-level: quests in the log with every objective done, comma separated")
 	startDone := fs.String("start-done", "", "with -start-level: quests handed in, comma separated")
 	quick := fs.Bool("quick", false, "long routes: few sweep settings, no look ahead, no leaving out of single quests")
 	against := fs.String("against", "", "a route file to replay beside the others (a shipped or extended route)")
@@ -420,6 +451,15 @@ func cmdBlocks(args []string) error {
 	fs.Parse(args)
 
 	quickSweep = *quick
+	var model RouteModel
+	for _, f := range strings.Split(*soloQuests, ",") {
+		if id, err := strconv.Atoi(strings.TrimSpace(f)); err == nil {
+			model.SoloQuests = append(model.SoloQuests, id)
+		}
+	}
+	model.SoloElites, model.MobAbove, model.EliteRadius = *soloElites, *mobAbove, *eliteRadius
+	blocksModel = &model
+	defer func() { blocksModel = nil }()
 	var list *blocks.List
 	var changes []blocks.Change
 	var prefer map[int][]int
@@ -497,7 +537,6 @@ func cmdBlocks(args []string) error {
 		}
 	}
 	rep.Chains, rep.Changes = len(changes), changes
-	var model RouteModel
 	if *noProf {
 		p := w.Preparations()
 		p.Camping, p.ForceProfessions = false, false
@@ -508,6 +547,12 @@ func cmdBlocks(args []string) error {
 	}
 	if *hearthSave > 0 {
 		w.Opt.HearthMinSave, model.HearthMinSave = *hearthSave, *hearthSave
+	}
+	if *calFight > 0 {
+		model.Calibration = &Calibration{Fight: *calFight, Rest: *calRest, Source: *calSource}
+		if err := model.apply(w); err != nil {
+			return err
+		}
 	}
 	g, err := wg.FollowGuide(guide.Events, *target)
 	if err != nil {
@@ -584,19 +629,29 @@ func cmdBlocks(args []string) error {
 				startLive.Active = append(startLive.Active, route.LiveQuest{ID: id})
 			}
 		}
+		for _, f := range strings.Split(*startReady, ",") {
+			if id, err := strconv.Atoi(strings.TrimSpace(f)); err == nil {
+				startLive.Active = append(startLive.Active, route.LiveQuest{ID: id, Ready: true})
+			}
+		}
 		defer func() { startLive = nil }()
 	}
 	// the same quests, ordered by areas
+	var bestRes *route.Result
+	var bestBlocks []route.SweepBlock
+	var bestName string
 	res, bl, o, err := bestSweep(w, guideSet, *target, prefer)
-	if err != nil {
+	switch {
+	case err != nil && startLive == nil:
 		return err
+	case err == nil:
+		r = runOf("blocks, RestedXP's quests", res)
+		r.Near, r.Out, r.Look, r.Reach, r.Blocks, r.QuestIDs = o.Near, o.Out, o.Look, o.Reach, bl, sortedIDs(acceptedIn(res))
+		r.Dungeons = dungeonBlocks(w, res, shareable)
+		rep.Runs = append(rep.Runs, r)
+		polished("blocks, RestedXP's quests", w, route.EventsOf(res.Steps))
+		bestRes, bestBlocks, bestName = res, bl, r.Name
 	}
-	r = runOf("blocks, RestedXP's quests", res)
-	r.Near, r.Out, r.Look, r.Reach, r.Blocks, r.QuestIDs = o.Near, o.Out, o.Look, o.Reach, bl, sortedIDs(acceptedIn(res))
-	r.Dungeons = dungeonBlocks(w, res, shareable)
-	rep.Runs = append(rep.Runs, r)
-	polished("blocks, RestedXP's quests", w, route.EventsOf(res.Steps))
-	bestRes, bestBlocks, bestName := res, bl, r.Name
 
 	// an own selection: every quest of those zones the character can take below the target, less what is not worth it
 	if *zones != "" {
@@ -607,8 +662,15 @@ func cmdBlocks(args []string) error {
 	}
 	own := map[int]bool{}
 	for _, q := range w.Quests {
-		if q.MinLevel < *target && q.Dungeon == nil && q.Type == "" && !q.Repeatable && len(q.StartSources) == 0 && !skipped[q.ID] && (guideZones["all"] || guideZones[w.ZoneName(q.StartPos)]) {
+		if q.MinLevel < *target && q.Dungeon == nil && q.Type == "" && !q.Repeatable && !skipped[q.ID] && (guideZones["all"] || guideZones[w.ZoneName(q.StartPos)]) {
 			own[q.ID] = true
+		}
+	}
+	if startLive != nil {
+		for _, a := range startLive.Active {
+			if w.ByID[a.ID] != nil {
+				own[a.ID] = true // what is in the log is finished, wherever it was taken
+			}
 		}
 	}
 	all, abl, ao, aerr := bestSweep(w, own, *target, prefer)
@@ -642,7 +704,7 @@ func cmdBlocks(args []string) error {
 		r.Dungeons = dungeonBlocks(w, pres, shareable)
 		rep.Runs = append(rep.Runs, r)
 		polished("blocks, own selection", w, route.EventsOf(pres.Steps))
-		if pres.Seconds < bestRes.Seconds {
+		if bestRes == nil || pres.Seconds < bestRes.Seconds {
 			bestRes, bestBlocks, bestName = pres, pbl, r.Name
 		}
 		for id := range guideSet {
@@ -711,6 +773,21 @@ func cmdBlocks(args []string) error {
 		}
 		if model.HearthMinSave > 0 {
 			doc["hearthMinSave"] = model.HearthMinSave
+		}
+		if model.Calibration != nil {
+			doc["calibration"] = model.Calibration
+		}
+		if len(model.SoloQuests) > 0 {
+			doc["soloQuests"] = model.SoloQuests
+		}
+		if model.SoloElites {
+			doc["soloElites"] = true
+		}
+		if model.MobAbove > 0 {
+			doc["mobAbove"] = model.MobAbove
+		}
+		if model.EliteRadius > 0 {
+			doc["eliteRadius"] = model.EliteRadius
 		}
 		b, _ := json.MarshalIndent(doc, "", " ")
 		if err := os.WriteFile(*routeOut, append(b, '\n'), 0o644); err != nil {

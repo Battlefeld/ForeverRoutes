@@ -105,7 +105,9 @@ func cmdExportAddon(args []string) error {
 		if !fileExists(prof) {
 			prof = ""
 		}
-		w, err := loadWorld(*path, r.Character.Race, r.Character.Class, r.Character.Faction, prof, hasDungeons(r.Events))
+		w, err := withModel(r.RouteModel, func() (*route.World, error) {
+			return loadWorld(*path, r.Character.Race, r.Character.Class, r.Character.Faction, prof, hasDungeons(r.Events))
+		})
 		if err != nil {
 			return fmt.Errorf("%s: %w", f, err)
 		}
