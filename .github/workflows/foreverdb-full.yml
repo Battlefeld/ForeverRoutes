@@ -1,0 +1,35 @@
+name: foreverdb full list
+
+# One-off reading of the whole ForeverDB quest list (every level) for the dataset comparison. Runs only on its own
+# branch and by hand; the result is committed to that branch, main stays as it is.
+on:
+  push:
+    branches: ["claude/foreverdb-vollabzug"]
+    paths: ["tools/foreverdb_full.py", ".github/workflows/foreverdb-full.yml"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: foreverdb-full
+  cancel-in-progress: false
+
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: read the list
+        env:
+          FOREVERDB_API_KEY: ${{ secrets.FOREVERDB_API_KEY }}
+        run: python3 tools/foreverdb_full.py --out data/audits/foreverdb-full.json.gz
+      - name: commit to this branch
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/audits/foreverdb-full.json.gz
+          git diff --cached --quiet && { echo "unchanged"; exit 0; }
+          git commit -q -m "ForeverDB: vollständige Questliste (alle Stufen)"
+          git push origin "HEAD:${GITHUB_REF_NAME}"
