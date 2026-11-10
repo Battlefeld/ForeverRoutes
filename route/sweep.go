@@ -36,6 +36,17 @@ type SweepOptions struct {
 	// Dungeons: the dungeons of the world (Options.Dungeons) are run as blocks: their quests and what leads to them
 	// are taken on the way, the run is one candidate among the places to go to
 	Dungeons bool
+	// Below, Above: a quest is taken only while its level is at most Below under the character's (its XP is not
+	// yet cut much) and at most Above over it (its creatures can be fought soon); 0 = 5 and 3. Quests of an Order
+	// are taken as the order says.
+	Below, Above int
+	// Zones: a zone is worked off before the next: while something is to do in the zone the character is in, what
+	// lies in other zones waits (a hand-in in a city, an objective across the border). Long routes need it: without
+	// it the nearest thing is often over the border and the route walks back and forth.
+	Zones bool
+	// Grind: with Look, grinding to the next level is one of the candidates when the character would move to
+	// another place: it is taken when it brings more XP per hour than every place over the time looked ahead
+	Grind bool
 	// Order: saved blocks to follow in their order: what a block takes, works and hands in is done before the
 	// next block begins; within a block the sweep's rules decide. Empty: the sweep finds the blocks itself.
 	Order []SweepBlock
@@ -75,6 +86,7 @@ type sweeper struct {
 	quests []*Quest
 	rank   map[sweepKey]int // with an order: the block an action belongs to (objectives by quest: Obj is 0)
 	cur    int              // the block being played
+	zone   string           // with Zones: the zone being worked off
 }
 
 // ranked: the block of an action in the order; false for what no block names (free once the order is through).
@@ -99,6 +111,23 @@ func (sw *sweeper) waits(s *State, q *Quest) bool {
 	return false
 }
 
+// workable: every objective of q outside a dungeon has a source the character can fight or use now.
+func (sw *sweeper) workable(s *State, q *Quest) bool {
+	for _, ob := range q.Objectives {
+		if ob.Inside {
+			continue
+		}
+		ok := false
+		for _, src := range ob.Sources {
+			ok = ok || !sw.w.tooDangerous(s, src)
+		}
+		if !ok {
+			return false
+		}
+	}
+	return true
+}
+
 // todo lists what the character can do now: quests to take, objectives to work, quests to hand in. waiting tells
 // that a quest was held back for a preferred one.
 func (sw *sweeper) todo(s *State, failed map[sweepKey]int, relaxed bool) (todo []sweepTodo, waiting bool) {
@@ -121,6 +150,12 @@ func (sw *sweeper) todo(s *State, failed map[sweepKey]int, relaxed bool) (todo [
 		case notTaken:
 			if q.StartInside || w.CanAccept(s, q) != nil {
 				continue
+			}
+			if sw.rank == nil && q.Dungeon == nil && q.Classes == 0 && (q.Level < lvl-sw.o.Below || q.Level > lvl+sw.o.Above) {
+				continue // not worth it any more, or not yet
+			}
+			if sw.rank == nil && !sw.workable(s, q) {
+				continue // it would only fill the log: an objective cannot be worked at this level (or no source is known)
 			}
 			if !relaxed && sw.waits(s, q) {
 				waiting = true
@@ -212,6 +247,9 @@ func (sw *sweeper) places(todo []sweepTodo) []sweepTodo {
 
 // do applies a choice; a failed action is remembered for this level.
 func (sw *sweeper) do(s *State, acts *[]Action, failed map[sweepKey]int, c sweepTodo) *State {
+	if sw.o.Zones && c.a.Op != "grind" {
+		sw.zone = sw.w.zoneOf(c.a.At)
+	}
 	if c.m != nil {
 		*acts = append(*acts, c.m.actions...)
 		return c.m.state
@@ -253,6 +291,17 @@ func (sw *sweeper) step(s *State, acts *[]Action, failed map[sweepKey]int, relax
 		return s, true
 	}
 	*relaxed = false
+	if o.Zones && sw.rank == nil {
+		var here []sweepTodo
+		for _, c := range todo {
+			if w.zoneOf(c.a.At) == sw.zone {
+				here = append(here, c)
+			}
+		}
+		if len(here) > 0 {
+			todo = here
+		}
+	}
 	var runs []sweepTodo
 	if o.Dungeons && (sw.rank == nil || sw.cur >= len(o.Order)) {
 		for _, d := range w.Dungeons {
@@ -280,6 +329,19 @@ func (sw *sweeper) step(s *State, acts *[]Action, failed map[sweepKey]int, relax
 		}
 	}
 	cands := append(sw.places(todo), runs...)
+	if look && o.Look > 0 && o.Grind {
+		if m := w.grindMacro(s, w.Level(s)+1); m != nil {
+			cands = append(cands, sweepTodo{a: Action{Op: "grind", At: m.state.Pos}, cost: 0, m: m})
+		}
+	}
+	if len(cands) == 0 {
+		m := sw.levelUp(s)
+		if m == nil {
+			return s, false
+		}
+		*acts = append(*acts, m.actions...)
+		return m.state, true
+	}
 	pick := cands[0]
 	if look && o.Look > 0 && len(cands) > 1 {
 		best := math.Inf(-1)
@@ -289,7 +351,7 @@ func (sw *sweeper) step(s *State, acts *[]Action, failed map[sweepKey]int, relax
 				f[k] = v
 			}
 			var tmp []Action
-			keep := sw.cur
+			keep, zone := sw.cur, sw.zone
 			r := sw.do(s.clone(), &tmp, f, c)
 			rel := false
 			for i := 0; i < 600 && r.Time-s.Time < o.Look && w.Level(r) < o.Target; i++ {
@@ -298,7 +360,7 @@ func (sw *sweeper) step(s *State, acts *[]Action, failed map[sweepKey]int, relax
 					break
 				}
 			}
-			sw.cur = keep
+			sw.cur, sw.zone = keep, zone
 			if dt := r.Time - s.Time; dt > 0 {
 				if v := float64(r.XP-s.XP) / dt; v > best {
 					best, pick = v, c
@@ -327,6 +389,12 @@ func (w *World) Sweep(set map[int]bool, o SweepOptions) (*Result, []SweepBlock, 
 	}
 	if o.Reach <= 0 {
 		o.Reach = 500
+	}
+	if o.Below <= 0 {
+		o.Below = 5
+	}
+	if o.Above <= 0 {
+		o.Above = 3
 	}
 	sw := &sweeper{w: w, o: o, set: map[int]bool{}}
 	for id := range set {
@@ -365,6 +433,7 @@ func (w *World) Sweep(set map[int]bool, o SweepOptions) (*Result, []SweepBlock, 
 		}
 	}
 	s := w.NewState()
+	sw.zone = w.zoneOf(s.Pos)
 	var acts []Action
 	failed := map[sweepKey]int{} // an action that did not work at a level is not tried again at that level
 	relaxed := false             // nothing else is left: the quests that wait for a preferred one are taken as well

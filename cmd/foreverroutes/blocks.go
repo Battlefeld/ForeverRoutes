@@ -181,6 +181,8 @@ type blocksRun struct {
 	Near     float64            `json:"near,omitempty"`
 	Out      float64            `json:"out,omitempty"`
 	Look     float64            `json:"look,omitempty"`
+	Zones    bool               `json:"zones,omitempty"`
+	MayGrind bool               `json:"grindCandidate,omitempty"`
 	Reach    float64            `json:"reach,omitempty"`
 	Skipped  map[string]int     `json:"skipped,omitempty"`
 	Blocks   []route.SweepBlock `json:"blocks,omitempty"`
@@ -209,6 +211,9 @@ func runOf(name string, res *route.Result) blocksRun {
 
 // bestSweep tries a few settings of the sweep and keeps the fastest route: first the rules alone, then the best of
 // them with moves between places played ahead.
+// quickSweep: only a few settings and no look ahead (long routes: -quick).
+var quickSweep bool
+
 func bestSweep(w *route.World, set map[int]bool, target int, prefer map[int][]int) (*route.Result, []route.SweepBlock, route.SweepOptions, error) {
 	var best *route.Result
 	var bb []route.SweepBlock
@@ -224,10 +229,16 @@ func bestSweep(w *route.World, set map[int]bool, target int, prefer map[int][]in
 			best, bb, bo = res, bl, o
 		}
 	}
-	for _, near := range []float64{45, 75, 120, 180} {
-		for _, out := range []float64{0, 150, 300, 600, 1200} {
-			for _, reach := range []float64{300, 500, 800} {
-				try(route.SweepOptions{Target: target, Near: near, Reach: reach, Out: out, Prefer: prefer, Dungeons: w.Opt.Dungeons})
+	nears, outs, reaches := []float64{45, 75, 120, 180}, []float64{0, 150, 300, 600, 1200}, []float64{300, 500, 800}
+	if quickSweep {
+		nears, outs, reaches = []float64{75, 180}, []float64{0, 300}, []float64{500}
+	}
+	for _, near := range nears {
+		for _, out := range outs {
+			for _, reach := range reaches {
+				for _, zones := range []bool{false, true} {
+					try(route.SweepOptions{Target: target, Near: near, Reach: reach, Out: out, Prefer: prefer, Dungeons: w.Opt.Dungeons, Zones: zones})
+				}
 			}
 		}
 	}
@@ -238,6 +249,14 @@ func bestSweep(w *route.World, set map[int]bool, target int, prefer map[int][]in
 		return nil, nil, bo, last
 	}
 	base := bo
+	if quickSweep {
+		o := base
+		o.Look, o.Grind = 900, true
+		try(o)
+		o.Look = 1800
+		try(o)
+		return best, bb, bo, nil
+	}
 	for _, look := range []float64{900, 1800, 3600} {
 		for _, near := range []float64{base.Near, 75} {
 			o := base
@@ -306,6 +325,51 @@ func prune(w *route.World, set map[int]bool, target int, prefer map[int][]int) (
 	}
 }
 
+// pruneBatch is prune for long routes: one pass measures what leaving out each quest alone gains, then the quests
+// are left out in that order, each kept out only when the route really gets faster; a few passes.
+func pruneBatch(w *route.World, set map[int]bool, target int, o route.SweepOptions, passes int) (map[int]bool, *route.Result, []route.SweepBlock) {
+	cur := map[int]bool{}
+	for id := range set {
+		cur[id] = true
+	}
+	res, bl, err := w.Sweep(cur, o)
+	if err != nil {
+		return nil, nil, nil
+	}
+	for pass := 0; pass < passes; pass++ {
+		type gain struct {
+			id int
+			g  float64
+		}
+		var gains []gain
+		for _, id := range sortedIDs(acceptedIn(res)) {
+			if q := w.ByID[id]; q == nil || q.Dungeon != nil || q.Classes != 0 {
+				continue // dungeon and class quests stay
+			}
+			delete(cur, id)
+			if r, _, err := w.Sweep(cur, o); err == nil && r.Level >= target && res.Seconds-r.Seconds > 30 {
+				gains = append(gains, gain{id, res.Seconds - r.Seconds})
+			}
+			cur[id] = true
+		}
+		sort.Slice(gains, func(i, j int) bool { return gains[i].g > gains[j].g })
+		changed := false
+		for _, c := range gains {
+			delete(cur, c.id)
+			if r, b, err := w.Sweep(cur, o); err == nil && r.Level >= target && r.Seconds < res.Seconds-1 {
+				res, bl, changed = r, b, true
+				continue
+			}
+			cur[c.id] = true
+		}
+		fmt.Fprintf(os.Stderr, "leaving out, pass %d: %d candidates, %.2f h\n", pass+1, len(gains), res.Seconds/3600)
+		if !changed {
+			break
+		}
+	}
+	return acceptedIn(res), res, bl
+}
+
 func cmdBlocks(args []string) error {
 	fs := newFlags("blocks")
 	path := fs.String("data", "data/routes-data.json.gz", "dataset")
@@ -316,6 +380,8 @@ func cmdBlocks(args []string) error {
 	faction := fs.String("faction", "", "A or H (only for Skyborne)")
 	profile := fs.String("profile", automaticProfile, combatProfileHelp)
 	target := fs.Int("target", 12, "target level")
+	quick := fs.Bool("quick", false, "long routes: few sweep settings, no look ahead, no leaving out of single quests")
+	against := fs.String("against", "", "a route file to replay beside the others (a shipped or extended route)")
 	paces := fs.Bool("paces", true, "also compare with half and double fight times")
 	routeOut := fs.String("route-out", "", "write the fastest block route as a route file (for export-addon -forever) here")
 	blocksOut := fs.String("blocks-out", "", "write the blocks of that route (named, in order) here")
@@ -327,6 +393,7 @@ func cmdBlocks(args []string) error {
 	out := fs.String("out", "", "write the comparison (JSON) here")
 	fs.Parse(args)
 
+	quickSweep = *quick
 	var list *blocks.List
 	var changes []blocks.Change
 	var prefer map[int][]int
@@ -426,6 +493,35 @@ func cmdBlocks(args []string) error {
 		}
 	}
 	polished("RestedXP order", wg, guide.Events)
+	if *against != "" {
+		raw, err := os.ReadFile(*against)
+		if err != nil {
+			return err
+		}
+		var rf struct {
+			RouteModel
+			Events []route.GuideEvent `json:"events"`
+			Wand   float64            `json:"wandDetour"`
+		}
+		if err := json.Unmarshal(raw, &rf); err != nil || len(rf.Events) == 0 {
+			return fmt.Errorf("%s: malformed or empty route", *against)
+		}
+		wa, err := blocksWorld(*path, *race, *class, *faction, *profile, 1, hasDungeons(rf.Events), edit)
+		if err != nil {
+			return err
+		}
+		if err := rf.RouteModel.apply(wa); err != nil {
+			return err
+		}
+		wa.SetWandDetour(rf.Wand)
+		ga, err := wa.FollowGuide(rf.Events, *target)
+		if err != nil {
+			return err
+		}
+		ar := runOf("route "+filepath.Base(*against), ga.Result)
+		ar.Grind, ar.Skipped = ga.Grind, ga.Skipped
+		rep.Runs = append(rep.Runs, ar)
+	}
 
 	// the same quests, ordered by areas
 	res, bl, o, err := bestSweep(w, guideSet, *target, prefer)
@@ -448,7 +544,7 @@ func cmdBlocks(args []string) error {
 	}
 	own := map[int]bool{}
 	for _, q := range w.Quests {
-		if q.MinLevel < *target && q.Dungeon == nil && q.Type == "" && !q.Repeatable && len(q.StartSources) == 0 && guideZones[w.ZoneName(q.StartPos)] {
+		if q.MinLevel < *target && q.Dungeon == nil && q.Type == "" && !q.Repeatable && len(q.StartSources) == 0 && (guideZones["all"] || guideZones[w.ZoneName(q.StartPos)]) {
 			own[q.ID] = true
 		}
 	}
@@ -458,13 +554,28 @@ func cmdBlocks(args []string) error {
 		r.QuestIDs = sortedIDs(acceptedIn(all))
 		rep.Runs = append(rep.Runs, r)
 	}
-	kept, pres, pbl, po, err := prune(w, own, *target, prefer)
+	var kept map[int]bool
+	var pres *route.Result
+	var pbl []route.SweepBlock
+	var po route.SweepOptions
+	if *quick {
+		if aerr != nil {
+			return aerr
+		}
+		kept, pres, pbl, po, err = acceptedIn(all), all, abl, ao, nil
+		if k, r, b := pruneBatch(w, own, *target, ao, 3); r != nil && r.Seconds < pres.Seconds {
+			kept, pres, pbl = k, r, b
+		}
+	} else {
+		kept, pres, pbl, po, err = prune(w, own, *target, prefer)
+	}
 	if err == nil && aerr == nil && all.Seconds < pres.Seconds {
 		kept, pres, pbl, po = acceptedIn(all), all, abl, ao // leaving quests out did not help
 	}
 	if err == nil {
 		r = runOf("blocks, own selection", pres)
 		r.Near, r.Out, r.Look, r.Reach, r.Blocks, r.QuestIDs = po.Near, po.Out, po.Look, po.Reach, pbl, sortedIDs(kept)
+		r.Zones, r.MayGrind = po.Zones, po.Grind
 		r.Dungeons = dungeonBlocks(w, pres, shareable)
 		rep.Runs = append(rep.Runs, r)
 		polished("blocks, own selection", w, route.EventsOf(pres.Steps))
@@ -628,7 +739,7 @@ func cmdBlocks(args []string) error {
 		if len(r.Blocks) == 0 {
 			continue
 		}
-		fmt.Printf("\n%s (near %.0f s, out %.0f s, look %.0f s, reach %.0f yd): %d blocks\n", r.Name, r.Near, r.Out, r.Look, r.Reach, len(r.Blocks))
+		fmt.Printf("\n%s (near %.0f s, out %.0f s, look %.0f s, reach %.0f yd, zones %v, grind %v): %d blocks\n", r.Name, r.Near, r.Out, r.Look, r.Reach, r.Zones, r.MayGrind, len(r.Blocks))
 		for i, b := range r.Blocks {
 			fmt.Printf("  %2d %-7s %-12s %5.1f-%5.1f min  lvl %2d  +%5d XP  take %d work %d hand in %d\n", i+1, b.Kind, b.Zone, b.Start/60, b.End/60, b.Level, b.XP, len(b.Accepted), len(b.Worked), len(b.TurnedIn))
 		}

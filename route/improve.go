@@ -12,8 +12,10 @@ import (
 // Improve makes a guide faster under the model, the way Polestar improves its shipped orders: it starts from the
 // guide's own steps and keeps only local edits that reach the target level sooner when the whole guide is walked
 // again (FollowGuide): leaving out a quest or a level step, or putting in a quest the guide passes by (taken, done
-// and turned in where the guide comes closest to its giver). So the result is never slower than the guide it starts
-// from. The budget bounds the time spent searching.
+// and turned in where the guide comes closest to its giver). The guide is first completed with the class quests the
+// character must do (withClassQuests), and those stay in; the result is never slower than that completed guide, but
+// it can be slower than the guide as given when the guide leaves required class quests out (the ordinary RestedXP
+// chapters to 12 for a shaman: 5.1 h as given, 6.0 h with the totem quests). The budget bounds the time spent searching.
 func (w *World) Improve(events []GuideEvent, target int, budget time.Duration) ([]GuideEvent, *GuideResult, error) {
 	events = w.withClassQuests(events, target)
 	best, err := w.FollowGuide(events, target)
