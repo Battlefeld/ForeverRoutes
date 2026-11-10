@@ -19,6 +19,7 @@ local function db()
  captures[key] = captures[key] or {build=build, locale=locale, region=region, quests={}, turnins={}}
  return captures[key]
 end
+C.DB = db -- the capture of this build, region and locale (Timing.lua writes its timeline there)
 local function position()
  local map = C_Map and call(C_Map.GetBestMapForUnit, 'player')
  local pos = map and call(C_Map.GetPlayerMapPosition, map, 'player')

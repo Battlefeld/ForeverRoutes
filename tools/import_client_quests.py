@@ -57,7 +57,7 @@ def load(path):
 def merge(before, incoming):
     result = json.loads(json.dumps(before))
     for key, capture in incoming['captures'].items():
-        old = result['captures'].setdefault(key, dict(capture, quests={}, turnins={}, notOffered={}))
+        old = result['captures'].setdefault(key, dict(capture, quests={}, turnins={}, notOffered={}, timeline={}))
         for ident, quest in capture['quests'].items():
             prev = old['quests'].get(ident)
             if prev and prev['seenAt'] == quest['seenAt'] and prev != quest:
@@ -66,11 +66,13 @@ def merge(before, incoming):
         turns = list(old.get('turnins', {}).values()) + list(capture.get('turnins', {}).values())
         unique = {hashlib.sha256(json.dumps(t, sort_keys=True).encode()).hexdigest(): t for t in turns}
         old['turnins'] = {str(i+1): t for i, t in enumerate(sorted(unique.values(), key=lambda t: t['seenAt'])[-5000:])}
-        # quests a giver did not offer (collector: notOffered): kept like the hand-ins, as observations
-        missing = list((old.get('notOffered') or {}).values()) + list((capture.get('notOffered') or {}).values())
-        if missing:
-            unique = {hashlib.sha256(json.dumps(t, sort_keys=True).encode()).hexdigest(): t for t in missing if isinstance(t, dict)}
-            old['notOffered'] = {str(i+1): t for i, t in enumerate(sorted(unique.values(), key=lambda t: t.get('seenAt', 0))[-5000:])}
+        # quests a giver did not offer (collector: notOffered) and the play times (Timing.lua: timeline): kept like
+        # the hand-ins, as observations in the order they were made
+        for field, stamp, limit in (('notOffered', 'seenAt', 5000), ('timeline', 't', 200000)):
+            rows = list((old.get(field) or {}).values()) + list((capture.get(field) or {}).values())
+            if rows:
+                unique = {hashlib.sha256(json.dumps(t, sort_keys=True).encode()).hexdigest(): t for t in rows if isinstance(t, dict)}
+                old[field] = {str(i+1): t for i, t in enumerate(sorted(unique.values(), key=lambda t: t.get(stamp, 0))[-limit:])}
     return result
 
 

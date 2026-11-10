@@ -214,12 +214,23 @@ func runOf(name string, res *route.Result) blocksRun {
 // quickSweep: only a few settings and no look ahead (long routes: -quick).
 var quickSweep bool
 
+// startLive: the character the block routes begin as (-start-level, -start-at); nil = a new character.
+var startLive *route.Live
+
 func bestSweep(w *route.World, set map[int]bool, target int, prefer map[int][]int) (*route.Result, []route.SweepBlock, route.SweepOptions, error) {
 	var best *route.Result
 	var bb []route.SweepBlock
 	var bo route.SweepOptions
 	var last error
+	var from *route.State
+	if startLive != nil {
+		var err error
+		if from, _, err = w.StateFrom(*startLive); err != nil {
+			return nil, nil, bo, err
+		}
+	}
 	try := func(o route.SweepOptions) {
+		o.From = from
 		res, bl, err := w.Sweep(set, o)
 		if err != nil {
 			last = err
@@ -380,6 +391,8 @@ func cmdBlocks(args []string) error {
 	faction := fs.String("faction", "", "A or H (only for Skyborne)")
 	profile := fs.String("profile", automaticProfile, combatProfileHelp)
 	target := fs.Int("target", 12, "target level")
+	startLevel := fs.Int("start-level", 0, "begin the block routes as a character of this level (with -start-at) instead of a new one")
+	startAt := fs.Int("start-at", 0, "with -start-level: the quest whose giver the character stands at")
 	quick := fs.Bool("quick", false, "long routes: few sweep settings, no look ahead, no leaving out of single quests")
 	against := fs.String("against", "", "a route file to replay beside the others (a shipped or extended route)")
 	paces := fs.Bool("paces", true, "also compare with half and double fight times")
@@ -523,6 +536,15 @@ func cmdBlocks(args []string) error {
 		rep.Runs = append(rep.Runs, ar)
 	}
 
+	if *startLevel > 1 {
+		q := w.ByID[*startAt]
+		if q == nil {
+			return fmt.Errorf("-start-at: quest %d is not a quest of this character", *startAt)
+		}
+		pos := q.StartPos
+		startLive = &route.Live{Level: *startLevel, Pos: &pos, Bind: &pos, Completed: []int{}, Active: []route.LiveQuest{}}
+		defer func() { startLive = nil }()
+	}
 	// the same quests, ordered by areas
 	res, bl, o, err := bestSweep(w, guideSet, *target, prefer)
 	if err != nil {
@@ -627,13 +649,21 @@ func cmdBlocks(args []string) error {
 	if *dungeons {
 		key += "-dungeons"
 	}
+	if startLive != nil && aerr == nil {
+		// a route from the middle is for playing a stretch of quests: every quest of the zones, not the fastest by the
+		// model (which would leave most out and grind)
+		bestRes, bestBlocks, bestName = all, abl, "blocks, every quest of the zones"
+	}
 	if *routeOut != "" {
 		doc := map[string]any{
 			"schema": "foreverroutes.route.v1", "key": key, "character": char, "target": *target, "winner": "blocks",
 			"basis":   "ForeverRoutes block route (" + bestName + "); quest selection partly from ordinary RestedXP Forever guides (RestedXP/RXPGuides, CC BY-NC-SA 4.0)",
 			"license": "CC-BY-NC-SA-4.0", "hours": map[string]float64{"blocks": bestRes.Seconds / 3600}, "seconds": bestRes.Seconds,
 			"level": bestRes.Level, "quests": bestRes.Quests, "killProfile": bestRes.Profile, "events": route.EventsOf(bestRes.Steps),
-			"chains": "foreverdb-full (blocks.Apply)", "replayVerified": true,
+			"replayVerified": true,
+		}
+		if startLive != nil {
+			doc["start"] = startLive
 		}
 		b, _ := json.MarshalIndent(doc, "", " ")
 		if err := os.WriteFile(*routeOut, append(b, '\n'), 0o644); err != nil {
