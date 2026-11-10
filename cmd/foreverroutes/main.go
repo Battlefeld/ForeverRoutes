@@ -52,6 +52,8 @@ func main() {
 		err = cmdBlocks(os.Args[2:])
 	case "assess-zones":
 		err = cmdAssessZones(os.Args[2:])
+	case "assess-dungeons":
+		err = cmdAssessDungeons(os.Args[2:])
 	default:
 		usage()
 		os.Exit(2)

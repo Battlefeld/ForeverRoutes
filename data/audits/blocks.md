@@ -172,3 +172,52 @@ Datensatz nicht nachspielen: Quests mit ungeklärter Gegenstandsquelle, die Wass
 
 Über 40 trägt der Datensatz nicht: Ab 40 bis 60 nachgespielt scheitern über 400 Schritte (keine Grind-Orte, Quests
 nicht im Datensatz), weil Datensatz und ForeverDB-Abgleich bisher bis Stufe 30 gebaut sind.
+
+## Gebiete und Dungeons bewertet (Orc-Schamane, 10.11.)
+
+Alles mit dem gemessenen Modell aus Tausend Nadeln (`data/audits/model-orc-shaman.json`): Kämpfe ×0,8, Rast ×0,2,
+2 Gegner pro Minute zu Fuß (die Kills unterwegs), Elite-Radius 80 m, Ruhestein nur ab 15 min Ersparnis. Nachgerechnet
+an der gespielten Runde: das Modell kommt auf 33–36k XP in 77–80 min, gespielt waren 38,3k XP in rund 75 min ohne
+PvP und Eskortwarten. Der Datensatz enthält jetzt die ganze ForeverDB-Liste (Stufe 1–60).
+
+Gebiete: `data/audits/zones-orc-shaman.json` (`assess-zones`). Jede Stufe ein Block vom Questzentrum bis nichts mehr
+geht; „ok“ heißt bis 25 % unter Grinden (das Grind-Modell rechnet dichte Lager ohne Tode).
+
+| Gebiet | Stufe | Quests | XP/h | Urteil |
+|---|---|---|---|---|
+| Durotar | 1 / 6 | 22 / 46 | 12k / 14k | gut |
+| Silberwald | 12 / 16 | 12 / 11 | 20k / 21k | gut / ok |
+| Brachland | 12 / 16 / 20 | 48 / 53 / 32 | 17k / 20k / 20k | gut / gut / ok |
+| Hillsbrad | 22 / 26 / 30 | 11 / 15 / 5 | 24k / 28k / 33k | ok / gut / gut |
+| Steinkrallen | 20 / 24 | 5 / 9 | 23k / 20k | viel Laufen / ok |
+| Eschental | 20 / 24 / 28 | 5 / 12 / 11 | 20k / 17k / 19k | viel Laufen, ab 28 nutzlos |
+| Tausend Nadeln | 26 / 30 / 33 | 6 / 11 / 8 | 23k / 22k / 24k | erst ab 30 gut, 33 nutzlos |
+| Arathi | 30 / 34 / 37 | 5 / 7 / 19 | 27k / 27k / 32k | gut / ok / gut |
+| Düstermarschen | 35 / 38 | 16 / 15 | 28k / 28k | gut |
+| Schlingendorn | 32 / 36 / 40 | 11 / 16 / 19 | 22k / 26k / 30k | 32 nutzlos, sonst ok |
+| Desolace | 31 / 35 | 3 / 13 | 24k / 25k | 31 nutzlos, 35 ok |
+| Tanaris | 40 / 43 | 2 / 8 | – / 29k | erst ab 43 |
+| Sumpf, Ödland, Feralas bis 40 | | 1–3 | | zu wenige Quests |
+
+Dungeons: `data/audits/dungeons-orc-shaman.json` (`assess-dungeons`). Ein Block sind die Quests des Dungeons, deren
+Geber und Abgabe höchstens 10 min von ihrem Zentrum oder vom Eingang liegen, mit ihren Vorquests, dem Lauf und den
+Abgaben. Quests weiter weg (Donnerfels, Unterstadt) stehen unter „far“: die nimmt man mit, wenn man ohnehin dort ist.
+
+| Dungeon | Stufe | Quests im Block | XP/h | Urteil |
+|---|---|---|---|---|
+| Ragefire | 15 | 2 + 2 Vorquests (4 weitere in Donnerfels/Unterstadt) | 14k | schwach |
+| Ruinen von Lordaeron | 18 | 4 | 24k | gut |
+| Höhlen des Wehklagens | 19 | 5 + 6 Vorquests | 18k | ok |
+| Burg Schattenfang | 23 | 3 | 24k | gut |
+| Tiefschwarze Grotte | 25 | 5 | 16k | nutzlos (50 % Laufen) |
+| Dalaran | 30 | 3 | 32k | gut |
+| Kral | 31 | 2 (2 weitere in Unterstadt/Brachland) | 22k | ok |
+| Kloster Friedhof | 32 | Hearts of Zeal braucht Going, Going, Guano! aus dem Kral | – | nur nach dem Kral |
+| Kloster Bibliothek | 35 | 1 (Test of Lore: Vorquest nicht machbar) | 12k | schwach |
+| Kloster Waffenkammer | 37 | keine Horde-Quest | – | nutzlos |
+| Kloster Kathedrale | 39 | 1 | 14k | schwach |
+| Gnomeregan, Todesminen | | Gnomeregan 3 von 12, Todesminen keine Horde-Quest | | nutzlos |
+| The Drowned City | | im Datensatz kein Dungeon, keine Quelle für die Questgegenstände | | nicht planbar |
+
+Grenze des Modells: die XP eines Dungeonlaufs ist geschätzt (40 % der Gegner, 5er-Gruppe), nicht gemessen. Das Kloster
+ist deshalb eher unterschätzt; eine gemessene Klosterrunde würde das klären.

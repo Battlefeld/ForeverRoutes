@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"math"
+	"slices"
 	"sort"
 
 	"github.com/Battlefeld/ForeverRoutes/dataset"
@@ -36,6 +37,11 @@ type SweepOptions struct {
 	// Dungeons: the dungeons of the world (Options.Dungeons) are run as blocks: their quests and what leads to them
 	// are taken on the way, the run is one candidate among the places to go to
 	Dungeons bool
+	// DungeonKeys: with Dungeons, only these dungeons (empty: every one)
+	DungeonKeys []string
+	// KeepSet: with Dungeons, the dungeons' quests are not added to the set: only the set's are taken (a block of
+	// the quests near a dungeon; the far ones wait until the route is there anyway)
+	KeepSet bool
 	// Below, Above: a quest is taken only while its level is at most Below under the character's (its XP is not
 	// yet cut much) and at most Above over it (its creatures can be fought soon); 0 = 5 and 6. Quests of an Order
 	// are taken as the order says.
@@ -331,6 +337,9 @@ func (sw *sweeper) step(s *State, acts *[]Action, failed map[sweepKey]int, relax
 	var runs []sweepTodo
 	if o.Dungeons && (sw.rank == nil || sw.cur >= len(o.Order)) {
 		for _, d := range w.Dungeons {
+			if len(o.DungeonKeys) > 0 && !slices.Contains(o.DungeonKeys, d.Key) {
+				continue
+			}
 			if m := w.dungeonMacro(s, d); m != nil {
 				runs = append(runs, sweepTodo{a: Action{Op: "dungeon", Dungeon: d.Key, At: d.Entrance}, cost: w.TravelTime(s, s.Pos, d.Entrance), m: m})
 			}
@@ -435,9 +444,12 @@ func (w *World) Sweep(set map[int]bool, o SweepOptions) (*Result, []SweepBlock, 
 	for id := range set {
 		sw.set[id] = true
 	}
-	if o.Dungeons {
+	if o.Dungeons && !o.KeepSet {
 		// a dungeon's quests and what leads to them belong to its block
 		for _, d := range w.Dungeons {
+			if len(o.DungeonKeys) > 0 && !slices.Contains(o.DungeonKeys, d.Key) {
+				continue
+			}
 			for _, q := range d.Quests {
 				sw.set[q.ID] = true
 				for _, p := range w.ChainBefore(q) {
