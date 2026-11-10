@@ -157,3 +157,18 @@ Fehler, `Improve` ergänzt zuerst die Pflicht-Klassenquests des Schamanen (Totem
   Läufen aber nie gewonnen.
 - Auswertung der `notOffered`-Beobachtungen: daraus Vorquests im Datensatz nachtragen.
 - Die übrigen Datenlücken, an denen RestedXP-Schritte scheitern (96604, 96821, 96873, 96876, 96877).
+
+## 30 bis 40 nach Polestar
+
+Für 30 bis 40 gibt es eine fertige, kuratierte Reihenfolge: Polestars Forever-Guides für die Horde
+(github.com/fitzforge/polestar, `guides/forever/horde/30-40`, GPL-3.0, Stand 7.11.2026). `tools/polestar_events.py`
+liest daraus nur Quest-IDs und Reihenfolge (Klassen- und Volkszeilen nach `only`, optionale Schritte nicht) und
+schreibt Guide-Ereignisse; ForeverRoutes spielt sie mit seinem Modell nach. Die Routendatei für den Ork-Schamanen ab
+seinem Stand am 10.11.2026 (Stufe 30, Freiwindposten) liegt in `data/blocks/polestar/orc-shaman-30-40.json`.
+
+Nachgespielt: 27,2 h bis 40 (Laufen 10,9 h, Kampf 15,3 h, davon Grinden 6,9 h), 104 Quests. 32 Schritte kann der
+Datensatz nicht nachspielen: Quests mit ungeklärter Gegenstandsquelle, die Wasser-Ruf-Kette des Schamanen
+(Vorquest nicht machbar), Elixir of Agony und Teile der Perenolde-Kette. Polestars Elite-Quests gelten als allein machbar.
+
+Über 40 trägt der Datensatz nicht: Ab 40 bis 60 nachgespielt scheitern über 400 Schritte (keine Grind-Orte, Quests
+nicht im Datensatz), weil Datensatz und ForeverDB-Abgleich bisher bis Stufe 30 gebaut sind.

@@ -448,6 +448,7 @@ func cmdBlocks(args []string) error {
 	startReady := fs.String("start-ready", "", "with -start-level: quests in the log with every objective done, comma separated")
 	doneBelow := fs.Int("start-done-below", 0, "with -start-level: every quest below this level outside -zones counts as done (chains that begin elsewhere)")
 	startDone := fs.String("start-done", "", "with -start-level: quests handed in, comma separated")
+	chain := fs.String("chain", "", "with -start-level: plan a chain of zone blocks over these zones (comma separated) to -target, and write only it")
 	quick := fs.Bool("quick", false, "long routes: few sweep settings, no look ahead, no leaving out of single quests")
 	against := fs.String("against", "", "a route file to replay beside the others (a shipped or extended route)")
 	paces := fs.Bool("paces", true, "also compare with half and double fight times")
@@ -657,7 +658,7 @@ func cmdBlocks(args []string) error {
 		if *doneBelow > 0 {
 			// what a character of this level has done elsewhere: every quest below that level outside the zones
 			for _, q := range w.Quests {
-				if q.Level < *doneBelow && !(*zones != "" && strings.Contains(","+*zones+",", ","+w.ZoneName(q.StartPos)+",")) {
+				if q.Level < *doneBelow && !inList(*startActive, q.ID) && !inList(*startReady, q.ID) && !(*zones != "" && strings.Contains(","+*zones+",", ","+w.ZoneName(q.StartPos)+",")) {
 					startLive.Completed = append(startLive.Completed, q.ID)
 				}
 			}
@@ -678,6 +679,68 @@ func cmdBlocks(args []string) error {
 			}
 		}
 		defer func() { startLive = nil }()
+	}
+	if *chain != "" {
+		if startLive == nil {
+			return fmt.Errorf("-chain needs -start-level")
+		}
+		s0, _, err := w.StateFrom(*startLive)
+		if err != nil {
+			return err
+		}
+		var zl []string
+		for _, z := range strings.Split(*chain, ",") {
+			if z = strings.TrimSpace(z); z != "" {
+				zl = append(zl, z)
+			}
+		}
+		steps, links, err := chainRoute(w, s0, zl, *target, prefer, skipped)
+		if err != nil && len(steps) == 0 {
+			return err
+		}
+		if err != nil {
+			fmt.Fprintln(os.Stderr, "chain stopped:", err)
+		}
+		events := route.EventsOf(steps)
+		g, err := w.FollowGuideFromState(s0, events, *target)
+		if err != nil {
+			return fmt.Errorf("the chain does not replay: %w", err)
+		}
+		fmt.Printf("chain to level %d: %.2f h (travel %.2f, combat %.2f, grind %.2f), %d quests, %d skipped\n", g.Level, (g.Seconds-s0.Time)/3600, g.Travel/3600, g.Combat/3600, g.Grind/3600, g.Quests, len(g.Skipped))
+		if *routeOut != "" {
+			doc := map[string]any{
+				"schema": "foreverroutes.route.v1", "key": char.RouteKey(), "character": char, "target": *target, "winner": "blocks",
+				"basis":   "ForeverRoutes zone chain; quest data partly from ordinary RestedXP Forever guides (RestedXP/RXPGuides, CC BY-NC-SA 4.0)",
+				"license": "CC-BY-NC-SA-4.0", "hours": map[string]float64{"blocks": (g.Seconds - s0.Time) / 3600}, "seconds": g.Seconds,
+				"level": g.Level, "quests": g.Quests, "killProfile": g.Profile, "events": route.EventsOf(g.Steps), "replayVerified": true,
+				"start": startLive, "chain": links,
+			}
+			for k, v := range map[string]any{"preparations": model.Preparations, "calibration": model.Calibration} {
+				if v != nil && fmt.Sprint(v) != "<nil>" {
+					doc[k] = v
+				}
+			}
+			if model.HearthMinSave > 0 {
+				doc["hearthMinSave"] = model.HearthMinSave
+			}
+			if len(model.SoloQuests) > 0 {
+				doc["soloQuests"] = model.SoloQuests
+			}
+			if model.SoloElites {
+				doc["soloElites"] = true
+			}
+			if model.MobAbove > 0 {
+				doc["mobAbove"] = model.MobAbove
+			}
+			if model.EliteRadius > 0 {
+				doc["eliteRadius"] = model.EliteRadius
+			}
+			b, _ := json.MarshalIndent(doc, "", " ")
+			if err := os.WriteFile(*routeOut, append(b, '\n'), 0o644); err != nil {
+				return err
+			}
+		}
+		return nil
 	}
 	// the same quests, ordered by areas
 	var bestRes *route.Result
@@ -980,6 +1043,16 @@ func cmdBlocks(args []string) error {
 		return os.WriteFile(*out, append(b, '\n'), 0o644)
 	}
 	return nil
+}
+
+// inList: id is one of the comma separated numbers.
+func inList(list string, id int) bool {
+	for _, f := range strings.Split(list, ",") {
+		if n, err := strconv.Atoi(strings.TrimSpace(f)); err == nil && n == id {
+			return true
+		}
+	}
+	return false
 }
 
 // hugeObjective: an objective no route can work by its count (a reputation of 3000 read as 3000 talks: Gelkis Alliance).

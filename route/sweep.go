@@ -50,6 +50,9 @@ type SweepOptions struct {
 	// From: begin as this character (World.StateFrom of a live character, or of a level and a place alone) instead
 	// of a new one. The result's times count from there.
 	From *State
+	// StopIdle: when nothing of the set can be done, the route ends there instead of grinding on (a zone's block in a
+	// chain of zones: the chain decides where to go next)
+	StopIdle bool
 	// Order: saved blocks to follow in their order: what a block takes, works and hands in is done before the
 	// next block begins; within a block the sweep's rules decide. Empty: the sweep finds the blocks itself.
 	Order []SweepBlock
@@ -320,6 +323,9 @@ func (sw *sweeper) step(s *State, acts *[]Action, failed map[sweepKey]int, relax
 		}
 	}
 	if len(todo) == 0 && len(runs) == 0 {
+		if o.StopIdle {
+			return s, false
+		}
 		m := sw.levelUp(s)
 		if m == nil {
 			return s, false
@@ -344,6 +350,9 @@ func (sw *sweeper) step(s *State, acts *[]Action, failed map[sweepKey]int, relax
 		}
 	}
 	if len(cands) == 0 {
+		if o.StopIdle {
+			return s, false
+		}
 		m := sw.levelUp(s)
 		if m == nil {
 			return s, false
@@ -456,7 +465,7 @@ func (w *World) Sweep(set map[int]bool, o SweepOptions) (*Result, []SweepBlock, 
 			break
 		}
 	}
-	for w.Level(s) < o.Target {
+	for !o.StopIdle && w.Level(s) < o.Target {
 		m := w.grindMacro(s, o.Target)
 		if m == nil {
 			break
