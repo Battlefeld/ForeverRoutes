@@ -48,6 +48,8 @@ func main() {
 		err = cmdCheckRoutes(os.Args[2:])
 	case "check-quests":
 		err = cmdCheckQuests(os.Args[2:])
+	case "blocks":
+		err = cmdBlocks(os.Args[2:])
 	default:
 		usage()
 		os.Exit(2)
