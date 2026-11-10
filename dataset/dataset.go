@@ -76,6 +76,9 @@ type Quest struct {
 	EndAt      *Point `json:"endAt,omitempty"`
 	PreAll     []int  `json:"preAll,omitempty"`
 	PreAny     []int  `json:"preAny,omitempty"`
+	// PreSoft: quests players took before this one without it being known that the game demands them (ForeverDB's
+	// "Offered after"): a route does them first when it does both, and may take this quest without them.
+	PreSoft []int `json:"preSoft,omitempty"`
 	// PreActive: offered only while these quests are in the log (Finding the Antidote while Need for a Cure is);
 	// EndAfter: handed in only once these quests are done (Need for a Cure after Finding the Antidote)
 	PreActive   []int             `json:"preActive,omitempty"`

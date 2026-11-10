@@ -39,8 +39,8 @@ type SweepOptions struct {
 	// Order: saved blocks to follow in their order: what a block takes, works and hands in is done before the
 	// next block begins; within a block the sweep's rules decide. Empty: the sweep finds the blocks itself.
 	Order []SweepBlock
-	// Prefer: quest -> quests players took before it ("Offered after"): while one of them is in the set and still
-	// open, the quest waits, unless nothing else is left to do
+	// Prefer: quest -> quests players took before it ("Offered after"), beside the dataset's own (Quest.PreSoft):
+	// while one of them is in the set and still open, the quest waits, unless nothing else is left to do
 	Prefer map[int][]int
 }
 
@@ -91,7 +91,7 @@ func sweepKeyOf(a Action) sweepKey {
 }
 
 func (sw *sweeper) waits(s *State, q *Quest) bool {
-	for _, p := range sw.o.Prefer[q.ID] {
+	for _, p := range append(append([]int(nil), q.PreSoft...), sw.o.Prefer[q.ID]...) {
 		if pq := sw.w.ByID[p]; pq != nil && sw.set[p] && s.Status[pq.Index] != done {
 			return true
 		}

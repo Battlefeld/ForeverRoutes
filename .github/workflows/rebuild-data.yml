@@ -1,0 +1,39 @@
+name: rebuild data (blocks branch)
+
+# The dataset must come out of the build byte for byte (data.yml). On the blocks branch a change of the build rules or
+# of the quest fixes rebuilds it here and commits the result to the branch; main is rebuilt by the update workflow.
+on:
+  push:
+    branches: ["blocks"]
+    paths: ["internal/build/**", "dataset/**", "data/sources/quest-fixes.json", ".github/workflows/rebuild-data.yml"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: rebuild-data-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  rebuild:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          # the same Go as data.yml: gzip output differs between Go releases
+          go-version: '1.24.13'
+          cache-dependency-path: go.mod
+      - name: rebuild from the pinned sources
+        run: go run ./cmd/foreverroutes build-data -out data/routes-data.json.gz
+      - name: commit to this branch
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/routes-data.json.gz
+          git diff --cached --quiet && { echo "unchanged"; exit 0; }
+          git commit -q -m "Datensatz neu gebaut (Kettenregeln, Questfixes)"
+          git push origin "HEAD:${GITHUB_REF_NAME}"
