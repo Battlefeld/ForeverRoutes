@@ -37,7 +37,7 @@ type SweepOptions struct {
 	// are taken on the way, the run is one candidate among the places to go to
 	Dungeons bool
 	// Below, Above: a quest is taken only while its level is at most Below under the character's (its XP is not
-	// yet cut much) and at most Above over it (its creatures can be fought soon); 0 = 5 and 3. Quests of an Order
+	// yet cut much) and at most Above over it (its creatures can be fought soon); 0 = 5 and 6. Quests of an Order
 	// are taken as the order says.
 	Below, Above int
 	// Zones: a zone is worked off before the next: while something is to do in the zone the character is in, what
@@ -403,7 +403,7 @@ func (w *World) Sweep(set map[int]bool, o SweepOptions) (*Result, []SweepBlock, 
 		o.Below = 5
 	}
 	if o.Above <= 0 {
-		o.Above = 3
+		o.Above = 6 // how high a quest may be is the danger rule's question (workable); this only keeps the log clear
 	}
 	sw := &sweeper{w: w, o: o, set: map[int]bool{}}
 	for id := range set {
