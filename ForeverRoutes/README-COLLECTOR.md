@@ -45,3 +45,11 @@ aus dem Client erfasst. Kein Anspruch auf vollständige serverseitige Questdaten
 
 Referenz: Forever-Branch von Gethe/wow-ui-source,
 `Blizzard_APIDocumentationGenerated/QuestLogDocumentation.lua`.
+
+## Nicht angebotene Quests
+
+Schickt die Route zu einem Questgeber und er bietet die geplante Quest nicht an, hält der Collector das fest
+(`notOffered`: Quest, NPC, Stufe, was stattdessen angeboten wurde) und meldet es einmal im Chat. Das passiert nur,
+wenn das Spiel die Angebotsliste mit Quest-IDs liefert und der Charakter am Ort des Schritts steht. Öffnet ein
+Questgeber direkt das Questfenster oder hat er gar kein Fenster, wird nichts notiert. Es wird nur gelesen, nichts
+ausgewählt oder angenommen.

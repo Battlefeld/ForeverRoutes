@@ -2,6 +2,7 @@ package route
 
 import (
 	"errors"
+	"fmt"
 	"math"
 	"sort"
 
@@ -35,6 +36,9 @@ type SweepOptions struct {
 	// Dungeons: the dungeons of the world (Options.Dungeons) are run as blocks: their quests and what leads to them
 	// are taken on the way, the run is one candidate among the places to go to
 	Dungeons bool
+	// Order: saved blocks to follow in their order: what a block takes, works and hands in is done before the
+	// next block begins; within a block the sweep's rules decide. Empty: the sweep finds the blocks itself.
+	Order []SweepBlock
 	// Prefer: quest -> quests players took before it ("Offered after"): while one of them is in the set and still
 	// open, the quest waits, unless nothing else is left to do
 	Prefer map[int][]int
@@ -42,6 +46,7 @@ type SweepOptions struct {
 
 // SweepBlock is one stay: what was taken, worked and handed in before the character moved on.
 type SweepBlock struct {
+	Name     string        `json:"name"` // zone and number of the stay in it: "Durotar 3"
 	Zone     string        `json:"zone"`
 	At       dataset.Point `json:"at"`
 	Kind     string        `json:"kind"` // hub (quest givers), round (objectives), mixed, grind, dungeon
@@ -68,6 +73,16 @@ type sweeper struct {
 	o      SweepOptions
 	set    map[int]bool
 	quests []*Quest
+	rank   map[sweepKey]int // with an order: the block an action belongs to (objectives by quest: Obj is 0)
+	cur    int              // the block being played
+}
+
+// ranked: the block of an action in the order; false for what no block names (free once the order is through).
+func (sw *sweeper) ranked(a Action) (int, bool) {
+	k := sweepKeyOf(a)
+	k[2] = 0
+	r, ok := sw.rank[k]
+	return r, ok
 }
 
 func sweepKeyOf(a Action) sweepKey {
@@ -91,6 +106,11 @@ func (sw *sweeper) todo(s *State, failed map[sweepKey]int, relaxed bool) (todo [
 	add := func(a Action) {
 		if at, ok := failed[sweepKeyOf(a)]; ok && at == lvl {
 			return
+		}
+		if sw.rank != nil && sw.cur < len(sw.o.Order) {
+			if r, ok := sw.ranked(a); !ok || r > sw.cur {
+				return // a later block's, or no block's while the order is being played
+			}
 		}
 		if t := w.TravelTime(s, s.Pos, a.At); !math.IsInf(t, 1) {
 			todo = append(todo, sweepTodo{a: a, cost: t})
@@ -207,13 +227,34 @@ func (sw *sweeper) do(s *State, acts *[]Action, failed map[sweepKey]int, c sweep
 func (sw *sweeper) step(s *State, acts *[]Action, failed map[sweepKey]int, relaxed *bool, look bool) (*State, bool) {
 	w, o := sw.w, sw.o
 	todo, waiting := sw.todo(s, failed, *relaxed)
+	if sw.rank != nil && sw.cur < len(o.Order) {
+		open := false // something of the block being played is still to do
+		for _, c := range todo {
+			if r, _ := sw.ranked(c.a); r == sw.cur {
+				open = true
+			}
+		}
+		if d := o.Order[sw.cur].Dungeon; d != "" && !open {
+			if dd := w.dungeonOf[d]; dd != nil && s.Runs&(1<<dd.Index) == 0 {
+				if m := w.dungeonMacro(s, dd); m != nil {
+					*acts = append(*acts, m.actions...)
+					sw.cur++
+					return m.state, true
+				}
+			}
+		}
+		if !open {
+			sw.cur++ // the block is done (or cannot be done now): on to the next
+			return s, true
+		}
+	}
 	if len(todo) == 0 && waiting {
 		*relaxed = true
 		return s, true
 	}
 	*relaxed = false
 	var runs []sweepTodo
-	if o.Dungeons {
+	if o.Dungeons && (sw.rank == nil || sw.cur >= len(o.Order)) {
 		for _, d := range w.Dungeons {
 			if m := w.dungeonMacro(s, d); m != nil {
 				runs = append(runs, sweepTodo{a: Action{Op: "dungeon", Dungeon: d.Key, At: d.Entrance}, cost: w.TravelTime(s, s.Pos, d.Entrance), m: m})
@@ -248,6 +289,7 @@ func (sw *sweeper) step(s *State, acts *[]Action, failed map[sweepKey]int, relax
 				f[k] = v
 			}
 			var tmp []Action
+			keep := sw.cur
 			r := sw.do(s.clone(), &tmp, f, c)
 			rel := false
 			for i := 0; i < 600 && r.Time-s.Time < o.Look && w.Level(r) < o.Target; i++ {
@@ -256,6 +298,7 @@ func (sw *sweeper) step(s *State, acts *[]Action, failed map[sweepKey]int, relax
 					break
 				}
 			}
+			sw.cur = keep
 			if dt := r.Time - s.Time; dt > 0 {
 				if v := float64(r.XP-s.XP) / dt; v > best {
 					best, pick = v, c
@@ -306,6 +349,21 @@ func (w *World) Sweep(set map[int]bool, o SweepOptions) (*Result, []SweepBlock, 
 		}
 	}
 	sort.Slice(sw.quests, func(i, j int) bool { return sw.quests[i].ID < sw.quests[j].ID })
+	if len(o.Order) > 0 {
+		sw.rank = map[sweepKey]int{}
+		put := func(op int, ids []int, i int) {
+			for _, id := range ids {
+				if _, ok := sw.rank[sweepKey{op, id, 0}]; !ok {
+					sw.rank[sweepKey{op, id, 0}] = i
+				}
+			}
+		}
+		for i, b := range o.Order {
+			put(1, b.Accepted, i)
+			put(3, b.Worked, i)
+			put(2, b.TurnedIn, i)
+		}
+	}
 	s := w.NewState()
 	var acts []Action
 	failed := map[sweepKey]int{} // an action that did not work at a level is not tried again at that level
@@ -340,6 +398,7 @@ func (w *World) sweepBlocks(res *Result, o SweepOptions) []SweepBlock {
 	var out []SweepBlock
 	var cur *SweepBlock
 	prevXP, prevTime := 0, 0.0
+	stays := map[string]int{}
 	has := func(l []int, id int) bool {
 		for _, x := range l {
 			if x == id {
@@ -364,6 +423,8 @@ func (w *World) sweepBlocks(res *Result, o SweepOptions) []SweepBlock {
 		default:
 			cur.Kind = "grind"
 		}
+		stays[cur.Zone]++
+		cur.Name = fmt.Sprintf("%s %d", cur.Zone, stays[cur.Zone])
 		out = append(out, *cur)
 		cur = nil
 	}

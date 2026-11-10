@@ -111,10 +111,36 @@ annehmen, wer die Vorquest hat.
 Von den 156 Quests, die RestedXP oder die Blockroute bis 20 nutzen, haben Spieler bei 149 den Questgeber im Spiel
 gesehen; 4 sind Forever-Daten ohne gesehenen Questgeber, 2 nur Classic, 1 fehlt in ForeverDBs Liste.
 
+## Feste Blöcke
+
+`blocks -blocks-out` schreibt die Route als benannte Blöcke in Reihenfolge (`data/blocks/<key>.json`: „Durotar 3“,
+„Orgrimmar 6“ mit dem, was der Block annimmt, bearbeitet und abgibt, dazu Questnamen und teilbar ja/nein).
+`blocks -from-blocks <datei>` spielt eine solche Datei in ihrer Reihenfolge ab. Blöcke lassen sich umstellen oder
+kürzen; die Route wird danach wie jede andere nachgespielt und bleibt damit gültig. Abgespielt ist die Route etwas
+langsamer als das Original (bis 12: 4,70 h statt 4,50 h), weil ein Block seine Ziele dann am Stück erledigt.
+
+## Im Spiel testen
+
+`blocks -route-out` schreibt die schnellste Blockroute als Routendatei (`data/blocks/routes/`), `export-addon -forever
+data/audits/foreverdb-full.json.gz -routes data/blocks/routes` macht daraus die `Routes.lua` des Addons, mit denselben
+Kettenregeln, mit denen die Route geplant wurde. Für den Ork-Schamanen liegen beide Routen bis 20 vor: solo 15,1 h,
+mit Dungeons 13,9 h im Export.
+
+Der Collector hält jetzt fest, wenn eine geplante Quest beim Questgeber nicht angeboten wird (`notOffered` in den
+SavedVariables: Quest, NPC, Stufe, was stattdessen angeboten wurde), und sagt es einmal im Chat. Nur wenn das Spiel die
+Angebotsliste mit Quest-IDs liefert und der Spieler am Ort des Schritts steht; `import_client_quests.py` übernimmt die
+Beobachtungen. Ausgewertet werden sie noch nicht.
+
+## Nachoptimieren
+
+`blocks -polish 40s` setzt die lokalen Änderungen des bisherigen Optimierers (`Improve`) auf die Blockroute an. Bis 12
+bringt das 1 bis 3 %. Auf die RestedXP-Reihenfolge angewandt wurde die Route im Versuch langsamer (6,02 h statt
+5,06 h); das widerspricht der Zusage von `Improve` und ist nicht untersucht.
+
 ## Noch nicht gebaut
 
-- Feste, benannte Blöcke: Die „Blöcke“ hier sind die Aufenthalte, die der Sweep ergibt, noch keine gespeicherten
-  Bausteine, die man frei aneinanderreiht.
-- Weniger Laufen: Runden über mehrere Hubs planen und Abgaben bündeln.
+- Weniger Laufen: Runden über mehrere Hubs planen und Abgaben bündeln. Hier liegt der Rückstand auf RestedXP.
+- Auswertung der `notOffered`-Beobachtungen: daraus Vorquests im Datensatz nachtragen.
 - Dungeon-Quests aus anderen Hauptstädten gezielt holen, wenn die Route ohnehin dort vorbeikommt.
-- Export ins Addon und der Collector-Hinweis „Quest wurde nicht angeboten“.
+- Die Kettenregeln im Datensatz selbst (`internal/build/chains.go`): bisher gelten sie nur im Speicher, der
+  Live-Planer von ForeverCore rechnet weiter mit den alten.

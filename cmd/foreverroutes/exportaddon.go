@@ -11,6 +11,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/Battlefeld/ForeverRoutes/blocks"
 	"github.com/Battlefeld/ForeverRoutes/dataset"
 	"github.com/Battlefeld/ForeverRoutes/fallback"
 	"github.com/Battlefeld/ForeverRoutes/route"
@@ -28,7 +29,16 @@ func cmdExportAddon(args []string) error {
 	out := fs.String("out", "", "Lua file to write (the addon's Data/Routes.lua)")
 	stale := fs.Bool("stale-ok", false, "interim release before a recompute: a route with events the data no longer allows is exported without them")
 	personal := fs.Bool("personal", false, "only the routes of -routes, added to the shipped ones (the addon's Data/Personal.lua: a route ForeverCore planned with the character's own kill profile)")
+	forever := fs.String("forever", "", "ForeverDB's full quest list: its chain rules are applied as the blocks command does (for routes planned with them)")
 	fs.Parse(args)
+	if *forever != "" {
+		list, err := blocks.Load(*forever)
+		if err != nil {
+			return err
+		}
+		datasetEdit = func(d *dataset.Dataset) { list.Apply(d) }
+		defer func() { datasetEdit = nil }()
+	}
 	if *fallbackFile == "" {
 		*fallbackFile = filepath.Join(filepath.Dir(*path), "fallbacks", "rxp.json.gz")
 	}

@@ -42,6 +42,58 @@ function C.Capture(id)
  d.quests[tostring(id)] = q
  if sent[id]~=title then dirty[id]=q end
 end
+-- A quest the route sends the player for that its giver does not offer: the data lack a prerequisite (or the quest
+-- is gone). Noted only when the game lists what the giver offers and the player stands at the step's place; once per
+-- quest and session. Read-only: nothing is chosen or accepted here.
+local reported = {}
+local function offered(event)
+ local ids, known = {}, false
+ if event == 'GOSSIP_SHOW' then
+  local list = C_GossipInfo and call(C_GossipInfo.GetAvailableQuests)
+  if type(list) ~= 'table' then return ids, false end
+  known = true
+  for _, q in ipairs(list) do
+   if type(q) ~= 'table' or not q.questID then return ids, false end -- titles without ids prove nothing
+   ids[q.questID] = true
+  end
+ else
+  local n = call(GetNumAvailableQuests)
+  if type(n) ~= 'number' or type(GetAvailableQuestInfo) ~= 'function' then return ids, false end
+  known = true
+  for i = 1, n do
+   local ok, _, _, _, _, id = pcall(GetAvailableQuestInfo, i)
+   if not ok or type(id) ~= 'number' or id <= 0 then return ids, false end
+   ids[id] = true
+  end
+ end
+ return ids, known
+end
+function C.CheckOffered(event)
+ local d = db(); local FR = ForeverRoutes
+ if not d or type(FR.Steps) ~= 'function' or type(FR.index) ~= 'number' then return end
+ local ids, known = offered(event); if not known then return end
+ if type(UnitPosition) ~= 'function' then return end
+ local ok, px, py, _, pm = pcall(UnitPosition, 'player')
+ if not ok or type(px) ~= 'number' or type(py) ~= 'number' then return end
+ local guid = call(UnitGUID, 'npc')
+ local npc = type(guid) == 'string' and tonumber(guid:match('^%a+%-%d+%-%d+%-%d+%-%d+%-(%d+)')) or nil
+ local steps = FR.Steps()
+ for i = FR.index, math.min(#steps, FR.index + 7) do
+  local step = steps[i]
+  if not step or step.op ~= 'a' or not step.q then break end
+  if step.m ~= pm or type(step.x) ~= 'number' or type(step.y) ~= 'number' or (px - step.x) ^ 2 + (py - step.y) ^ 2 > 40 * 40 then break end
+  local q = step.q
+  local has = C_QuestLog and (call(C_QuestLog.IsOnQuest, q) == true or call(C_QuestLog.IsQuestFlaggedCompleted, q) == true)
+  if not ids[q] and not has and not reported[q] then
+   reported[q] = true
+   local list = {}; for id in pairs(ids) do list[#list+1] = id end; table.sort(list)
+   d.notOffered = d.notOffered or {}
+   if #d.notOffered >= 2000 then table.remove(d.notOffered, 1) end
+   d.notOffered[#d.notOffered+1] = {id=q, npc=npc, playerLevel=UnitLevel('player'), seenAt=time(), offered=list}
+   print('ForeverRoutes: "' .. tostring(step.n or q) .. '" wird hier nicht angeboten. Als Datenlücke notiert (vermutlich fehlt eine Vorquest).')
+  end
+ end
+end
 function C.Enqueue(id)
  id = tonumber(id)
  if id and id > 0 and id == math.floor(id) and not queued[id] and not requested[id] then
@@ -117,7 +169,7 @@ function C.FlushLive()
  if not queued then transmitting=false end
 end
 local frame=CreateFrame('Frame')
-for _,event in ipairs({'PLAYER_LOGIN','QUEST_LOG_UPDATE','QUEST_DATA_LOAD_RESULT','QUEST_DETAIL','QUEST_ACCEPTED','QUEST_TURNED_IN','PLAYER_LOGOUT'}) do frame:RegisterEvent(event) end
+for _,event in ipairs({'PLAYER_LOGIN','QUEST_LOG_UPDATE','QUEST_DATA_LOAD_RESULT','QUEST_DETAIL','QUEST_ACCEPTED','QUEST_TURNED_IN','PLAYER_LOGOUT','GOSSIP_SHOW','QUEST_GREETING'}) do frame:RegisterEvent(event) end
 frame:SetScript('OnEvent',function(_,event,id,xp,money)
  if event=='PLAYER_LOGIN' then
   if not db() then return end
@@ -131,6 +183,7 @@ frame:SetScript('OnEvent',function(_,event,id,xp,money)
  elseif event=='QUEST_DATA_LOAD_RESULT' then
   if xp then C.Capture(id) end
   queued[id]=nil; if pending and pending.id==id then pending=nil end
+ elseif event=='GOSSIP_SHOW' or event=='QUEST_GREETING' then C.CheckOffered(event)
  elseif event=='QUEST_DETAIL' then C.Capture(call(GetQuestID))
  elseif event=='QUEST_ACCEPTED' then C.Enqueue(id); C.Capture(id)
  elseif event=='QUEST_TURNED_IN' then

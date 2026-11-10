@@ -154,3 +154,51 @@ func TestSweepRunsRagefire(t *testing.T) {
 		t.Error("no dungeon block")
 	}
 }
+
+// Saved blocks played in their order give a route close to the one they were cut from, and the order can be changed:
+// the route stays valid (it is replayed) and still reaches the level.
+func TestSweepFollowsSavedBlocks(t *testing.T) {
+	d, err := dataset.Load("../data/routes-data.json.gz")
+	if err != nil {
+		t.Skip("no dataset")
+	}
+	w, err := NewWorld(d, Character{Race: "Orc", Class: "Shaman"}, Options{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	set := map[int]bool{}
+	for _, q := range w.Quests {
+		if q.MinLevel < 8 && q.Dungeon == nil && q.Type == "" && !q.Repeatable && len(q.StartSources) == 0 && w.zoneOf(q.StartPos) == "Durotar" {
+			set[q.ID] = true
+		}
+	}
+	res, blocks, err := w.Sweep(set, SweepOptions{Target: 8})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(blocks) < 3 {
+		t.Fatalf("%d blocks", len(blocks))
+	}
+	for i, b := range blocks {
+		if b.Name == "" || b.Zone == "" {
+			t.Errorf("block %d has no name", i)
+		}
+	}
+	again, _, err := w.Sweep(set, SweepOptions{Target: 8, Order: blocks})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if again.Level < 8 || again.Seconds > res.Seconds*1.15 {
+		t.Errorf("played from its blocks: level %d in %.0f s, the route itself %.0f s", again.Level, again.Seconds, res.Seconds)
+	}
+	swapped := append([]SweepBlock(nil), blocks...)
+	n := len(swapped)
+	swapped[n-1], swapped[n-2] = swapped[n-2], swapped[n-1]
+	other, _, err := w.Sweep(set, SweepOptions{Target: 8, Order: swapped})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if other.Level < 8 {
+		t.Errorf("with two blocks swapped: level %d", other.Level)
+	}
+}

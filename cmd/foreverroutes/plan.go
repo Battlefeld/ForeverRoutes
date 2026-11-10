@@ -16,6 +16,9 @@ import (
 	"github.com/Battlefeld/ForeverRoutes/route"
 )
 
+// datasetEdit changes the dataset after it is read (the chain rules of the blocks: blocks.go, export-addon -forever).
+var datasetEdit func(*dataset.Dataset)
+
 // loadWorld opens the dataset; profile is a file, "auto" for the bundled class
 // profile, or "" for the uncalibrated default estimate.
 func loadWorld(path, race, class, faction, profile string, dungeons ...bool) (*route.World, error) {
@@ -30,6 +33,9 @@ func loadWorldWithClientQuests(path, race, class, faction, profile, observations
 	d, err := dataset.Load(path)
 	if err != nil {
 		return nil, err
+	}
+	if datasetEdit != nil {
+		datasetEdit(d)
 	}
 	if observations != "" {
 		if _, err := clientquests.Apply(observations, d); err != nil {

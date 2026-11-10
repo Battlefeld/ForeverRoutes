@@ -153,6 +153,21 @@ func dungeonBlocks(w *route.World, res *route.Result, shareable map[int]bool) []
 	return out
 }
 
+// blocksFile is a route as named blocks in order: edit the order (or a block's quests) and play it with -from-blocks.
+type blocksFile struct {
+	Schema    string             `json:"schema"`
+	Key       string             `json:"key"`
+	Character route.Character    `json:"character"`
+	Target    int                `json:"target"`
+	Hours     float64            `json:"hours"`
+	Near      float64            `json:"near"`
+	Out       float64            `json:"out"`
+	Reach     float64            `json:"reach"`
+	Blocks    []route.SweepBlock `json:"blocks"`
+	Names     map[string]string  `json:"questNames"`
+	Shareable map[string]bool    `json:"shareable"` // Classic data; a quest without an entry is unknown
+}
+
 // blocksRun is one route of the comparison.
 type blocksRun struct {
 	Name     string             `json:"name"`
@@ -301,6 +316,11 @@ func cmdBlocks(args []string) error {
 	faction := fs.String("faction", "", "A or H (only for Skyborne)")
 	profile := fs.String("profile", automaticProfile, combatProfileHelp)
 	target := fs.Int("target", 12, "target level")
+	paces := fs.Bool("paces", true, "also compare with half and double fight times")
+	routeOut := fs.String("route-out", "", "write the fastest block route as a route file (for export-addon -forever) here")
+	blocksOut := fs.String("blocks-out", "", "write the blocks of that route (named, in order) here")
+	fromBlocks := fs.String("from-blocks", "", "a blocks file: play its blocks in their order instead of searching")
+	polish := fs.Duration("polish", 0, "improve each route afterwards with the existing optimizer's local edits for this long (0 = off)")
 	dungeons := fs.Bool("dungeons", false, "run the dungeons as blocks (the guide stays the ordinary solo guide)")
 	flags := fs.String("flags", "data/audits/quest-flags-classic.json", "quests a player can share (Classic data); empty = unknown")
 	zones := fs.String("zones", "", "comma separated zones of the own selection (default: the zones the guide's quests start in)")
@@ -395,6 +415,17 @@ func cmdBlocks(args []string) error {
 	r.QuestIDs = sortedIDs(guideSet)
 	rep.Runs = append(rep.Runs, r)
 	rep.Missed = g.Missed
+	polished := func(name string, world *route.World, events []route.GuideEvent) {
+		if *polish <= 0 {
+			return
+		}
+		if _, pg, err := world.Improve(events, *target, *polish); err == nil {
+			pr := runOf(name+", improved", pg.Result)
+			pr.Grind, pr.QuestIDs = pg.Grind, sortedIDs(acceptedIn(pg.Result))
+			rep.Runs = append(rep.Runs, pr)
+		}
+	}
+	polished("RestedXP order", wg, guide.Events)
 
 	// the same quests, ordered by areas
 	res, bl, o, err := bestSweep(w, guideSet, *target, prefer)
@@ -405,6 +436,8 @@ func cmdBlocks(args []string) error {
 	r.Near, r.Out, r.Look, r.Reach, r.Blocks, r.QuestIDs = o.Near, o.Out, o.Look, o.Reach, bl, sortedIDs(acceptedIn(res))
 	r.Dungeons = dungeonBlocks(w, res, shareable)
 	rep.Runs = append(rep.Runs, r)
+	polished("blocks, RestedXP's quests", w, route.EventsOf(res.Steps))
+	bestRes, bestBlocks, bestName := res, bl, r.Name
 
 	// an own selection: every quest of those zones the character can take below the target, less what is not worth it
 	if *zones != "" {
@@ -434,6 +467,10 @@ func cmdBlocks(args []string) error {
 		r.Near, r.Out, r.Look, r.Reach, r.Blocks, r.QuestIDs = po.Near, po.Out, po.Look, po.Reach, pbl, sortedIDs(kept)
 		r.Dungeons = dungeonBlocks(w, pres, shareable)
 		rep.Runs = append(rep.Runs, r)
+		polished("blocks, own selection", w, route.EventsOf(pres.Steps))
+		if pres.Seconds < bestRes.Seconds {
+			bestRes, bestBlocks, bestName = pres, pbl, r.Name
+		}
 		for id := range guideSet {
 			if !kept[id] {
 				rep.OnlyGuide = append(rep.OnlyGuide, id)
@@ -446,6 +483,77 @@ func cmdBlocks(args []string) error {
 		}
 		sort.Ints(rep.OnlyGuide)
 		sort.Ints(rep.OnlyOwn)
+	}
+
+	if *fromBlocks != "" {
+		raw, err := os.ReadFile(*fromBlocks)
+		if err != nil {
+			return err
+		}
+		var bf blocksFile
+		if err := json.Unmarshal(raw, &bf); err != nil || len(bf.Blocks) == 0 {
+			return fmt.Errorf("%s: malformed or empty blocks file", *fromBlocks)
+		}
+		set := map[int]bool{}
+		for _, b := range bf.Blocks {
+			for _, l := range [][]int{b.Accepted, b.Worked, b.TurnedIn} {
+				for _, id := range l {
+					set[id] = true
+				}
+			}
+		}
+		o := route.SweepOptions{Target: *target, Near: bf.Near, Reach: bf.Reach, Out: bf.Out, Prefer: prefer, Dungeons: w.Opt.Dungeons, Order: bf.Blocks}
+		ores, obl, err := w.Sweep(set, o)
+		if err != nil {
+			return err
+		}
+		r = runOf("blocks in the order of "+filepath.Base(*fromBlocks), ores)
+		r.Blocks, r.QuestIDs, r.Dungeons = obl, sortedIDs(acceptedIn(ores)), dungeonBlocks(w, ores, shareable)
+		rep.Runs = append(rep.Runs, r)
+		bestRes, bestBlocks, bestName = ores, obl, r.Name
+	}
+	key := char.RouteKey()
+	if *dungeons {
+		key += "-dungeons"
+	}
+	if *routeOut != "" {
+		doc := map[string]any{
+			"schema": "foreverroutes.route.v1", "key": key, "character": char, "target": *target, "winner": "blocks",
+			"basis":   "ForeverRoutes block route (" + bestName + "); quest selection partly from ordinary RestedXP Forever guides (RestedXP/RXPGuides, CC BY-NC-SA 4.0)",
+			"license": "CC-BY-NC-SA-4.0", "hours": map[string]float64{"blocks": bestRes.Seconds / 3600}, "seconds": bestRes.Seconds,
+			"level": bestRes.Level, "quests": bestRes.Quests, "killProfile": bestRes.Profile, "events": route.EventsOf(bestRes.Steps),
+			"chains": "foreverdb-full (blocks.Apply)", "replayVerified": true,
+		}
+		b, _ := json.MarshalIndent(doc, "", " ")
+		if err := os.WriteFile(*routeOut, append(b, '\n'), 0o644); err != nil {
+			return err
+		}
+	}
+	if *blocksOut != "" {
+		var bo route.SweepOptions
+		for _, x := range rep.Runs {
+			if x.Name == bestName {
+				bo = route.SweepOptions{Near: x.Near, Out: x.Out, Reach: x.Reach}
+			}
+		}
+		bf := blocksFile{Schema: "foreverroutes.blocks.v1", Key: key, Character: char, Target: *target, Hours: bestRes.Seconds / 3600,
+			Near: bo.Near, Out: bo.Out, Reach: bo.Reach, Blocks: bestBlocks, Names: map[string]string{}, Shareable: map[string]bool{}}
+		for _, b := range bestBlocks {
+			for _, l := range [][]int{b.Accepted, b.Worked, b.TurnedIn} {
+				for _, id := range l {
+					if q := w.ByID[id]; q != nil {
+						bf.Names[fmt.Sprint(id)] = q.Name
+						if shareable != nil && id < 90000 {
+							bf.Shareable[fmt.Sprint(id)] = shareable[id]
+						}
+					}
+				}
+			}
+		}
+		b, _ := json.MarshalIndent(bf, "", " ")
+		if err := os.WriteFile(*blocksOut, append(b, '\n'), 0o644); err != nil {
+			return err
+		}
 	}
 
 	// how well the quests used are confirmed in Forever
@@ -469,6 +577,9 @@ func cmdBlocks(args []string) error {
 
 	// does the comparison depend on how fast the player fights?
 	for _, pace := range []float64{0.5, 2} {
+		if !*paces {
+			break
+		}
 		wgp, err := blocksWorld(*path, *race, *class, *faction, *profile, pace, false, edit)
 		if err != nil {
 			return err

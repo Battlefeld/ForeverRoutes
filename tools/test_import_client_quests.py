@@ -27,6 +27,13 @@ class ImportTests(unittest.TestCase):
         self.assertEqual(updated['captures']['1.60.1.70685/3/enUS']['quests']['971']['title'],'New')
         with self.assertRaises(ValueError): m.merge(first,capture('Conflict',100))
 
+    def test_quests_not_offered_are_kept_once(self):
+        first=capture('Old',100)
+        key=next(iter(first['captures']))
+        first['captures'][key]['notOffered']={'1':{'id':844,'npc':3143,'playerLevel':11,'seenAt':50,'offered':{'1':870}}}
+        again=m.merge(m.merge({'schema':1,'captures':{}},first),first)
+        self.assertEqual(list(again['captures'][key]['notOffered'].values()),[{'id':844,'npc':3143,'playerLevel':11,'seenAt':50,'offered':{'1':870}}])
+
     def test_other_game_and_bad_identity_rejected(self):
         for key,value in [('build','12.0.0.123'),('region',9),('locale','xxXX')]:
             doc=capture();doc['captures']['1.60.1.70685/3/enUS'][key]=value
