@@ -239,7 +239,7 @@ func (w *World) travel(s *State, a, b dataset.Point) (float64, int) {
 func (w *World) travelSame(s *State, a, b dataset.Point) (float64, int) {
 	best, how := w.overland(s, a, b)
 	if best > hearthCast+30 && s.Time >= s.Hearth && w.walk(s.Bind, a) > 60 {
-		if h, _ := w.overland(s, s.Bind, b); hearthCast+h < best {
+		if h, _ := w.overland(s, s.Bind, b); hearthCast+h+w.Opt.HearthMinSave < best {
 			best, how = hearthCast+h, byHearth
 		}
 	}

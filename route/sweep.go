@@ -77,6 +77,7 @@ type SweepBlock struct {
 type sweepTodo struct {
 	a    Action
 	cost float64 // seconds to get there
+	walk float64 // seconds on foot: what is near is judged by this, never by a hearthstone or a flight
 	m    *macro  // a dungeon block (its quests outside, the run, the hand-ins) instead of one action
 }
 
@@ -145,7 +146,12 @@ func (sw *sweeper) todo(s *State, failed map[sweepKey]int, relaxed bool) (todo [
 			}
 		}
 		if t := w.TravelTime(s, s.Pos, a.At); !math.IsInf(t, 1) {
-			todo = append(todo, sweepTodo{a: a, cost: t})
+			// on foot, straight line with the model's path factor; another continent is never near
+			walk := math.Inf(1)
+			if d := distance(s.Pos, a.At); !math.IsInf(d, 1) {
+				walk = math.Max(t, d*1.2/7)
+			}
+			todo = append(todo, sweepTodo{a: a, cost: t, walk: walk})
 		}
 	}
 	for _, q := range sw.quests {
@@ -182,7 +188,7 @@ func (sw *sweeper) todo(s *State, failed map[sweepKey]int, relaxed bool) (todo [
 			}
 		}
 	}
-	sort.SliceStable(todo, func(i, j int) bool { return todo[i].cost < todo[j].cost })
+	sort.SliceStable(todo, func(i, j int) bool { return todo[i].walk < todo[j].walk })
 	return todo, waiting
 }
 
@@ -321,12 +327,12 @@ func (sw *sweeper) step(s *State, acts *[]Action, failed map[sweepKey]int, relax
 		*acts = append(*acts, m.actions...)
 		return m.state, true
 	}
-	if len(todo) > 0 && todo[0].cost <= o.Near {
+	if len(todo) > 0 && todo[0].walk <= o.Near {
 		return sw.do(s, acts, failed, todo[0]), true // what is near is simply done
 	}
 	if o.Out > 0 {
 		for _, c := range todo {
-			if c.a.Op == "work" && c.cost <= o.Out {
+			if c.a.Op == "work" && c.walk <= o.Out {
 				return sw.do(s, acts, failed, c), true // stay out while the log can be worked
 			}
 		}

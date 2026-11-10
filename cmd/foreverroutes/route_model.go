@@ -7,9 +7,13 @@ import "github.com/Battlefeld/ForeverRoutes/route"
 type RouteModel struct {
 	Preparations     *route.PreparationPlan  `json:"preparations,omitempty"`
 	SleepingBagModel *route.SleepingBagModel `json:"sleepingBagModel,omitempty"`
+	HearthMinSave    float64                 `json:"hearthMinSave,omitempty"`
 }
 
 func (m RouteModel) apply(w *route.World) error {
+	if m.HearthMinSave > 0 {
+		w.Opt.HearthMinSave = m.HearthMinSave
+	}
 	if m.Preparations != nil {
 		if err := w.SetPreparations(*m.Preparations); err != nil {
 			return err

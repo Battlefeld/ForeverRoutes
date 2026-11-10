@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strconv"
 	"strings"
 
 	"github.com/Battlefeld/ForeverRoutes/blocks"
@@ -244,6 +245,10 @@ func bestSweep(w *route.World, set map[int]bool, target int, prefer map[int][]in
 	if quickSweep {
 		nears, outs, reaches = []float64{75, 180}, []float64{0, 300}, []float64{500}
 	}
+	if startLive != nil {
+		// a stretch to play: the log is worked off before the way back, whatever the model's clock says
+		nears, outs, reaches = []float64{120}, []float64{900}, []float64{500}
+	}
 	for _, near := range nears {
 		for _, out := range outs {
 			for _, reach := range reaches {
@@ -260,6 +265,9 @@ func bestSweep(w *route.World, set map[int]bool, target int, prefer map[int][]in
 		return nil, nil, bo, last
 	}
 	base := bo
+	if startLive != nil {
+		return best, bb, bo, nil
+	}
 	if quickSweep {
 		o := base
 		o.Look, o.Grind = 900, true
@@ -393,6 +401,11 @@ func cmdBlocks(args []string) error {
 	target := fs.Int("target", 12, "target level")
 	startLevel := fs.Int("start-level", 0, "begin the block routes as a character of this level (with -start-at) instead of a new one")
 	startAt := fs.Int("start-at", 0, "with -start-level: the quest whose giver the character stands at")
+	startActive := fs.String("start-active", "", "with -start-level: quests in the log, comma separated")
+	skip := fs.String("skip", "", "quests the block routes leave out, comma separated")
+	noProf := fs.Bool("no-professions", false, "the block routes learn no professions on the way")
+	hearthSave := fs.Float64("hearth-save", 0, "the hearthstone only when it saves this many seconds over walking (0: any saving)")
+	startDone := fs.String("start-done", "", "with -start-level: quests handed in, comma separated")
 	quick := fs.Bool("quick", false, "long routes: few sweep settings, no look ahead, no leaving out of single quests")
 	against := fs.String("against", "", "a route file to replay beside the others (a shipped or extended route)")
 	paces := fs.Bool("paces", true, "also compare with half and double fight times")
@@ -472,12 +485,30 @@ func cmdBlocks(args []string) error {
 		return err
 	}
 	w := wg
+	skipped := map[int]bool{}
+	for _, f := range strings.Split(*skip, ",") {
+		if id, err := strconv.Atoi(strings.TrimSpace(f)); err == nil {
+			skipped[id] = true
+		}
+	}
 	if *dungeons {
 		if w, err = blocksWorld(*path, *race, *class, *faction, *profile, 1, true, edit); err != nil {
 			return err
 		}
 	}
 	rep.Chains, rep.Changes = len(changes), changes
+	var model RouteModel
+	if *noProf {
+		p := w.Preparations()
+		p.Camping, p.ForceProfessions = false, false
+		if err := w.SetPreparations(p); err != nil {
+			return err
+		}
+		model.Preparations = &p
+	}
+	if *hearthSave > 0 {
+		w.Opt.HearthMinSave, model.HearthMinSave = *hearthSave, *hearthSave
+	}
 	g, err := wg.FollowGuide(guide.Events, *target)
 	if err != nil {
 		return err
@@ -543,6 +574,16 @@ func cmdBlocks(args []string) error {
 		}
 		pos := q.StartPos
 		startLive = &route.Live{Level: *startLevel, Pos: &pos, Bind: &pos, Completed: []int{}, Active: []route.LiveQuest{}}
+		for _, f := range strings.Split(*startDone, ",") {
+			if id, err := strconv.Atoi(strings.TrimSpace(f)); err == nil {
+				startLive.Completed = append(startLive.Completed, id)
+			}
+		}
+		for _, f := range strings.Split(*startActive, ",") {
+			if id, err := strconv.Atoi(strings.TrimSpace(f)); err == nil {
+				startLive.Active = append(startLive.Active, route.LiveQuest{ID: id})
+			}
+		}
 		defer func() { startLive = nil }()
 	}
 	// the same quests, ordered by areas
@@ -566,7 +607,7 @@ func cmdBlocks(args []string) error {
 	}
 	own := map[int]bool{}
 	for _, q := range w.Quests {
-		if q.MinLevel < *target && q.Dungeon == nil && q.Type == "" && !q.Repeatable && len(q.StartSources) == 0 && (guideZones["all"] || guideZones[w.ZoneName(q.StartPos)]) {
+		if q.MinLevel < *target && q.Dungeon == nil && q.Type == "" && !q.Repeatable && len(q.StartSources) == 0 && !skipped[q.ID] && (guideZones["all"] || guideZones[w.ZoneName(q.StartPos)]) {
 			own[q.ID] = true
 		}
 	}
@@ -664,6 +705,12 @@ func cmdBlocks(args []string) error {
 		}
 		if startLive != nil {
 			doc["start"] = startLive
+		}
+		if model.Preparations != nil {
+			doc["preparations"] = model.Preparations
+		}
+		if model.HearthMinSave > 0 {
+			doc["hearthMinSave"] = model.HearthMinSave
 		}
 		b, _ := json.MarshalIndent(doc, "", " ")
 		if err := os.WriteFile(*routeOut, append(b, '\n'), 0o644); err != nil {

@@ -146,6 +146,9 @@ type Options struct {
 	WalkTable    *dataset.WalkTable `json:"-"` // walks measured between the places routes go to (nil: the walk grid for all)
 	Dungeons     bool               // dungeon runs are allowed; the optimizer may choose none
 	GroupSearch  float64            // seconds to find a group for a dungeon run (600; tanks and healers 60)
+	// HearthMinSave: the hearthstone is used only when it saves at least this many seconds over walking (0: any
+	// saving). It is lost for an hour once used: a player does not hearth to save a minute.
+	HearthMinSave float64
 }
 
 func (o Options) withDefaults() Options {
