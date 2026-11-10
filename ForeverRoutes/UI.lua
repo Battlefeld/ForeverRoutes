@@ -580,6 +580,19 @@ SlashCmdList.FOREVERROUTES=function(msg)
  elseif msg=='guide'or msg=='guide rxp'or msg=='guide route'then
   local mode=msg=='guide rxp'and'rxp'or msg=='guide route'and'route'or(FR.GuideMode()=='rxp'and'route'or'rxp')
   FR.SetGuideMode(mode);print('ForeverRoutes: '..(FR.GuideMode()=='rxp'and'RestedXP-Guide'or'ForeverRoutes-Route'..(FR.LiveWanted()and' mit Live-Plan'or'')));refresh()
+ elseif msg=='test'or msg:match('^test%s')then
+  local zones,t=FR.Tests();local arg=strtrim(msg:sub(5))
+  if #zones==0 then print('ForeverRoutes: keine Teststrecken für diesen Charakter');return end
+  if arg==''then
+   print('ForeverRoutes: Teststrecken (/fr test <Nummer>, /fr test aus):')
+   for i,z in ipairs(zones)do local r=t[z];print(string.format('  %d. %s (ab Stufe %d, %.1f h)%s',i,z,r.start or 0,r.hours or 0,ForeverRoutesCharDB and ForeverRoutesCharDB.test==z and' <- aktiv'or''))end
+   return
+  end
+  if arg=='aus'or arg=='off'then FR.SetTest(nil);print('ForeverRoutes: Teststrecke aus, wieder die normale Route');refresh();return end
+  local pick=zones[tonumber(arg)or 0]
+  if not pick then for _,z in ipairs(zones)do if z:lower():find(arg,1,true)then pick=z;break end end end
+  if not pick then print('ForeverRoutes: keine Teststrecke "'..arg..'" (/fr test zeigt die Liste)');return end
+  FR.SetTest(pick);print('ForeverRoutes: Teststrecke '..pick..' (Live-Plan aus). /fr test aus kehrt zurück.');refresh();return
  elseif msg=='neu'or msg=='replan'then FR.ReplanNow()
  elseif msg=='live'or msg=='live an'or msg=='live aus'then
   local on=msg=='live an'or(msg=='live'and not FR.LiveWanted());FR.SetLiveWanted(on)

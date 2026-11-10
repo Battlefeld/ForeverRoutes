@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"math"
 	"os"
 	"path/filepath"
 	"sort"
@@ -260,6 +261,15 @@ func bestSweep(w *route.World, set map[int]bool, target int, prefer map[int][]in
 			last = err
 			return
 		}
+		if startLive != nil {
+			// a stretch from the middle may end below the target: the route with the most quests handed in wins,
+			// then the faster one (a test of a zone should take its quests, not stop early)
+			n := func(r *route.Result) int { return len(acceptedIn(r)) }
+			if best == nil || n(res) > n(best) || n(res) == n(best) && res.Seconds < best.Seconds {
+				best, bb, bo = res, bl, o
+			}
+			return
+		}
 		if res.Level >= target && (best == nil || res.Seconds < best.Seconds) {
 			best, bb, bo = res, bl, o
 		}
@@ -436,6 +446,7 @@ func cmdBlocks(args []string) error {
 	calSource := fs.String("cal-source", "", "where the calibration was measured")
 	hearthSave := fs.Float64("hearth-save", 0, "the hearthstone only when it saves this many seconds over walking (0: any saving)")
 	startReady := fs.String("start-ready", "", "with -start-level: quests in the log with every objective done, comma separated")
+	doneBelow := fs.Int("start-done-below", 0, "with -start-level: every quest below this level outside -zones counts as done (chains that begin elsewhere)")
 	startDone := fs.String("start-done", "", "with -start-level: quests handed in, comma separated")
 	quick := fs.Bool("quick", false, "long routes: few sweep settings, no look ahead, no leaving out of single quests")
 	against := fs.String("against", "", "a route file to replay beside the others (a shipped or extended route)")
@@ -613,12 +624,44 @@ func cmdBlocks(args []string) error {
 	}
 
 	if *startLevel > 1 {
-		q := w.ByID[*startAt]
-		if q == nil {
-			return fmt.Errorf("-start-at: quest %d is not a quest of this character", *startAt)
+		var pos dataset.Point
+		if q := w.ByID[*startAt]; q != nil {
+			pos = q.StartPos
+		} else if *startAt != 0 || *zones == "" || strings.Contains(*zones, ",") {
+			return fmt.Errorf("-start-at: quest %d is not a quest of this character (without it: one zone in -zones, whose hub is the start)", *startAt)
+		} else {
+			// the hub of the zone: the quest giver place with the most quests of the character's level range around it
+			var starts []dataset.Point
+			for _, q := range w.Quests {
+				if w.ZoneName(q.StartPos) == *zones && q.MinLevel <= *startLevel && q.Level >= *startLevel-3 && q.Dungeon == nil {
+					starts = append(starts, q.StartPos)
+				}
+			}
+			if len(starts) == 0 {
+				return fmt.Errorf("-zones %s: no quest of level %d starts there", *zones, *startLevel)
+			}
+			best := -1
+			for _, a := range starts {
+				n := 0
+				for _, b := range starts {
+					if a.Map == b.Map && math.Hypot(a.X-b.X, a.Y-b.Y) <= 60 {
+						n++
+					}
+				}
+				if n > best {
+					best, pos = n, a
+				}
+			}
 		}
-		pos := q.StartPos
 		startLive = &route.Live{Level: *startLevel, Pos: &pos, Bind: &pos, Completed: []int{}, Active: []route.LiveQuest{}}
+		if *doneBelow > 0 {
+			// what a character of this level has done elsewhere: every quest below that level outside the zones
+			for _, q := range w.Quests {
+				if q.Level < *doneBelow && !(*zones != "" && strings.Contains(","+*zones+",", ","+w.ZoneName(q.StartPos)+",")) {
+					startLive.Completed = append(startLive.Completed, q.ID)
+				}
+			}
+		}
 		for _, f := range strings.Split(*startDone, ",") {
 			if id, err := strconv.Atoi(strings.TrimSpace(f)); err == nil {
 				startLive.Completed = append(startLive.Completed, id)
@@ -663,6 +706,12 @@ func cmdBlocks(args []string) error {
 	own := map[int]bool{}
 	for _, q := range w.Quests {
 		if q.MinLevel < *target && q.Dungeon == nil && q.Type == "" && !q.Repeatable && !skipped[q.ID] && (guideZones["all"] || guideZones[w.ZoneName(q.StartPos)]) {
+			if startLive != nil && !guideZones["all"] && !guideZones[w.ZoneName(q.EndPos)] {
+				continue // a test of zones: a quest handed in elsewhere (a letter to another continent) is not part of it
+			}
+			if hugeObjective(q) {
+				continue
+			}
 			own[q.ID] = true
 		}
 	}
@@ -931,6 +980,16 @@ func cmdBlocks(args []string) error {
 		return os.WriteFile(*out, append(b, '\n'), 0o644)
 	}
 	return nil
+}
+
+// hugeObjective: an objective no route can work by its count (a reputation of 3000 read as 3000 talks: Gelkis Alliance).
+func hugeObjective(q *route.Quest) bool {
+	for _, ob := range q.Objectives {
+		if ob.Count > 250 {
+			return true
+		}
+	}
+	return false
 }
 
 // acceptedIn: the quests a replayed route takes.

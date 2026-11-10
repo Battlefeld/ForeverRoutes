@@ -79,7 +79,7 @@ func cmdExportAddon(args []string) error {
 		b.WriteString("-- Personal: planned by ForeverCore with this character's own kill profile (its items and talents); taken instead of the shipped route while the data are the same.\n")
 		b.WriteString("ForeverRoutesData = ForeverRoutesData or {}\nForeverRoutesData.personal = ForeverRoutesData.personal or {}\n")
 	} else {
-		b.WriteString("ForeverRoutesData = ForeverRoutesData or {}\nForeverRoutesData.routes = {}\n")
+		b.WriteString("ForeverRoutesData = ForeverRoutesData or {}\nForeverRoutesData.routes = {}\nForeverRoutesData.tests = {}\n")
 	}
 	var ds *dataset.Dataset
 	for _, f := range files {
@@ -96,7 +96,8 @@ func cmdExportAddon(args []string) error {
 			Events    []route.GuideEvent `json:"events"`
 			Options   []route.ClassCost  `json:"classQuests"`
 			Wand      float64            `json:"wandDetour"`
-			Start     *route.Live        `json:"start"` // a personal route planned from the character's state
+			Start     *route.Live        `json:"start"`    // a personal route planned from the character's state
+			TestZone  string             `json:"testZone"` // a test stretch of one zone: ForeverRoutesData.tests[key][zone] (/fr test)
 		}
 		if err := json.Unmarshal(raw, &r); err != nil || len(r.Events) == 0 {
 			return fmt.Errorf("%s: malformed or empty route", f)
@@ -117,6 +118,9 @@ func cmdExportAddon(args []string) error {
 		w.SetWandDetour(r.Wand)
 		ds = w.Data
 		key := strings.TrimSuffix(filepath.Base(f), ".json")
+		if r.TestZone != "" {
+			key = r.Character.RouteKey()
+		}
 		var res *route.GuideResult
 		if r.Start != nil {
 			var s *route.State
@@ -147,8 +151,17 @@ func cmdExportAddon(args []string) error {
 			}
 			mark, table = fmt.Sprintf("personal = true, dataVersion = %s, revision = %s, ", luaStr(version), luaStr(fmt.Sprintf("%s-personal-%.0f", version, res.Seconds))), "personal"
 		}
-		fmt.Fprintf(&b, "ForeverRoutesData.%s[%s] = {race = %s, class = %s, faction = %s, target = %d, hours = %.1f, basis = %s, %ss = {\n",
-			table, luaStr(key), luaStr(r.Character.Race), luaStr(r.Character.Class), luaStr(r.Character.Faction), r.Target, res.Seconds/3600, luaStr(r.Winner), mark)
+		slot := "ForeverRoutesData." + table + "[" + luaStr(key) + "]"
+		if r.TestZone != "" {
+			fmt.Fprintf(&b, "ForeverRoutesData.tests[%s] = ForeverRoutesData.tests[%s] or {}\n", luaStr(key), luaStr(key))
+			slot = "ForeverRoutesData.tests[" + luaStr(key) + "][" + luaStr(r.TestZone) + "]"
+			mark += "test = " + luaStr(r.TestZone) + ", "
+			if r.Start != nil {
+				mark += fmt.Sprintf("start = %d, ", r.Start.Level)
+			}
+		}
+		fmt.Fprintf(&b, "%s = {race = %s, class = %s, faction = %s, target = %d, hours = %.1f, basis = %s, %ss = {\n",
+			slot, luaStr(r.Character.Race), luaStr(r.Character.Class), luaStr(r.Character.Faction), r.Target, res.Seconds/3600, luaStr(r.Winner), mark)
 		for _, st := range res.Steps {
 			b.WriteString(" {")
 			writeStep(&b, w, res, st)

@@ -549,13 +549,26 @@ func (w *World) grindMacro(s0 *State, target int, xpCap ...int) *macro {
 		return nil
 	}
 	next := min(target, lvl+1)
+	// farms near first; none of the character's level near (Booty Bay among level-40 creatures): farther away
+	for _, reach := range []float64{2500, 9000} {
+		if best != nil {
+			break
+		}
+		best = w.grindAt(s0, lvl, next, reach, xpCap...)
+	}
+	return best
+}
+
+// grindAt: the best grind to next among the farms within reach yards.
+func (w *World) grindAt(s0 *State, lvl, next int, reach float64, xpCap ...int) *macro {
+	var best *macro
 	for i := range w.Farms {
 		f := &w.Farms[i]
 		ml := mobLevel(f.NPC)
 		if ml > lvl+w.Opt.MaxMobAbove || ml < lvl-4 {
 			continue
 		}
-		if distance(s0.Pos, f.Site.Center) > 2500 {
+		if distance(s0.Pos, f.Site.Center) > reach {
 			continue
 		}
 		s := s0.clone()

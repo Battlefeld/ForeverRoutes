@@ -418,5 +418,24 @@ do
  FR.Refresh();check(FR.frame.own.text:GetText()=='Eigene Route: kaputt','error shown in the bar')
  ForeverCoreClient.PersonalRoute=savedPR;FR.Refresh();check(not FR.frame.own:IsShown()and FR.frame.status:IsShown(),'no run: the status line again')
 end
+
+-- Zone test stretches: /fr test lists them, /fr test <n> follows one instead of the route, /fr test aus goes back.
+do
+ local key=FR.Key()
+ local normal=FR.Route()
+ ForeverRoutesData.tests={[key]={['Thousand Needles']={target=31,hours=1.5,start=30,test='Thousand Needles',s={{op='a',q=4904,n='Free at Last',m=1,x=-5400,y=-2400,l=30}}}}}
+ local said={};local realPrint=print;print=function(m)said[#said+1]=tostring(m)end
+ SlashCmdList.FOREVERROUTES('test')
+ print=realPrint
+ check(said[2]and said[2]:find('Thousand Needles',1,true)and said[2]:find('ab Stufe 30',1,true),'/fr test lists the stretches')
+ print=function()end;SlashCmdList.FOREVERROUTES('test 1');print=realPrint
+ local r,sel=FR.Route()
+ check(r and r.test=='Thousand Needles'and sel==key..'-test-Thousand Needles','/fr test 1 follows the stretch')
+ print=function()end;SlashCmdList.FOREVERROUTES('test aus');print=realPrint
+ check(FR.Route()==normal,'/fr test aus goes back to the route')
+ print=function()end;SlashCmdList.FOREVERROUTES('test needles');print=realPrint
+ check(FR.Route().test=='Thousand Needles','a part of the zone name picks it')
+ FR.SetTest(nil);ForeverRoutesData.tests=nil
+end
 io.write('PASS '..count..' checks; no mocked UI/event errors\n')
 

@@ -81,6 +81,15 @@ function FR.Route()
  local key=FR.Key();local data=ForeverRoutesData
  if not key or not data then return nil,key end
  local c=charDB()
+ -- a test stretch of one zone (/fr test): it alone, until switched off
+ local test=c.test and data.tests and data.tests[key] and data.tests[key][c.test]
+ if test and test.s and #test.s>0 then
+  local selected=key..'-test-'..c.test
+  if c.routeKey~=selected or c.dataRevision~=data.build then
+   c.routeKey=selected;c.dataRevision=data.build;c.index=1;c.skipped={};c.confirmed={};FR.pinned=nil
+  end
+  return test,selected,'optimized'
+ end
  if FR.GuideMode()=='rxp'then
   local selected=key..'-rxp';local g=data.guides[key]
   if c.routeKey~=selected or c.dataRevision~=data.build then
@@ -107,6 +116,17 @@ function FR.Route()
  local solo=data.routes and data.routes[key]
  if solo and solo.s and #solo.s>0 then return solo,key,'optimized'end
  return data.fallbacks and data.fallbacks[key],selected,'rxp-fallback'
+end
+
+-- The test stretches of this character, by zone name (sorted), and choosing one (nil: back to the route).
+function FR.Tests()
+ local key=FR.Key();local t=key and ForeverRoutesData and ForeverRoutesData.tests and ForeverRoutesData.tests[key]
+ local out={};for zone in pairs(t or{})do out[#out+1]=zone end;table.sort(out);return out,t or{}
+end
+function FR.SetTest(zone)
+ local c=charDB();c.test=zone;c.live=nil;c.index=1;c.skipped={};c.confirmed={}
+ FR.live=nil;FR.nextLive=nil;FR.liveStages=nil;FR.liveBlock=nil;FR.pinned=nil
+ return FR.Advance()
 end
 
 -- With or without dungeons: the other route starts over from its first step that is not done yet.
