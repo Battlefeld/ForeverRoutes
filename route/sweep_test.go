@@ -103,3 +103,54 @@ func TestSweepPrefers(t *testing.T) {
 		}
 	}
 }
+
+// With dungeons the sweep runs Ragefire Chasm as a block: its quests from Orgrimmar are in the log before the run
+// and handed in after it.
+func TestSweepRunsRagefire(t *testing.T) {
+	d, err := dataset.Load("../data/routes-data.json.gz")
+	if err != nil {
+		t.Skip("no dataset")
+	}
+	w, err := NewWorld(d, Character{Race: "Orc", Class: "Shaman"}, Options{Dungeons: true})
+	if err != nil {
+		t.Fatal(err)
+	}
+	set := map[int]bool{}
+	for _, q := range w.Quests {
+		if z := w.zoneOf(q.StartPos); q.MinLevel < 14 && q.Dungeon == nil && q.Type == "" && !q.Repeatable && len(q.StartSources) == 0 && (z == "Durotar" || z == "Orgrimmar") {
+			set[q.ID] = true
+		}
+	}
+	res, blocks, err := w.Sweep(set, SweepOptions{Target: 14, Dungeons: true, Look: 900})
+	if err != nil {
+		t.Fatal(err)
+	}
+	run, taken, handed := -1, map[int]int{}, map[int]int{}
+	for i, s := range res.Steps {
+		switch {
+		case s.Op == "dungeon" && s.Dungeon == "ragefire-chasm":
+			run = i
+		case s.Op == "accept":
+			taken[s.Quest] = i
+		case s.Op == "turnin":
+			handed[s.Quest] = i
+		}
+	}
+	if run < 0 {
+		t.Fatal("no run of Ragefire Chasm")
+	}
+	// Testing an Enemy's Strength (5723), given in Orgrimmar
+	if i, ok := taken[5723]; !ok || i > run {
+		t.Errorf("5723 taken at step %d, the run is step %d", i, run)
+	}
+	if i, ok := handed[5723]; !ok || i < run {
+		t.Errorf("5723 handed in at step %d, the run is step %d", i, run)
+	}
+	found := false
+	for _, b := range blocks {
+		found = found || b.Kind == "dungeon" && b.Dungeon == "ragefire-chasm"
+	}
+	if !found {
+		t.Error("no dungeon block")
+	}
+}

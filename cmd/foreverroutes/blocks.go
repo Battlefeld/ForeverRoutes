@@ -34,7 +34,7 @@ func (p pacedProfile) Name() string {
 
 // blocksWorld opens the world as loadWorld does, with the dataset changed first (the chain rules) and the fights
 // scaled by pace.
-func blocksWorld(path, race, class, faction, profile string, pace float64, edit func(*dataset.Dataset)) (*route.World, error) {
+func blocksWorld(path, race, class, faction, profile string, pace float64, dungeons bool, edit func(*dataset.Dataset)) (*route.World, error) {
 	profile, err := resolveCombatProfile(path, class, profile)
 	if err != nil {
 		return nil, err
@@ -48,6 +48,7 @@ func blocksWorld(path, race, class, faction, profile string, pace float64, edit 
 	}
 	c := route.Character{Race: race, Class: class, Faction: faction}
 	var opt route.Options
+	opt.Dungeons = dungeons
 	if wk := filepath.Join(filepath.Dir(path), "walks.json.gz"); fileExists(wk) {
 		if opt.Walks, err = dataset.LoadWalks(wk); err != nil {
 			return nil, err
@@ -83,6 +84,75 @@ func blocksWorld(path, race, class, faction, profile string, pace float64, edit 
 	return w, nil
 }
 
+// dungeonQuest is one quest of a dungeon block.
+type dungeonQuest struct {
+	ID        int     `json:"id"`
+	Name      string  `json:"name"`
+	Shareable *bool   `json:"shareable,omitempty"` // Classic data; nil = unknown (a Forever quest)
+	Before    []int   `json:"before,omitempty"`    // quests that lead to it and must be done first
+	Inside    bool    `json:"givenInside,omitempty"`
+	Taken     float64 `json:"takenMinute,omitempty"`
+	HandedIn  float64 `json:"handedInMinute,omitempty"`
+	State     string  `json:"state"` // done, taken (not handed in by the end), not taken
+}
+
+// dungeonBlock is one run of a route with what belongs to it.
+type dungeonBlock struct {
+	Key    string         `json:"dungeon"`
+	Name   string         `json:"name"`
+	Level  int            `json:"level"`
+	Start  float64        `json:"startMinute"`
+	End    float64        `json:"endMinute"`
+	Quests []dungeonQuest `json:"quests"`
+}
+
+// dungeonBlocks reads the runs of a replayed route with their quests: taken before, what leads to them, handed in.
+func dungeonBlocks(w *route.World, res *route.Result, shareable map[int]bool) []dungeonBlock {
+	taken, handed := map[int]float64{}, map[int]float64{}
+	for _, s := range res.Steps {
+		switch s.Op {
+		case "accept":
+			taken[s.Quest] = s.Time / 60
+		case "turnin":
+			handed[s.Quest] = s.Time / 60
+		}
+	}
+	var out []dungeonBlock
+	prev := 0.0
+	for _, s := range res.Steps {
+		if s.Op == "dungeon" {
+			for _, d := range w.Dungeons {
+				if d.Key != s.Dungeon {
+					continue
+				}
+				b := dungeonBlock{Key: d.Key, Name: d.Name, Level: s.Level, Start: prev / 60, End: s.Time / 60}
+				for _, q := range d.Quests {
+					dq := dungeonQuest{ID: q.ID, Name: q.Name, Inside: q.StartInside, Taken: taken[q.ID], HandedIn: handed[q.ID], State: "not taken"}
+					if shareable != nil && q.ID < 90000 { // Forever's own quests are not in the Classic data
+						v := shareable[q.ID]
+						dq.Shareable = &v
+					}
+					for _, p := range w.ChainBefore(q) {
+						dq.Before = append(dq.Before, p.ID)
+					}
+					switch {
+					case q.EndInside && (taken[q.ID] > 0 || q.StartInside):
+						dq.State = "done"
+					case handed[q.ID] > 0:
+						dq.State = "done"
+					case taken[q.ID] > 0:
+						dq.State = "taken"
+					}
+					b.Quests = append(b.Quests, dq)
+				}
+				out = append(out, b)
+			}
+		}
+		prev = s.Time
+	}
+	return out
+}
+
 // blocksRun is one route of the comparison.
 type blocksRun struct {
 	Name     string             `json:"name"`
@@ -95,9 +165,11 @@ type blocksRun struct {
 	Level    int                `json:"level"`
 	Near     float64            `json:"near,omitempty"`
 	Out      float64            `json:"out,omitempty"`
+	Look     float64            `json:"look,omitempty"`
 	Reach    float64            `json:"reach,omitempty"`
 	Skipped  map[string]int     `json:"skipped,omitempty"`
 	Blocks   []route.SweepBlock `json:"blocks,omitempty"`
+	Dungeons []dungeonBlock     `json:"dungeonBlocks,omitempty"`
 	QuestIDs []int              `json:"questIds,omitempty"`
 }
 
@@ -120,24 +192,27 @@ func runOf(name string, res *route.Result) blocksRun {
 	return r
 }
 
-// bestSweep tries a few settings of the sweep and keeps the fastest route.
+// bestSweep tries a few settings of the sweep and keeps the fastest route: first the rules alone, then the best of
+// them with moves between places played ahead.
 func bestSweep(w *route.World, set map[int]bool, target int, prefer map[int][]int) (*route.Result, []route.SweepBlock, route.SweepOptions, error) {
 	var best *route.Result
 	var bb []route.SweepBlock
 	var bo route.SweepOptions
 	var last error
+	try := func(o route.SweepOptions) {
+		res, bl, err := w.Sweep(set, o)
+		if err != nil {
+			last = err
+			return
+		}
+		if res.Level >= target && (best == nil || res.Seconds < best.Seconds) {
+			best, bb, bo = res, bl, o
+		}
+	}
 	for _, near := range []float64{45, 75, 120, 180} {
 		for _, out := range []float64{0, 150, 300, 600, 1200} {
 			for _, reach := range []float64{300, 500, 800} {
-				o := route.SweepOptions{Target: target, Near: near, Reach: reach, Out: out, Prefer: prefer}
-				res, bl, err := w.Sweep(set, o)
-				if err != nil {
-					last = err
-					continue
-				}
-				if res.Level >= target && (best == nil || res.Seconds < best.Seconds) {
-					best, bb, bo = res, bl, o
-				}
+				try(route.SweepOptions{Target: target, Near: near, Reach: reach, Out: out, Prefer: prefer, Dungeons: w.Opt.Dungeons})
 			}
 		}
 	}
@@ -146,6 +221,16 @@ func bestSweep(w *route.World, set map[int]bool, target int, prefer map[int][]in
 			last = fmt.Errorf("no sweep reaches level %d", target)
 		}
 		return nil, nil, bo, last
+	}
+	base := bo
+	for _, look := range []float64{900, 1800, 3600} {
+		for _, near := range []float64{base.Near, 75} {
+			o := base
+			o.Look, o.Near = look, near
+			try(o)
+			o.Out = 0
+			try(o)
+		}
 	}
 	return best, bb, bo, nil
 }
@@ -160,6 +245,13 @@ func prune(w *route.World, set map[int]bool, target int, prefer map[int][]int) (
 	res, bl, o, err := bestSweep(w, cur, target, prefer)
 	if err != nil {
 		return nil, nil, nil, o, err
+	}
+	if o.Look > 0 {
+		fast := o
+		fast.Look = 0
+		if r, b, err := w.Sweep(cur, fast); err == nil && r.Level >= target {
+			res, bl = r, b
+		}
 	}
 	for {
 		ids := make([]int, 0, len(cur))
@@ -176,7 +268,9 @@ func prune(w *route.World, set map[int]bool, target int, prefer map[int][]int) (
 				continue // the route never took it: leaving it out changes nothing
 			}
 			delete(cur, id)
-			r, b, err := w.Sweep(cur, o)
+			fast := o
+			fast.Look = 0 // the selection is made with the rules alone: a look ahead for every quest left out takes too long
+			r, b, err := w.Sweep(cur, fast)
 			cur[id] = true
 			if err != nil || r.Level < target {
 				continue
@@ -186,6 +280,10 @@ func prune(w *route.World, set map[int]bool, target int, prefer map[int][]int) (
 			}
 		}
 		if drop == 0 {
+			// the selection stands: the best route through it
+			if r, b, bo, err := bestSweep(w, cur, target, prefer); err == nil && r.Seconds < res.Seconds {
+				res, bl, o = r, b, bo
+			}
 			return acceptedIn(res), res, bl, o, nil
 		}
 		delete(cur, drop)
@@ -203,6 +301,8 @@ func cmdBlocks(args []string) error {
 	faction := fs.String("faction", "", "A or H (only for Skyborne)")
 	profile := fs.String("profile", automaticProfile, combatProfileHelp)
 	target := fs.Int("target", 12, "target level")
+	dungeons := fs.Bool("dungeons", false, "run the dungeons as blocks (the guide stays the ordinary solo guide)")
+	flags := fs.String("flags", "data/audits/quest-flags-classic.json", "quests a player can share (Classic data); empty = unknown")
 	zones := fs.String("zones", "", "comma separated zones of the own selection (default: the zones the guide's quests start in)")
 	out := fs.String("out", "", "write the comparison (JSON) here")
 	fs.Parse(args)
@@ -217,6 +317,13 @@ func cmdBlocks(args []string) error {
 			return err
 		}
 		edit = func(d *dataset.Dataset) { changes, prefer = list.Apply(d) }
+	}
+	var shareable map[int]bool
+	if *flags != "" && fileExists(*flags) {
+		var err error
+		if shareable, err = blocks.Shareable(*flags); err != nil {
+			return err
+		}
 	}
 	cat, err := fallback.Load(*fallbackFile)
 	if err != nil {
@@ -248,7 +355,7 @@ func cmdBlocks(args []string) error {
 	}
 
 	// the guide with the dataset's own chains, then everything with the corrected ones
-	w0, err := blocksWorld(*path, *race, *class, *faction, *profile, 1, nil)
+	w0, err := blocksWorld(*path, *race, *class, *faction, *profile, 1, false, nil)
 	if err != nil {
 		return err
 	}
@@ -260,12 +367,18 @@ func cmdBlocks(args []string) error {
 	r.Grind, r.Skipped = g0.Grind, g0.Skipped
 	rep.Runs = append(rep.Runs, r)
 
-	w, err := blocksWorld(*path, *race, *class, *faction, *profile, 1, edit)
+	wg, err := blocksWorld(*path, *race, *class, *faction, *profile, 1, false, edit)
 	if err != nil {
 		return err
 	}
+	w := wg
+	if *dungeons {
+		if w, err = blocksWorld(*path, *race, *class, *faction, *profile, 1, true, edit); err != nil {
+			return err
+		}
+	}
 	rep.Chains, rep.Changes = len(changes), changes
-	g, err := w.FollowGuide(guide.Events, *target)
+	g, err := wg.FollowGuide(guide.Events, *target)
 	if err != nil {
 		return err
 	}
@@ -289,7 +402,8 @@ func cmdBlocks(args []string) error {
 		return err
 	}
 	r = runOf("blocks, RestedXP's quests", res)
-	r.Near, r.Out, r.Reach, r.Blocks, r.QuestIDs = o.Near, o.Out, o.Reach, bl, sortedIDs(acceptedIn(res))
+	r.Near, r.Out, r.Look, r.Reach, r.Blocks, r.QuestIDs = o.Near, o.Out, o.Look, o.Reach, bl, sortedIDs(acceptedIn(res))
+	r.Dungeons = dungeonBlocks(w, res, shareable)
 	rep.Runs = append(rep.Runs, r)
 
 	// an own selection: every quest of those zones the character can take below the target, less what is not worth it
@@ -305,15 +419,20 @@ func cmdBlocks(args []string) error {
 			own[q.ID] = true
 		}
 	}
-	if all, _, _, err := bestSweep(w, own, *target, prefer); err == nil {
+	all, abl, ao, aerr := bestSweep(w, own, *target, prefer)
+	if aerr == nil {
 		r = runOf("blocks, every quest of the zones", all)
 		r.QuestIDs = sortedIDs(acceptedIn(all))
 		rep.Runs = append(rep.Runs, r)
 	}
 	kept, pres, pbl, po, err := prune(w, own, *target, prefer)
+	if err == nil && aerr == nil && all.Seconds < pres.Seconds {
+		kept, pres, pbl, po = acceptedIn(all), all, abl, ao // leaving quests out did not help
+	}
 	if err == nil {
 		r = runOf("blocks, own selection", pres)
-		r.Near, r.Out, r.Reach, r.Blocks, r.QuestIDs = po.Near, po.Out, po.Reach, pbl, sortedIDs(kept)
+		r.Near, r.Out, r.Look, r.Reach, r.Blocks, r.QuestIDs = po.Near, po.Out, po.Look, po.Reach, pbl, sortedIDs(kept)
+		r.Dungeons = dungeonBlocks(w, pres, shareable)
 		rep.Runs = append(rep.Runs, r)
 		for id := range guideSet {
 			if !kept[id] {
@@ -350,11 +469,17 @@ func cmdBlocks(args []string) error {
 
 	// does the comparison depend on how fast the player fights?
 	for _, pace := range []float64{0.5, 2} {
-		wp, err := blocksWorld(*path, *race, *class, *faction, *profile, pace, edit)
+		wgp, err := blocksWorld(*path, *race, *class, *faction, *profile, pace, false, edit)
 		if err != nil {
 			return err
 		}
-		gp, err := wp.FollowGuide(guide.Events, *target)
+		wp := wgp
+		if *dungeons {
+			if wp, err = blocksWorld(*path, *race, *class, *faction, *profile, pace, true, edit); err != nil {
+				return err
+			}
+		}
+		gp, err := wgp.FollowGuide(guide.Events, *target)
 		if err != nil {
 			return err
 		}
@@ -392,9 +517,24 @@ func cmdBlocks(args []string) error {
 		if len(r.Blocks) == 0 {
 			continue
 		}
-		fmt.Printf("\n%s (near %.0f s, out %.0f s, reach %.0f yd): %d blocks\n", r.Name, r.Near, r.Out, r.Reach, len(r.Blocks))
+		fmt.Printf("\n%s (near %.0f s, out %.0f s, look %.0f s, reach %.0f yd): %d blocks\n", r.Name, r.Near, r.Out, r.Look, r.Reach, len(r.Blocks))
 		for i, b := range r.Blocks {
-			fmt.Printf("  %2d %-5s %-12s %5.1f-%5.1f min  lvl %2d  +%5d XP  take %d work %d hand in %d\n", i+1, b.Kind, b.Zone, b.Start/60, b.End/60, b.Level, b.XP, len(b.Accepted), len(b.Worked), len(b.TurnedIn))
+			fmt.Printf("  %2d %-7s %-12s %5.1f-%5.1f min  lvl %2d  +%5d XP  take %d work %d hand in %d\n", i+1, b.Kind, b.Zone, b.Start/60, b.End/60, b.Level, b.XP, len(b.Accepted), len(b.Worked), len(b.TurnedIn))
+		}
+	}
+	for _, r := range rep.Runs {
+		for _, b := range r.Dungeons {
+			fmt.Printf("\n%s: %s at level %d, minute %.0f-%.0f\n", r.Name, b.Name, b.Level, b.Start, b.End)
+			for _, q := range b.Quests {
+				share := "shareable unknown"
+				if q.Shareable != nil {
+					share = map[bool]string{true: "shareable", false: "NOT shareable"}[*q.Shareable]
+				}
+				if q.Inside {
+					share = "given inside"
+				}
+				fmt.Printf("   %-9s %-34s %-17s before %v\n", q.State, name(q.ID), share, q.Before)
+			}
 		}
 	}
 	fmt.Printf("\nguide events the dataset cannot follow (%d):\n", len(rep.Missed))

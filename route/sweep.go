@@ -28,6 +28,13 @@ type SweepOptions struct {
 	// and works it instead of walking to a quest giver that is not near (0 = no such rule): a hub is left with a
 	// full log and seen again when the log is done
 	Out float64
+	// Look: seconds a move to another place is played ahead for each candidate place; the one with the most XP per
+	// hour over that time is taken (0 = the place with the most to do for the way). Wide: places compared (0 = 4).
+	Look float64
+	Wide int
+	// Dungeons: the dungeons of the world (Options.Dungeons) are run as blocks: their quests and what leads to them
+	// are taken on the way, the run is one candidate among the places to go to
+	Dungeons bool
 	// Prefer: quest -> quests players took before it ("Offered after"): while one of them is in the set and still
 	// open, the quest waits, unless nothing else is left to do
 	Prefer map[int][]int
@@ -37,7 +44,8 @@ type SweepOptions struct {
 type SweepBlock struct {
 	Zone     string        `json:"zone"`
 	At       dataset.Point `json:"at"`
-	Kind     string        `json:"kind"` // hub (quest givers), round (objectives), mixed, grind
+	Kind     string        `json:"kind"` // hub (quest givers), round (objectives), mixed, grind, dungeon
+	Dungeon  string        `json:"dungeon,omitempty"`
 	Accepted []int         `json:"accepted,omitempty"`
 	Worked   []int         `json:"worked,omitempty"` // quests with an objective worked here
 	TurnedIn []int         `json:"turnedIn,omitempty"`
@@ -50,6 +58,219 @@ type SweepBlock struct {
 type sweepTodo struct {
 	a    Action
 	cost float64 // seconds to get there
+	m    *macro  // a dungeon block (its quests outside, the run, the hand-ins) instead of one action
+}
+
+type sweepKey [3]int
+
+type sweeper struct {
+	w      *World
+	o      SweepOptions
+	set    map[int]bool
+	quests []*Quest
+}
+
+func sweepKeyOf(a Action) sweepKey {
+	op := map[string]int{"accept": 1, "turnin": 2, "work": 3}[a.Op]
+	return sweepKey{op, a.Quest, a.Obj}
+}
+
+func (sw *sweeper) waits(s *State, q *Quest) bool {
+	for _, p := range sw.o.Prefer[q.ID] {
+		if pq := sw.w.ByID[p]; pq != nil && sw.set[p] && s.Status[pq.Index] != done {
+			return true
+		}
+	}
+	return false
+}
+
+// todo lists what the character can do now: quests to take, objectives to work, quests to hand in. waiting tells
+// that a quest was held back for a preferred one.
+func (sw *sweeper) todo(s *State, failed map[sweepKey]int, relaxed bool) (todo []sweepTodo, waiting bool) {
+	w, lvl := sw.w, sw.w.Level(s)
+	add := func(a Action) {
+		if at, ok := failed[sweepKeyOf(a)]; ok && at == lvl {
+			return
+		}
+		if t := w.TravelTime(s, s.Pos, a.At); !math.IsInf(t, 1) {
+			todo = append(todo, sweepTodo{a: a, cost: t})
+		}
+	}
+	for _, q := range sw.quests {
+		switch s.Status[q.Index] {
+		case notTaken:
+			if q.StartInside || w.CanAccept(s, q) != nil {
+				continue
+			}
+			if !relaxed && sw.waits(s, q) {
+				waiting = true
+				continue
+			}
+			add(Action{Op: "accept", Quest: q.ID, At: w.startAt(s, q)})
+		case active:
+			if w.complete(s, q) {
+				if !q.EndInside {
+					add(Action{Op: "turnin", Quest: q.ID, At: q.EndPos})
+				}
+				continue
+			}
+			for oi, ob := range q.Objectives {
+				if ob.Inside || s.Prog[q.Index][oi] >= float64(ob.Count) {
+					continue
+				}
+				if a, ok := w.bestSource(s, q, oi); ok {
+					add(a)
+				}
+			}
+		}
+	}
+	sort.SliceStable(todo, func(i, j int) bool { return todo[i].cost < todo[j].cost })
+	return todo, waiting
+}
+
+// levelUp: nothing can be done at this level: grind to where the next quest or objective opens.
+func (sw *sweeper) levelUp(s *State) *macro {
+	w, lvl, next := sw.w, sw.w.Level(s), 0
+	for _, q := range sw.quests {
+		n := 0
+		switch s.Status[q.Index] {
+		case notTaken:
+			if q.MinLevel > lvl {
+				n = q.MinLevel
+			}
+		case active:
+			if !w.complete(s, q) {
+				n = w.levelFor(s, q, sw.o.Target)
+			}
+		}
+		if n > lvl && (next == 0 || n < next) {
+			next = n
+		}
+	}
+	if next == 0 || next > sw.o.Target {
+		next = sw.o.Target
+	}
+	return w.grindMacro(s, next)
+}
+
+// places picks, of what is to do, the places worth going to when nothing is near: each open thing within reach of a
+// place counts for it, against the way there; the best few places that are not each other's neighbours.
+func (sw *sweeper) places(todo []sweepTodo) []sweepTodo {
+	type scored struct {
+		t sweepTodo
+		v float64
+	}
+	all := make([]scored, len(todo))
+	for i, c := range todo {
+		n := 0
+		for _, d := range todo {
+			if distance(c.a.At, d.a.At) <= sw.o.Reach {
+				n++
+			}
+		}
+		all[i] = scored{c, float64(n) / (c.cost + 30*float64(n))}
+	}
+	sort.SliceStable(all, func(i, j int) bool { return all[i].v > all[j].v })
+	wide := sw.o.Wide
+	if wide <= 0 {
+		wide = 4
+	}
+	var out []sweepTodo
+	for _, c := range all {
+		near := false
+		for _, o := range out {
+			near = near || distance(c.t.a.At, o.a.At) <= sw.o.Reach
+		}
+		if !near {
+			if out = append(out, c.t); len(out) >= wide {
+				break
+			}
+		}
+	}
+	return out
+}
+
+// do applies a choice; a failed action is remembered for this level.
+func (sw *sweeper) do(s *State, acts *[]Action, failed map[sweepKey]int, c sweepTodo) *State {
+	if c.m != nil {
+		*acts = append(*acts, c.m.actions...)
+		return c.m.state
+	}
+	if !sw.w.try(s, acts, c.a) {
+		failed[sweepKeyOf(c.a)] = sw.w.Level(s)
+	}
+	return s
+}
+
+// step makes one decision and applies it; false when nothing is left to do. look: a move to another place is
+// chosen by playing each candidate ahead (off inside such a look ahead).
+func (sw *sweeper) step(s *State, acts *[]Action, failed map[sweepKey]int, relaxed *bool, look bool) (*State, bool) {
+	w, o := sw.w, sw.o
+	todo, waiting := sw.todo(s, failed, *relaxed)
+	if len(todo) == 0 && waiting {
+		*relaxed = true
+		return s, true
+	}
+	*relaxed = false
+	var runs []sweepTodo
+	if o.Dungeons {
+		for _, d := range w.Dungeons {
+			if m := w.dungeonMacro(s, d); m != nil {
+				runs = append(runs, sweepTodo{a: Action{Op: "dungeon", Dungeon: d.Key, At: d.Entrance}, cost: w.TravelTime(s, s.Pos, d.Entrance), m: m})
+			}
+		}
+	}
+	if len(todo) == 0 && len(runs) == 0 {
+		m := sw.levelUp(s)
+		if m == nil {
+			return s, false
+		}
+		*acts = append(*acts, m.actions...)
+		return m.state, true
+	}
+	if len(todo) > 0 && todo[0].cost <= o.Near {
+		return sw.do(s, acts, failed, todo[0]), true // what is near is simply done
+	}
+	if o.Out > 0 {
+		for _, c := range todo {
+			if c.a.Op == "work" && c.cost <= o.Out {
+				return sw.do(s, acts, failed, c), true // stay out while the log can be worked
+			}
+		}
+	}
+	cands := append(sw.places(todo), runs...)
+	pick := cands[0]
+	if look && o.Look > 0 && len(cands) > 1 {
+		best := math.Inf(-1)
+		for _, c := range cands {
+			f := make(map[sweepKey]int, len(failed))
+			for k, v := range failed {
+				f[k] = v
+			}
+			var tmp []Action
+			r := sw.do(s.clone(), &tmp, f, c)
+			rel := false
+			for i := 0; i < 600 && r.Time-s.Time < o.Look && w.Level(r) < o.Target; i++ {
+				var ok bool
+				if r, ok = sw.step(r, &tmp, f, &rel, false); !ok {
+					break
+				}
+			}
+			if dt := r.Time - s.Time; dt > 0 {
+				if v := float64(r.XP-s.XP) / dt; v > best {
+					best, pick = v, c
+				}
+			}
+		}
+	} else if len(runs) > 0 && !look && o.Look > 0 {
+		// inside a look ahead a run that is possible is taken when its entrance is the nearest place
+		for _, c := range runs {
+			if c.cost < pick.cost {
+				pick = c
+			}
+		}
+	}
+	return sw.do(s, acts, failed, pick), true
 }
 
 // Sweep plans a route through the quests of set (quest ids) by areas and replays it. Quests of the set this
@@ -64,129 +285,35 @@ func (w *World) Sweep(set map[int]bool, o SweepOptions) (*Result, []SweepBlock, 
 	if o.Reach <= 0 {
 		o.Reach = 500
 	}
-	var quests []*Quest
-	for _, q := range w.Quests {
-		if set[q.ID] {
-			quests = append(quests, q)
+	sw := &sweeper{w: w, o: o, set: map[int]bool{}}
+	for id := range set {
+		sw.set[id] = true
+	}
+	if o.Dungeons {
+		// a dungeon's quests and what leads to them belong to its block
+		for _, d := range w.Dungeons {
+			for _, q := range d.Quests {
+				sw.set[q.ID] = true
+				for _, p := range w.ChainBefore(q) {
+					sw.set[p.ID] = true
+				}
+			}
 		}
 	}
-	sort.Slice(quests, func(i, j int) bool { return quests[i].ID < quests[j].ID })
+	for _, q := range w.Quests {
+		if sw.set[q.ID] {
+			sw.quests = append(sw.quests, q)
+		}
+	}
+	sort.Slice(sw.quests, func(i, j int) bool { return sw.quests[i].ID < sw.quests[j].ID })
 	s := w.NewState()
 	var acts []Action
-	failed := map[[3]int]int{} // an action that did not work at a level is not tried again at that level
-	key := func(a Action) [3]int {
-		op := map[string]int{"accept": 1, "turnin": 2, "work": 3}[a.Op]
-		return [3]int{op, a.Quest, a.Obj}
-	}
-	waits := func(s *State, q *Quest) bool {
-		for _, p := range o.Prefer[q.ID] {
-			if pq := w.ByID[p]; pq != nil && set[p] && s.Status[pq.Index] != done {
-				return true
-			}
-		}
-		return false
-	}
-	relaxed := false // nothing else is left: the quests that wait for a preferred one are taken as well
+	failed := map[sweepKey]int{} // an action that did not work at a level is not tried again at that level
+	relaxed := false             // nothing else is left: the quests that wait for a preferred one are taken as well
 	for step := 0; step < 20000 && w.Level(s) < o.Target; step++ {
-		lvl := w.Level(s)
-		var todo []sweepTodo
-		waiting := false
-		add := func(a Action) {
-			if at, ok := failed[key(a)]; ok && at == lvl {
-				return
-			}
-			if t := w.TravelTime(s, s.Pos, a.At); !math.IsInf(t, 1) {
-				todo = append(todo, sweepTodo{a, t})
-			}
-		}
-		for _, q := range quests {
-			switch s.Status[q.Index] {
-			case notTaken:
-				if w.CanAccept(s, q) == nil {
-					if !relaxed && waits(s, q) {
-						waiting = true
-						continue
-					}
-					add(Action{Op: "accept", Quest: q.ID, At: w.startAt(s, q)})
-				}
-			case active:
-				if w.complete(s, q) {
-					add(Action{Op: "turnin", Quest: q.ID, At: q.EndPos})
-					continue
-				}
-				for oi, ob := range q.Objectives {
-					if s.Prog[q.Index][oi] >= float64(ob.Count) {
-						continue
-					}
-					if a, ok := w.bestSource(s, q, oi); ok {
-						add(a)
-					}
-				}
-			}
-		}
-		if len(todo) == 0 && waiting {
-			relaxed = true
-			continue
-		}
-		relaxed = false
-		if len(todo) == 0 {
-			// nothing can be done at this level: level to where the next quest or objective opens
-			next := 0
-			for _, q := range quests {
-				n := 0
-				switch s.Status[q.Index] {
-				case notTaken:
-					if q.MinLevel > lvl {
-						n = q.MinLevel
-					}
-				case active:
-					if !w.complete(s, q) {
-						n = w.levelFor(s, q, o.Target)
-					}
-				}
-				if n > lvl && (next == 0 || n < next) {
-					next = n
-				}
-			}
-			if next == 0 || next > o.Target {
-				next = o.Target
-			}
-			m := w.grindMacro(s, next)
-			if m == nil {
-				break
-			}
-			acts = append(acts, m.actions...)
-			s = m.state
-			continue
-		}
-		sort.SliceStable(todo, func(i, j int) bool { return todo[i].cost < todo[j].cost })
-		pick := todo[0]
-		if pick.cost > o.Near && o.Out > 0 {
-			for _, c := range todo {
-				if c.a.Op == "work" && c.cost <= o.Out {
-					pick = c // todo is sorted: the nearest objective
-					break
-				}
-			}
-		}
-		if pick.cost > o.Near && pick.a.Op != "work" || pick.cost > o.Near && o.Out <= 0 {
-			// nothing near: go where the most is to do for the way (each open thing within reach of a place counts,
-			// and so does the time it saves to be done with a place for good)
-			best := math.Inf(-1)
-			for _, c := range todo {
-				n := 0
-				for _, d := range todo {
-					if distance(c.a.At, d.a.At) <= o.Reach {
-						n++
-					}
-				}
-				if v := float64(n) / (c.cost + 30*float64(n)); v > best {
-					best, pick = v, c
-				}
-			}
-		}
-		if !w.try(s, &acts, pick.a) {
-			failed[key(pick.a)] = lvl
+		var ok bool
+		if s, ok = sw.step(s, &acts, failed, &relaxed, true); !ok {
+			break
 		}
 	}
 	for w.Level(s) < o.Target {
@@ -226,6 +353,8 @@ func (w *World) sweepBlocks(res *Result, o SweepOptions) []SweepBlock {
 			return
 		}
 		switch {
+		case cur.Dungeon != "":
+			cur.Kind = "dungeon"
 		case len(cur.Worked) == 0 && len(cur.Accepted)+len(cur.TurnedIn) > 0:
 			cur.Kind = "hub"
 		case len(cur.Worked) > 0 && len(cur.Accepted)+len(cur.TurnedIn) == 0:
@@ -239,13 +368,15 @@ func (w *World) sweepBlocks(res *Result, o SweepOptions) []SweepBlock {
 		cur = nil
 	}
 	for _, st := range res.Steps {
-		if cur != nil && distance(cur.At, st.At) > o.Reach {
+		if cur != nil && (distance(cur.At, st.At) > o.Reach || st.Op == "dungeon" || cur.Dungeon != "") {
 			flush()
 		}
 		if cur == nil {
 			cur = &SweepBlock{Zone: w.zoneOf(st.At), At: st.At, Start: prevTime}
 		}
 		switch st.Op {
+		case "dungeon":
+			cur.Dungeon = st.Dungeon
 		case "accept":
 			cur.Accepted = append(cur.Accepted, st.Quest)
 		case "turnin":

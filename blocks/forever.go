@@ -193,3 +193,27 @@ func (l *List) Apply(d *dataset.Dataset) (changes []Change, preferred map[int][]
 	}
 	return changes, preferred
 }
+
+// Shareable reads the quests a player can share with the group (tools output data/audits/quest-flags-classic.json:
+// cmangos' QuestFlags, Classic data, not confirmed in Forever).
+func Shareable(path string) (map[int]bool, error) {
+	b, err := os.ReadFile(path)
+	if err != nil {
+		return nil, err
+	}
+	var doc struct {
+		Schema    string `json:"schema"`
+		Shareable []int  `json:"shareable"`
+	}
+	if err := json.Unmarshal(b, &doc); err != nil {
+		return nil, err
+	}
+	if doc.Schema != "foreverroutes.quest_flags.v1" {
+		return nil, fmt.Errorf("%s: unknown schema %q", path, doc.Schema)
+	}
+	out := make(map[int]bool, len(doc.Shareable))
+	for _, id := range doc.Shareable {
+		out[id] = true
+	}
+	return out, nil
+}

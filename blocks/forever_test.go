@@ -81,3 +81,14 @@ func TestLoadShippedList(t *testing.T) {
 		}
 	}
 }
+
+func TestShareableShipped(t *testing.T) {
+	s, err := Shareable("../data/audits/quest-flags-classic.json")
+	if err != nil {
+		t.Skip("no quest flags")
+	}
+	// Ragefire Chasm: Testing an Enemy's Strength can be shared, Returning the Lost Satchel (given inside) cannot
+	if !s[5723] || s[5724] {
+		t.Errorf("5723 shareable %v (want true), 5724 %v (want false)", s[5723], s[5724])
+	}
+}
