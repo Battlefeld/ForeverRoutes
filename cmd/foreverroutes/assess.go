@@ -150,10 +150,14 @@ func cmdAssessZones(args []string) error {
 			switch {
 			case row.Quests < 5:
 				row.Verdict = "useless: fewer than 5 quests"
-			case row.GrindXPH > 0 && row.XPPerHour < row.GrindXPH:
-				row.Verdict = "useless: slower than grinding"
+			case row.GrindXPH > 0 && row.XPPerHour < 0.75*row.GrindXPH:
+				row.Verdict = "useless: far slower than grinding"
 			case row.Walk > 0.5:
 				row.Verdict = "weak: more than half the time walking"
+			case row.GrindXPH > 0 && row.XPPerHour < 0.9*row.GrindXPH:
+				// the grinding model counts dense camps and no deaths: questing a little under it is still worth it
+				// (gear, money, quests that open later ones)
+				row.Verdict = "ok: a little slower than grinding"
 			default:
 				row.Verdict = "good"
 			}

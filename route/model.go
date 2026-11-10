@@ -135,6 +135,10 @@ type Options struct {
 	InteractSecs float64     // talking to an NPC (accept / turn in)
 	Profile      KillProfile // nil = DefaultProfile
 	MaxMobAbove  int         // mobs more than this many levels above the character are not attacked (3; melee and shamans 1)
+	// WayKills: creatures killed per minute on foot between quest places (0: none), as players do on the way
+	// (measured: about 2.5 at level 29-30 in Thousand Needles, beside the objectives' kills). Each costs a fight with
+	// rest of a common creature one level below the character and gives its XP.
+	WayKills float64
 	// EliteRadius: a place counts as among elites only when eliteMin elite spawns lie within this many yards of it
 	// (0: when they spawn in the same 200-yard cell). Measured: a cell flags a whole camp next to a dungeon entrance.
 	EliteRadius float64

@@ -40,6 +40,10 @@ type SweepOptions struct {
 	// yet cut much) and at most Above over it (its creatures can be fought soon); 0 = 5 and 6. Quests of an Order
 	// are taken as the order says.
 	Below, Above int
+	// MaxStep: seconds one take or objective may cost on the spot (fights, respawn waits, farming a starting item;
+	// travel not counted); a costlier one waits for a later level (a rare that is the only source in reach, an
+	// item drop at a few percent). 0 = 30 minutes; negative: no limit. Not used while an Order is played.
+	MaxStep float64
 	// Zones: a zone is worked off before the next: while something is to do in the zone the character is in, what
 	// lies in other zones waits (a hand-in in a city, an objective across the border). Long routes need it: without
 	// it the nearest thing is often over the border and the route walks back and forth.
@@ -266,6 +270,16 @@ func (sw *sweeper) do(s *State, acts *[]Action, failed map[sweepKey]int, c sweep
 		*acts = append(*acts, c.m.actions...)
 		return c.m.state
 	}
+	if sw.rank == nil && sw.o.MaxStep > 0 && c.a.Op != "turnin" {
+		t := s.clone()
+		var tried []Action
+		if !sw.w.try(t, &tried, c.a) || (t.Time-s.Time)-(t.Travel-s.Travel) > sw.o.MaxStep {
+			failed[sweepKeyOf(c.a)] = sw.w.Level(s)
+			return s
+		}
+		*acts = append(*acts, tried...)
+		return t
+	}
 	if !sw.w.try(s, acts, c.a) {
 		failed[sweepKeyOf(c.a)] = sw.w.Level(s)
 	}
@@ -410,6 +424,9 @@ func (w *World) Sweep(set map[int]bool, o SweepOptions) (*Result, []SweepBlock, 
 	}
 	if o.Below <= 0 {
 		o.Below = 5
+	}
+	if o.MaxStep == 0 {
+		o.MaxStep = 1800
 	}
 	if o.Above <= 0 {
 		o.Above = 6 // how high a quest may be is the danger rule's question (workable); this only keeps the log clear

@@ -440,6 +440,7 @@ func cmdBlocks(args []string) error {
 	soloQuests := fs.String("solo-quests", "", "elite quests the player does alone, comma separated (measured)")
 	soloElites := fs.Bool("solo-elites", false, "plain elites of the player's level or below are fought alone (measured)")
 	eliteRadius := fs.Float64("elite-radius", 0, "a place is among elites only with elites within this many yards (measured; 0: the 200-yard cell)")
+	wayKills := fs.Float64("way-kills", 0, "creatures killed per minute on foot between quest places (measured: 2; 0: none)")
 	mobAbove := fs.Int("mob-above", 0, "creatures up to this many levels above the player are attacked (measured; 0: the class rule)")
 	calFight := fs.Float64("cal-fight", 0, "measured factor on the profile's fight times (0: none)")
 	calRest := fs.Float64("cal-rest", 0, "measured factor on the profile's rest times (with -cal-fight)")
@@ -469,7 +470,7 @@ func cmdBlocks(args []string) error {
 			model.SoloQuests = append(model.SoloQuests, id)
 		}
 	}
-	model.SoloElites, model.MobAbove, model.EliteRadius = *soloElites, *mobAbove, *eliteRadius
+	model.SoloElites, model.MobAbove, model.EliteRadius, model.WayKills = *soloElites, *mobAbove, *eliteRadius, *wayKills
 	blocksModel = &model
 	defer func() { blocksModel = nil }()
 	var list *blocks.List
@@ -735,6 +736,9 @@ func cmdBlocks(args []string) error {
 			if model.EliteRadius > 0 {
 				doc["eliteRadius"] = model.EliteRadius
 			}
+			if model.WayKills > 0 {
+				doc["wayKills"] = model.WayKills
+			}
 			b, _ := json.MarshalIndent(doc, "", " ")
 			if err := os.WriteFile(*routeOut, append(b, '\n'), 0o644); err != nil {
 				return err
@@ -900,6 +904,9 @@ func cmdBlocks(args []string) error {
 		}
 		if model.EliteRadius > 0 {
 			doc["eliteRadius"] = model.EliteRadius
+		}
+		if model.WayKills > 0 {
+			doc["wayKills"] = model.WayKills
 		}
 		b, _ := json.MarshalIndent(doc, "", " ")
 		if err := os.WriteFile(*routeOut, append(b, '\n'), 0o644); err != nil {

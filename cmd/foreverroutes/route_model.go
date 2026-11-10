@@ -22,6 +22,8 @@ type RouteModel struct {
 	MobAbove   int   `json:"mobAbove,omitempty"`
 	// EliteRadius: an elite place is one with elites within this many yards (route.Options.EliteRadius)
 	EliteRadius float64 `json:"eliteRadius,omitempty"`
+	// WayKills: creatures killed per minute on foot (route.Options.WayKills), measured
+	WayKills float64 `json:"wayKills,omitempty"`
 }
 
 // edit: the dataset as this model sees it (before the world is made).
@@ -94,6 +96,9 @@ func (m RouteModel) apply(w *route.World) error {
 	}
 	if m.EliteRadius > 0 {
 		w.Opt.EliteRadius = m.EliteRadius
+	}
+	if m.WayKills > 0 {
+		w.Opt.WayKills = m.WayKills
 	}
 	if c := m.Calibration; c != nil {
 		if c.Fight <= 0 || c.Rest < 0 || c.Fight > 5 || c.Rest > 5 {

@@ -101,6 +101,7 @@ type World struct {
 	danger                       dangerMap
 	elites                       dangerMap               // elite places: cell -> highest elite level
 	eliteSpawns                  map[[3]int][]eliteSpawn // with Options.EliteRadius: elite spawns by cell
+	wayMobs                      map[int]*dataset.NPC    // with Options.WayKills: a common creature of a level
 	Dungeons                     []*Dungeon              // dungeons a route with dungeons may run (Options.Dungeons)
 	required                     map[int]bool            // quests of the required class chains (keepClassQuest), for requiredTarget
 	tank                         map[int]bool            // quests that give the tank form or stance (tankGoals)

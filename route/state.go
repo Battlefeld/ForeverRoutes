@@ -3,6 +3,7 @@ package route
 import (
 	"fmt"
 	"math"
+	"sort"
 
 	"github.com/Battlefeld/ForeverRoutes/dataset"
 	"github.com/Battlefeld/ForeverRoutes/xp"
@@ -147,8 +148,53 @@ func (w *World) move(s *State, to dataset.Point) error {
 	s.Time += t
 	s.Travel += t
 	s.Pos = to
+	if how == byWalk && w.Opt.WayKills > 0 && t > 0 {
+		w.wayKills(s, t)
+	}
 	w.discover(s)
 	return nil
+}
+
+// wayMob: a common creature one level below the character (median hit points of the dataset's creatures of that
+// level), the kind a player kills on the way.
+func (w *World) wayMob(level int) *dataset.NPC {
+	ml := max(1, level-1)
+	if n, ok := w.wayMobs[ml]; ok {
+		return n
+	}
+	var hp []int
+	for i := range w.Data.NPCs {
+		n := &w.Data.NPCs[i]
+		if n.Rank == 0 && n.MinLevel <= ml && ml <= n.MaxLevel && n.HP > 0 {
+			hp = append(hp, n.HP)
+		}
+	}
+	sort.Ints(hp)
+	n := &dataset.NPC{ID: -1, Name: "creature on the way", MinLevel: ml, MaxLevel: ml}
+	if len(hp) > 0 {
+		n.HP = hp[len(hp)/2]
+	}
+	if w.wayMobs == nil {
+		w.wayMobs = map[int]*dataset.NPC{}
+	}
+	w.wayMobs[ml] = n
+	return n
+}
+
+// wayKills: the creatures killed while walking for t seconds (Options.WayKills a minute): their fights and XP.
+func (w *World) wayKills(s *State, t float64) {
+	k := w.Opt.WayKills * t / 60
+	if k <= 0 {
+		return
+	}
+	n := w.wayMob(w.Level(s))
+	f, r := w.Opt.Profile.KillSeconds(w.Char, w.Level(s), n)
+	started := s.Time
+	d := k * (f + r)
+	s.Time += d
+	s.Combat += d
+	gain := w.bonusXP(s, int(math.Round(float64(xp.Kill(w.Level(s), mobLevel(n), false))*k)), started+d)
+	s.XP += gain + restedGain(s, gain)
 }
 
 // bindNear binds the hearthstone at an inn within reach of the character, as routes do in each new quest hub.
