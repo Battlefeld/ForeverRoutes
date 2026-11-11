@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strings"
 	"time"
 
 	"github.com/Battlefeld/ForeverRoutes/fallback"
@@ -222,16 +223,49 @@ func cmdNext(args []string) error {
 	var res *route.Result
 	mode := "plan"
 	if stretch != nil {
+		// no trip to the profession trainers or the camping vendor on a stretch: it was planned and measured without
+		p := w.Preparations()
+		if p.Camping || p.ForceProfessions {
+			p.Camping, p.ForceProfessions = false, false
+			if err := w.SetPreparations(p); err != nil {
+				return err
+			}
+			s.Preparation.Camping, s.Preparation.ForceProfessions = false, false // the state took them already
+		}
+		// Steady: the stretch's plan is kept and followed from the live state while it still fits (done quests drop out,
+		// the order stays); planned anew by zones only when the character left it (a step of it cannot be followed any
+		// more) or there is none yet. Planned anew after every quest change, the order jumped between near equal plans.
+		cache := stretchCache(character, stretch, *path)
 		set := map[int]bool{}
 		for _, z := range stretch.Zones {
 			for id := range zoneQuests(w, s, z, stretch.Target+3, nil, map[int]bool{}) {
 				set[id] = true
 			}
 		}
+		var fresh *route.Result
+		var freshEvents []route.GuideEvent
 		if sw, _, err := w.Sweep(set, route.SweepOptions{Target: stretch.Target, Near: 120, Out: 900, Reach: 500, Zones: true, From: s}); err == nil {
-			res, mode = sw.Head(*horizon, route.BlockQuests+2), "stretch"
+			fresh, freshEvents = sw.Head(*horizon, route.BlockQuests+2), route.EventsOf(sw.Steps)
 		} else {
 			notes = append(notes, "stretch could not be planned from the live state: "+err.Error())
+		}
+		if old := readStretchPlan(cache); len(old) > 0 {
+			if g, err := w.FollowGuideFrom(s, old, stretch.Target, *horizon); err == nil && len(g.Missed) == 0 && len(g.Steps) > 0 {
+				// the new plan takes over only when it is clearly better (15 % more XP per hour over the next hours)
+				if fresh == nil || route.XPRate(s, fresh) < stretchSwitch*route.XPRate(s, g.Result) {
+					res, mode = g.Result, "stretch"
+					notes = append(notes, "stretch: the plan so far, followed from the live state")
+				} else {
+					notes = append(notes, fmt.Sprintf("stretch: a new plan is %.0f %% faster, it takes over", (route.XPRate(s, fresh)/route.XPRate(s, g.Result)-1)*100))
+				}
+			} else if err == nil && len(g.Missed) > 0 {
+				notes = append(notes, fmt.Sprintf("stretch: the plan so far does not fit any more (%s %d: %s), planned anew", g.Missed[0].Op, g.Missed[0].Quest, g.Missed[0].Reason))
+			}
+		}
+		if res == nil && fresh != nil {
+			res, mode = fresh, "stretch"
+			writeStretchPlan(cache, freshEvents)
+			notes = append(notes, "stretch: planned anew by zones from the live state")
 		}
 	}
 	if res == nil && len(events) > 0 {
@@ -324,6 +358,50 @@ type stretchFile struct {
 	TestZone string      `json:"testZone"`
 	Zones    []string    `json:"zones"`
 	Start    *route.Live `json:"start"`
+}
+
+// stretchSwitch: how much more XP per hour a new plan of a stretch needs to replace the one being followed
+const stretchSwitch = 1.15
+
+// stretchCache is where the plan of a stretch is kept between calls (the user's cache folder): per character, stretch
+// and dataset, so a new dataset or stretch starts a new plan.
+func stretchCache(c route.Character, st *stretchFile, dataPath string) string {
+	dir, err := os.UserCacheDir()
+	if err != nil {
+		return ""
+	}
+	stamp := ""
+	if fi, err := os.Stat(dataPath); err == nil {
+		stamp = fmt.Sprintf("%d", fi.Size())
+	}
+	name := strings.NewReplacer(" ", "_", "/", "_").Replace(fmt.Sprintf("%s-%s-%s.json", c.RouteKey(), st.TestZone, stamp))
+	return filepath.Join(dir, "ForeverRoutes", "stretch", name)
+}
+
+func readStretchPlan(path string) []route.GuideEvent {
+	if path == "" {
+		return nil
+	}
+	raw, err := os.ReadFile(path)
+	if err != nil {
+		return nil
+	}
+	var ev []route.GuideEvent
+	if json.Unmarshal(raw, &ev) != nil {
+		return nil
+	}
+	return ev
+}
+
+func writeStretchPlan(path string, ev []route.GuideEvent) {
+	if path == "" {
+		return
+	}
+	if os.MkdirAll(filepath.Dir(path), 0o755) != nil {
+		return
+	}
+	b, _ := json.Marshal(ev)
+	_ = os.WriteFile(path, b, 0o644)
 }
 
 // findStretch: the stretch for this character whose levels hold the live level (from its start to its target).
