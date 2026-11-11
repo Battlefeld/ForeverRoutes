@@ -86,7 +86,9 @@ func TestShippedClassRoutesRetainPreviousFeasibleWinner(t *testing.T) {
 			if err != nil || result.Level < 20 || len(result.Skipped) != 0 {
 				t.Fatalf("new class route is not executable: %v", err)
 			}
-			if result.Seconds > incumbent.Seconds+.11 {
+			// a little slower is accepted (Kai, 11.11.: the starter routes need not be searched again after every data
+			// change); much slower is a search regression
+			if result.Seconds > incumbent.Seconds*1.03+.11 {
 				t.Fatalf("lost known feasible winner: new %.2fs, previous repriced %.2fs", result.Seconds, incumbent.Seconds)
 			}
 		})
