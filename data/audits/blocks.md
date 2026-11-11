@@ -230,3 +230,7 @@ Tanaris) bis 40, auf dem Forever-Datensatz mit dem gemessenen Modell: 25,1 h nac
 13,7 h, kein Grinden), 96 Quests, nichts übersprungen. Zum Vergleich Polestars Reihenfolge auf demselben Datensatz:
 30,1 h, 85 Abgaben. `export-addon` nimmt Dateien aus `data/routes-tests` als Teststrecken mit (`/fr test`); eine
 Teststrecke, die der Datensatz nicht mehr ganz trägt, bleibt draußen, statt den Export anzuhalten.
+
+Live ab dem eigenen Stand: `next` (der Live-Plan, den ForeverCore nach jeder Quest-Änderung anfragt) nimmt für einen
+Charakter, dessen Stufe in einer Teststrecke liegt (Start bis Ziel), deren Gebiete und gemessenes Modell und plant die
+Strecke vom Stand im Spiel neu (Modus `stretch`, rund 2 s). Im Addon: `/fr live an`.

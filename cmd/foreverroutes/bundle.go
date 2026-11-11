@@ -44,7 +44,7 @@ func cmdBundle(args []string) error {
 		"GPL-3.0.txt":            "LICENSES/GPL-3.0.txt",
 		"THIRD_PARTY_NOTICES.md": "THIRD_PARTY_NOTICES.md",
 	}
-	for _, pat := range []string{"data/routes/*.json", "data/routes/README.md", "data/profiles/*.json", "data/fallbacks/*"} {
+	for _, pat := range []string{"data/routes/*.json", "data/routes/README.md", "data/routes-tests/*.json", "data/profiles/*.json", "data/fallbacks/*"} {
 		m, err := filepath.Glob(pat)
 		if err != nil {
 			return err

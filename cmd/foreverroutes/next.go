@@ -7,6 +7,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"sort"
 	"time"
 
 	"github.com/Battlefeld/ForeverRoutes/fallback"
@@ -121,7 +122,29 @@ func cmdNext(args []string) error {
 	if file.Character.Race != "" && !route.SameCharacter(file.Character, character) {
 		return fmt.Errorf("route character does not match live character")
 	}
-	w, err := loadWorldWithClientQuests(*path, req.Race, req.Class, req.Faction, *profile, *observations, *group || hasDungeons(events))
+	// a stretch planned by zones for this character and level (routes-tests beside the routes): planned anew from the
+	// live state with its measured model, so the route goes on from the quests the character has (solo: also when
+	// the route with dungeons is selected, the stretch has none)
+	var stretch *stretchFile
+	if *routeFile == "auto" {
+		stretch = findStretch(filepath.Join(filepath.Dir(filepath.Clean(*routesDir)), "routes-tests"), character, req.Live.Level)
+		if stretch != nil {
+			file = stretch.routeFileData
+			events = nil
+			selectionNotes = append(selectionNotes, fmt.Sprintf("stretch %q: planned by zones from the live state to %d", stretch.TestZone, stretch.Target))
+		}
+	}
+	load := func() (*route.World, error) {
+		return loadWorldWithClientQuests(*path, req.Race, req.Class, req.Faction, *profile, *observations, *group || hasDungeons(events))
+	}
+	if stretch != nil {
+		load = func() (*route.World, error) {
+			return withModel(stretch.RouteModel, func() (*route.World, error) {
+				return loadWorldWithClientQuests(*path, req.Race, req.Class, req.Faction, *profile, *observations, false)
+			})
+		}
+	}
+	w, err := load()
 	if err != nil {
 		return err
 	}
@@ -198,7 +221,20 @@ func cmdNext(args []string) error {
 	}
 	var res *route.Result
 	mode := "plan"
-	if len(events) > 0 {
+	if stretch != nil {
+		set := map[int]bool{}
+		for _, z := range stretch.Zones {
+			for id := range zoneQuests(w, s, z, stretch.Target+3, nil, map[int]bool{}) {
+				set[id] = true
+			}
+		}
+		if sw, _, err := w.Sweep(set, route.SweepOptions{Target: stretch.Target, Near: 120, Out: 900, Reach: 500, Zones: true, From: s}); err == nil {
+			res, mode = sw.Head(*horizon, route.BlockQuests+2), "stretch"
+		} else {
+			notes = append(notes, "stretch could not be planned from the live state: "+err.Error())
+		}
+	}
+	if res == nil && len(events) > 0 {
 		// the best route known for this character; when nothing of it is left, plan freely
 		target := file.Target
 		if target == 0 {
@@ -224,7 +260,7 @@ func cmdNext(args []string) error {
 			return err
 		}
 	}
-	if *window > 0 && mode != "plan" {
+	if *window > 0 && mode != "plan" && mode != "stretch" {
 		if better, changed := w.ImproveLive(s, res, *window); changed {
 			notes = append(notes, fmt.Sprintf("next steps re-ordered from the live state: %.0f s faster", res.Seconds-better.Seconds))
 			res = better
@@ -279,6 +315,35 @@ type routeFileData struct {
 	Events     []route.GuideEvent `json:"events"`
 	Options    []route.ClassCost  `json:"classQuests"`
 	WandDetour float64            `json:"wandDetour"`
+}
+
+// stretchFile is a test stretch (data/routes-tests): a route from a character's state over a few levels, with the
+// zones it was planned over.
+type stretchFile struct {
+	routeFileData
+	TestZone string      `json:"testZone"`
+	Zones    []string    `json:"zones"`
+	Start    *route.Live `json:"start"`
+}
+
+// findStretch: the stretch for this character whose levels hold the live level (from its start to its target).
+func findStretch(dir string, c route.Character, level int) *stretchFile {
+	files, _ := filepath.Glob(filepath.Join(dir, "*.json"))
+	sort.Strings(files)
+	for _, f := range files {
+		raw, err := os.ReadFile(f)
+		if err != nil {
+			continue
+		}
+		var st stretchFile
+		if json.Unmarshal(raw, &st) != nil || st.Start == nil || len(st.Zones) == 0 || !route.SameCharacter(st.Character, c) {
+			continue
+		}
+		if level >= st.Start.Level && level < st.Target {
+			return &st
+		}
+	}
+	return nil
 }
 
 // readRoute reads guide steps: a plain list, or a route file (the output of improve).
