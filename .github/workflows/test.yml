@@ -41,7 +41,7 @@ jobs:
         run: python3 tools/audit_quest_objectives.py --out /tmp/quest-objectives
       # Lua 5.1 through lupa (PyPI): independent of the Ubuntu package mirrors, whose outage on 11.11. stopped the checks
       - name: install Lua 5.1 for addon checks
-        run: pip install --quiet "lupa==2.8"
+        run: python3 -m pip install --quiet --user --break-system-packages "lupa==2.8"
       - name: ForeverRoutes HUD and package checks
         run: |
           python3 tools/lua51.py -p $(find ForeverRoutes -name "*.lua")
