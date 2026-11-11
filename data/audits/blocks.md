@@ -221,3 +221,12 @@ Abgaben. Quests weiter weg (Donnerfels, Unterstadt) stehen unter „far“: die 
 
 Grenze des Modells: die XP eines Dungeonlaufs ist geschätzt (40 % der Gegner, 5er-Gruppe), nicht gemessen. Das Kloster
 ist deshalb eher unterschätzt; eine gemessene Klosterrunde würde das klären.
+
+## Stufe 30–40 als Teststrecke (11.11.)
+
+`data/routes-tests/orc-shaman-30-40.json`: vom Stand des Ork-Schamanen am 10.11. (Stufe 30, Freiwindposten) über die
+guten Gebiete (Tausend Nadeln, Hillsbrad, Arathi, Schlingendorntal, Desolace, Düstermarschen, Ödland, Feralas, Sümpfe,
+Tanaris) bis 40, auf dem Forever-Datensatz mit dem gemessenen Modell: 25,1 h nachgespielt (Laufen 10,5 h, Kampf
+13,7 h, kein Grinden), 96 Quests, nichts übersprungen. Zum Vergleich Polestars Reihenfolge auf demselben Datensatz:
+30,1 h, 85 Abgaben. `export-addon` nimmt Dateien aus `data/routes-tests` als Teststrecken mit (`/fr test`); eine
+Teststrecke, die der Datensatz nicht mehr ganz trägt, bleibt draußen, statt den Export anzuhalten.
