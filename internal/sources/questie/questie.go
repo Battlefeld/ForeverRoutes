@@ -38,6 +38,15 @@ var Files = map[string]string{
 	"trace_objects": "src/corrections/Forever/traces/foreverObjectTraces.lua",
 }
 
+func init() {
+	for k, v := range layerFiles {
+		Files[k] = v
+	}
+	for k, v := range enumFiles {
+		Files[k] = v
+	}
+}
+
 var sha = regexp.MustCompile(`^[0-9a-f]{40}$`)
 
 // Fetch downloads the data files at a commit, keeping a copy per commit in cache.
@@ -60,7 +69,7 @@ func Fetch(ctx context.Context, client *http.Client, revision, cache string) (ma
 		if err != nil {
 			return nil, fmt.Errorf("questie: %w", err)
 		}
-		if status == http.StatusNotFound && strings.HasPrefix(kind, "trace_") {
+		if status == http.StatusNotFound && (strings.HasPrefix(kind, "trace_") || strings.HasPrefix(kind, "base_") || strings.HasPrefix(kind, "fix_") || strings.HasPrefix(kind, "legacy_")) {
 			b = []byte("-- not in this revision") // older commits have no traces
 		} else if status != http.StatusOK || len(b) < 1000 {
 			return nil, fmt.Errorf("questie: %s: HTTP %d, %d bytes", url, status, len(b))
@@ -160,12 +169,13 @@ type Catalog struct {
 	NPCs     map[int]*NPC
 	Objects  map[int]*Object
 	Items    map[int]*Item
+	Layers   []LayerStats // what QuestieDB's Forever layers changed
 }
 
 // Options limit the catalog to the levels routes need.
 type Options struct {
-	MaxPlayerLevel int // quests that can be taken up to this level (30)
-	MaxMobLevel    int // creatures up to this level, plus every creature a quest needs (35)
+	MaxPlayerLevel int // quests that can be taken up to this level (60)
+	MaxMobLevel    int // creatures up to this level, plus every creature a quest needs (63)
 }
 
 func spawns(v any) map[string][][2]float64 {
@@ -273,10 +283,10 @@ var objectiveKinds = []string{"npc", "object", "item", "reputation", "kill_credi
 // Build makes the catalog from the raw files.
 func Build(raw map[string]string, revision string, opt Options) (*Catalog, error) {
 	if opt.MaxPlayerLevel == 0 {
-		opt.MaxPlayerLevel = 30
+		opt.MaxPlayerLevel = 60
 	}
 	if opt.MaxMobLevel == 0 {
-		opt.MaxMobLevel = 35
+		opt.MaxMobLevel = 63
 	}
 	rows := map[string]map[int][]any{}
 	for _, kind := range []string{"quests", "npc_positions", "npc_health", "objects", "items"} {
@@ -286,9 +296,14 @@ func Build(raw map[string]string, revision string, opt Options) (*Catalog, error
 		}
 		rows[kind] = r
 	}
+	layerStats, err := applyLayers(raw, rows)
+	if err != nil {
+		return nil, err
+	}
 	xps := questXP(raw["quest_xp"])
 	rates := dropRates(raw["item_drop_rates"])
-	c := &Catalog{Revision: revision, Quests: map[int]*Quest{}, NPCs: map[int]*NPC{}, Objects: map[int]*Object{}, Items: map[int]*Item{}}
+	c := &Catalog{Revision: revision, Quests: map[int]*Quest{}, NPCs: map[int]*NPC{}, Objects: map[int]*Object{}, Items: map[int]*Item{},
+		Layers: layerStats}
 	wantNPC, wantObj, wantItem := map[int]bool{}, map[int]bool{}, map[int]bool{}
 	add := func(set map[int]bool, ids []int) {
 		for _, id := range ids {
@@ -356,17 +371,26 @@ func Build(raw map[string]string, revision string, opt Options) (*Catalog, error
 	for id, row := range rows["npc_positions"] {
 		lo, ok1 := lua.At(row, 3).(int)
 		hi, ok2 := lua.At(row, 4).(int)
-		if !ok1 || !ok2 || (lo > opt.MaxMobLevel && !wantNPC[id] && !vendors[id]) {
+		if (!ok1 || !ok2) && !(wantNPC[id] && len(spawns(lua.At(row, 6))) > 0) {
+			continue // a creature a layer only names, without levels, unless a quest needs it where it stands
+		}
+		if lo > opt.MaxMobLevel && !wantNPC[id] && !vendors[id] {
 			continue
 		}
 		n := &NPC{ID: id, Name: lua.At(row, 0), MinLevel: lo, MaxLevel: hi, Rank: lua.At(row, 5), HPSource: "unknown",
 			Spawns: spawns(lua.At(row, 6)), SpawnSrc: "questiedb_forever_raw", Friendly: lua.At(row, 12),
 			NPCFlags: lua.At(row, 14), FactionID: lua.At(row, 11), KillXP: "cmangos_classic_solo_level_formula", Critter: "unverified"}
-		ref := rows["npc_health"][id]
-		hlo, okl := lua.At(ref, 1).(int)
-		hhi, okh := lua.At(ref, 2).(int)
+		hlo, okl := lua.At(row, 1).(int)
+		hhi, okh := lua.At(row, 2).(int)
 		if okl && okh && hlo > 1 && hhi >= hlo {
-			n.HPMin, n.HPMax, n.HPSource = &hlo, &hhi, "questiedb_classic_raw"
+			n.HPMin, n.HPMax, n.HPSource = &hlo, &hhi, "questiedb_forever"
+		} else {
+			ref := rows["npc_health"][id]
+			hlo, okl = lua.At(ref, 1).(int)
+			hhi, okh = lua.At(ref, 2).(int)
+			if okl && okh && hlo > 1 && hhi >= hlo {
+				n.HPMin, n.HPMax, n.HPSource = &hlo, &hhi, "questiedb_classic_raw"
+			}
 		}
 		n.Grind = lo <= opt.MaxMobLevel && n.Rank == 0 && n.Friendly == nil && len(n.Spawns) > 0 && n.HPMin != nil
 		c.NPCs[id] = n
@@ -390,9 +414,6 @@ func Build(raw map[string]string, revision string, opt Options) (*Catalog, error
 		}
 		add(vendors, it.Vendors)
 		c.Items[id] = it
-	}
-	if err := c.applyTraces(raw, rows, wantNPC, wantObj, wantItem); err != nil {
-		return nil, err
 	}
 	for id := range wantObj {
 		row, ok := rows["objects"][id]

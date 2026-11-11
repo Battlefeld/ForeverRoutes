@@ -383,6 +383,7 @@ func Build(in Inputs) (*dataset.Dataset, error) {
 	// elites in Forever (the outer caves and mines); the route with dungeons does them on its run
 	dungeons := b.dungeons()
 	b.objectiveSourceSafety()
+	b.foreverOnly()
 	travel := b.travel()
 	build, _ := merged["build"].(string)
 	d := &dataset.Dataset{Schema: dataset.Schema, Build: build, LevelXP: b.levelXP(), Quests: b.out, NPCs: b.npcOut, Objects: b.objOut, Travel: travel, Stats: b.stats,
@@ -496,6 +497,7 @@ type builder struct {
 	curatedSkips    []curatedSkip
 	gdx             *guideIndex
 	byName          map[string][]int // lower-case creature name -> cmangos entries
+	cmCombat        []cmCombat       // cmangos' combat values, only for the typical value of a level and rank
 	zoneID          map[string]int   // lower-case zone name -> uiMapId
 	itemWhy         map[int]string   // item -> why it has no usable source
 }
@@ -963,6 +965,11 @@ func (b *builder) npcs() {
 				n.Hostile = "-"
 			}
 		}
+		// Forever data only (data/audits/blocks.md): cmangos is Classic, not updated for Forever. Its creature fills a
+		// name or levels only where no Forever source has the creature; its rank only where QuestieDB has none. Health,
+		// damage and respawn are never its per-creature values: estimateCombat puts the typical value of the level and
+		// rank there (health: of the creatures QuestieDB has it for; damage and respawn: cmangos' median of that level and
+		// rank, the only source there is), marked in Est.
 		if cm != nil {
 			t := b.w.ct
 			if n.Name == "" {
@@ -971,13 +978,12 @@ func (b *builder) npcs() {
 			if n.MinLevel == 0 {
 				n.MinLevel, n.MaxLevel = t.Int(cm, "MinLevel"), t.Int(cm, "MaxLevel")
 			}
-			if n.HP == 0 {
-				n.HP = t.Int(cm, "MaxLevelHealth")
+			if _, has := num(get(rec, "rank")); rec == nil || !has {
+				n.Rank = t.Int(cm, "Rank")
 			}
-			n.Rank = t.Int(cm, "Rank")
-			n.Dmg = round1((t.Float(cm, "MinMeleeDmg") + t.Float(cm, "MaxMeleeDmg")) / 2)
+			b.cmCombat = append(b.cmCombat, cmCombat{level: t.Int(cm, "MinLevel"), rank: t.Int(cm, "Rank"),
+				dmg: round1((t.Float(cm, "MinMeleeDmg") + t.Float(cm, "MaxMeleeDmg")) / 2), respawn: b.w.respawn[id]})
 		}
-		n.Respawn = b.w.respawn[id]
 		// Forever positions first (converted to yards); cmangos positions for what Forever data lacks
 		if rec != nil {
 			if sp, _ := rec["spawns"].(map[string]any); len(sp) > 0 {
@@ -1007,12 +1013,11 @@ func (b *builder) npcs() {
 				}
 			}
 		}
-		if len(n.Spawns) == 0 && len(b.w.spawns[id]) > 0 {
-			n.Spawns = append(n.Spawns, b.w.spawns[id]...)
-			n.Source = "cmangos_positions"
-		}
 		if len(n.Spawns) == 0 && b.pdb != nil {
 			b.polestarNPC(&n, true)
+		}
+		if len(n.Spawns) == 0 && len(b.w.spawns[id]) > 0 {
+			b.stats["npcs_cmangos_positions_left_out"]++ // Classic positions only: not taken
 		}
 		if len(n.Spawns) == 0 {
 			n.Source = "no_positions"
@@ -1025,6 +1030,71 @@ func (b *builder) npcs() {
 		b.npcOut = append(b.npcOut, n)
 	}
 	b.stats["npcs"] = len(b.npcOut)
+	b.estimateCombat()
+}
+
+type cmCombat struct {
+	level, rank, respawn int
+	dmg                  float64
+}
+
+// estimateCombat gives every creature the typical damage and respawn of its level and rank, and the typical health
+// where no Forever source has its own (see npcs).
+func (b *builder) estimateCombat() {
+	type key struct{ level, rank int }
+	dmg, resp, hp := map[key][]float64{}, map[key][]float64{}, map[key][]float64{}
+	for _, c := range b.cmCombat {
+		k := key{c.level, c.rank}
+		if c.dmg > 0 {
+			dmg[k] = append(dmg[k], c.dmg)
+		}
+		if c.respawn > 0 {
+			resp[k] = append(resp[k], float64(c.respawn))
+		}
+	}
+	for _, n := range b.npcOut {
+		if n.HP > 0 {
+			k := key{n.MinLevel, n.Rank}
+			hp[k] = append(hp[k], float64(n.HP))
+		}
+	}
+	typical := func(m map[key][]float64, k key) float64 {
+		for d := 0; d <= 3; d++ { // the nearest levels with data, same rank
+			var l []float64
+			l = append(l, m[key{k.level - d, k.rank}]...)
+			if d > 0 {
+				l = append(l, m[key{k.level + d, k.rank}]...)
+			}
+			if len(l) >= 3 {
+				sort.Float64s(l)
+				return l[len(l)/2]
+			}
+		}
+		return 0
+	}
+	for i := range b.npcOut {
+		n := &b.npcOut[i]
+		k := key{n.MinLevel, n.Rank}
+		var est []string
+		if n.HP == 0 {
+			if v := typical(hp, k); v > 0 {
+				n.HP = int(v)
+				est = append(est, "hp")
+			}
+		}
+		if v := typical(dmg, k); v > 0 {
+			n.Dmg = round1(v)
+			est = append(est, "dmg")
+		}
+		if v := typical(resp, k); v > 0 {
+			n.Respawn = int(v)
+			est = append(est, "respawn")
+		}
+		n.Est = strings.Join(est, ",")
+		if n.Est != "" {
+			b.stats["npcs_combat_estimated"]++
+		}
+	}
 }
 
 func (b *builder) objects() {
@@ -1596,6 +1666,11 @@ func (b *builder) moreItemSources(out *dataset.Quest, o *dataset.Objective) (kee
 		}
 	}
 	if b.fromEGLink(o) || b.fromWCLBoxQuest(out, o) || b.guideItem(out, o, false) || b.fromTraces(o) || b.fromNorgannon(out, o) || b.fromWCLBox(o) || b.fromAegis(out, o) || b.fromEGLinkPlaces(out, o) || b.fromQuestText(out.ID, o) {
+		// a place where the count went up does not say what drops the item: QuestieDB's Forever sources (delta-base,
+		// traces, corrections) complete an objective that has only places
+		if len(o.Drops) == 0 && len(o.Vendors) == 0 && !o.Ground && o.UseItem == 0 && !o.Inside {
+			b.fromTraces(o)
+		}
 		return o.Count > 0, true // count 0: the quest before rewards it (fromNorgannon)
 	}
 	if b.wcl == nil || b.wcl.Items[o.ID].ID == 0 {

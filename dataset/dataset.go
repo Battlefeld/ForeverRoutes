@@ -101,7 +101,7 @@ type NPC struct {
 	MinLevel int     `json:"min"`
 	MaxLevel int     `json:"max"`
 	HP       int     `json:"hp"`
-	Dmg      float64 `json:"dmg,omitempty"`  // average melee hit (cmangos); 0 = unknown
+	Dmg      float64 `json:"dmg,omitempty"`  // average melee hit, typical of the level and rank; 0 = unknown
 	Rank     int     `json:"rank,omitempty"` // 0 normal, 1 elite, 2 rare elite, 3 boss, 4 rare
 	// Lone: one creature that roams; its spawns are where it may be, not a group (an elite place needs a group)
 	Lone    bool    `json:"lone,omitempty"`
@@ -109,6 +109,7 @@ type NPC struct {
 	Hostile string  `json:"hostile,omitempty"` // A, H, AH: which factions it attacks; empty = unknown
 	Spawns  []Point `json:"spawns,omitempty"`
 	Source  string  `json:"src"`
+	Est     string  `json:"est,omitempty"` // estimated fields (hp, dmg, respawn): typical of the level and rank
 }
 
 // Object is a game object: chests, herbs, quest objects.
