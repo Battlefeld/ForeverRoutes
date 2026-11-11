@@ -1,10 +1,11 @@
-name: rebuild data (blocks branch)
+name: rebuild data
 
-# The dataset must come out of the build byte for byte (data.yml). On the blocks branch a change of the build rules or
-# of the quest fixes rebuilds it here and commits the result to the branch; main is rebuilt by the update workflow.
+# The dataset must come out of the build byte for byte (data.yml), built with CI's Go. A change of the build rules or of
+# the quest fixes rebuilds it here and commits the result when it differs; the source updates rebuild in the update
+# workflow.
 on:
   push:
-    branches: ["blocks"]
+    branches: ["main"]
     paths: ["internal/build/**", "dataset/**", "data/sources/quest-fixes.json", ".github/workflows/rebuild-data.yml"]
   workflow_dispatch:
 

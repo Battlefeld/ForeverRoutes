@@ -1,11 +1,8 @@
 name: foreverdb full list
 
-# One-off reading of the whole ForeverDB quest list (every level) for the dataset comparison. Runs only on its own
-# branch and by hand; the result is committed to that branch, main stays as it is.
+# Reading of the whole ForeverDB quest list (every level, with chains) into data/audits/foreverdb-full.json.gz: the
+# chain rules of the blocks planner and the dataset comparisons read it. Started by hand; commits to the branch it runs on.
 on:
-  push:
-    branches: ["claude/foreverdb-vollabzug"]
-    paths: ["tools/foreverdb_full.py", ".github/workflows/foreverdb-full.yml"]
   workflow_dispatch:
 
 permissions:
