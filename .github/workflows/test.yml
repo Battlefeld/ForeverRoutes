@@ -39,17 +39,15 @@ jobs:
         run: python3 tools/check_refs.py
       - name: Quest objective source audit
         run: python3 tools/audit_quest_objectives.py --out /tmp/quest-objectives
-      # Lua 5.1 built from lua.org's sources, not from the Ubuntu mirrors (their outage on 11.11. stopped the checks)
+      # Lua 5.1 through lupa (PyPI): independent of the Ubuntu package mirrors, whose outage on 11.11. stopped the checks
       - name: install Lua 5.1 for addon checks
-        uses: leafo/gh-actions-lua@v11
-        with:
-          luaVersion: "5.1.5"
+        run: pip install --quiet "lupa==2.8"
       - name: ForeverRoutes HUD and package checks
         run: |
-          find ForeverRoutes -name "*.lua" -print0 | xargs -0 luac -p
-          lua _dev/harness/routes_hud_test.lua
-          lua _dev/harness/quest_collector_test.lua
-          lua _dev/harness/timing_test.lua
+          python3 tools/lua51.py -p $(find ForeverRoutes -name "*.lua")
+          python3 tools/lua51.py _dev/harness/routes_hud_test.lua
+          python3 tools/lua51.py _dev/harness/quest_collector_test.lua
+          python3 tools/lua51.py _dev/harness/timing_test.lua
           python3 tools/package_addon.py --routes _dev/harness/addon_routes_fixture.lua --out /tmp/ForeverRoutes-addon.zip
       - name: test (includes the Orc Warlock / Human Mage baseline)
         run: go test -timeout 25m -skip 'TestShippedRoutesMatchCurrentModel' ./...
