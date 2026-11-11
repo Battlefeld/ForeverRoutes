@@ -39,8 +39,10 @@ type questFix struct {
 	// Profession: the quest is offered only to characters with this profession (the routes learn Skinning, Cooking
 	// and Leatherworking; any other one leaves the quest out, OtherProfession)
 	Profession string `json:"profession,omitempty"`
-	Source     string `json:"source"`
-	Note       string `json:"note"`
+	// XP: the quest's XP seen in Forever; 0 is a real value here (the quest gives none), not a missing one
+	XP     *int   `json:"xp,omitempty"`
+	Source string `json:"source"`
+	Note   string `json:"note"`
 }
 
 func readQuestFixes(path string) ([]questFix, error) {
@@ -72,6 +74,9 @@ func readQuestFixes(path string) ([]questFix, error) {
 	return f.Fixes, nil
 }
 
+// questFixSource marks a value a quest fix set; later steps take it as Forever data and leave it alone.
+const questFixSource = "quest_fix"
+
 // applyQuestFixes sets the curated facts over what the sources say.
 func (b *builder) applyQuestFixes() {
 	for _, f := range b.questFixes {
@@ -87,6 +92,10 @@ func (b *builder) applyQuestFixes() {
 			if f.MinLevel != nil {
 				q.MinLevel = *f.MinLevel
 				q.Sources["minLevel"] = f.Source
+			}
+			if f.XP != nil {
+				q.XP = *f.XP
+				q.Sources["xp"] = questFixSource
 			}
 			if f.Profession != "" && !routeProfessions[strings.ToLower(f.Profession)] {
 				if q.Unsupported == "" {

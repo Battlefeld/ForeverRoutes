@@ -49,7 +49,7 @@ func (b *builder) foreverOnly() {
 				b.stats["quests_classic_only_"+side]++
 			}
 		}
-		if classicSource(q.Sources["xp"]) || q.XP == 0 {
+		if q.Sources["xp"] != questFixSource && (classicSource(q.Sources["xp"]) || q.XP == 0) {
 			if l := byLevel[q.Level]; len(l) >= 3 {
 				q.XP = l[len(l)/2]
 				q.Sources["xp"] = "estimate: typical Forever XP of a level-" + strconv.Itoa(q.Level) + " quest"

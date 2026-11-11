@@ -279,8 +279,16 @@ func NewWorld(d *dataset.Dataset, c Character, opt Options) (*World, error) {
 		}
 	}
 	w.Quests = kept
+	// A dungeon quest that gives no XP (the Sparklematic 5200 in Gnomeregan) is not worth a run and is left out of
+	// the dungeon's list, unless another quest needs it first.
+	needed := map[int]bool{}
 	for _, q := range w.Quests {
-		if q.Dungeon != nil {
+		for _, p := range append(append([]int{}, q.PreAll...), q.PreAny...) {
+			needed[p] = true
+		}
+	}
+	for _, q := range w.Quests {
+		if q.Dungeon != nil && (q.XP > 0 || needed[q.ID]) {
 			q.Dungeon.Quests = append(q.Dungeon.Quests, q)
 		}
 	}
