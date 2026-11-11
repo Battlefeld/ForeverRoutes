@@ -57,7 +57,7 @@ jobs:
         id: profiles
         continue-on-error: true
         run: |
-          for i in 1 2 3; do sudo apt-get update -qq && sudo apt-get install -y -qq protobuf-compiler lua5.1 && break; sleep 30; done
+          .github/scripts/toolchain.sh lua protoc
           go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
           export PATH="$(go env GOPATH)/bin:$PATH"
           state="$(tools/kill_profiles.sh)"
