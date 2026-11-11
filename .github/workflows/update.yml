@@ -31,7 +31,7 @@ concurrency:
 
 jobs:
   update:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 330
     steps:
       # the newest main, not the commit that queued the run: a run waits behind the one before it (concurrency), and
@@ -57,7 +57,7 @@ jobs:
         id: profiles
         continue-on-error: true
         run: |
-          sudo apt-get update -qq && sudo apt-get install -y -qq protobuf-compiler lua5.1
+          for i in 1 2 3; do sudo apt-get update -qq && sudo apt-get install -y -qq protobuf-compiler lua5.1 && break; sleep 30; done
           go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
           export PATH="$(go env GOPATH)/bin:$PATH"
           state="$(tools/kill_profiles.sh)"
