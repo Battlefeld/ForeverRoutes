@@ -641,8 +641,8 @@ func compare(rep *Report, prev, next *dataset.Dataset, doc *merge.Doc) {
 	check(len(next.NPCs)*100 >= len(prev.NPCs)*95, "dataset: NPCs fell from %d to %d (more than 5 %%)", len(prev.NPCs), len(next.NPCs))
 	check(next.Stats["map_transforms_uimap"] >= 25, "dataset: only %d map transforms (positions would be lost)", next.Stats["map_transforms_uimap"])
 	check(len(next.Travel.FlightMasters) >= 50, "dataset: only %d flight masters", len(next.Travel.FlightMasters))
-	check(next.Stats["quests_unsupported"] <= prev.Stats["quests_unsupported"]+50, "dataset: unsupported quests rose from %d to %d",
-		prev.Stats["quests_unsupported"], next.Stats["quests_unsupported"])
+	check(lostSupport(prev, next) <= 50, "dataset: %d quests that could be done before are unsupported now (unsupported quests: %d to %d)",
+		lostSupport(prev, next), prev.Stats["quests_unsupported"], next.Stats["quests_unsupported"])
 	line := func(name string, a, b int) {
 		if a != b {
 			rep.Summary = append(rep.Summary, fmt.Sprintf("%s: %d → %d", name, a, b))
@@ -881,4 +881,23 @@ func fillFromWarcraftDB(o Options, d *dataset.Dataset) (*warcraftdb.Overlay, int
 		ov.Fetched = o.Now().UTC().Format("2006-01-02")
 	}
 	return ov, fetched, nil
+}
+
+// lostSupport counts the quests the previous dataset could use and the new one cannot (unsupported now). A new game
+// build brings new quests the sources know little about yet: those are unsupported from the start and do not count,
+// only a quest that worked and no longer does (a source broke).
+func lostSupport(prev, next *dataset.Dataset) int {
+	worked := map[int]bool{}
+	for _, q := range prev.Quests {
+		if q.Unsupported == "" {
+			worked[q.ID] = true
+		}
+	}
+	n := 0
+	for _, q := range next.Quests {
+		if worked[q.ID] && q.Unsupported != "" {
+			n++
+		}
+	}
+	return n
 }
