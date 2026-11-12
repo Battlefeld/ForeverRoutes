@@ -437,5 +437,33 @@ do
  check(FR.Route().test=='Thousand Needles','a part of the zone name picks it')
  FR.SetTest(nil);ForeverRoutesData.tests=nil
 end
+-- What to play: the own route with a choice of dungeons, or the live route
+do
+ local savedData,savedChar,savedPR,savedFaction,savedLevel=ForeverRoutesData,ForeverRoutesCharDB,ForeverCoreClient and ForeverCoreClient.PersonalRoute,UnitFactionGroup,UnitLevel
+ ForeverRoutesData={build='test',routes={},dungeons={
+  {key='ragefire-chasm',n='Ragefire Chasm',min=13,max=18,from=14,f='H'},
+  {key='stormwind-stockade',n='The Stockade',min=24,max=32,from=26,f='A'},
+  {key='wailing-caverns',n='Wailing Caverns',min=15,max=24,from=18,f=''},
+  {key='gnomeregan',n='Gnomeregan',min=29,max=38,from=31,f=''}}}
+ ForeverRoutesCharDB={};UnitFactionGroup=function()return'Horde'end;UnitLevel=function()return 20 end
+ local list=FR.DungeonChoices()
+ check(#list==2 and list[1].key=='wailing-caverns'and list[2].key=='gnomeregan','choices: the own side, only dungeons the level still allows')
+ ForeverCoreClient=ForeverCoreClient or{};local asked=0
+ ForeverCoreClient.PersonalRoute={Request=function(force)asked=asked+(force and 1 or 0);return true end}
+ local f=FR.ShowChooser(1)
+ check(f:IsShown()and f.own:IsShown()and f.live:IsShown()and not f.go:IsShown(),'first the two ways to play')
+ f.own:GetScript('OnClick')(f.own)
+ check(f.go:IsShown()and f.rows[1]:IsShown()and f.rows[1].label:GetText()=='Wailing Caverns'and f.rows[1].range:GetText()=='15–24','then the dungeons with their levels')
+ check(not f.rows[1].on and not f.rows[2].on,'nothing chosen at first')
+ f.rows[1]:GetScript('OnClick')(f.rows[1])
+ f.go:GetScript('OnClick')(f.go)
+ local c=ForeverRoutesCharDB
+ check(c.mode=='own'and #c.dungeonKeys==1 and c.dungeonKeys[1]=='wailing-caverns'and c.dungeons==true and c.guide=='route'and not c.live,'the choice is kept for the character')
+ check(asked==1 and not f:IsShown(),'the own route is asked from ForeverCore')
+ FR.ChooseOwnRoute({});check(#ForeverRoutesCharDB.dungeonKeys==0 and ForeverRoutesCharDB.dungeons==nil,'no dungeon chosen: a route without dungeons')
+ FR.ChooseLiveRoute();check(ForeverRoutesCharDB.mode=='live'and FR.LiveWanted(),'live route chosen')
+ ForeverRoutesData,ForeverRoutesCharDB,UnitFactionGroup,UnitLevel=savedData,savedChar,savedFaction,savedLevel
+ ForeverCoreClient.PersonalRoute=savedPR
+end
 io.write('PASS '..count..' checks; no mocked UI/event errors\n')
 

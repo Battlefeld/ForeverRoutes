@@ -263,6 +263,7 @@ local function optionMenu()
  menu.child=CreateFrame('Frame',nil,menu.scroll);menu.child:SetSize(300,140);menu.scroll:SetScrollChild(menu.child);menu.rows={}
  y=y+150;head('AKTIONEN')
  local actions={
+  {'Route wählen: eigene Route / Live',function()menu:Hide();FR.ShowChooser(1)end},
   {'Guide: RestedXP / ForeverRoutes',function()FR.SetGuideMode(FR.GuideMode()=='rxp'and'route'or'rxp');refresh()end},
   {'Eigene Route berechnen (Gear, Talente)',function()FR.PlanOwnRoute()end},
   {'Live-Plan neu berechnen',function()FR.ReplanNow()end},
@@ -277,6 +278,73 @@ local function optionMenu()
  end
  menu:SetHeight(y+#actions*32+44)
  menu:Hide();return menu
+end
+-- The choice of what to play: first "own route with a choice of dungeons" or "live route", then, for the own route,
+-- the dungeons by level with a check box each.
+local chooser
+local function routeChooser()
+ if chooser then return chooser end
+ local f=CreateFrame('Frame','ForeverRoutesChooser',UIParent);chooser=f
+ f:SetSize(420,300);f:SetFrameStrata('DIALOG');f:SetClampedToScreen(true);UI.Style(f,'panel');f:SetPoint('CENTER',UIParent,'CENTER',0,40)
+ f:SetMovable(true);f:EnableMouse(true);f:RegisterForDrag('LeftButton')
+ f:SetScript('OnDragStart',f.StartMoving);f:SetScript('OnDragStop',f.StopMovingOrSizing)
+ f.title=UI.Text(f,16,C.gold,'title');f.title:SetPoint('TOPLEFT',30,-40)
+ local close=iconButton(f,'Interface\\Buttons\\UI-Panel-MinimizeButton-Up','Interface\\Buttons\\UI-Panel-MinimizeButton-Down',function()f:Hide()end);close:SetSize(24,24);close:SetPoint('TOPRIGHT',-30,-37)
+ f.text=label(f,12,C.text);f.text:SetPoint('TOPLEFT',30,-70);f.text:SetWidth(360);f.text:SetWordWrap(true)
+ -- step 1: the two ways to play
+ f.own=button(f,'Eigene Route + Dungeon-Auswahl',360,function()f.Step(2)end)
+ f.live=button(f,'Live-Route',360,function()FR.ChooseLiveRoute();f:Hide();print('ForeverRoutes: Live-Route: die Route wird nach jeder Quest-Änderung neu geplant');refresh()end)
+ f.ownHint=label(f,11,C.muted);f.ownHint:SetWidth(360);f.ownHint:SetWordWrap(true)
+ f.liveHint=label(f,11,C.muted);f.liveHint:SetWidth(360);f.liveHint:SetWordWrap(true)
+ f.ownHint:SetText('Eine feste Route ab deinem Stand bis Stufe 45, mit genau den Dungeons, die du auswählst. Sie ändert sich nur, wenn du sie neu berechnen lässt.')
+ f.liveHint:SetText('Plant nach jeder Quest-Änderung neu, egal wo du gerade bist.')
+ -- step 2: the dungeons
+ f.rows={}
+ f.all=button(f,'Alle',90,function()for _,r in ipairs(f.rows)do if r:IsShown()then r.on=true;r:refresh()end end end)
+ f.none=button(f,'Keine',90,function()for _,r in ipairs(f.rows)do if r:IsShown()then r.on=false;r:refresh()end end end)
+ f.back=button(f,'Zurück',90,function()f.Step(1)end)
+ f.go=button(f,'Route berechnen',170,function()
+  local keys={}
+  for _,r in ipairs(f.rows)do if r:IsShown()and r.on then keys[#keys+1]=r.key end end
+  local started=FR.ChooseOwnRoute(keys);f:Hide()
+  if started then print(string.format('ForeverRoutes: eigene Route mit %d Dungeons wird berechnet; wenn der Balken fertig ist: /reload',#keys))end
+  refresh()
+ end)
+ function f.Step(n)
+  local two=n==2
+  f.own:SetShown(not two);f.live:SetShown(not two);f.ownHint:SetShown(not two);f.liveHint:SetShown(not two)
+  f.all:SetShown(two);f.none:SetShown(two);f.back:SetShown(two);f.go:SetShown(two)
+  for _,r in ipairs(f.rows)do r:Hide()end
+  if not two then
+   f.title:SetText('Was willst du spielen?');f.text:SetText('Wähle, wie ForeverRoutes dich führt. Das lässt sich jederzeit im Menü oder mit /fr wahl ändern.')
+   f.own:ClearAllPoints();f.own:SetPoint('TOPLEFT',30,-112);f.ownHint:ClearAllPoints();f.ownHint:SetPoint('TOPLEFT',30,-144)
+   f.live:ClearAllPoints();f.live:SetPoint('TOPLEFT',30,-196);f.liveHint:ClearAllPoints();f.liveHint:SetPoint('TOPLEFT',30,-228)
+   f:SetHeight(290);return
+  end
+  f.title:SetText('Dungeons für deine Route');f.text:SetText('Hake die Dungeons an, die du auf dem Weg bis Stufe 45 spielen willst. Nicht angehakte kommen in der Route nicht vor.')
+  local list=FR.DungeonChoices();local y=108
+  for i,d in ipairs(list)do
+   local r=f.rows[i]
+   if not r then
+    r=checkbox(f,'',function()return false end,function()end,360);f.rows[i]=r
+    r.get=function()return r.on end
+    r:SetScript('OnClick',function(self)self.on=not self.on;self:refresh()end)
+    r.range=label(r,11,C.muted);r.range:SetPoint('RIGHT',r,'RIGHT',0,0);r.range:SetJustifyH('RIGHT')
+   end
+   r.key=d.key;r.on=d.chosen;r.label:SetText(d.n);r.label:SetWidth(250);r.range:SetText(string.format('%d–%d',d.min or 0,d.max or 0))
+   r:ClearAllPoints();r:SetPoint('TOPLEFT',30,-y);r:refresh();r:Show();y=y+24
+  end
+  if #list==0 then f.text:SetText('Für deine Stufe gibt es bis 45 keinen Dungeon mehr. Die Route wird ohne Dungeons berechnet.')end
+  y=y+10
+  f.all:ClearAllPoints();f.all:SetPoint('TOPLEFT',30,-y);f.none:ClearAllPoints();f.none:SetPoint('LEFT',f.all,'RIGHT',6,0)
+  y=y+34
+  f.back:ClearAllPoints();f.back:SetPoint('TOPLEFT',30,-y);f.go:ClearAllPoints();f.go:SetPoint('TOPLEFT',220,-y)
+  f:SetHeight(y+70)
+ end
+ f:Hide();return f
+end
+function FR.ShowChooser(step)
+ local f=routeChooser();f.Step(step or 1);f:Show();return f
 end
 function FR.ToggleMenu()
  local f=optionMenu();if f:IsShown()then f:Hide();return end
@@ -548,7 +616,12 @@ local events={'PLAYER_LOGIN','PLAYER_ENTERING_WORLD','QUEST_ACCEPTED','QUEST_TUR
 for _,e in ipairs(events)do pcall(driver.RegisterEvent,driver,e)end
 driver:SetScript('OnEvent',function(_,event,unit)
  if event=='UNIT_AURA'and unit~='player'then return end
- if event=='PLAYER_LOGIN'then if not FR.Config().hidden then FR.Show()end;FR.ScanQuestTracker();return end
+ if event=='PLAYER_LOGIN'then
+  if not FR.Config().hidden then FR.Show()end;FR.ScanQuestTracker()
+  -- asked once per character: what to play (own route with a choice of dungeons, or the live route)
+  if not FR.Mode()and ForeverRoutesData and ForeverRoutesData.dungeons and(call(UnitLevel,'player')or 60)<45 then FR.ShowChooser(1)end
+  return
+ end
  if event=='PLAYER_DEAD'then FR.Died()end
  if event=='HEARTHSTONE_BOUND'then FR.HearthBound()end
  pending=true
@@ -598,11 +671,12 @@ SlashCmdList.FOREVERROUTES=function(msg)
   local on=msg=='live an'or(msg=='live'and not FR.LiveWanted());FR.SetLiveWanted(on)
   print('ForeverRoutes: Live-Plan '..(on and'an: die Route passt sich laufend an'or'aus: die Route bleibt, wie sie ist'));refresh();return
  elseif msg=='eigene'or msg=='eigene route'then FR.PlanOwnRoute();return
+ elseif msg=='wahl'or msg=='auswahl'or msg=='dungeons'then FR.ShowChooser(msg=='dungeons'and 2 or 1);return
  elseif msg=='questxp'or msg=='quest-xp'then FR.Config().questXP=FR.Config().questXP==false;print('ForeverRoutes: Quest-XP auf der XP-Leiste '..(FR.Config().questXP==false and'aus'or'an'));if FR.DrawQuestXP then FR.DrawQuestXP()end;return
  elseif msg=='tracker'or msg=='questtracker'then FR.Config().blizzTracker=not FR.Config().blizzTracker or nil;FR.Config().window=nil;FR.Config().docked=true;if frame then frame.docked=dock(frame)end;applyTracker()
  elseif msg=='dock'or msg=='andocken'then FR.Config().window=nil;FR.Config().docked=true;if frame and not dock(frame)then position(frame,'window','LEFT',40,120)end
  elseif msg=='position'then FR.Config().window=nil;FR.Config().arrow=nil;if frame then position(frame,'window','LEFT',40,120)end;if arrow then position(arrow,'arrow','TOP',0,-110)end
- elseif msg~='show'then print('ForeverRoutes: /fr · show · hide · skip · back · done · options · compact · tracker · lock · arrow · scale 1 · position · restore · guide (RestedXP an/aus) · live (Live-Plan an/aus) · eigene (eigene Route berechnen) · neu · questxp');return end
+ elseif msg~='show'then print('ForeverRoutes: /fr · show · hide · skip · back · done · options · compact · tracker · lock · arrow · scale 1 · position · restore · guide (RestedXP an/aus) · live (Live-Plan an/aus) · wahl (eigene Route mit Dungeon-Auswahl / Live) · eigene (eigene Route neu berechnen) · neu · questxp');return end
  FR.Show()
 end
 

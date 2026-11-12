@@ -84,6 +84,9 @@ func (w *World) dungeons() {
 		if (d.Faction != "" && d.Faction != w.Faction) || !w.maps[d.Entrance.Map] || len(w.Dungeons) >= 64 {
 			continue
 		}
+		if w.Opt.DungeonKeys != nil && !slices.Contains(w.Opt.DungeonKeys, d.Key) {
+			continue // not among the dungeons the player chose
+		}
 		rd := &Dungeon{Dungeon: d, Index: len(w.Dungeons)}
 		w.Dungeons = append(w.Dungeons, rd)
 		w.dungeonOf[d.Key] = rd
@@ -495,4 +498,132 @@ func (w *World) delayedVisits(events []GuideEvent, levels []int, run int, q *Que
 		}
 	}
 	return out
+}
+
+// DungeonDueLevel is the level from which a chosen dungeon is put into a route: the leveling guides' level, else two
+// above the first level the game lets in (a group of the lowest level wipes), never past its last level.
+func (w *World) DungeonDueLevel(key string) int {
+	d := w.dungeonOf[key]
+	if d == nil {
+		return 0
+	}
+	return DungeonFrom(key, d.Min, d.Max)
+}
+
+// DungeonFrom is DungeonDueLevel from the dungeon's own values (for lists).
+func DungeonFrom(key string, minLevel, maxLevel int) int {
+	l := dungeonFrom[key]
+	if l == 0 {
+		l = minLevel + 2
+	}
+	return min(max(l, minLevel), maxLevel)
+}
+
+// RunChosenDungeon is the run of a dungeon the player chose, from s: its quests given outside taken on the way, the
+// run, the hand-ins. nil when it is not due yet, was run already, is past its levels or not reachable.
+func (w *World) RunChosenDungeon(s *State, key string) (*Result, error) {
+	d := w.dungeonOf[key]
+	if d == nil || w.Level(s) < w.DungeonDueLevel(key) {
+		return nil, nil
+	}
+	acts := w.chosenDungeonActions(s, d)
+	if acts == nil {
+		return nil, nil
+	}
+	return w.replayFrom(s, acts)
+}
+
+// chosenDungeonActions: the run of a dungeon the player chose, prepared as a player would who plans the run: first
+// the quests before its quests (a dungeon quest at the end of a chain: Leaders of the Fang after the Barrens chain),
+// each done and handed in, then every quest of the dungeon taken wherever it is given on the dungeon's continent or
+// the one the character is on, then the run and the hand-ins. A chain that cannot be done now (level, a part not for
+// this character) leaves its dungeon quest out; the run is made all the same.
+func (w *World) chosenDungeonActions(s0 *State, d *Dungeon) []Action {
+	if l := w.Level(s0); s0.Runs&(1<<d.Index) != 0 || l < d.Min || l > d.Max {
+		return nil
+	}
+	s := s0.clone()
+	var acts []Action
+	near := func(p dataset.Point) bool { return p.Map == d.Entrance.Map || p.Map == s0.Pos.Map }
+	for _, q := range d.Quests {
+		if !q.runnable() || s.Status[q.Index] != notTaken || !near(q.StartPos) && !q.StartInside {
+			continue
+		}
+		chain := w.ChainBefore(q)
+		ok := true
+		for _, p := range chain {
+			if !near(p.StartPos) || !near(p.EndPos) {
+				ok = false
+			}
+		}
+		if !ok {
+			continue
+		}
+		// in order; a part that fails ends this chain (what was done of it stays done)
+		for _, p := range chain {
+			if s.Status[p.Index] == done {
+				continue
+			}
+			m := w.questMacro(s, p)
+			if m == nil {
+				break
+			}
+			acts = append(acts, m.actions...)
+			s = m.state.clone()
+		}
+	}
+	// room in the quest log for the dungeon's quests: finished quests are handed in first, nearest first
+	need := 0
+	for _, q := range d.Quests {
+		if !q.StartInside && q.runnable() && s.Status[q.Index] == notTaken && near(q.StartPos) {
+			need++
+		}
+	}
+	for w.Opt.QuestLogCap-s.Active < need {
+		var next *Quest
+		bt := math.Inf(1)
+		for qi := range s.Prog {
+			q := w.Quests[qi]
+			if q.Dungeon != nil || q.EndInside || !w.complete(s, q) || q.EndPos.Map != s.Pos.Map {
+				continue
+			}
+			if t := w.TravelTime(s, s.Pos, q.EndPos); t < bt {
+				next, bt = q, t
+			}
+		}
+		if next == nil || !w.try(s, &acts, Action{Op: "turnin", Quest: next.ID, At: next.EndPos}) {
+			break
+		}
+	}
+	// every quest of the dungeon that is given outside, nearest first (one that cannot be taken is passed over)
+	failed := map[int]bool{}
+	for {
+		var next *Quest
+		bt := math.Inf(1)
+		for _, q := range d.Quests {
+			if q.StartInside || failed[q.ID] || !q.runnable() || s.Status[q.Index] != notTaken || !near(q.StartPos) || w.CanAccept(s, q) != nil {
+				continue
+			}
+			if t := w.TravelTime(s, s.Pos, q.StartPos); t < bt {
+				next, bt = q, t
+			}
+		}
+		if next == nil {
+			break
+		}
+		if !w.try(s, &acts, Action{Op: "accept", Quest: next.ID, At: w.startAt(s, next)}) {
+			failed[next.ID] = true
+		}
+	}
+	if !w.try(s, &acts, Action{Op: "dungeon", Dungeon: d.Key, At: d.Entrance}) {
+		return nil
+	}
+	w.handInDungeonQuests(s, &acts, d)
+	return acts
+}
+
+// DungeonRun: the state has this dungeon's run behind it.
+func (w *World) DungeonRun(s *State, key string) bool {
+	d := w.dungeonOf[key]
+	return d != nil && s.Runs&(1<<d.Index) != 0
 }

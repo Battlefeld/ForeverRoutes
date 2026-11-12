@@ -24,6 +24,9 @@ type RouteModel struct {
 	EliteRadius float64 `json:"eliteRadius,omitempty"`
 	// WayKills: creatures killed per minute on foot (route.Options.WayKills), measured
 	WayKills float64 `json:"wayKills,omitempty"`
+	// DungeonKeys: the dungeons the player chose for this route (route.Options.DungeonKeys); nil: every one, an
+	// empty list: none
+	DungeonKeys *[]string `json:"dungeonKeys,omitempty"`
 }
 
 // edit: the dataset as this model sees it (before the world is made).
@@ -43,6 +46,10 @@ func (m RouteModel) edit(d *dataset.Dataset) {
 func (m RouteModel) options(o *route.Options) {
 	if m.SoloElites {
 		o.SoloElites = true
+	}
+	if m.DungeonKeys != nil {
+		o.DungeonKeys = append([]string{}, *m.DungeonKeys...)
+		o.Dungeons = len(o.DungeonKeys) > 0
 	}
 }
 

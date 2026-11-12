@@ -199,6 +199,18 @@ func cmdExportAddon(args []string) error {
 		fmt.Fprintf(&b, "ForeverRoutesData.dataVersion = %s\n", luaStr(version))
 		// every quest's full XP and level: the XP bar shows what the quests in the log give (the game's own value
 		// first, this one when the client has none)
+		// the dungeons a player can choose for an own route (up to level 45), in the order of their levels: key, name,
+		// the levels the game lets in, the level a route runs it from, and the side when only one has it
+		b.WriteString("ForeverRoutesData.dungeons = {\n")
+		list := append([]dataset.Dungeon{}, ds.Dungeons...)
+		sort.SliceStable(list, func(i, j int) bool { return list[i].Min < list[j].Min })
+		for _, d := range list {
+			if route.DungeonFrom(d.Key, d.Min, d.Max) > 45 {
+				continue
+			}
+			fmt.Fprintf(&b, " {key = %s, n = %s, min = %d, max = %d, from = %d, f = %s},\n", luaStr(d.Key), luaStr(d.Name), d.Min, d.Max, route.DungeonFrom(d.Key, d.Min, d.Max), luaStr(d.Faction))
+		}
+		b.WriteString("}\n")
 		b.WriteString("ForeverRoutesData.questXP = {")
 		for i, q := range ds.Quests {
 			if q.XP > 0 {

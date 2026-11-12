@@ -482,6 +482,41 @@ function FR.SetLiveWanted(on)
  if not on then FR.live=nil;FR.nextLive=nil;FR.liveStages=nil;FR.liveBlock=nil;FR.pinned=nil end
  return FR.Advance()
 end
+-- What the player wants to play (asked once per character, /fr wahl asks again): "own" is a fixed route planned from
+-- the character's state with the dungeons the player chose; "live" plans anew after every quest change.
+function FR.Mode()return charDB().mode end
+-- The dungeons to choose from: those of the player's side that the character can still enter, by level.
+function FR.DungeonChoices()
+ local out={};local c=charDB()
+ local side=call(UnitFactionGroup,'player');side=side=='Horde'and'H'or side=='Alliance'and'A'or nil
+ local level=call(UnitLevel,'player')or 1
+ local chosen={};for _,k in ipairs(type(c.dungeonKeys)=='table'and c.dungeonKeys or{})do chosen[k]=true end
+ for _,d in ipairs(ForeverRoutesData and ForeverRoutesData.dungeons or{})do
+  if(d.f==''or d.f==nil or not side or d.f==side)and(d.max or 60)>=level then
+   out[#out+1]={key=d.key,n=d.n,min=d.min,max=d.max,from=d.from,chosen=chosen[d.key]==true}
+  end
+ end
+ return out
+end
+-- The own route with these dungeons (a list of keys, in any order; empty: no dungeon): kept for the character, and
+-- ForeverCore plans the route from where the character is.
+function FR.ChooseOwnRoute(keys)
+ local c=charDB();local list={}
+ for _,k in ipairs(keys or{})do if type(k)=='string'then list[#list+1]=k end end
+ table.sort(list)
+ c.mode='own';c.dungeonKeys=list;c.dungeons=#list>0 or nil;c.group=nil;c.guide='route';c.live=nil
+ c.index=1;c.skipped={};c.confirmed={};FR.live=nil;FR.nextLive=nil;FR.liveStages=nil;FR.liveBlock=nil;FR.pinned=nil
+ FR.Advance()
+ return FR.PlanOwnRoute()
+end
+-- The live route: planned anew after every quest change, wherever the character is.
+function FR.ChooseLiveRoute()
+ local c=charDB();c.mode='live';c.guide='route'
+ if type(ForeverCoreBridgeDB)=='table'then ForeverCoreBridgeDB.routeNext=true end
+ FR.SetLiveWanted(true)
+ local r=ForeverCoreClient and ForeverCoreClient.Route
+ if r and r.Request then call(r.Request,false)end
+end
 -- The own route: ForeverCore plans the route with this character's items and talents (a few minutes); /reload takes it.
 function FR.PlanOwnRoute()
  local p=ForeverCoreClient and ForeverCoreClient.PersonalRoute
