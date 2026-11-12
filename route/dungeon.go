@@ -42,6 +42,9 @@ const (
 	// pickupReach: a dungeon quest further than this from the last stop is left for another time (a quest across the
 	// sea or at the other end of the continent costs more than it brings to this run).
 	pickupReach = 900.0
+	// farPickup: a quest of a chosen dungeon given on another continent is fetched when that costs at most this many
+	// seconds more than going straight to the dungeon
+	farPickup = 1800.0
 	// pickupNear: a dungeon quest whose giver is this close (travel seconds) is taken on the way, long before the run.
 	pickupNear = 600.0
 	// pickupShare: what taking a dungeon quest early is worth to the planner, as a share of its XP (the run pays it).
@@ -544,7 +547,16 @@ func (w *World) chosenDungeonActions(s0 *State, d *Dungeon) []Action {
 	}
 	s := s0.clone()
 	var acts []Action
-	near := func(p dataset.Point) bool { return p.Map == d.Entrance.Map || p.Map == s0.Pos.Map }
+	// where its quests are fetched: on the dungeon's continent and the one the character is on, and on another
+	// continent when the way over there and on to the dungeon costs at most farPickup more than going straight
+	direct := w.TravelTime(s0, s0.Pos, d.Entrance)
+	near := func(p dataset.Point) bool {
+		if p.Map == d.Entrance.Map || p.Map == s0.Pos.Map {
+			return true
+		}
+		detour := w.TravelTime(s0, s0.Pos, p) + w.TravelTime(s0, p, d.Entrance) - direct
+		return !math.IsInf(detour, 0) && !math.IsNaN(detour) && detour <= farPickup
+	}
 	for _, q := range d.Quests {
 		if !q.runnable() || s.Status[q.Index] != notTaken || !near(q.StartPos) && !q.StartInside {
 			continue
@@ -604,7 +616,12 @@ func (w *World) chosenDungeonActions(s0 *State, d *Dungeon) []Action {
 			if q.StartInside || failed[q.ID] || !q.runnable() || s.Status[q.Index] != notTaken || !near(q.StartPos) || w.CanAccept(s, q) != nil {
 				continue
 			}
-			if t := w.TravelTime(s, s.Pos, q.StartPos); t < bt {
+			// the ones away from the dungeon's continent first, so the way ends at the dungeon
+			t := w.TravelTime(s, s.Pos, q.StartPos)
+			if q.StartPos.Map == d.Entrance.Map {
+				t += 1e6
+			}
+			if t < bt {
 				next, bt = q, t
 			}
 		}
