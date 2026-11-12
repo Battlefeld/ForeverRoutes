@@ -354,12 +354,19 @@ func writeStep(b *strings.Builder, w *route.World, res *route.GuideResult, st ro
 		}
 		// quests taken inside that the route counts on: handed in later or inside
 		var inside []string
+		seen := map[string]bool{}
 		for _, q := range w.StartedInside(st.Dungeon) {
+			// a quest that gives no XP (the Sparklematic 5200 in Gnomeregan: a box, no XP) is not worth taking, and
+			// a name is listed once (several quests of one name)
+			if q.XP <= 0 || seen[q.Name] {
+				continue
+			}
 			used := q.EndInside
 			for _, later := range res.Steps {
 				used = used || (later.Op == "turnin" && later.Quest == q.ID)
 			}
 			if used {
+				seen[q.Name] = true
 				inside = append(inside, luaStr(q.Name))
 			}
 		}
